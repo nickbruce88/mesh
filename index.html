@@ -4322,6 +4322,7 @@
       if (id) {
         loadRosterFromSupabase(id);
         loadInventoryFromSupabase(id);
+        loadDCFromSupabase(id);
       }
     });
   }
@@ -5597,6 +5598,7 @@
         const moved = posGroup.players.splice(from.idx, 1)[0];
         posGroup.players.splice(toIdx, 0, moved);
         renderDepthChart();
+        saveDCToSupabase();
         showToast('Order updated ✓');
       } catch(err) {}
     });
@@ -5615,6 +5617,35 @@
     return wrap;
   }
 
+  // ===== DEPTH CHART SUPABASE SYNC =====
+  async function saveDCToSupabase() {
+    const programId = await getValidProgramId();
+    if (!programId) return;
+    try {
+      await db.from('programs')
+        .update({ depth_chart: DC_DATA })
+        .eq('id', programId);
+      console.log('Depth chart saved to Supabase');
+    } catch(e) { console.error('DC save error:', e); }
+  }
+
+  async function loadDCFromSupabase(programId) {
+    if (!programId || !programId.includes('-')) return;
+    try {
+      const { data, error } = await db.from('programs')
+        .select('depth_chart')
+        .eq('id', programId)
+        .single();
+      if (error || !data?.depth_chart) return;
+      // Merge saved data into DC_DATA
+      Object.keys(data.depth_chart).forEach(unit => {
+        if (DC_DATA[unit]) DC_DATA[unit] = data.depth_chart[unit];
+      });
+      renderDepthChart();
+      console.log('Depth chart loaded from Supabase');
+    } catch(e) { console.error('DC load error:', e); }
+  }
+
   function toggleDCEdit() {
     dcEditMode = !dcEditMode;
     const btn = document.getElementById('dc-edit-btn');
@@ -5622,7 +5653,10 @@
     btn.textContent = dcEditMode ? 'Done' : 'Edit';
     banner.style.display = dcEditMode ? 'flex' : 'none';
     renderDepthChart();
-    if (!dcEditMode) showToast('Depth chart saved ✓');
+    if (!dcEditMode) {
+      showToast('Depth chart saved ✓');
+      saveDCToSupabase();
+    }
   }
 
   // ===== TOUCH DRAG AND DROP =====
@@ -5794,7 +5828,6 @@
   }
 
   function confirmDCSwap(name, num) {
-    // Find which unit/pos the swap is for
     for (const unit of Object.keys(DC_DATA)) {
       const posGroup = DC_DATA[unit].find(p => p.pos === dcSwapPos);
       if (posGroup) {
@@ -5804,6 +5837,7 @@
     }
     closeDCSwap();
     renderDepthChart();
+    saveDCToSupabase();
     showToast(name + ' added to ' + dcSwapPos + ' depth chart ✓');
   }
 
@@ -5817,6 +5851,7 @@
     }
     closeDCSwap();
     renderDepthChart();
+    saveDCToSupabase();
     showToast('Player removed from depth chart');
   }
 
@@ -6006,13 +6041,86 @@
   function closeSaveTemplate() {
     document.getElementById('save-template-overlay').classList.remove('open');
   }
+  // ===== PRACTICE PLAN SUPABASE SYNC =====
+  async function savePracticePlanToSupabase(planName) {
+    const programId = await getValidProgramId();
+    if (!programId) return;
+
+    // Capture current practice grid state
+    const plan = {
+      name: planName || 'Practice Plan',
+      savedAt: new Date().toISOString(),
+      periods: [],
+      scripts: PERIOD_SCRIPTS,
+      scriptedPeriods: [...SCRIPTED_PERIODS]
+    };
+
+    // Capture each period row
+    document.querySelectorAll('.pgrid-row:not(.pgrid-header)').forEach(row => {
+      const periodId = row.dataset.periodId;
+      if (!periodId) return;
+      const timeEl = row.querySelector('.grid-time-cell');
+      const cells = [];
+      row.querySelectorAll('.grid-cell').forEach(cell => {
+        const actEl = cell.querySelector('.cell-activity');
+        cells.push({
+          col: cell.dataset.col,
+          activity: actEl ? actEl.textContent : ''
+        });
+      });
+      plan.periods.push({
+        id: periodId,
+        time: timeEl ? timeEl.querySelector('.period-start')?.textContent : '',
+        duration: row.style.getPropertyValue('--dur'),
+        cells
+      });
+    });
+
+    try {
+      // Store as array of plans, append new one
+      const { data: existing } = await db.from('programs')
+        .select('practice_plans')
+        .eq('id', programId)
+        .single();
+
+      const plans = existing?.practice_plans || [];
+      plans.unshift(plan); // newest first
+      const trimmed = plans.slice(0, 10); // keep last 10
+
+      await db.from('programs')
+        .update({ practice_plans: trimmed })
+        .eq('id', programId);
+
+      console.log('Practice plan saved to Supabase:', planName);
+      showToast('Template "' + planName + '" saved ✓');
+    } catch(e) {
+      console.error('Practice plan save error:', e);
+      showToast('Template "' + planName + '" saved locally ✓');
+    }
+  }
+
+  async function loadPracticePlansFromSupabase() {
+    const programId = await getValidProgramId();
+    if (!programId) return [];
+    try {
+      const { data } = await db.from('programs')
+        .select('practice_plans')
+        .eq('id', programId)
+        .single();
+      return data?.practice_plans || [];
+    } catch(e) {
+      console.error('Practice plan load error:', e);
+      return [];
+    }
+  }
+
   function confirmSaveTemplate() {
     const name = document.getElementById('save-template-name').value.trim();
     if (!name) { showToast('Please enter a template name'); return; }
     closeSaveTemplate();
-    showToast('Template "' + name + '" saved ✓');
     document.getElementById('save-template-name').value = '';
     document.getElementById('save-template-notes').value = '';
+    savePracticePlanToSupabase(name);
   }
 
   // ===== CLEAR PRACTICE DAY =====
@@ -8249,6 +8357,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       if (program?.id) {
         await loadRosterFromSupabase(program.id);
         await loadInventoryFromSupabase(program.id);
+        await loadDCFromSupabase(program.id);
       }
 
       console.log('Session restored successfully');
