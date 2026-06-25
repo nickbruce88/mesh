@@ -2437,15 +2437,15 @@
   <!-- ===== PLAYER TABS ===== -->
   <!-- Player Home -->
   <div id="tab-player-home" class="scroll-content" style="display:none">
-    <div class="greeting">What's up, <span>Marcus</span> 🏈</div>
-    <div class="sub-greeting">Nampa Bulldogs · #22 · WR</div>
+    <div class="greeting">What's up, <span id="player-home-name">Player</span> 🏈</div>
+    <div class="sub-greeting" id="player-home-sub">Loading…</div>
     <div class="stat-tile green-tile" style="margin-bottom:14px">
       <div style="font-size:12px;color:var(--team-primary);font-weight:600;margin-bottom:4px">YOUR STATUS</div>
-      <div style="font-size:16px;font-weight:700">1st String — Wide Receiver</div>
-      <div style="font-size:13px;color:var(--gray-2);margin-top:3px">#22 · Offense · Red group</div>
+      <div style="font-size:16px;font-weight:700" id="player-home-status">Loading…</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-top:3px" id="player-home-detail"></div>
       <div style="display:flex;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--team-primary-glow)">
-        <span style="font-size:12px;font-weight:600;color:#39ff14">● Good Standing</span>
-        <span style="font-size:12px;font-weight:600;color:var(--team-primary)">✅ Eligible</span>
+        <span style="font-size:12px;font-weight:600;color:#39ff14" id="player-home-disc">● Good Standing</span>
+        <span style="font-size:12px;font-weight:600;color:var(--team-primary)" id="player-home-elig">✅ Eligible</span>
       </div>
     </div>
     <div class="section-label">Announcements</div>
@@ -3924,6 +3924,7 @@
       localStorage.setItem('mesh_program_id', data.id);
       localStorage.setItem('mesh_current_program', obProgram.joinCode);
       localStorage.setItem('mesh_role', 'coach');
+      localStorage.setItem('mesh_team_name', obProgram.teamName || obProgram.schoolName);
       localStorage.setItem('mesh_user', JSON.stringify({ name: obProgram.coachName, role: obProgram.role }));
 
       console.log('Program saved to Supabase:', data);
@@ -4094,6 +4095,7 @@
     try {
       localStorage.setItem('mesh_role', 'player');
       localStorage.setItem('mesh_user', JSON.stringify({ name, role: 'player' }));
+      localStorage.setItem('mesh_team_name', document.getElementById('join-program-name').textContent);
     } catch(e) {}
 
     document.getElementById('join-done-title').textContent = 'Welcome, ' + name.split(' ')[0] + '!';
@@ -4126,12 +4128,17 @@
     if (r === 'player') {
       const playerTab = document.querySelector('.role-tab:nth-child(3)');
       if (playerTab) switchRole('player', playerTab);
+      setTimeout(populatePlayerHome, 200);
     } else if (r === 'parent') {
       const parentTab = document.querySelector('.role-tab:nth-child(2)');
       if (parentTab) switchRole('parent', parentTab);
     } else {
       const coachTab = document.querySelector('.role-tab:first-child');
       if (coachTab) switchRole('coach', coachTab);
+      // Update coach home team name
+      const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
+      const coachSub = document.getElementById('coach-home-sub');
+      if (coachSub) coachSub.textContent = teamName + ' · 2024 Season';
     }
     applyTheme();
   }
@@ -5355,37 +5362,88 @@
     const el = document.getElementById('ng-validation');
 
     if (selected.length === 0) { el.className = 'ng-validation'; return; }
-    if (hasPlayer && coachCount < 2 && !hasParent) {
-      el.className = 'ng-validation fail';
-      el.textContent = '⚠️ Groups with players must include at least 2 coaches or 1 coach + 1 parent.';
-    } else if (coachCount >= 1) {
+
+    // Rule: groups with players need either 2 coaches OR 1 coach + 1 parent
+    if (hasPlayer) {
+      const meetsRequirement = coachCount >= 2 || (coachCount >= 1 && hasParent);
+      if (!meetsRequirement) {
+        el.className = 'ng-validation fail';
+        el.textContent = '⚠️ Groups with players need 2 coaches, or 1 coach + 1 parent.';
+        return;
+      }
+    }
+
+    if (coachCount >= 1 || hasParent) {
       el.className = 'ng-validation pass';
-      el.textContent = '✅ Group meets communication safety requirements.';
+      el.textContent = '✅ Group meets safety requirements.';
     } else {
       el.className = 'ng-validation';
     }
   }
 
   function createNewGroup() {
-    const name = document.getElementById('ng-name-input').value.trim() || 'New Group';
+    const name = document.getElementById('ng-name-input').value.trim();
+    if (!name) {
+      document.getElementById('ng-validation').className = 'ng-validation fail';
+      document.getElementById('ng-validation').textContent = '⚠️ Please enter a group name.';
+      return;
+    }
+
     const selected = [...ngSelectedMembers];
     const coachCount = selected.filter(id => STAFF_MEMBERS.find(m => m.id === id)).length;
     const hasPlayer = selected.some(id => id.startsWith('pl-'));
     const hasParent = selected.some(id => id.startsWith('par'));
 
-    if (hasPlayer && coachCount < 1) {
-      document.getElementById('ng-validation').className = 'ng-validation fail';
-      document.getElementById('ng-validation').textContent = '⚠️ Must include at least one coach.';
-      return;
+    if (hasPlayer) {
+      const meetsRequirement = coachCount >= 2 || (coachCount >= 1 && hasParent);
+      if (!meetsRequirement) {
+        document.getElementById('ng-validation').className = 'ng-validation fail';
+        document.getElementById('ng-validation').textContent = '⚠️ Add a second coach or a parent to meet safety requirements.';
+        return;
+      }
     }
-    if (hasPlayer && coachCount < 2 && !hasParent) {
-      document.getElementById('ng-validation').className = 'ng-validation fail';
-      document.getElementById('ng-validation').textContent = '⚠️ Add a second coach or a parent to meet safety requirements.';
-      return;
+
+    // Generate a unique thread ID
+    const threadId = 'custom-' + Date.now();
+    const memberCount = selected.length;
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const color = ['var(--team-primary)', 'var(--red)', 'var(--blue)', 'var(--amber)'][Math.floor(Math.random()*4)];
+
+    // Add to THREAD_DATA
+    THREAD_DATA[threadId] = {
+      title: name,
+      sub: memberCount + ' members',
+      avatarClass: 'group-custom',
+      avatarContent: initials,
+      avatarColor: color,
+      messages: []
+    };
+
+    // Add to the coach message list UI
+    const msgList = document.querySelector('#tab-coach-messages .msg-group-list');
+    if (msgList) {
+      const item = document.createElement('div');
+      item.className = 'msg-group-item';
+      item.id = 'mgi-' + threadId;
+      item.innerHTML = `
+        <div class="msg-group-avatar group-custom" style="background:${color}22;color:${color}">${initials}</div>
+        <div class="msg-group-content">
+          <div class="msg-group-header">
+            <div class="msg-group-name">${name}</div>
+            <div class="inbox-time">Just now</div>
+          </div>
+          <div class="msg-group-preview" id="mgp-${threadId}">No messages yet</div>
+          <div class="msg-group-meta">${memberCount} members</div>
+        </div>`;
+      item.onclick = () => openThread(threadId);
+      // Insert at top
+      msgList.insertBefore(item, msgList.firstChild);
     }
 
     closeNewGroupModal();
     showToast(`Group "${name}" created ✓`);
+    // Open the new thread immediately
+    setTimeout(() => openThread(threadId), 300);
   }
 
   // ===== PLAYER: NEW DIRECT MESSAGE =====
@@ -5731,6 +5789,50 @@
     handle.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
 
     return wrap;
+  }
+
+  // ===== POPULATE PLAYER HOME FROM SESSION =====
+  function populatePlayerHome() {
+    try {
+      const userJson = localStorage.getItem('mesh_user');
+      const user = userJson ? JSON.parse(userJson) : null;
+      if (!user || user.role !== 'player') return;
+
+      const name = user.name || 'Player';
+      const firstName = name.split(' ')[0];
+
+      // Find player in PLAYERS array
+      const player = PLAYERS.find(p => p.name === name);
+
+      // Update greeting
+      const nameEl = document.getElementById('player-home-name');
+      if (nameEl) nameEl.textContent = firstName;
+
+      // Update sub-greeting with team name
+      const sub = document.getElementById('player-home-sub');
+      const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
+      if (sub) sub.textContent = teamName + (player ? ` · ${player.num} · ${player.pos}` : '');
+
+      // Update status box
+      const statusEl = document.getElementById('player-home-status');
+      const detailEl = document.getElementById('player-home-detail');
+      const discEl = document.getElementById('player-home-disc');
+
+      if (player) {
+        if (statusEl) statusEl.textContent = player.pos + ' — ' + (player.unit || 'Offense');
+        if (detailEl) detailEl.textContent = `${player.num} · ${player.unit || 'Offense'} · ${player.group || 'Unassigned'} group`;
+        const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
+        const discLabels = { green: 'Good Standing', yellow: 'On Watch', red: 'Disciplinary Contract' };
+        const ds = player.disciplinaryStatus || 'green';
+        if (discEl) {
+          discEl.textContent = '● ' + discLabels[ds];
+          discEl.style.color = discColors[ds];
+        }
+      } else {
+        if (statusEl) statusEl.textContent = name;
+        if (detailEl) detailEl.textContent = 'Profile loading…';
+      }
+    } catch(e) { console.error('populatePlayerHome error:', e); }
   }
 
   // ===== REAL-TIME PLAYER SUBSCRIPTION =====
@@ -8510,6 +8612,14 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         await loadInventoryFromSupabase(program.id);
         await loadDCFromSupabase(program.id);
         subscribeToPlayers(program.id);
+      }
+
+      // Populate role-specific home screen
+      if (appRole === 'player') setTimeout(populatePlayerHome, 300);
+      if (appRole === 'coach') {
+        const teamName = program?.team_name || localStorage.getItem('mesh_team_name') || 'Your Team';
+        const coachSub = document.getElementById('coach-home-sub');
+        if (coachSub) coachSub.textContent = teamName + ' · 2024 Season';
       }
 
       console.log('Session restored successfully');
