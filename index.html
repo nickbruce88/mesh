@@ -5037,23 +5037,34 @@
 
         // Subscribe to real-time new messages
         if (currentThreadSubscription) currentThreadSubscription.unsubscribe();
-        currentThreadSubscription = db.channel('messages-' + id)
+        // Unsubscribe any existing subscription first
+        if (currentThreadSubscription) {
+          currentThreadSubscription.unsubscribe();
+          currentThreadSubscription = null;
+        }
+
+        currentThreadSubscription = db.channel('thread-' + id + '-' + Date.now())
           .on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
-            table: 'messages',
-            filter: `group_name=eq.${id}`
+            table: 'messages'
           }, payload => {
+            // Only show messages for current thread and program
+            if (payload.new.group_name !== currentThread) return;
+            if (payload.new.program_id !== programId) return;
             const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
             // Don't render own messages — already rendered immediately on send
             if (payload.new.sender_name === (user.name || 'Coach')) return;
             renderMessageBubble(payload.new, user.name);
-            body.scrollTop = body.scrollHeight;
+            const body = document.getElementById('thread-body');
+            if (body) body.scrollTop = body.scrollHeight;
             // Update preview
-            const preview = document.getElementById('mgp-' + id);
+            const preview = document.getElementById('mgp-' + currentThread);
             if (preview) preview.textContent = payload.new.sender_name + ': ' + payload.new.content;
           })
-          .subscribe();
+          .subscribe(status => {
+            console.log('Real-time subscription status:', status);
+          });
 
       } catch(e) {
         console.error('Error loading messages:', e);
@@ -5125,6 +5136,7 @@
 
     // Also save to Supabase so other users get it via real-time
     const programId = await getValidProgramId();
+    console.log('sendThreadMsg — programId:', programId, '| user:', senderName);
     if (programId) {
       try {
         await db.from('messages').insert({
