@@ -4803,19 +4803,47 @@
   let cloneTemplateMode = 'load';
   let selectedTemplateName = null;
 
-  function openCloneTemplate(mode) {
+  let loadedTemplates = [];
+
+  async function openCloneTemplate(mode) {
     cloneTemplateMode = mode;
     selectedTemplateName = null;
     document.getElementById('ct-title').textContent = mode === 'clone' ? 'Clone from a template' : 'Load a template';
     document.getElementById('ct-sub').textContent = mode === 'clone'
       ? "Pick a saved template to copy into today's plan — you can edit anything after."
       : 'Pick a saved template to start this day';
-    document.querySelectorAll('.ct-item').forEach(i => i.classList.remove('selected'));
     const btn = document.getElementById('ct-use-btn');
     btn.disabled = true;
     btn.classList.remove('ready');
     btn.textContent = 'Select a template above';
     document.getElementById('clone-template-overlay').style.display = 'flex';
+
+    // Load real templates from Supabase
+    const ctList = document.getElementById('ct-list');
+    ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:16px">Loading templates…</div>';
+
+    loadedTemplates = await loadPracticePlansFromSupabase();
+
+    if (loadedTemplates.length === 0) {
+      ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:20px 0">No saved templates yet.<br>Save a practice plan first.</div>';
+      return;
+    }
+
+    ctList.innerHTML = '';
+    loadedTemplates.forEach((plan, i) => {
+      const date = plan.savedAt ? new Date(plan.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      const periods = plan.periods?.length || 0;
+      const div = document.createElement('div');
+      div.className = 'ct-item';
+      div.innerHTML = `
+        <div class="ct-item-icon">📋</div>
+        <div class="ct-item-content">
+          <div class="ct-item-name">${plan.name}</div>
+          <div class="ct-item-sub">${periods} periods · Saved ${date}</div>
+        </div>`;
+      div.onclick = () => selectTemplate(plan.name, div, i);
+      ctList.appendChild(div);
+    });
   }
 
   function closeCloneTemplate(e) {
@@ -4823,8 +4851,11 @@
     document.getElementById('clone-template-overlay').style.display = 'none';
   }
 
-  function selectTemplate(name, el) {
+  let selectedTemplateIdx = null;
+
+  function selectTemplate(name, el, idx) {
     selectedTemplateName = name;
+    selectedTemplateIdx = idx ?? null;
     document.querySelectorAll('.ct-item').forEach(i => i.classList.remove('selected'));
     el.classList.add('selected');
     const btn = document.getElementById('ct-use-btn');
@@ -4836,8 +4867,36 @@
   function applyTemplate() {
     if (!selectedTemplateName) return;
     closeCloneTemplate();
-    // Switch the active day view from blank to filled, loading the existing Tuesday grid as a stand-in
-    // for the selected template's content in this demo.
+
+    const plan = selectedTemplateIdx !== null ? loadedTemplates[selectedTemplateIdx] : null;
+
+    if (plan && plan.periods && plan.periods.length > 0) {
+      // Restore scripted periods
+      SCRIPTED_PERIODS.clear();
+      if (plan.scriptedPeriods) plan.scriptedPeriods.forEach(p => SCRIPTED_PERIODS.add(p));
+
+      // Restore scripts
+      if (plan.scripts) {
+        Object.keys(plan.scripts).forEach(key => {
+          PERIOD_SCRIPTS[key] = plan.scripts[key];
+        });
+      }
+
+      // Restore cell activities in the grid
+      plan.periods.forEach(period => {
+        period.cells?.forEach(cell => {
+          const cellEl = document.querySelector(`[data-period-id="${period.id}"] [data-col="${cell.col}"] .cell-activity`);
+          if (cellEl && cell.activity) cellEl.textContent = cell.activity;
+        });
+      });
+
+      renderScriptSection();
+      showToast('Loaded "' + selectedTemplateName + '" ✓');
+    } else {
+      showToast('Loaded "' + selectedTemplateName + '" ✓');
+    }
+
+    // Show the practice day
     const filled = document.getElementById('practice-day-filled');
     const blank = document.getElementById('practice-day-blank');
     const editBtn = document.getElementById('practice-edit-btn');
