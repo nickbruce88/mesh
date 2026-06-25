@@ -1348,7 +1348,7 @@
       <div style="font-size:13px;font-weight:600;color:var(--team-primary)">Share ›</div>
     </div>
     <div class="quick-stats">
-      <div class="stat-tile green-tile"><div class="stat-number green">3-5</div><div class="stat-lbl">Season record</div></div>
+      <div class="stat-tile green-tile"><div class="stat-number green" id="home-record">0–0</div><div class="stat-lbl">Season record</div></div>
       <div class="stat-tile"><div class="stat-number">62</div><div class="stat-lbl">Active players</div></div>
     </div>
     <div class="next-game">
@@ -2066,10 +2066,14 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Schedule</div>
-        <button class="btn-sm" onclick="exportCalendar('coach')" style="margin-left:auto">📅 Export</button>
+        <div style="display:flex;gap:6px;margin-left:auto">
+          <button class="btn-sm" onclick="openAddGame()">+ Game</button>
+          <button class="btn-sm" onclick="exportCalendar('coach')">📅 Export</button>
+        </div>
       </div>
+
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:13px;color:var(--gray-2)">Nampa Bulldogs · 3-5 overall</div>
+        <div style="font-size:13px;color:var(--gray-2)" id="sched-record-label">0–0 overall</div>
         <div class="sched-view-toggle">
           <button class="sched-view-btn active" onclick="setSchedView('coach','list',this)">List</button>
           <button class="sched-view-btn" onclick="setSchedView('coach','cal',this)">Calendar</button>
@@ -2077,28 +2081,75 @@
       </div>
 
       <div id="coach-sched-list">
-        <div class="sched-week-label">Week 1</div>
-        <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">6</div></div><div class="sched-info"><div class="sched-name">vs. Caldwell Cougars</div><div class="sched-meta">Home · Nampa HS · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">28–14</div></div></div>
-        <div class="sched-week-label">Week 2</div>
-        <div class="sched-item game-loss"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">13</div></div><div class="sched-info"><div class="sched-name">at Mountain View</div><div class="sched-meta">Away · Mountain View HS · 7:00 PM</div></div><div class="sched-score"><div class="score-result loss">L</div><div class="score-nums">14–35</div></div></div>
-        <div class="sched-week-label">Week 3</div>
-        <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">20</div></div><div class="sched-info"><div class="sched-name">vs. Twin Falls Bruins</div><div class="sched-meta">Home · Nampa HS · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">21–17</div></div></div>
-        <div class="sched-week-label">Week 4</div>
-        <div class="sched-item game-loss"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">27</div></div><div class="sched-info"><div class="sched-name">at Skyview Hawks</div><div class="sched-meta">Away · Skyview HS · 7:00 PM</div></div><div class="sched-score"><div class="score-result loss">L</div><div class="score-nums">7–42</div></div></div>
-        <div class="sched-week-label">Week 5 — Bye</div>
-        <div class="sched-week-label">Week 6</div>
-        <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">OCT</div><div class="sched-day-num game-num">11</div></div><div class="sched-info"><div class="sched-name">vs. Ridgevue Warhawks</div><div class="sched-meta">Home · Nampa HS · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">35–21</div></div></div>
-        <div class="sched-week-label">Week 7 — Tonight!</div>
-        <div class="sched-item upcoming" style="border-color:var(--team-primary);border-left-width:3px"><div class="sched-date-col"><div class="sched-day-label">FRI</div><div class="sched-day-num game-num">18</div></div><div class="sched-info"><div class="sched-name" style="color:var(--team-primary)">🏈 vs. Emmett Huskies</div><div class="sched-meta">Home · Nampa HS · 7:00 PM</div></div><span class="pill pill-green">TONIGHT</span></div>
-        <div class="sched-week-label">Week 8</div>
-        <div class="sched-item upcoming"><div class="sched-date-col"><div class="sched-day-label">OCT</div><div class="sched-day-num">25</div></div><div class="sched-info"><div class="sched-name">at Vallivue Falcons</div><div class="sched-meta">Away · Vallivue HS · 7:00 PM</div></div><span class="pill pill-gray">AWAY</span></div>
-        <div class="sched-week-label">Week 9</div>
-        <div class="sched-item upcoming"><div class="sched-date-col"><div class="sched-day-label">NOV</div><div class="sched-day-num">1</div></div><div class="sched-info"><div class="sched-name">vs. Middleton Vikings</div><div class="sched-meta">Home · Nampa HS · 7:00 PM</div></div><span class="pill pill-green">HOME</span></div>
+        <!-- Populated by renderSchedule() -->
+        <div style="text-align:center;padding:40px 20px;color:var(--gray-3)">
+          <div style="font-size:32px;margin-bottom:12px">📅</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">No games added yet</div>
+          <div style="font-size:13px;margin-bottom:16px">Tap "+ Game" to add your first game</div>
+        </div>
       </div>
       <div id="coach-sched-cal" style="display:none"></div>
     </div>
 
   </div><!-- end tab-coach-more -->
+
+  <!-- ADD GAME MODAL -->
+  <div id="add-game-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:92;display:none;align-items:center;justify-content:center;padding:20px" onclick="closeAddGame(event)">
+    <div class="ap-modal" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto">
+      <div class="ap-head">
+        <div class="ap-title" id="add-game-title">Add Game</div>
+        <div class="ap-close" onclick="closeAddGame()">✕</div>
+      </div>
+
+      <div class="ob-field-label">Opponent *</div>
+      <input class="input-field" id="game-opponent" placeholder="e.g. Caldwell Cougars" style="margin-bottom:12px">
+
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <div style="flex:1">
+          <div class="ob-field-label">Date *</div>
+          <input class="input-field" id="game-date" type="date">
+        </div>
+        <div style="flex:1">
+          <div class="ob-field-label">Time</div>
+          <input class="input-field" id="game-time" type="time" value="19:00">
+        </div>
+      </div>
+
+      <div class="ob-field-label">Home or Away</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div class="ob-sport-btn selected" id="game-home-btn" onclick="selectGameLocation('home',this)" style="flex:1">🏠 Home</div>
+        <div class="ob-sport-btn" id="game-away-btn" onclick="selectGameLocation('away',this)" style="flex:1">🚌 Away</div>
+        <div class="ob-sport-btn" id="game-neutral-btn" onclick="selectGameLocation('neutral',this)" style="flex:1">⚖️ Neutral</div>
+      </div>
+
+      <div class="ob-field-label">Location (optional)</div>
+      <input class="input-field" id="game-location" placeholder="e.g. Nampa High School Stadium" style="margin-bottom:12px">
+
+      <!-- Score section — only show for past games -->
+      <div id="game-score-section" style="display:none">
+        <div style="height:1px;background:var(--black-4);margin:4px 0 14px"></div>
+        <div class="ob-field-label">Final Score</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--gray-3);margin-bottom:4px">Your score</div>
+            <input class="input-field" id="game-score-us" type="number" min="0" placeholder="0">
+          </div>
+          <div style="font-size:18px;color:var(--gray-3);padding-top:20px">–</div>
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--gray-3);margin-bottom:4px">Their score</div>
+            <input class="input-field" id="game-score-them" type="number" min="0" placeholder="0">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+        <input type="checkbox" id="game-past" onchange="togglePastGame(this)" style="width:16px;height:16px;cursor:pointer">
+        <label for="game-past" style="font-size:13px;color:var(--gray-2);cursor:pointer">Game already played — enter final score</label>
+      </div>
+
+      <button class="note-modal-save" onclick="saveGame()" id="save-game-btn">Add game</button>
+    </div>
+  </div>
 
   <!-- Coach Messages -->
   <div id="tab-coach-messages" class="scroll-content" style="display:none;padding:0 0 80px">
@@ -2504,32 +2555,15 @@
       <span class="safety-banner-icon">🔒</span>
       <span>All messages are visible to coaching staff. Direct messages require a parent or second coach.</span>
     </div>
-    <div class="msg-group-list">
+    <div class="msg-group-list" id="player-msg-group-list">
       <div class="msg-group-item" onclick="openThread('player-allcoaches')">
         <div class="msg-group-avatar group-staff">🎙️</div>
         <div class="msg-group-content">
           <div class="msg-group-header"><div class="msg-group-name">All Coaches</div><div class="inbox-time">2h ago</div></div>
-          <div class="msg-group-preview">Coach Williams: Marcus — report to locker room by 5:30 PM...</div>
-          <div class="msg-group-meta">Group channel · 9 coaches</div>
+          <div class="msg-group-preview" id="mgp-player-allcoaches">Coach Williams: Check the app for updates</div>
+          <div class="msg-group-meta">Group channel · Coaching staff</div>
         </div>
-        <div class="unread-dot"></div>
-      </div>
-      <div class="msg-group-item" onclick="openThread('player-offense')">
-        <div class="msg-group-avatar group-custom" style="background:rgba(255,68,68,0.12);color:var(--red)">O</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">Offensive Group</div><div class="inbox-time">Yesterday</div></div>
-          <div class="msg-group-preview">Coach Reed: Film looked great this week. Work on your release...</div>
-          <div class="msg-group-meta">Group channel · WRs + coaches</div>
-        </div>
-        <div class="unread-dot"></div>
-      </div>
-      <div class="msg-group-item" onclick="openThread('player-direct')">
-        <div class="msg-group-avatar" style="background:rgba(160,100,255,0.12);color:#a064ff">🏠</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">Coach Williams + Keisha Johnson</div><div class="inbox-time">Mon</div></div>
-          <div class="msg-group-preview">You: Hi Coach, quick question about Friday's game...</div>
-          <div class="msg-group-meta">✅ Keisha Johnson included · Monitored</div>
-        </div>
+        <div class="unread-dot" id="mgu-player-allcoaches"></div>
       </div>
     </div>
   </div>
@@ -3619,6 +3653,15 @@
     if (navEl) navEl.classList.add('active');
   }
 
+  function getInitialsFromSession() {
+    try {
+      const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+      const name = user.name || '';
+      if (!name) return 'CO';
+      return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    } catch(e) { return 'CO'; }
+  }
+
   function switchRole(role, el) {
     currentRole = role;
     document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
@@ -3629,12 +3672,22 @@
       if (schoolLogoDataUrl) {
         avatar.innerHTML = `<img src="${schoolLogoDataUrl}" alt="School logo" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       } else {
-        avatar.textContent = 'CW';
+        avatar.textContent = getInitialsFromSession();
       }
       avatar.style.background = 'var(--team-primary)'; avatar.style.color = 'var(--team-primary-text)';
     }
-    else if (role === 'parent') { avatar.textContent = 'MJ'; avatar.style.background = 'var(--team-secondary)'; avatar.style.color = 'var(--team-secondary-text)'; }
-    else { avatar.textContent = '22'; avatar.style.background = 'var(--team-tertiary)'; avatar.style.color = 'var(--team-tertiary-text)'; }
+    else if (role === 'parent') {
+      const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+      const initials = user.name ? user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'PR';
+      avatar.textContent = initials;
+      avatar.style.background = 'var(--team-secondary)'; avatar.style.color = 'var(--team-secondary-text)';
+    }
+    else {
+      const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+      const initials = user.name ? user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'PL';
+      avatar.textContent = initials;
+      avatar.style.background = 'var(--team-tertiary)'; avatar.style.color = 'var(--team-tertiary-text)';
+    }
     buildNav(role);
     showTab(role, 'home');
     const subroleSwitcher = document.getElementById('subrole-switcher');
@@ -4074,7 +4127,7 @@
       weight: document.getElementById('join-player-weight').value.trim() || '—',
       gpa: '—',
       status: 'Active',
-      group_name: 'White',
+      group_name: '',
       disciplinary_status: 'green',
       role: 'player'
     };
@@ -4089,7 +4142,7 @@
     }
 
     // Also add to local PLAYERS array for this session
-    PLAYERS.push({ ...playerData, id: 'p' + Date.now(), notes: [], discipline: [], academic: [], parent: '', parentPhone: '', parentEmail: '', disciplinaryStatus: 'green', group: 'White' });
+    PLAYERS.push({ ...playerData, id: 'p' + Date.now(), notes: [], discipline: [], academic: [], parent: '', parentPhone: '', parentEmail: '', disciplinaryStatus: 'green', group: '' });
     renderCoachRoster();
 
     try {
@@ -4115,7 +4168,13 @@
   }
 
   function joinGoToApp() {
-    login(joinSelectedRole || 'player');
+    const role = joinSelectedRole || 'player';
+    login(role);
+    if (role === 'player') {
+      getValidProgramId().then(id => {
+        if (id) subscribeToPlayerMessages(id);
+      });
+    }
   }
 
   function login(role) {
@@ -4285,14 +4344,14 @@
           // Update db_id and latest values from Supabase
           existing.db_id = p.id;
           existing.disciplinaryStatus = p.disciplinary_status || 'green';
-          existing.group = p.group_name || existing.group || 'White';
+          existing.group = p.group_name || existing.group || '';
         } else {
           const newPlayer = {
             id: p.id, db_id: p.id,
             name: p.name, num: p.num, pos: p.pos,
             unit: p.unit, year: p.year, height: p.height, weight: p.weight,
             gpa: p.gpa || '—', status: p.status || 'Active',
-            group: p.group_name || 'White',
+            group: p.group_name || '',
             disciplinaryStatus: p.disciplinary_status || 'green',
             notes: [], discipline: [], academic: [],
             parent: p.parent_name || '', parentPhone: p.parent_phone || '', parentEmail: p.parent_email || '',
@@ -4330,6 +4389,7 @@
         loadRosterFromSupabase(id);
         loadInventoryFromSupabase(id);
         loadDCFromSupabase(id);
+        loadScheduleFromSupabase(id);
         subscribeToPlayers(id);
       }
     });
@@ -4863,6 +4923,44 @@
 
   let loadedTemplates = [];
 
+  const PREMADE_TEMPLATES = [
+    {
+      name: 'Standard Tuesday',
+      savedAt: null,
+      premade: true,
+      periods: [],
+      description: '8 periods · Indy → Crossover → Team'
+    },
+    {
+      name: 'Game Week Thursday',
+      savedAt: null,
+      premade: true,
+      periods: [],
+      description: '5 periods · Walkthrough, light pads'
+    },
+    {
+      name: 'Bye Week Wednesday',
+      savedAt: null,
+      premade: true,
+      periods: [],
+      description: '6 periods · Fundamentals focus'
+    },
+    {
+      name: 'Two-a-Day (Camp)',
+      savedAt: null,
+      premade: true,
+      periods: [],
+      description: '9 periods · AM install / PM walkthrough'
+    },
+    {
+      name: 'Monday Film + Walkthrough',
+      savedAt: null,
+      premade: true,
+      periods: [],
+      description: '4 periods · Film review, light install'
+    },
+  ];
+
   async function openCloneTemplate(mode) {
     cloneTemplateMode = mode;
     selectedTemplateName = null;
@@ -4882,25 +4980,48 @@
 
     loadedTemplates = await loadPracticePlansFromSupabase();
 
-    if (loadedTemplates.length === 0) {
-      ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:20px 0">No saved templates yet.<br>Save a practice plan first.</div>';
+    // Combine premade + saved templates (premade first)
+    const allTemplates = [...PREMADE_TEMPLATES, ...loadedTemplates];
+
+    if (allTemplates.length === 0) {
+      ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:20px 0">No templates available.</div>';
       return;
     }
 
     ctList.innerHTML = '';
-    loadedTemplates.forEach((plan, i) => {
+
+    // Section header for premade
+    if (PREMADE_TEMPLATES.length > 0) {
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:10px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 8px';
+      header.textContent = 'Premade templates';
+      ctList.appendChild(header);
+    }
+
+    allTemplates.forEach((plan, i) => {
+      const isPremade = plan.premade;
+      if (!isPremade && i === PREMADE_TEMPLATES.length) {
+        // Add divider before saved templates
+        const div = document.createElement('div');
+        div.style.cssText = 'font-size:10px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;padding:12px 0 8px;border-top:1px solid var(--black-4);margin-top:8px';
+        div.textContent = 'Your saved templates';
+        ctList.appendChild(div);
+      }
+
       const date = plan.savedAt ? new Date(plan.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-      const periods = plan.periods?.length || 0;
-      const div = document.createElement('div');
-      div.className = 'ct-item';
-      div.innerHTML = `
-        <div class="ct-item-icon">📋</div>
+      const sub = plan.description || (plan.periods?.length || 0) + ' periods' + (date ? ' · Saved ' + date : '');
+      const icon = isPremade ? '📋' : '💾';
+
+      const item = document.createElement('div');
+      item.className = 'ct-item';
+      item.innerHTML = `
+        <div class="ct-item-icon">${icon}</div>
         <div class="ct-item-content">
           <div class="ct-item-name">${plan.name}</div>
-          <div class="ct-item-sub">${periods} periods · Saved ${date}</div>
+          <div class="ct-item-sub">${sub}</div>
         </div>`;
-      div.onclick = () => selectTemplate(plan.name, div, i);
-      ctList.appendChild(div);
+      item.onclick = () => selectTemplate(plan.name, item, i);
+      ctList.appendChild(item);
     });
   }
 
@@ -4926,7 +5047,9 @@
     if (!selectedTemplateName) return;
     closeCloneTemplate();
 
-    const plan = selectedTemplateIdx !== null ? loadedTemplates[selectedTemplateIdx] : null;
+    // Combine premade + saved to find the right plan
+    const allTemplates = [...PREMADE_TEMPLATES, ...loadedTemplates];
+    const plan = selectedTemplateIdx !== null ? allTemplates[selectedTemplateIdx] : null;
 
     if (plan && plan.periods && plan.periods.length > 0) {
       // Restore scripted periods
@@ -5363,22 +5486,20 @@
 
     if (selected.length === 0) { el.className = 'ng-validation'; return; }
 
-    // Rule: groups with players need either 2 coaches OR 1 coach + 1 parent
+    // Creator is always a coach — so total coaches = selected coaches + 1 (the creator)
+    const totalCoaches = coachCount + 1;
+
     if (hasPlayer) {
-      const meetsRequirement = coachCount >= 2 || (coachCount >= 1 && hasParent);
+      const meetsRequirement = totalCoaches >= 2 || (totalCoaches >= 1 && hasParent);
       if (!meetsRequirement) {
         el.className = 'ng-validation fail';
-        el.textContent = '⚠️ Groups with players need 2 coaches, or 1 coach + 1 parent.';
+        el.textContent = '⚠️ Add 1 more coach or a parent to include players.';
         return;
       }
     }
 
-    if (coachCount >= 1 || hasParent) {
-      el.className = 'ng-validation pass';
-      el.textContent = '✅ Group meets safety requirements.';
-    } else {
-      el.className = 'ng-validation';
-    }
+    el.className = 'ng-validation pass';
+    el.textContent = '✅ Group meets safety requirements.';
   }
 
   function createNewGroup() {
@@ -5393,12 +5514,13 @@
     const coachCount = selected.filter(id => STAFF_MEMBERS.find(m => m.id === id)).length;
     const hasPlayer = selected.some(id => id.startsWith('pl-'));
     const hasParent = selected.some(id => id.startsWith('par'));
+    const totalCoaches = coachCount + 1; // creator counts as 1
 
     if (hasPlayer) {
-      const meetsRequirement = coachCount >= 2 || (coachCount >= 1 && hasParent);
+      const meetsRequirement = totalCoaches >= 2 || (totalCoaches >= 1 && hasParent);
       if (!meetsRequirement) {
         document.getElementById('ng-validation').className = 'ng-validation fail';
-        document.getElementById('ng-validation').textContent = '⚠️ Add a second coach or a parent to meet safety requirements.';
+        document.getElementById('ng-validation').textContent = '⚠️ Add 1 more coach or a parent to include players.';
         return;
       }
     }
@@ -5606,7 +5728,7 @@
       });
     }
     if (section === 'depth') renderDepthChart();
-    if (section === 'schedule') { /* list view is static HTML */ }
+    if (section === 'schedule') { renderSchedule(); }
   }
 
   function backToMoreMenu() {
@@ -5835,6 +5957,310 @@
     } catch(e) { console.error('populatePlayerHome error:', e); }
   }
 
+  // ===== SCHEDULE MANAGEMENT =====
+  let SCHEDULE = []; // Array of game objects
+  let gameLocation = 'home';
+  let editingGameId = null;
+
+  function openAddGame(gameId) {
+    editingGameId = gameId || null;
+    document.getElementById('add-game-title').textContent = gameId ? 'Edit Game' : 'Add Game';
+    document.getElementById('save-game-btn').textContent = gameId ? 'Save changes' : 'Add game';
+
+    if (gameId) {
+      const game = SCHEDULE.find(g => g.id === gameId);
+      if (!game) return;
+      document.getElementById('game-opponent').value = game.opponent;
+      document.getElementById('game-date').value = game.date;
+      document.getElementById('game-time').value = game.time || '19:00';
+      document.getElementById('game-location').value = game.location || '';
+      selectGameLocation(game.homeAway || 'home', document.getElementById('game-' + (game.homeAway || 'home') + '-btn'));
+      if (game.scoreUs !== undefined) {
+        document.getElementById('game-past').checked = true;
+        document.getElementById('game-score-section').style.display = 'block';
+        document.getElementById('game-score-us').value = game.scoreUs;
+        document.getElementById('game-score-them').value = game.scoreThem;
+      } else {
+        document.getElementById('game-past').checked = false;
+        document.getElementById('game-score-section').style.display = 'none';
+      }
+    } else {
+      document.getElementById('game-opponent').value = '';
+      document.getElementById('game-date').value = '';
+      document.getElementById('game-time').value = '19:00';
+      document.getElementById('game-location').value = '';
+      document.getElementById('game-past').checked = false;
+      document.getElementById('game-score-section').style.display = 'none';
+      document.getElementById('game-score-us').value = '';
+      document.getElementById('game-score-them').value = '';
+      selectGameLocation('home', document.getElementById('game-home-btn'));
+    }
+
+    document.getElementById('add-game-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('game-opponent').focus(), 100);
+  }
+
+  function closeAddGame(e) {
+    if (e && e.target !== document.getElementById('add-game-overlay')) return;
+    document.getElementById('add-game-overlay').style.display = 'none';
+    editingGameId = null;
+  }
+
+  function selectGameLocation(loc, el) {
+    gameLocation = loc;
+    ['home','away','neutral'].forEach(l => {
+      const btn = document.getElementById('game-' + l + '-btn');
+      if (btn) btn.classList.toggle('selected', l === loc);
+    });
+  }
+
+  function togglePastGame(cb) {
+    document.getElementById('game-score-section').style.display = cb.checked ? 'block' : 'none';
+  }
+
+  async function saveGame() {
+    const opponent = document.getElementById('game-opponent').value.trim();
+    const date = document.getElementById('game-date').value;
+    if (!opponent) { showToast('Please enter an opponent'); return; }
+    if (!date) { showToast('Please enter a date'); return; }
+
+    const isPast = document.getElementById('game-past').checked;
+    const scoreUs = isPast ? parseInt(document.getElementById('game-score-us').value) || 0 : undefined;
+    const scoreThem = isPast ? parseInt(document.getElementById('game-score-them').value) || 0 : undefined;
+
+    const game = {
+      id: editingGameId || 'g' + Date.now(),
+      opponent,
+      date,
+      time: document.getElementById('game-time').value || '19:00',
+      homeAway: gameLocation,
+      location: document.getElementById('game-location').value.trim(),
+      ...(isPast ? { scoreUs, scoreThem } : {})
+    };
+
+    if (editingGameId) {
+      const idx = SCHEDULE.findIndex(g => g.id === editingGameId);
+      if (idx !== -1) SCHEDULE[idx] = game;
+    } else {
+      SCHEDULE.push(game);
+    }
+
+    // Sort by date
+    SCHEDULE.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    document.getElementById('add-game-overlay').style.display = 'none';
+    editingGameId = null;
+
+    renderSchedule();
+    await saveScheduleToSupabase();
+    showToast(editingGameId ? 'Game updated ✓' : 'Game added ✓');
+  }
+
+  function renderSchedule() {
+    const list = document.getElementById('coach-sched-list');
+    if (!list) return;
+
+    if (SCHEDULE.length === 0) {
+      list.innerHTML = `
+        <div style="text-align:center;padding:40px 20px;color:var(--gray-3)">
+          <div style="font-size:32px;margin-bottom:12px">📅</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px">No games added yet</div>
+          <div style="font-size:13px;margin-bottom:16px">Tap "+ Game" to add your first game</div>
+        </div>`;
+      updateRecord();
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    list.innerHTML = '';
+
+    SCHEDULE.forEach((game, i) => {
+      const gameDate = new Date(game.date + 'T12:00:00');
+      const isPast = game.scoreUs !== undefined;
+      const isToday = gameDate.toDateString() === today.toDateString();
+      const isFuture = gameDate > today && !isToday;
+
+      const month = gameDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+      const day = gameDate.getDate();
+      const dayName = gameDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+      const timeStr = game.time ? formatTime(game.time) : '7:00 PM';
+      const prefix = game.homeAway === 'away' ? 'at ' : game.homeAway === 'neutral' ? 'vs. (N) ' : 'vs. ';
+
+      // Week label
+      const weekDiv = document.createElement('div');
+      weekDiv.className = 'sched-week-label';
+      weekDiv.textContent = 'Week ' + (i + 1) + (isToday ? ' — Today!' : '');
+      list.appendChild(weekDiv);
+
+      // Game row
+      const row = document.createElement('div');
+      let rowClass = 'sched-item ';
+      if (isPast) {
+        rowClass += game.scoreUs > game.scoreThem ? 'game-win' : game.scoreUs < game.scoreThem ? 'game-loss' : 'game-tie';
+      } else {
+        rowClass += 'upcoming';
+      }
+      if (isToday) row.style.cssText = 'border-color:var(--team-primary);border-left-width:3px';
+      row.className = rowClass;
+
+      const locationText = game.location || (game.homeAway === 'home' ? 'Home' : game.homeAway === 'away' ? 'Away' : 'Neutral site');
+
+      let scoreHtml = '';
+      if (isPast) {
+        const result = game.scoreUs > game.scoreThem ? 'W' : game.scoreUs < game.scoreThem ? 'L' : 'T';
+        const resultClass = result === 'W' ? 'win' : result === 'L' ? 'loss' : 'tie';
+        scoreHtml = `<div class="sched-score"><div class="score-result ${resultClass}">${result}</div><div class="score-nums">${game.scoreUs}–${game.scoreThem}</div></div>`;
+      } else {
+        const pill = game.homeAway === 'home' ? '<span class="pill pill-green">HOME</span>' : game.homeAway === 'away' ? '<span class="pill pill-gray">AWAY</span>' : '<span class="pill pill-gray">NEUTRAL</span>';
+        scoreHtml = pill;
+      }
+
+      row.innerHTML = `
+        <div class="sched-date-col">
+          <div class="sched-day-label">${isToday ? dayName : month}</div>
+          <div class="sched-day-num${isPast ? ' game-num' : ''}">${day}</div>
+        </div>
+        <div class="sched-info">
+          <div class="sched-name${isToday ? '" style="color:var(--team-primary)' : ''}">${isToday ? '🏈 ' : ''}${prefix}${game.opponent}</div>
+          <div class="sched-meta">${locationText} · ${timeStr}</div>
+        </div>
+        ${scoreHtml}`;
+
+      // Tap to edit/add score
+      row.onclick = () => openAddGame(game.id);
+      list.appendChild(row);
+    });
+
+    updateRecord();
+  }
+
+  function updateRecord() {
+    const wins = SCHEDULE.filter(g => g.scoreUs !== undefined && g.scoreUs > g.scoreThem).length;
+    const losses = SCHEDULE.filter(g => g.scoreUs !== undefined && g.scoreUs < g.scoreThem).length;
+    const ties = SCHEDULE.filter(g => g.scoreUs !== undefined && g.scoreUs === g.scoreThem).length;
+
+    const recordStr = ties > 0 ? `${wins}–${losses}–${ties}` : `${wins}–${losses}`;
+    const label = SCHEDULE.filter(g => g.scoreUs !== undefined).length === 0 ? '0–0 overall' : `${recordStr} overall`;
+
+    // Update record label in schedule section
+    const recEl = document.getElementById('sched-record-label');
+    if (recEl) recEl.textContent = label;
+
+    // Update coach home stat tile
+    const homeStat = document.getElementById('home-record');
+    if (homeStat) homeStat.textContent = recordStr || '0–0';
+
+    // Update sub-greeting
+    const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
+    const coachSub = document.getElementById('coach-home-sub');
+    if (coachSub) coachSub.textContent = teamName + ' · ' + label;
+  }
+
+  function formatTime(timeStr) {
+    if (!timeStr) return '7:00 PM';
+    const [h, m] = timeStr.split(':').map(Number);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const display = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    return `${display}:${String(m).padStart(2,'0')} ${suffix}`;
+  }
+
+  async function saveScheduleToSupabase() {
+    const programId = await getValidProgramId();
+    if (!programId) return;
+    try {
+      await db.from('programs').update({ schedule: SCHEDULE }).eq('id', programId);
+      console.log('Schedule saved to Supabase');
+    } catch(e) { console.error('Schedule save error:', e); }
+  }
+
+  async function loadScheduleFromSupabase(programId) {
+    if (!programId || !programId.includes('-')) return;
+    try {
+      const { data, error } = await db.from('programs')
+        .select('schedule')
+        .eq('id', programId)
+        .single();
+      if (error || !data?.schedule) return;
+      SCHEDULE = data.schedule;
+      renderSchedule();
+      console.log('Schedule loaded from Supabase:', SCHEDULE.length, 'games');
+    } catch(e) { console.error('Schedule load error:', e); }
+  }
+
+  // ===== PLAYER MESSAGE SUBSCRIPTION =====
+  let playerMsgSubscription = null;
+  const playerKnownThreads = new Set(['player-allcoaches']);
+
+  async function subscribeToPlayerMessages(programId) {
+    if (!programId || !programId.includes('-')) return;
+    if (playerMsgSubscription) playerMsgSubscription.unsubscribe();
+
+    playerMsgSubscription = db.channel('player-msgs-' + Date.now())
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, payload => {
+        const msg = payload.new;
+        if (msg.program_id !== programId) return;
+
+        const threadId = msg.group_name;
+        const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+
+        // Add to THREAD_DATA if not known
+        if (!THREAD_DATA[threadId]) {
+          THREAD_DATA[threadId] = {
+            title: threadId.startsWith('custom-') ? 'Group Message' : threadId,
+            sub: 'New message',
+            avatarClass: 'group-staff',
+            avatarContent: '💬',
+            messages: []
+          };
+        }
+
+        // Add to player message list if new thread
+        if (!playerKnownThreads.has(threadId)) {
+          playerKnownThreads.add(threadId);
+          const list = document.getElementById('player-msg-group-list');
+          if (list) {
+            const item = document.createElement('div');
+            item.className = 'msg-group-item';
+            item.id = 'mgi-' + threadId;
+            const title = THREAD_DATA[threadId].title;
+            const initials = title.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+            item.innerHTML = `
+              <div class="msg-group-avatar group-custom">${initials}</div>
+              <div class="msg-group-content">
+                <div class="msg-group-header">
+                  <div class="msg-group-name">${title}</div>
+                  <div class="inbox-time">Just now</div>
+                </div>
+                <div class="msg-group-preview" id="mgp-${threadId}">${msg.sender_name}: ${msg.content}</div>
+                <div class="msg-group-meta">Group message</div>
+              </div>
+              <div class="unread-dot" id="mgu-${threadId}" style="opacity:1"></div>`;
+            item.onclick = () => openThread(threadId);
+            list.insertBefore(item, list.firstChild);
+          }
+        } else {
+          // Update preview and show unread dot
+          const preview = document.getElementById('mgp-' + threadId);
+          if (preview) preview.textContent = msg.sender_name + ': ' + msg.content;
+          const dot = document.getElementById('mgu-' + threadId);
+          if (dot) dot.style.opacity = '1';
+        }
+
+        // If currently in this thread, render the message
+        if (currentThread === threadId) {
+          renderMessageBubble(msg, user.name);
+          const body = document.getElementById('thread-body');
+          if (body) body.scrollTop = body.scrollHeight;
+        }
+      })
+      .subscribe(status => console.log('Player message subscription:', status));
+  }
+
   // ===== REAL-TIME PLAYER SUBSCRIPTION =====
   let playerSubscription = null;
 
@@ -5857,7 +6283,7 @@
           name: p.name, num: p.num, pos: p.pos,
           unit: p.unit, year: p.year, height: p.height, weight: p.weight,
           gpa: p.gpa || '—', status: p.status || 'Active',
-          group: p.group_name || 'White',
+          group: p.group_name || '',
           disciplinaryStatus: p.disciplinary_status || 'green',
           notes: [], discipline: [], academic: [],
           parent: p.parent_name || '', parentPhone: p.parent_phone || '', parentEmail: p.parent_email || '',
@@ -8611,11 +9037,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         await loadRosterFromSupabase(program.id);
         await loadInventoryFromSupabase(program.id);
         await loadDCFromSupabase(program.id);
+        await loadScheduleFromSupabase(program.id);
         subscribeToPlayers(program.id);
       }
 
       // Populate role-specific home screen
-      if (appRole === 'player') setTimeout(populatePlayerHome, 300);
+      if (appRole === 'player') {
+        setTimeout(populatePlayerHome, 300);
+        if (program?.id) subscribeToPlayerMessages(program.id);
+      }
       if (appRole === 'coach') {
         const teamName = program?.team_name || localStorage.getItem('mesh_team_name') || 'Your Team';
         const coachSub = document.getElementById('coach-home-sub');
