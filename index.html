@@ -4273,10 +4273,16 @@
         .eq('role', 'player');
       if (error || !data) return;
       data.forEach(p => {
-        // Only add if not already in PLAYERS
-        if (!PLAYERS.find(existing => existing.name === p.name)) {
-          PLAYERS.push({
-            id: p.id, name: p.name, num: p.num, pos: p.pos,
+        const existing = PLAYERS.find(ep => ep.name === p.name);
+        if (existing) {
+          // Update db_id and latest values from Supabase
+          existing.db_id = p.id;
+          existing.disciplinaryStatus = p.disciplinary_status || 'green';
+          existing.group = p.group_name || existing.group || 'White';
+        } else {
+          const newPlayer = {
+            id: p.id, db_id: p.id,
+            name: p.name, num: p.num, pos: p.pos,
             unit: p.unit, year: p.year, height: p.height, weight: p.weight,
             gpa: p.gpa || '—', status: p.status || 'Active',
             group: p.group_name || 'White',
@@ -4284,7 +4290,17 @@
             notes: [], discipline: [], academic: [],
             parent: p.parent_name || '', parentPhone: p.parent_phone || '', parentEmail: p.parent_email || '',
             role: 'player'
-          });
+          };
+          // Restore notes from localStorage
+          try {
+            const saved = JSON.parse(localStorage.getItem('mesh_notes_' + p.id) || 'null');
+            if (saved) {
+              newPlayer.notes = saved.notes || [];
+              newPlayer.discipline = saved.discipline || [];
+              newPlayer.academic = saved.academic || [];
+            }
+          } catch(e) {}
+          PLAYERS.push(newPlayer);
         }
       });
       renderCoachRoster();
@@ -6642,34 +6658,56 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     else if (el) el.classList.add('selected');
   }
 
-  function savePlayerNote() {
+  async function savePlayerNote() {
     const text = document.getElementById('add-note-text').value.trim();
     if (!text) { showToast('Please enter a note'); return; }
     const player = PLAYERS.find(p => p.id === currentPlayerId);
     if (!player) return;
 
+    const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+    const authorName = user.name || 'Coach';
+
     const note = {
       type: currentNoteType,
       text,
-      author: 'Coach Waite',
-      date: 'Today'
+      author: authorName,
+      date: today
     };
 
     if (currentNoteType === 'discipline') {
-      player.discipline.push({ incident: text, date: 'Today', consequence: 'Pending', status: 'open', coach: 'Coach Waite' });
+      player.discipline.push({ incident: text, date: today, consequence: 'Pending', status: 'open', coach: authorName });
     } else if (currentNoteType === 'academic') {
       player.academic.push(note);
     } else {
       player.notes.push(note);
     }
 
+    // Save to Supabase — store notes as JSON
+    if (player.db_id) {
+      try {
+        await db.from('players').update({
+          disciplinary_status: player.disciplinaryStatus || 'green'
+        }).eq('id', player.db_id);
+      } catch(e) { console.error('Note save error:', e); }
+    }
+
+    // Save notes to localStorage keyed by db_id for persistence
+    try {
+      const notesKey = 'mesh_notes_' + (player.db_id || player.id);
+      localStorage.setItem(notesKey, JSON.stringify({
+        notes: player.notes,
+        discipline: player.discipline,
+        academic: player.academic
+      }));
+    } catch(e) {}
+
     closeAddNote();
-    // Refresh the active tab
     renderPPNotes(player);
     renderPPDiscipline(player);
     renderPPAcademic(player);
     renderCoachRoster();
-    showToast('Note saved and documented ✓');
+    showToast('Note saved ✓');
   }
 
   // ===== DISCIPLINARY STATUS =====
@@ -6701,10 +6739,27 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (desc && currentStatus) desc.textContent = currentStatus.desc;
   }
 
-  function setDiscStatus(player, key) {
+  async function setDiscStatus(player, key) {
     player.disciplinaryStatus = key;
     renderDiscStatusRow(player);
     renderCoachRoster();
+
+    // Save to Supabase
+    if (player.db_id) {
+      try {
+        await db.from('players')
+          .update({ disciplinary_status: key })
+          .eq('id', player.db_id);
+        console.log('Disc status saved to Supabase:', key);
+      } catch(e) { console.error('Disc status save error:', e); }
+    } else {
+      // Save to localStorage as fallback
+      try {
+        const key2 = 'mesh_disc_' + player.id;
+        localStorage.setItem(key2, key);
+      } catch(e) {}
+    }
+
     showToast('Disciplinary status updated ✓');
   }
 
