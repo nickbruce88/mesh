@@ -6889,7 +6889,14 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   // ===== PROGRAM ID HELPER =====
   async function getValidProgramId() {
     const storedId = localStorage.getItem('mesh_program_id');
+    // Must contain a dash to be a valid UUID — reject numbers like "1" or "4"
     if (storedId && storedId.includes('-')) return storedId;
+
+    // Clear any invalid stored ID
+    if (storedId) {
+      console.log('Clearing invalid program_id from localStorage:', storedId);
+      localStorage.removeItem('mesh_program_id');
+    }
 
     const joinCode = localStorage.getItem('mesh_current_program');
     if (!joinCode) return null;
@@ -6898,6 +6905,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const { data } = await db.from('programs').select('id').eq('join_code', joinCode).maybeSingle();
       if (data?.id) {
         localStorage.setItem('mesh_program_id', data.id);
+        console.log('Fetched real program_id from Supabase:', data.id);
         return data.id;
       }
     } catch(e) { console.error('getValidProgramId error:', e); }
@@ -8259,14 +8267,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   // Clean up any invalid program IDs from localStorage
   try {
-    const pid = localStorage.getItem('mesh_joining_program_id');
-    if (pid && !pid.includes('-')) localStorage.removeItem('mesh_joining_program_id');
-    const programs = JSON.parse(localStorage.getItem('mesh_programs') || '{}');
-    // Remove any programs with non-UUID ids
-    Object.keys(programs).forEach(k => {
-      if (programs[k].id && !String(programs[k].id).includes('-')) delete programs[k];
-    });
-    localStorage.setItem('mesh_programs', JSON.stringify(programs));
+    const pid = localStorage.getItem('mesh_program_id');
+    if (pid && !pid.includes('-')) {
+      console.log('Auto-clearing invalid mesh_program_id:', pid);
+      localStorage.removeItem('mesh_program_id');
+    }
+    const joinPid = localStorage.getItem('mesh_joining_program_id');
+    if (joinPid && !joinPid.includes('-')) localStorage.removeItem('mesh_joining_program_id');
   } catch(e) {}
   const GROUP_COLORS = ['#ff4444','#4d9fff','#e0e0e0','#ffb800','#39ff14','#ff66cc','#a064ff','#ff8c00'];
 
