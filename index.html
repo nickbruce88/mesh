@@ -5045,6 +5045,8 @@
             filter: `group_name=eq.${id}`
           }, payload => {
             const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+            // Don't render own messages — already rendered immediately on send
+            if (payload.new.sender_name === (user.name || 'Coach')) return;
             renderMessageBubble(payload.new, user.name);
             body.scrollTop = body.scrollHeight;
             // Update preview
@@ -5108,10 +5110,22 @@
     const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
     const senderName = user.name || 'Coach';
     const senderRole = user.role || 'coach';
-    const programId = await getValidProgramId();
 
+    // Always render immediately for the sender
+    const body = document.getElementById('thread-body');
+    const div = document.createElement('div');
+    div.className = 'thread-msg mine';
+    div.innerHTML = `<div class="thread-sender">You · Just now</div><div class="thread-bubble">${text}</div>`;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+
+    // Update preview
+    const preview = document.getElementById('mgp-' + currentThread);
+    if (preview) preview.textContent = 'You: ' + text;
+
+    // Also save to Supabase so other users get it via real-time
+    const programId = await getValidProgramId();
     if (programId) {
-      // Save to Supabase — real-time subscription will render it
       try {
         await db.from('messages').insert({
           program_id: programId,
@@ -5120,31 +5134,14 @@
           sender_role: senderRole,
           content: text
         });
-        // Update preview
-        const preview = document.getElementById('mgp-' + currentThread);
-        if (preview) preview.textContent = 'You: ' + text;
+        console.log('Message saved to Supabase');
       } catch(e) {
         console.error('Send message error:', e);
-        // Fall back to local render
-        const body = document.getElementById('thread-body');
-        const div = document.createElement('div');
-        div.className = 'thread-msg mine';
-        div.innerHTML = `<div class="thread-sender">You · Just now</div><div class="thread-bubble">${text}</div>`;
-        body.appendChild(div);
-        body.scrollTop = body.scrollHeight;
       }
     } else {
-      // No program — local only
+      // No program — also save to local THREAD_DATA
       const data = THREAD_DATA[currentThread];
-      data.messages.push({ from: 'You', mine: true, text, time: 'Just now' });
-      const body = document.getElementById('thread-body');
-      const div = document.createElement('div');
-      div.className = 'thread-msg mine';
-      div.innerHTML = `<div class="thread-sender">You · Just now</div><div class="thread-bubble">${text}</div>`;
-      body.appendChild(div);
-      body.scrollTop = body.scrollHeight;
-      const preview = document.getElementById('mgp-' + currentThread);
-      if (preview) preview.textContent = 'You: ' + text;
+      if (data) data.messages.push({ from: 'You', mine: true, text, time: 'Just now' });
     }
   }
   // ===== MESSAGING GUARDRAILS =====
