@@ -4323,6 +4323,7 @@
         loadRosterFromSupabase(id);
         loadInventoryFromSupabase(id);
         loadDCFromSupabase(id);
+        subscribeToPlayers(id);
       }
     });
   }
@@ -4698,10 +4699,60 @@
     document.getElementById('ap-step-details').style.display = 'none';
   }
 
+  function calcNextPeriodTime(insertAfter, duration) {
+    const pgrid = document.getElementById('practice-grid-table');
+    let lastRow = null;
+
+    if (insertAfter === 'end') {
+      // Find the last period row
+      const rows = pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)');
+      lastRow = rows[rows.length - 1];
+    } else {
+      lastRow = pgrid.querySelector(`[data-period-id="${insertAfter}"]`);
+    }
+
+    if (!lastRow) {
+      // Default to 3:30 PM if no previous period
+      return '3:30';
+    }
+
+    // Get the time and duration of the last period
+    const timeEl = lastRow.querySelector('.gt-time');
+    const durEl = lastRow.querySelector('.gt-dur');
+    if (!timeEl) return '--:--';
+
+    const timeText = timeEl.textContent.trim();
+    if (!timeText || timeText === '--:--') return '--:--';
+
+    // Parse time like "3:30" or "3:30 PM"
+    const match = timeText.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+    if (!match) return '--:--';
+
+    let hours = parseInt(match[1]);
+    let mins = parseInt(match[2]);
+    const ampm = match[3];
+    if (ampm?.toUpperCase() === 'PM' && hours < 12) hours += 12;
+    if (ampm?.toUpperCase() === 'AM' && hours === 12) hours = 0;
+
+    // Get duration of previous period
+    const prevDur = parseInt(durEl?.textContent) || 10;
+    const totalMins = hours * 60 + mins + prevDur;
+    let newHours = Math.floor(totalMins / 60) % 24;
+    let newMins = totalMins % 60;
+
+    // Format as 12-hour
+    const suffix = newHours >= 12 ? 'PM' : 'AM';
+    const displayHours = newHours > 12 ? newHours - 12 : (newHours === 0 ? 12 : newHours);
+    return `${displayHours}:${String(newMins).padStart(2,'0')} ${suffix}`;
+  }
+
   function confirmAddPeriod() {
     const name = document.getElementById('ap-name').value.trim() || 'New Period';
     const duration = parseInt(document.getElementById('ap-duration').value) || 10;
     const insertAfter = document.getElementById('ap-insert-after').value;
+
+    // Calculate start time automatically
+    const startTime = calcNextPeriodTime(insertAfter, duration);
 
     periodCounter++;
     const newId = pendingPeriodType === 'break' ? 'T' + periodCounter : 'P' + periodCounter;
@@ -4711,10 +4762,10 @@
     if (pendingPeriodType === 'group') {
       const cols = ['QB','RB','WR','OL','DL','LB','DB'];
       const cells = cols.map(c => `<div class="grid-cell active-cell" data-col="${c}"><div class="cell-activity">${name}</div></div>`).join('');
-      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', 'New', '${name}')"><div class="gt-time">--:--</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="pgrid-cols">${cells}</div>`;
+      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', 'New', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="pgrid-cols">${cells}</div>`;
     } else {
       const labelClass = pendingPeriodType === 'break' ? ' transition-label' : '';
-      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', 'New', '${name}')"><div class="gt-time">--:--</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity${labelClass}">${name}</div></div>`;
+      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', 'New', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity${labelClass}">${name}</div></div>`;
     }
 
     const newRow = document.createElement('div');
@@ -5261,9 +5312,15 @@
 
   function renderNGMembers() {
     renderMemberList('ng-coaches-list', STAFF_MEMBERS, ngSelectedMembers);
-    renderMemberList('ng-players-list', [...PLAYERS.slice(0,6).map(p => ({
-      id: 'pl-' + p.id, name: p.name + ' (Player)', role: 'player', initials: p.name.split(' ').map(w=>w[0]).join(''), color: 'var(--blue)'
-    })), ...PARENT_MEMBERS], ngSelectedMembers);
+    // Use ALL players from PLAYERS array, not just first 6
+    const playerMembers = PLAYERS.map(p => ({
+      id: 'pl-' + p.id,
+      name: p.name + ' (Player)',
+      role: 'player',
+      initials: p.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(),
+      color: 'var(--blue)'
+    }));
+    renderMemberList('ng-players-list', [...playerMembers, ...PARENT_MEMBERS], ngSelectedMembers);
   }
 
   function renderMemberList(containerId, members, selectedSet) {
@@ -5674,6 +5731,41 @@
     handle.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
 
     return wrap;
+  }
+
+  // ===== REAL-TIME PLAYER SUBSCRIPTION =====
+  let playerSubscription = null;
+
+  function subscribeToPlayers(programId) {
+    if (!programId || !programId.includes('-')) return;
+    if (playerSubscription) playerSubscription.unsubscribe();
+
+    playerSubscription = db.channel('players-' + Date.now())
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'players'
+      }, payload => {
+        const p = payload.new;
+        if (p.program_id !== programId) return;
+        // Only add if not already in PLAYERS
+        if (PLAYERS.find(existing => existing.name === p.name)) return;
+        PLAYERS.push({
+          id: p.id, db_id: p.id,
+          name: p.name, num: p.num, pos: p.pos,
+          unit: p.unit, year: p.year, height: p.height, weight: p.weight,
+          gpa: p.gpa || '—', status: p.status || 'Active',
+          group: p.group_name || 'White',
+          disciplinaryStatus: p.disciplinary_status || 'green',
+          notes: [], discipline: [], academic: [],
+          parent: p.parent_name || '', parentPhone: p.parent_phone || '', parentEmail: p.parent_email || '',
+          role: 'player'
+        });
+        renderCoachRoster();
+        showToast(p.name + ' just joined the program 🏈');
+        console.log('New player joined in real-time:', p.name);
+      })
+      .subscribe(status => console.log('Player subscription:', status));
   }
 
   // ===== DEPTH CHART SUPABASE SYNC =====
@@ -8417,6 +8509,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         await loadRosterFromSupabase(program.id);
         await loadInventoryFromSupabase(program.id);
         await loadDCFromSupabase(program.id);
+        subscribeToPlayers(program.id);
       }
 
       console.log('Session restored successfully');
