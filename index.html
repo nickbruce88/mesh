@@ -4980,7 +4980,9 @@
     },
   };
   let currentThread = null;
-  function openThread(id) {
+  let currentThreadSubscription = null;
+
+  async function openThread(id) {
     currentThread = id;
     const data = THREAD_DATA[id];
     document.getElementById('thread-title').textContent = data.title;
@@ -4990,48 +4992,160 @@
     av.style.background = '';
     av.style.color = '';
     av.textContent = data.avatarContent;
+
     const body = document.getElementById('thread-body');
-    body.innerHTML = '';
-    data.messages.forEach(m => {
-      const div = document.createElement('div');
-      div.className = 'thread-msg' + (m.mine ? ' mine' : '');
-      div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
-      body.appendChild(div);
-    });
-    body.scrollTop = body.scrollHeight;
-    // Show safety banner for all threads (coach & player), hide for parent-only threads
+    body.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:12px;padding:16px">Loading messages…</div>';
+
+    // Show safety banner
     const parentOnlyThreads = ['parents', 'senior'];
     const isParentView = document.getElementById('tab-parent-messages') &&
       document.getElementById('tab-parent-messages').style.display !== 'none';
     document.getElementById('thread-safety-banner').style.display =
       (isParentView && parentOnlyThreads.includes(id)) ? 'none' : 'flex';
+
     // Clear unread dot
     const dot = document.getElementById('mgu-' + id);
     if (dot) dot.style.opacity = '0';
+
     document.getElementById('msg-thread-overlay').classList.add('open');
     document.getElementById('thread-input').value = '';
+
+    // Load messages from Supabase
+    const programId = await getValidProgramId();
+    if (programId) {
+      try {
+        const { data: msgs, error } = await db.from('messages')
+          .select('*')
+          .eq('program_id', programId)
+          .eq('group_name', id)
+          .order('created_at', { ascending: true });
+
+        body.innerHTML = '';
+        if (!error && msgs && msgs.length > 0) {
+          const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+          msgs.forEach(m => renderMessageBubble(m, user.name));
+        } else {
+          // Fall back to static demo messages
+          data.messages.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'thread-msg' + (m.mine ? ' mine' : '');
+            div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
+            body.appendChild(div);
+          });
+        }
+        body.scrollTop = body.scrollHeight;
+
+        // Subscribe to real-time new messages
+        if (currentThreadSubscription) currentThreadSubscription.unsubscribe();
+        currentThreadSubscription = db.channel('messages-' + id)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `group_name=eq.${id}`
+          }, payload => {
+            const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+            renderMessageBubble(payload.new, user.name);
+            body.scrollTop = body.scrollHeight;
+            // Update preview
+            const preview = document.getElementById('mgp-' + id);
+            if (preview) preview.textContent = payload.new.sender_name + ': ' + payload.new.content;
+          })
+          .subscribe();
+
+      } catch(e) {
+        console.error('Error loading messages:', e);
+        body.innerHTML = '';
+        data.messages.forEach(m => {
+          const div = document.createElement('div');
+          div.className = 'thread-msg' + (m.mine ? ' mine' : '');
+          div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
+          body.appendChild(div);
+        });
+        body.scrollTop = body.scrollHeight;
+      }
+    } else {
+      // No program ID — show demo messages
+      body.innerHTML = '';
+      data.messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'thread-msg' + (m.mine ? ' mine' : '');
+        div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
+        body.appendChild(div);
+      });
+      body.scrollTop = body.scrollHeight;
+    }
   }
+
+  function renderMessageBubble(msg, currentUserName) {
+    const body = document.getElementById('thread-body');
+    const isMine = msg.sender_name === currentUserName;
+    const time = msg.created_at
+      ? new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      : 'Just now';
+    const div = document.createElement('div');
+    div.className = 'thread-msg' + (isMine ? ' mine' : '');
+    div.innerHTML = `<div class="thread-sender">${isMine ? 'You' : msg.sender_name} · ${time}</div><div class="thread-bubble">${msg.content}</div>`;
+    body.appendChild(div);
+  }
+
   function closeThread() {
     document.getElementById('msg-thread-overlay').classList.remove('open');
+    // Unsubscribe from real-time when closing
+    if (currentThreadSubscription) {
+      currentThreadSubscription.unsubscribe();
+      currentThreadSubscription = null;
+    }
   }
-  function sendThreadMsg() {
+
+  async function sendThreadMsg() {
     const input = document.getElementById('thread-input');
     const text = input.value.trim();
     if (!text || !currentThread) return;
-    const data = THREAD_DATA[currentThread];
-    const now = new Date();
-    const msg = { from: 'You', mine: true, text, time: 'Just now' };
-    data.messages.push(msg);
-    const body = document.getElementById('thread-body');
-    const div = document.createElement('div');
-    div.className = 'thread-msg mine';
-    div.innerHTML = `<div class="thread-sender">You · Just now</div><div class="thread-bubble">${text}</div>`;
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-    // Update preview
-    const preview = document.getElementById('mgp-' + currentThread);
-    if (preview) preview.textContent = 'You: ' + text;
+
     input.value = '';
+
+    const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+    const senderName = user.name || 'Coach';
+    const senderRole = user.role || 'coach';
+    const programId = await getValidProgramId();
+
+    if (programId) {
+      // Save to Supabase — real-time subscription will render it
+      try {
+        await db.from('messages').insert({
+          program_id: programId,
+          group_name: currentThread,
+          sender_name: senderName,
+          sender_role: senderRole,
+          content: text
+        });
+        // Update preview
+        const preview = document.getElementById('mgp-' + currentThread);
+        if (preview) preview.textContent = 'You: ' + text;
+      } catch(e) {
+        console.error('Send message error:', e);
+        // Fall back to local render
+        const body = document.getElementById('thread-body');
+        const div = document.createElement('div');
+        div.className = 'thread-msg mine';
+        div.innerHTML = `<div class="thread-sender">You · Just now</div><div class="thread-bubble">${text}</div>`;
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+      }
+    } else {
+      // No program — local only
+      const data = THREAD_DATA[currentThread];
+      data.messages.push({ from: 'You', mine: true, text, time: 'Just now' });
+      const body = document.getElementById('thread-body');
+      const div = document.createElement('div');
+      div.className = 'thread-msg mine';
+      div.innerHTML = `<div class="thread-sender">You · Just now</div><div class="thread-bubble">${text}</div>`;
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+      const preview = document.getElementById('mgp-' + currentThread);
+      if (preview) preview.textContent = 'You: ' + text;
+    }
   }
   // ===== MESSAGING GUARDRAILS =====
 
