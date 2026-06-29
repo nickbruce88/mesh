@@ -459,13 +459,13 @@
   #notif-panel { position:absolute;top:0;right:0;width:100%;max-width:420px;background:var(--bg-2);border-bottom:1px solid var(--border);z-index:80;transform:translateY(-100%);transition:transform 0.25s ease;box-shadow:0 4px 20px rgba(0,0,0,0.5); }
   #notif-panel.open { transform:translateY(0); }
   .notif-panel-head { display:flex;align-items:center;justify-content:space-between;padding:16px 20px 10px; }
-  .notif-panel-title { font-size:16px;font-weight:700; }
+  .notif-panel-title { font-size:16px;font-weight:700;color:var(--fg); }
   .notif-panel-close { font-size:20px;color:var(--fg-3);cursor:pointer;padding:4px; }
   .notif-item { display:flex;gap:12px;padding:12px 20px;border-top:1px solid var(--border);cursor:pointer; }
   .notif-item:active { background:var(--bg-3); }
   .notif-dot { width:8px;height:8px;background:var(--team-primary);border-radius:50%;margin-top:5px;flex-shrink:0; }
   .notif-dot.read { background:transparent;border:1px solid var(--border-2); }
-  .notif-text { font-size:13px;color:var(--gray-1);line-height:1.4; }
+  .notif-text { font-size:13px;color:var(--fg);line-height:1.4; }
   .notif-text span { color:var(--team-primary);font-weight:600; }
   .notif-time { font-size:11px;color:var(--fg-3);margin-top:3px; }
   .notif-badge { position:absolute;top:2px;right:2px;background:var(--team-primary);color:var(--bg);font-size:9px;font-weight:800;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg); }
@@ -2212,46 +2212,52 @@
           <div class="note-modal-title" id="note-modal-title">Period note</div>
           <div class="note-modal-sub" id="note-modal-sub">10:17 – 10:27 AM · P5</div>
         </div>
-        <div class="note-modal-close" onclick="closeNoteModal(event)">✕</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="note-modal-delete-period" onclick="deletePeriodFromModal()" style="display:none;background:none;border:1px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:11px;font-weight:600;padding:4px 8px;cursor:pointer;font-family:var(--font)">Delete period</button>
+          <div class="note-modal-close" onclick="closeNoteModal(event)">✕</div>
+        </div>
       </div>
 
       <!-- DRILL PICKER (shown for cell notes only) -->
       <div id="drill-picker-section" style="display:none;margin-bottom:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Drill from library</div>
-
-        <!-- Trigger field -->
-        <div id="drill-picker-trigger" onclick="toggleDrillDropdown()" style="display:flex;align-items:center;justify-content:space-between;background:var(--black-3);border:1px solid var(--black-4);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer;transition:border-color 0.15s">
-          <span id="drill-picker-label" style="font-size:13px;color:var(--gray-3)">Search drills…</span>
-          <span id="drill-picker-caret" style="font-size:12px;color:var(--gray-3);transition:transform 0.15s">▾</span>
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Drill from library</div>
+        <div id="drill-picker-trigger" onclick="toggleDrillDropdown()" style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer;transition:border-color 0.15s">
+          <span id="drill-picker-label" style="font-size:13px;color:var(--fg-3)">Search drills…</span>
+          <span id="drill-picker-caret" style="font-size:12px;color:var(--fg-3);transition:transform 0.15s">▾</span>
         </div>
-
-        <!-- Dropdown panel -->
-        <div id="drill-dropdown-panel" style="display:none;background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius-sm);margin-top:4px;overflow:hidden;max-height:280px;display:flex;flex-direction:column">
-          <div style="padding:8px;border-bottom:1px solid var(--black-4);flex-shrink:0">
+        <div id="drill-dropdown-panel" style="display:none;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:4px;overflow:hidden;max-height:280px;display:flex;flex-direction:column">
+          <div style="padding:8px;border-bottom:1px solid var(--border);flex-shrink:0">
             <input id="drill-search-input" class="add-drill-input" placeholder="Search by name, position, or tag…" oninput="filterDrillDropdown()" style="margin:0;font-size:13px" autocomplete="off">
           </div>
           <div id="drill-dropdown-list" style="overflow-y:auto;flex:1"></div>
         </div>
-
-        <!-- Selected drill preview -->
-        <div id="drill-picker-preview" style="display:none;background:var(--black-3);border:1px solid var(--black-4);border-radius:var(--radius-sm);padding:10px;margin-top:6px">
+        <div id="drill-picker-preview" style="display:none;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;margin-top:6px">
           <div style="font-size:13px;font-weight:700;margin-bottom:3px" id="dp-preview-title"></div>
-          <div style="font-size:12px;color:var(--gray-2);line-height:1.4" id="dp-preview-desc"></div>
+          <div style="font-size:12px;color:var(--fg-2);line-height:1.4" id="dp-preview-desc"></div>
           <div id="dp-preview-video" style="display:none;margin-top:6px">
             <span style="font-size:12px;color:var(--blue);cursor:pointer" id="dp-preview-video-link">🎬 Watch video</span>
           </div>
         </div>
-
         <button class="btn-sm" style="width:100%;text-align:center;padding:9px;margin-top:8px" id="drill-insert-btn" onclick="insertPickedDrill()" disabled>Insert into cell</button>
-        <div style="height:1px;background:var(--black-4);margin:12px 0"></div>
+        <div style="height:1px;background:var(--border);margin:12px 0"></div>
       </div>
 
-      <textarea class="note-modal-textarea" id="note-modal-textarea" placeholder="Add a note for this period…"></textarea>
-      <div class="note-modal-footer" id="note-modal-footer">Visible to all staff · Only head coach can edit</div>
-      <div id="period-script-action" style="display:none;margin-bottom:10px">
+      <!-- Saved notes list -->
+      <div id="note-cards-list" style="margin-bottom:12px"></div>
+
+      <!-- Add note area -->
+      <div id="note-add-area">
+        <textarea class="note-modal-textarea" id="note-modal-textarea" placeholder="Add a note…" rows="3"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="note-cancel-btn" onclick="cancelNoteEdit()" style="display:none;flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">Cancel</button>
+          <button class="note-modal-save" onclick="saveNoteModal()" style="flex:2">Save note</button>
+        </div>
+      </div>
+
+      <div class="note-modal-footer" id="note-modal-footer">Visible to all staff</div>
+      <div id="period-script-action" style="display:none;margin-top:10px">
         <button class="btn-sm" id="period-script-btn" onclick="togglePeriodScript()" style="width:100%;text-align:center;padding:10px;font-size:13px"></button>
       </div>
-      <button class="note-modal-save" onclick="saveNoteModal()">Save</button>
     </div>
   </div>
 
@@ -2278,11 +2284,33 @@
             <div class="ap-type-sub">Different activity per position</div>
           </div>
           <div class="ap-type-card" onclick="choosePeriodType('break')">
-            <div class="ap-type-icon">💧</div>
+            <div class="ap-type-icon">⏱️</div>
             <div class="ap-type-label">Transition / Break</div>
             <div class="ap-type-sub">Water, transition, etc.</div>
           </div>
         </div>
+      </div>
+
+      <!-- Step 1b: break sub-type -->
+      <div id="ap-step-break-type" style="display:none">
+        <div class="ap-head">
+          <div class="ap-title">What kind of break?</div>
+          <div class="ap-close" onclick="closeAddPeriod(event)">✕</div>
+        </div>
+        <div class="ap-sub">Choose the break type</div>
+        <div class="ap-type-grid">
+          <div class="ap-type-card" onclick="chooseBreakSubtype('water')" style="border-color:rgba(77,159,255,0.4)">
+            <div class="ap-type-icon">💧</div>
+            <div class="ap-type-label" style="color:var(--blue)">Water Break</div>
+            <div class="ap-type-sub">Numbered W1, W2…</div>
+          </div>
+          <div class="ap-type-card" onclick="chooseBreakSubtype('transition')">
+            <div class="ap-type-icon">➡️</div>
+            <div class="ap-type-label">Transition</div>
+            <div class="ap-type-sub">Numbered T1, T2…</div>
+          </div>
+        </div>
+        <button class="ap-back-btn" style="margin-top:10px" onclick="backToType()">‹ Back</button>
       </div>
 
       <!-- Step 2: details -->
@@ -4458,11 +4486,11 @@
     </div>
     <div class="notif-item" onclick="markNotifRead(this)">
       <div class="notif-dot read"></div>
-      <div><div class="notif-text" style="color:var(--gray-2)">Parent document center updated — 3 new files added</div><div class="notif-time">Yesterday</div></div>
+      <div><div class="notif-text" style="color:var(--fg-2)">Parent document center updated — 3 new files added</div><div class="notif-time">Yesterday</div></div>
     </div>
     <div class="notif-item" onclick="markNotifRead(this)">
       <div class="notif-dot read"></div>
-      <div><div class="notif-text" style="color:var(--gray-2)"><span>Coach Reed</span> replied in Offensive Staff thread</div><div class="notif-time">Yesterday</div></div>
+      <div><div class="notif-text" style="color:var(--fg-2)"><span>Coach Reed</span> replied in Offensive Staff thread</div><div class="notif-time">Yesterday</div></div>
     </div>
   </div>
 
@@ -5775,6 +5803,7 @@
             location: ev.location || '',
             homeAway: ev.homeAway || null,
             tag: ev.tag || 'other',
+            recurrenceId: ev.recurrenceId || null,
             notes: ev.description || '',
             source: 'import'
           });
@@ -5817,10 +5846,15 @@
       const dtstart = get('DTSTART');
       const dtend = get('DTEND');
       const rrule = get('RRULE');
+      const uid = get('UID') || get('X-WR-EVENTID') || '';
       const location = (get('LOCATION') || '').replace(/\\,/g, ',').replace(/\\n/g, ', ');
       const exdateRaw = get('EXDATE');
 
       if (!summary || !dtstart) continue;
+
+      // Use UID as recurrenceId — all events sharing a UID are the same recurring series
+      // Even without RRULE, Google exports each occurrence with the same UID
+      const recurrenceId = uid || null;
 
       // Parse a DTSTART/DTEND value into { date, time, utc }
       const parseDateTime = (val) => {
@@ -5890,6 +5924,7 @@
         location,
         homeAway,
         tag,
+        recurrenceId: recurrenceId || null,
         source: 'import'
       });
 
@@ -6338,17 +6373,22 @@
     const target = map[dest];
     if (!target) return;
 
+    // Reset calendar to current month when navigating to it
+    if (dest === 'calendar' || dest === 'schedule') {
+      const now = new Date();
+      schedCalMonth = now.getMonth() + 1;
+      schedCalYear = now.getFullYear();
+    }
+
     if (target.tab) {
       showTab(currentRole, target.tab);
       if (isDesktop()) updateDesktopSidebarActive(target.tab);
       return;
     }
 
-    // More section destination
     showTab(currentRole, 'more');
     if (isDesktop()) {
       updateDesktopSidebarActive(target.sidebarId);
-      // Show the more tab then section
       hideAllTabs();
       const moreTab = document.getElementById('tab-' + currentRole + '-more');
       if (moreTab) moreTab.style.display = 'block';
@@ -7291,22 +7331,30 @@
     if (event) event.stopPropagation();
     currentNoteModalPeriodId = periodId;
     currentNoteModalPeriodName = periodName;
-    document.getElementById('note-modal-title').textContent = periodName + ' note';
+    currentCellPos = null;
+    currentCellEl = null;
+    _editingNoteId = null;
+
+    document.getElementById('note-modal-title').textContent = periodName;
     document.getElementById('note-modal-sub').textContent = timeRange + ' · ' + periodId;
-    // Load existing note
-    const existing = PRACTICE_NOTES[noteKey(periodId, null)] || '';
-    document.getElementById('note-modal-textarea').value = existing;
+    document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a note for this period… e.g. "OL focus on pad level"';
     document.getElementById('note-modal-textarea').readOnly = !isHeadCoach;
+    document.getElementById('note-cancel-btn').style.display = 'none';
     document.getElementById('note-modal-footer').textContent = isHeadCoach
       ? 'Visible to all staff · You can edit this note'
       : 'Visible to all staff · Only the head coach can edit';
-    // Hide drill picker, show script toggle (head coach only)
     document.getElementById('drill-picker-section').style.display = 'none';
+    document.getElementById('note-modal-drill-section') && (document.getElementById('note-modal-drill-section').style.display = 'none');
+    // Show delete period button
+    const delBtn = document.getElementById('note-modal-delete-period');
+    if (delBtn) delBtn.style.display = isHeadCoach ? 'block' : 'none';
+
     const scriptAction = document.getElementById('period-script-action');
     scriptAction.style.display = isHeadCoach ? 'block' : 'none';
     updatePeriodScriptBtn();
-    currentCellEl = null;
+
+    renderNoteCards();
     document.getElementById('note-modal-overlay').style.display = 'flex';
   }
 
@@ -7317,16 +7365,21 @@
     currentCellEl = document.querySelector(
       `[data-period-id="${periodId}"] [data-col="${posGroup}"]`
     );
+    _editingNoteId = null;
+
     document.getElementById('note-modal-title').textContent = posGroup + ' — ' + activity;
     document.getElementById('note-modal-sub').textContent = periodId + ' · ' + coachName;
-    // Load existing note
-    const existing = PRACTICE_NOTES[noteKey(periodId, posGroup)] || '';
-    document.getElementById('note-modal-textarea').value = existing;
+    document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a coaching note for this cell…';
     document.getElementById('note-modal-textarea').readOnly = !isHeadCoach;
+    document.getElementById('note-cancel-btn').style.display = 'none';
     document.getElementById('note-modal-footer').textContent = isHeadCoach
       ? 'Visible to all staff · You can edit this note'
       : 'Visible to all staff · Only the head coach can edit';
+    // Hide delete period button for cell notes
+    const delBtn = document.getElementById('note-modal-delete-period');
+    if (delBtn) delBtn.style.display = 'none';
+
     document.getElementById('drill-picker-section').style.display = isHeadCoach ? 'block' : 'none';
     selectedDrillId = null;
     drillDropdownOpen = false;
@@ -7337,7 +7390,8 @@
     document.getElementById('drill-dropdown-panel').style.display = 'none';
     document.getElementById('drill-picker-preview').style.display = 'none';
     document.getElementById('drill-insert-btn').disabled = true;
-    document.getElementById('note-modal-overlay').style.display = 'flex';
+
+    renderNoteCards();
 
     // Load existing drill if attached
     const drillKey = noteKey(periodId, posGroup);
@@ -7349,6 +7403,8 @@
     } else if (drillSection) {
       drillSection.style.display = 'none';
     }
+
+    document.getElementById('note-modal-overlay').style.display = 'flex';
   }
   let drillDropdownOpen = false;
 
@@ -7522,65 +7578,154 @@
   }
 
   // ===== PRACTICE NOTES DATA STORE =====
-  // Keys: "dayIndex_periodId" for period notes, "dayIndex_periodId_pos" for cell notes
-  let currentPracticeDay = 0; // 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri
+  // Keys: "dayIndex_periodId" or "dayIndex_periodId_pos"
+  // Values: array of { id, text, author, createdAt, updatedAt }
+  let currentPracticeDay = 0;
   let PRACTICE_NOTES = {};
+  let _editingNoteId = null; // id of note being edited, null = new note
 
   function noteKey(periodId, pos) {
     const day = currentPracticeDay ?? 0;
     return pos ? `${day}_${periodId}_${pos}` : `${day}_${periodId}`;
   }
 
+  function getCurrentCoachName() {
+    try {
+      const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+      return user.name || 'Coach';
+    } catch { return 'Coach'; }
+  }
+
+  function renderNoteCards() {
+    const list = document.getElementById('note-cards-list');
+    if (!list) return;
+    const key = currentCellPos
+      ? noteKey(currentNoteModalPeriodId, currentCellPos)
+      : noteKey(currentNoteModalPeriodId, null);
+    const notes = PRACTICE_NOTES[key] || [];
+    if (!notes.length) { list.innerHTML = ''; return; }
+
+    list.innerHTML = notes.map(note => {
+      const d = new Date(note.createdAt);
+      const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+      const timeStr = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+      return `<div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="background:var(--team-primary);color:var(--team-primary-text);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">${note.author}</span>
+          <span style="font-size:10px;color:var(--fg-3)">${dateStr} · ${timeStr}</span>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <span onclick="editNote('${note.id}')" style="font-size:11px;color:var(--team-primary);cursor:pointer;font-weight:600">Edit</span>
+            <span onclick="deleteNote('${note.id}')" style="font-size:11px;color:var(--red);cursor:pointer;font-weight:600">Delete</span>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--fg);line-height:1.5;white-space:pre-wrap">${note.text}</div>
+      </div>`;
+    }).join('');
+  }
+
   function saveNoteModal() {
-    const text = document.getElementById('note-modal-textarea')?.value.trim() || '';
+    const text = document.getElementById('note-modal-textarea')?.value.trim();
+    if (!text) { showToast('Please enter a note first'); return; }
+
     const key = currentCellPos
       ? noteKey(currentNoteModalPeriodId, currentCellPos)
       : noteKey(currentNoteModalPeriodId, null);
 
-    if (text) {
-      PRACTICE_NOTES[key] = text;
+    if (!PRACTICE_NOTES[key]) PRACTICE_NOTES[key] = [];
+
+    if (_editingNoteId) {
+      // Update existing
+      const idx = PRACTICE_NOTES[key].findIndex(n => n.id === _editingNoteId);
+      if (idx !== -1) {
+        PRACTICE_NOTES[key][idx].text = text;
+        PRACTICE_NOTES[key][idx].updatedAt = Date.now();
+      }
+      _editingNoteId = null;
     } else {
-      delete PRACTICE_NOTES[key];
+      // Add new
+      PRACTICE_NOTES[key].push({
+        id: 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+        text,
+        author: getCurrentCoachName(),
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      });
     }
 
-    // Update dot indicator on the cell/period
-    if (currentCellEl) {
-      let dot = currentCellEl.querySelector('.note-badge');
-      if (text && !dot) {
+    document.getElementById('note-modal-textarea').value = '';
+    document.getElementById('note-cancel-btn').style.display = 'none';
+
+    // Update dot indicator
+    const hasNotes = PRACTICE_NOTES[key].length > 0;
+    const dotTarget = currentCellEl || document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"] .grid-time-cell`);
+    if (dotTarget) {
+      let dot = dotTarget.querySelector('.note-badge');
+      if (hasNotes && !dot) {
         dot = document.createElement('span');
         dot.className = 'note-badge cell-note-badge';
-        dot.title = 'Has a note';
         dot.textContent = '●';
-        currentCellEl.appendChild(dot);
-      } else if (!text && dot) {
+        dotTarget.appendChild(dot);
+      } else if (!hasNotes && dot) {
         dot.remove();
-      }
-    } else if (currentNoteModalPeriodId) {
-      const timeCell = document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"] .grid-time-cell`);
-      if (timeCell) {
-        let dot = timeCell.querySelector('.note-badge');
-        if (text && !dot) {
-          dot = document.createElement('span');
-          dot.className = 'note-badge';
-          dot.title = 'Has a note';
-          dot.textContent = '●';
-          timeCell.appendChild(dot);
-        } else if (!text && dot) {
-          dot.remove();
-        }
       }
     }
 
-    // Save to Supabase practice plan
+    renderNoteCards();
     savePracticePlanToSupabase();
-    closeNoteModal();
     showToast('Note saved ✓');
+  }
+
+  function editNote(noteId) {
+    const key = currentCellPos
+      ? noteKey(currentNoteModalPeriodId, currentCellPos)
+      : noteKey(currentNoteModalPeriodId, null);
+    const note = (PRACTICE_NOTES[key] || []).find(n => n.id === noteId);
+    if (!note) return;
+    _editingNoteId = noteId;
+    const textarea = document.getElementById('note-modal-textarea');
+    if (textarea) { textarea.value = note.text; textarea.focus(); }
+    const cancelBtn = document.getElementById('note-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+  }
+
+  function deleteNote(noteId) {
+    const key = currentCellPos
+      ? noteKey(currentNoteModalPeriodId, currentCellPos)
+      : noteKey(currentNoteModalPeriodId, null);
+    if (!PRACTICE_NOTES[key]) return;
+    PRACTICE_NOTES[key] = PRACTICE_NOTES[key].filter(n => n.id !== noteId);
+    if (!PRACTICE_NOTES[key].length) delete PRACTICE_NOTES[key];
+
+    // Update dot
+    const dotTarget = currentCellEl || document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"] .grid-time-cell`);
+    if (dotTarget) {
+      const hasNotes = (PRACTICE_NOTES[key] || []).length > 0;
+      const dot = dotTarget.querySelector('.note-badge');
+      if (!hasNotes && dot) dot.remove();
+    }
+
+    renderNoteCards();
+    savePracticePlanToSupabase();
+    showToast('Note deleted');
+  }
+
+  function cancelNoteEdit() {
+    _editingNoteId = null;
+    const textarea = document.getElementById('note-modal-textarea');
+    if (textarea) textarea.value = '';
+    const cancelBtn = document.getElementById('note-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
   }
 
   function closeNoteModal(e) {
     if (e) e.stopPropagation();
     document.getElementById('note-modal-overlay').style.display = 'none';
     currentCellEl = null;
+    _editingNoteId = null;
+    const cancelBtn = document.getElementById('note-cancel-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    const textarea = document.getElementById('note-modal-textarea');
+    if (textarea) textarea.value = '';
   }
 
   // ===== ADD PERIOD =====
@@ -7602,10 +7747,14 @@
   }
 
   function getPeriodTypePrefix(type) {
-    // type is 'team', 'group', 'break'
-    if (type === 'break') return 'W'; // Water/transition
+    if (type === 'break') return pendingBreakSubtype === 'water' ? 'W' : 'T';
     if (type === 'film') return 'F';
-    return 'P'; // Practice periods
+    return 'P';
+  }
+
+  function getBreakRowClass() {
+    if (pendingPeriodType !== 'break') return 'row-special';
+    return pendingBreakSubtype === 'water' ? 'row-water' : 'row-transition';
   }
 
   function openAddPeriod() {
@@ -7621,18 +7770,35 @@
     document.getElementById('add-period-overlay').style.display = 'none';
   }
 
+  let pendingBreakSubtype = 'water'; // 'water' or 'transition'
+
   function choosePeriodType(type) {
     pendingPeriodType = type;
-    const labels = { team: 'Full Team period', group: 'Per Group period', break: 'Transition / Break' };
-    const defaultDur = type === 'break' ? '2' : '10';
-    document.getElementById('ap-type-label-display').textContent = labels[type];
-    document.getElementById('ap-duration').value = defaultDur;
+    if (type === 'break') {
+      // Show break sub-type selector first
+      document.getElementById('ap-step-type').style.display = 'none';
+      document.getElementById('ap-step-break-type').style.display = 'block';
+      return;
+    }
+    const labels = { team: 'Full Team period', group: 'Per Group period' };
+    document.getElementById('ap-type-label-display').textContent = labels[type] || type;
+    document.getElementById('ap-duration').value = '10';
     document.getElementById('ap-step-type').style.display = 'none';
+    document.getElementById('ap-step-details').style.display = 'block';
+  }
+
+  function chooseBreakSubtype(subtype) {
+    pendingBreakSubtype = subtype;
+    const labels = { water: '💧 Water Break', transition: '➡️ Transition' };
+    document.getElementById('ap-type-label-display').textContent = labels[subtype];
+    document.getElementById('ap-duration').value = subtype === 'water' ? '3' : '2';
+    document.getElementById('ap-step-break-type').style.display = 'none';
     document.getElementById('ap-step-details').style.display = 'block';
   }
 
   function backToType() {
     document.getElementById('ap-step-type').style.display = 'block';
+    document.getElementById('ap-step-break-type').style.display = 'none';
     document.getElementById('ap-step-details').style.display = 'none';
   }
 
@@ -7684,28 +7850,27 @@
   }
 
   function confirmAddPeriod() {
-    const name = document.getElementById('ap-name').value.trim() || 'New Period';
+    const name = document.getElementById('ap-name').value.trim() ||
+      (pendingPeriodType === 'break' ? (pendingBreakSubtype === 'water' ? 'Water Break' : 'Transition') : 'New Period');
     const duration = parseInt(document.getElementById('ap-duration').value) || 10;
     const insertAfter = document.getElementById('ap-insert-after').value;
     const startTime = calcNextPeriodTime(insertAfter, duration);
 
-    // Generate type-specific period ID
     const prefix = getPeriodTypePrefix(pendingPeriodType);
     const newId = getNextPeriodId(prefix);
+    const rowClass = pendingPeriodType === 'team' ? 'row-team'
+      : pendingPeriodType === 'group' ? 'row-special'
+      : getBreakRowClass();
 
-    const rowClass = pendingPeriodType === 'team' ? 'row-team' : pendingPeriodType === 'break' ? 'row-transition' : 'row-special';
-
-    // Delete button HTML
-    const deleteBtn = `<button onclick="deletePeriod('${newId}',this)" style="background:none;border:none;color:var(--fg-3);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0" title="Delete period">✕</button>`;
-
+    const emoji = pendingPeriodType === 'break' && pendingBreakSubtype === 'water' ? '💧 ' : '';
     let innerHtml;
     if (pendingPeriodType === 'group') {
       const cols = ['QB','RB','WR','OL','DL','LB','DB'];
       const cells = cols.map(c => `<div class="grid-cell active-cell" data-col="${c}"><div class="cell-activity">${name}</div></div>`).join('');
-      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div>${deleteBtn}</div><div class="pgrid-cols">${cells}</div>`;
+      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="pgrid-cols">${cells}</div>`;
     } else {
       const labelClass = pendingPeriodType === 'break' ? ' transition-label' : '';
-      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div>${deleteBtn}</div><div class="grid-cell cell-span left-align"><div class="cell-activity${labelClass}">${name}</div></div>`;
+      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity${labelClass}">${emoji}${name}</div></div>`;
     }
 
     const newRow = document.createElement('div');
@@ -7713,6 +7878,7 @@
     newRow.style.setProperty('--dur', duration);
     newRow.setAttribute('draggable', 'true');
     newRow.setAttribute('data-period-id', newId);
+    newRow.setAttribute('data-period-type', prefix); // store type prefix for renumbering
     newRow.setAttribute('ondragstart', 'dragStart(event)');
     newRow.setAttribute('ondragover', 'dragOver(event)');
     newRow.setAttribute('ondrop', 'dragDrop(event)');
@@ -7729,6 +7895,7 @@
     }
 
     closeAddPeriod();
+    renumberPeriods(); // renumber all periods after adding
 
     if (apScriptEnabled) {
       SCRIPTED_PERIODS.add(newId);
@@ -7736,7 +7903,6 @@
       activeScriptPeriod = newId;
       renderScriptSection();
     }
-
     apScriptEnabled = false;
     const toggle = document.getElementById('ap-script-toggle');
     const knob = document.getElementById('ap-script-knob');
@@ -7744,20 +7910,71 @@
     if (knob) { knob.style.left = '3px'; knob.style.background = 'var(--fg-3)'; }
   }
 
-  function deletePeriod(periodId, btnEl) {
-    const row = btnEl.closest('.pgrid-row');
+  function renumberPeriods() {
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid) return;
+    const rows = pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)');
+    const counters = {}; // { P: 0, W: 0, T: 0, F: 0 }
+
+    rows.forEach(row => {
+      const oldId = row.dataset.periodId || '';
+      if (!oldId) return;
+
+      // Determine type prefix from first letter
+      const prefix = oldId.match(/^([A-Z]+)/)?.[1] || 'P';
+      counters[prefix] = (counters[prefix] || 0) + 1;
+      const newId = prefix + counters[prefix];
+
+      if (newId !== oldId) {
+        // Update data attribute
+        row.dataset.periodId = newId;
+
+        // Update the period number label in the time cell
+        const numEl = row.querySelector('.gt-num');
+        if (numEl) numEl.textContent = newId;
+
+        // Update onclick on time cell to reference new id
+        const timeCell = row.querySelector('.grid-time-cell');
+        if (timeCell) {
+          const onclick = timeCell.getAttribute('onclick') || '';
+          timeCell.setAttribute('onclick', onclick.replace(/openPeriodNote\(['"]([^'"]+)['"]/, `openPeriodNote('${newId}'`));
+        }
+
+        // Migrate notes from old key to new key
+        const day = currentPracticeDay ?? 0;
+        Object.keys(PRACTICE_NOTES).forEach(k => {
+          if (k.startsWith(`${day}_${oldId}`)) {
+            const newKey = k.replace(`${day}_${oldId}`, `${day}_${newId}`);
+            PRACTICE_NOTES[newKey] = PRACTICE_NOTES[k];
+            delete PRACTICE_NOTES[k];
+          }
+        });
+      }
+    });
+  }
+
+  function deletePeriodFromModal() {
+    const periodId = currentNoteModalPeriodId;
+    if (!periodId) return;
+    const pgrid = document.getElementById('practice-grid-table');
+    const row = pgrid?.querySelector(`[data-period-id="${periodId}"]`);
     if (!row) return;
-    // Clean up notes for this period
     const day = currentPracticeDay ?? 0;
     Object.keys(PRACTICE_NOTES).forEach(k => {
       if (k.startsWith(`${day}_${periodId}`)) delete PRACTICE_NOTES[k];
     });
-    // Clean up scripts
     SCRIPTED_PERIODS.delete(periodId);
     delete PERIOD_SCRIPTS[periodId];
     row.remove();
+    renumberPeriods();
     renderScriptSection();
+    closeNoteModal();
     showToast('Period removed');
+  }
+
+  function deletePeriod(periodId, btnEl) {
+    // Legacy — keep for any stale refs
+    deletePeriodFromModal();
   }
 
   // ===== DRAG TO REORDER =====
@@ -7797,6 +8014,7 @@
 
   function dragEnd(e) {
     document.querySelectorAll('.pgrid-row').forEach(r => r.classList.remove('dragging', 'drag-over'));
+    renumberPeriods();
   }
 
   // ===== CLONE / LOAD TEMPLATE =====
@@ -11851,7 +12069,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     ).join('');
 
     overlay.innerHTML = `
-      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:460px;margin:auto" onclick="event.stopPropagation()">
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;margin:auto" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div style="font-size:17px;font-weight:700;color:var(--fg)">Add event</div>
           <div onclick="document.getElementById('add-event-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
@@ -12014,32 +12232,17 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (repeatType === 'none') showToast('Event added ✓');
   }
 
+  let _pendingScopeData = null;
+
   function openEditCalEvent(id) {
     const ev = SCHEDULE.find(e => e.id === id);
     if (!ev) return;
     const isSeries = !!ev.recurrenceId;
-    const seriesCount = isSeries ? SCHEDULE.filter(e => e.recurrenceId === ev.recurrenceId).length : 0;
 
     const overlay = document.createElement('div');
     overlay.id = 'edit-cal-event-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-
-    const scopeHTML = isSeries ? `
-      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px">
-        <div style="font-size:12px;font-weight:700;color:var(--fg);margin-bottom:8px">Edit scope <span style="color:var(--fg-3);font-weight:400">(${seriesCount} events in this series)</span></div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--fg)">
-            <input type="radio" name="edit-scope" value="this" checked style="accent-color:var(--team-primary)"> This event only
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--fg)">
-            <input type="radio" name="edit-scope" value="future" style="accent-color:var(--team-primary)"> This and future events
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--fg)">
-            <input type="radio" name="edit-scope" value="all" style="accent-color:var(--team-primary)"> All events in series
-          </label>
-        </div>
-      </div>` : '';
 
     overlay.innerHTML = `
       <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()">
@@ -12047,7 +12250,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <div style="font-size:17px;font-weight:700;color:var(--fg)">Edit event</div>
           <div onclick="document.getElementById('edit-cal-event-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
         </div>
-        ${scopeHTML}
         <div style="margin-bottom:10px">
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Event name</label>
           <input type="text" id="ece-name" class="input-field" value="${ev.opponent||ev.title||''}" style="width:100%">
@@ -12067,7 +12269,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
             <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Type / Color</label>
             <select id="ece-tag" class="input-field" style="width:100%">
               <option value="">No tag</option>
-              ${Object.entries(EVENT_TAGS).map(([k,v]) => `<option value="${k}" ${ev.tag===k?'selected':''}>${v.label}</option>`).join('')}
+              ${Object.entries(EVENT_TAGS).map(([k,v]) => '<option value="' + k + '" ' + (ev.tag===k?'selected':'') + '>' + v.label + '</option>').join('')}
             </select>
           </div>
           <div>
@@ -12085,82 +12287,121 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <input type="text" id="ece-location" class="input-field" value="${ev.location||''}" placeholder="Optional" style="width:100%">
         </div>
         <div style="display:flex;gap:8px">
-          <button onclick="saveEditCalEvent('${id}')" class="btn-primary" style="flex:2;font-size:14px">Save changes</button>
-          ${isSeries ? `<button onclick="deleteCalEventScoped('${id}')" style="flex:1;background:var(--bg-3);border:1px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Delete</button>` : `<button onclick="deleteCalEvent('${id}');document.getElementById('edit-cal-event-overlay').remove()" style="flex:1;background:var(--bg-3);border:1px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Delete</button>`}
+          <button onclick="saveEditCalEvent('${id}', ${isSeries})" class="btn-primary" style="flex:2;font-size:14px">Save changes</button>
+          <button onclick="confirmDeleteCalEvent('${id}', ${isSeries})" style="flex:1;background:var(--bg-3);border:1px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Delete</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
   }
 
-  async function saveEditCalEvent(id) {
+  async function saveEditCalEvent(id, isSeries) {
+    const ev = SCHEDULE.find(e => e.id === id);
+    if (!ev) return;
+    const updates = {
+      opponent: document.getElementById('ece-name')?.value.trim() || ev.opponent,
+      title:    document.getElementById('ece-name')?.value.trim() || ev.title,
+      date:     document.getElementById('ece-date')?.value || ev.date,
+      time:     document.getElementById('ece-time')?.value || ev.time,
+      tag:      document.getElementById('ece-tag')?.value || '',
+      homeAway: document.getElementById('ece-ha')?.value || null,
+      location: document.getElementById('ece-location')?.value.trim() || '',
+    };
+    if (!isSeries) {
+      const idx = SCHEDULE.findIndex(e => e.id === id);
+      if (idx !== -1) SCHEDULE[idx] = { ...SCHEDULE[idx], ...updates };
+      SCHEDULE.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+      renderCalendar(); updateNextGame(); updateTodaySchedule();
+      await saveScheduleToSupabase();
+      document.getElementById('edit-cal-event-overlay')?.remove();
+      showToast('Event updated ✓');
+    } else {
+      _pendingScopeData = { id, action: 'edit', updates };
+      document.getElementById('edit-cal-event-overlay')?.remove();
+      showScopePicker();
+    }
+  }
+
+  function confirmDeleteCalEvent(id, isSeries) {
+    if (!isSeries) {
+      deleteCalEvent(id);
+      document.getElementById('edit-cal-event-overlay')?.remove();
+    } else {
+      _pendingScopeData = { id, action: 'delete', updates: null };
+      document.getElementById('edit-cal-event-overlay')?.remove();
+      showScopePicker();
+    }
+  }
+
+  function showScopePicker() {
+    if (!_pendingScopeData) return;
+    const { id, action } = _pendingScopeData;
+    const ev = SCHEDULE.find(e => e.id === id);
+    if (!ev) return;
+    const seriesCount = SCHEDULE.filter(e => e.recurrenceId === ev.recurrenceId).length;
+    const isDelete = action === 'delete';
+
+    const overlay = document.createElement('div');
+    overlay.id = 'scope-picker-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:201;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.onclick = e => { if (e.target === overlay) { _pendingScopeData = null; overlay.remove(); } };
+
+    const opts = [
+      { val: 'this',   label: 'This event',             sub: 'Only this occurrence' },
+      { val: 'future', label: 'This and future events',  sub: 'This date and everything after' },
+      { val: 'all',    label: 'All events in series',    sub: 'Every occurrence' },
+    ];
+
+    const cards = opts.map(o =>
+      '<div onclick="applyScope(\'' + o.val + '\')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-bottom:8px" onmouseover="this.style.borderColor=\'var(--team-primary)\';this.style.background=\'var(--team-primary-glow-sm)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.background=\'\'">' +
+        '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--fg)">' + o.label + '</div><div style="font-size:11px;color:var(--fg-3);margin-top:2px">' + o.sub + '</div></div>' +
+        '<div style="color:var(--fg-3)">›</div></div>'
+    ).join('');
+
+    overlay.innerHTML =
+      '<div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:380px" onclick="event.stopPropagation()">' +
+        '<div style="font-size:16px;font-weight:700;color:var(--fg);margin-bottom:4px">' + (isDelete ? 'Delete' : 'Edit') + ' recurring event</div>' +
+        '<div style="font-size:12px;color:var(--fg-3);margin-bottom:16px">' + seriesCount + ' events in this series</div>' +
+        cards +
+        '<button onclick="_pendingScopeData=null;document.getElementById(\'scope-picker-overlay\').remove()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font);margin-top:4px">Cancel</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+  }
+
+  async function applyScope(scope) {
+    document.getElementById('scope-picker-overlay')?.remove();
+    if (!_pendingScopeData) return;
+    const { id, action, updates } = _pendingScopeData;
+    _pendingScopeData = null;
     const ev = SCHEDULE.find(e => e.id === id);
     if (!ev) return;
 
-    const name = document.getElementById('ece-name')?.value.trim() || ev.opponent;
-    const date = document.getElementById('ece-date')?.value || ev.date;
-    const time = document.getElementById('ece-time')?.value || ev.time;
-    const tag = document.getElementById('ece-tag')?.value || '';
-    const homeAway = document.getElementById('ece-ha')?.value || null;
-    const location = document.getElementById('ece-location')?.value.trim() || '';
-    const scope = document.querySelector('input[name="edit-scope"]:checked')?.value || 'this';
-
-    const updates = { opponent: name, title: name, time, tag, homeAway, location };
-
-    if (!ev.recurrenceId || scope === 'this') {
-      // Edit just this event
-      const idx = SCHEDULE.findIndex(e => e.id === id);
-      if (idx !== -1) SCHEDULE[idx] = { ...SCHEDULE[idx], ...updates, date };
-    } else if (scope === 'all') {
-      // Edit all events in series
+    if (action === 'delete') {
+      if (scope === 'this') SCHEDULE = SCHEDULE.filter(e => e.id !== id);
+      else if (scope === 'all') SCHEDULE = SCHEDULE.filter(e => e.recurrenceId !== ev.recurrenceId);
+      else if (scope === 'future') SCHEDULE = SCHEDULE.filter(e => !(e.recurrenceId === ev.recurrenceId && e.date >= ev.date));
+      showToast('Event deleted ✓');
+    } else {
       SCHEDULE.forEach((e, i) => {
-        if (e.recurrenceId === ev.recurrenceId) {
-          SCHEDULE[i] = { ...SCHEDULE[i], ...updates };
-        }
+        const match = scope === 'this' ? e.id === id
+          : scope === 'all' ? e.recurrenceId === ev.recurrenceId
+          : e.recurrenceId === ev.recurrenceId && e.date >= ev.date;
+        if (match) SCHEDULE[i] = { ...SCHEDULE[i], ...updates, date: scope === 'this' ? updates.date : e.date };
       });
-    } else if (scope === 'future') {
-      // Edit this and future events in series
-      SCHEDULE.forEach((e, i) => {
-        if (e.recurrenceId === ev.recurrenceId && e.date >= ev.date) {
-          SCHEDULE[i] = { ...SCHEDULE[i], ...updates };
-        }
-      });
+      showToast('Event updated ✓');
     }
-
     SCHEDULE.sort((a,b) => (a.date||'').localeCompare(b.date||''));
-    renderCalendar();
-    updateNextGame();
-    updateTodaySchedule();
+    renderCalendar(); updateNextGame(); updateTodaySchedule();
     await saveScheduleToSupabase();
-    document.getElementById('edit-cal-event-overlay')?.remove();
-    showToast('Event updated ✓');
   }
 
   async function deleteCalEventScoped(id) {
-    const ev = SCHEDULE.find(e => e.id === id);
-    if (!ev) return;
-    const scope = document.querySelector('input[name="edit-scope"]:checked')?.value || 'this';
-
-    if (scope === 'this') {
-      SCHEDULE = SCHEDULE.filter(e => e.id !== id);
-    } else if (scope === 'all') {
-      SCHEDULE = SCHEDULE.filter(e => e.recurrenceId !== ev.recurrenceId);
-    } else if (scope === 'future') {
-      SCHEDULE = SCHEDULE.filter(e => !(e.recurrenceId === ev.recurrenceId && e.date >= ev.date));
-    }
-
-    renderCalendar();
-    updateNextGame();
-    updateTodaySchedule();
-    await saveScheduleToSupabase();
-    document.getElementById('edit-cal-event-overlay')?.remove();
-    showToast('Event deleted ✓');
+    // Legacy — now handled by applyScope
+    await applyScope('this');
   }
 
   async function deleteCalEvent(id) {
     SCHEDULE = SCHEDULE.filter(e => e.id !== id);
-    renderCalendar();
-    updateNextGame();
-    updateTodaySchedule();
+    renderCalendar(); updateNextGame(); updateTodaySchedule();
     await saveScheduleToSupabase();
     showToast('Event removed ✓');
   }
