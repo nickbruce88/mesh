@@ -11784,46 +11784,105 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.body.appendChild(overlay);
   }
 
+  // ===== RECURRENCE HELPERS =====
+  function genRecurrenceId() {
+    return 'rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  }
+
+  function expandRecurring(base, recurrence) {
+    // base: { name, time, tag, homeAway, location, date (start date) }
+    // recurrence: { type, days, until, count }
+    const events = [];
+    const recurrenceId = genRecurrenceId();
+    const startDate = new Date(base.date + 'T12:00:00');
+    const untilDate = recurrence.until ? new Date(recurrence.until + 'T12:00:00') : null;
+    const maxCount = recurrence.count || 365;
+    const dayNames = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    const selectedDays = recurrence.days || []; // e.g. ['MO','TU','WE','TH']
+
+    let current = new Date(startDate);
+    let count = 0;
+
+    while (count < maxCount) {
+      if (untilDate && current > untilDate) break;
+
+      const dayCode = dayNames[current.getDay()];
+      const dateStr = `${current.getFullYear()}-${String(current.getMonth()+1).padStart(2,'0')}-${String(current.getDate()).padStart(2,'0')}`;
+
+      let include = false;
+      if (recurrence.type === 'daily') include = true;
+      else if (recurrence.type === 'weekdays') include = current.getDay() >= 1 && current.getDay() <= 5;
+      else if (recurrence.type === 'weekends') include = current.getDay() === 0 || current.getDay() === 6;
+      else if (recurrence.type === 'weekly') include = selectedDays.includes(dayCode);
+      else if (recurrence.type === 'biweekly') {
+        // Every other week on selected days
+        const weekNum = Math.floor((current - startDate) / (7 * 24 * 60 * 60 * 1000) / 7);
+        include = weekNum % 2 === 0 && selectedDays.includes(dayCode);
+      }
+
+      if (include) {
+        events.push({
+          id: 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+          opponent: base.name, title: base.name,
+          date: dateStr, time: base.time, tag: base.tag,
+          homeAway: base.homeAway, location: base.location,
+          recurrenceId, source: 'manual'
+        });
+        count++;
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return events;
+  }
+
   function openAddEventForDate(dateStr) {
-    // Build quick-add modal for a specific date
     let existing = document.getElementById('add-event-overlay');
     if (existing) existing.remove();
 
     const overlay = document.createElement('div');
     overlay.id = 'add-event-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 
+    const dayBtns = ['SU','MO','TU','WE','TH','FR','SA'].map(d =>
+      `<div id="ae-day-${d}" onclick="toggleAEDay('${d}')" style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--fg-2);background:var(--bg-3);transition:all 0.15s">${d}</div>`
+    ).join('');
+
     overlay.innerHTML = `
-      <div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:16px;padding:24px;width:100%;max-width:440px" onclick="event.stopPropagation()">
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:460px;margin:auto" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div style="font-size:17px;font-weight:700">Add event</div>
-          <div onclick="document.getElementById('add-event-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--gray-3)">✕</div>
+          <div style="font-size:17px;font-weight:700;color:var(--fg)">Add event</div>
+          <div onclick="document.getElementById('add-event-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
         </div>
+
         <div style="margin-bottom:10px">
-          <label style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Event name *</label>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Event name *</label>
           <input type="text" id="ae-name" class="input-field" placeholder="e.g. vs Kuna, Morning Lift, Film Session" style="width:100%" autofocus>
         </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Date</label>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Start date *</label>
             <input type="date" id="ae-date" class="input-field" value="${dateStr}" style="width:100%">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Time</label>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Time</label>
             <input type="time" id="ae-time" class="input-field" style="width:100%">
           </div>
         </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Type</label>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Type</label>
             <select id="ae-tag" class="input-field" style="width:100%">
               <option value="">No tag</option>
               ${Object.entries(EVENT_TAGS).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('')}
             </select>
           </div>
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Home / Away</label>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Home / Away</label>
             <select id="ae-ha" class="input-field" style="width:100%">
               <option value="">—</option>
               <option value="home">Home</option>
@@ -11832,14 +11891,75 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
             </select>
           </div>
         </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Location</label>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Location</label>
           <input type="text" id="ae-location" class="input-field" placeholder="Optional" style="width:100%">
         </div>
+
+        <!-- Recurrence -->
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:16px">
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:8px">Repeat</label>
+          <select id="ae-repeat" class="input-field" style="width:100%;margin-bottom:10px" onchange="toggleAERepeatOptions()">
+            <option value="none">Does not repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Every weekday (Mon–Fri)</option>
+            <option value="weekends">Weekends only</option>
+            <option value="weekly">Custom days</option>
+            <option value="biweekly">Every other week</option>
+          </select>
+
+          <!-- Day picker — shown for weekly/biweekly -->
+          <div id="ae-day-picker" style="display:none;margin-bottom:10px">
+            <div style="font-size:11px;color:var(--fg-3);margin-bottom:6px">Select days</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">${dayBtns}</div>
+          </div>
+
+          <!-- End condition — shown when repeat is set -->
+          <div id="ae-end-options" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">End date</label>
+                <input type="date" id="ae-until" class="input-field" style="width:100%">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Or # of times</label>
+                <input type="number" id="ae-count" class="input-field" placeholder="e.g. 20" min="1" max="365" style="width:100%">
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--fg-3);margin-top:6px">Set end date OR number of occurrences — end date takes priority</div>
+          </div>
+        </div>
+
         <button onclick="saveAddEvent()" class="btn-primary" style="width:100%;font-size:14px">Add to calendar</button>
       </div>`;
     document.body.appendChild(overlay);
     setTimeout(() => document.getElementById('ae-name')?.focus(), 100);
+  }
+
+  let aeSelectedDays = new Set();
+
+  function toggleAEDay(day) {
+    if (aeSelectedDays.has(day)) {
+      aeSelectedDays.delete(day);
+      document.getElementById('ae-day-' + day).style.background = 'var(--bg-3)';
+      document.getElementById('ae-day-' + day).style.color = 'var(--fg-2)';
+      document.getElementById('ae-day-' + day).style.borderColor = 'var(--border)';
+    } else {
+      aeSelectedDays.add(day);
+      document.getElementById('ae-day-' + day).style.background = 'var(--team-primary)';
+      document.getElementById('ae-day-' + day).style.color = 'var(--team-primary-text)';
+      document.getElementById('ae-day-' + day).style.borderColor = 'var(--team-primary)';
+    }
+  }
+
+  function toggleAERepeatOptions() {
+    const val = document.getElementById('ae-repeat')?.value;
+    const dayPicker = document.getElementById('ae-day-picker');
+    const endOptions = document.getElementById('ae-end-options');
+    dayPicker.style.display = (val === 'weekly' || val === 'biweekly') ? 'block' : 'none';
+    endOptions.style.display = val !== 'none' ? 'block' : 'none';
+    if (val === 'none') aeSelectedDays.clear();
   }
 
   async function saveAddEvent() {
@@ -11851,33 +11971,83 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const tag = document.getElementById('ae-tag')?.value || '';
     const homeAway = document.getElementById('ae-ha')?.value || null;
     const location = document.getElementById('ae-location')?.value.trim() || '';
+    const repeatType = document.getElementById('ae-repeat')?.value || 'none';
+    const until = document.getElementById('ae-until')?.value || '';
+    const count = parseInt(document.getElementById('ae-count')?.value) || 0;
 
-    SCHEDULE.push({
-      id: 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-      opponent: name, title: name, date, time, tag, homeAway, location, source: 'manual'
-    });
+    const base = { name, date, time, tag, homeAway, location };
+
+    if (repeatType === 'none') {
+      SCHEDULE.push({
+        id: 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+        opponent: name, title: name, date, time, tag, homeAway, location, source: 'manual'
+      });
+    } else {
+      // Validate days selected for custom
+      if ((repeatType === 'weekly' || repeatType === 'biweekly') && aeSelectedDays.size === 0) {
+        showToast('Please select at least one day'); return;
+      }
+      if (!until && !count) {
+        showToast('Please set an end date or number of occurrences'); return;
+      }
+
+      const recurrence = {
+        type: repeatType,
+        days: [...aeSelectedDays],
+        until: until || null,
+        count: count || 365
+      };
+
+      const events = expandRecurring(base, recurrence);
+      if (!events.length) { showToast('No events generated — check your settings'); return; }
+      SCHEDULE.push(...events);
+      showToast(`Added ${events.length} event${events.length !== 1 ? 's' : ''} ✓`);
+    }
+
+    aeSelectedDays.clear();
     SCHEDULE.sort((a,b) => (a.date||'').localeCompare(b.date||''));
     renderCalendar();
     updateNextGame();
     updateTodaySchedule();
     await saveScheduleToSupabase();
     document.getElementById('add-event-overlay')?.remove();
-    showToast('Event added ✓');
+    if (repeatType === 'none') showToast('Event added ✓');
   }
 
   function openEditCalEvent(id) {
     const ev = SCHEDULE.find(e => e.id === id);
     if (!ev) return;
+    const isSeries = !!ev.recurrenceId;
+    const seriesCount = isSeries ? SCHEDULE.filter(e => e.recurrenceId === ev.recurrenceId).length : 0;
+
     const overlay = document.createElement('div');
     overlay.id = 'edit-cal-event-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+    const scopeHTML = isSeries ? `
+      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--fg);margin-bottom:8px">Edit scope <span style="color:var(--fg-3);font-weight:400">(${seriesCount} events in this series)</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--fg)">
+            <input type="radio" name="edit-scope" value="this" checked style="accent-color:var(--team-primary)"> This event only
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--fg)">
+            <input type="radio" name="edit-scope" value="future" style="accent-color:var(--team-primary)"> This and future events
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--fg)">
+            <input type="radio" name="edit-scope" value="all" style="accent-color:var(--team-primary)"> All events in series
+          </label>
+        </div>
+      </div>` : '';
+
     overlay.innerHTML = `
-      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px" onclick="event.stopPropagation()">
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div style="font-size:17px;font-weight:700;color:var(--fg)">Edit event</div>
           <div onclick="document.getElementById('edit-cal-event-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
         </div>
+        ${scopeHTML}
         <div style="margin-bottom:10px">
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Event name</label>
           <input type="text" id="ece-name" class="input-field" value="${ev.opponent||ev.title||''}" style="width:100%">
@@ -11914,24 +12084,48 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Location</label>
           <input type="text" id="ece-location" class="input-field" value="${ev.location||''}" placeholder="Optional" style="width:100%">
         </div>
-        <button onclick="saveEditCalEvent('${id}')" class="btn-primary" style="width:100%;font-size:14px">Save changes</button>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveEditCalEvent('${id}')" class="btn-primary" style="flex:2;font-size:14px">Save changes</button>
+          ${isSeries ? `<button onclick="deleteCalEventScoped('${id}')" style="flex:1;background:var(--bg-3);border:1px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Delete</button>` : `<button onclick="deleteCalEvent('${id}');document.getElementById('edit-cal-event-overlay').remove()" style="flex:1;background:var(--bg-3);border:1px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Delete</button>`}
+        </div>
       </div>`;
     document.body.appendChild(overlay);
   }
 
   async function saveEditCalEvent(id) {
-    const idx = SCHEDULE.findIndex(e => e.id === id);
-    if (idx === -1) return;
-    SCHEDULE[idx] = {
-      ...SCHEDULE[idx],
-      opponent: document.getElementById('ece-name')?.value.trim() || SCHEDULE[idx].opponent,
-      title: document.getElementById('ece-name')?.value.trim() || SCHEDULE[idx].title,
-      date: document.getElementById('ece-date')?.value || SCHEDULE[idx].date,
-      time: document.getElementById('ece-time')?.value || SCHEDULE[idx].time,
-      tag: document.getElementById('ece-tag')?.value || '',
-      homeAway: document.getElementById('ece-ha')?.value || null,
-      location: document.getElementById('ece-location')?.value.trim() || '',
-    };
+    const ev = SCHEDULE.find(e => e.id === id);
+    if (!ev) return;
+
+    const name = document.getElementById('ece-name')?.value.trim() || ev.opponent;
+    const date = document.getElementById('ece-date')?.value || ev.date;
+    const time = document.getElementById('ece-time')?.value || ev.time;
+    const tag = document.getElementById('ece-tag')?.value || '';
+    const homeAway = document.getElementById('ece-ha')?.value || null;
+    const location = document.getElementById('ece-location')?.value.trim() || '';
+    const scope = document.querySelector('input[name="edit-scope"]:checked')?.value || 'this';
+
+    const updates = { opponent: name, title: name, time, tag, homeAway, location };
+
+    if (!ev.recurrenceId || scope === 'this') {
+      // Edit just this event
+      const idx = SCHEDULE.findIndex(e => e.id === id);
+      if (idx !== -1) SCHEDULE[idx] = { ...SCHEDULE[idx], ...updates, date };
+    } else if (scope === 'all') {
+      // Edit all events in series
+      SCHEDULE.forEach((e, i) => {
+        if (e.recurrenceId === ev.recurrenceId) {
+          SCHEDULE[i] = { ...SCHEDULE[i], ...updates };
+        }
+      });
+    } else if (scope === 'future') {
+      // Edit this and future events in series
+      SCHEDULE.forEach((e, i) => {
+        if (e.recurrenceId === ev.recurrenceId && e.date >= ev.date) {
+          SCHEDULE[i] = { ...SCHEDULE[i], ...updates };
+        }
+      });
+    }
+
     SCHEDULE.sort((a,b) => (a.date||'').localeCompare(b.date||''));
     renderCalendar();
     updateNextGame();
@@ -11939,6 +12133,27 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     await saveScheduleToSupabase();
     document.getElementById('edit-cal-event-overlay')?.remove();
     showToast('Event updated ✓');
+  }
+
+  async function deleteCalEventScoped(id) {
+    const ev = SCHEDULE.find(e => e.id === id);
+    if (!ev) return;
+    const scope = document.querySelector('input[name="edit-scope"]:checked')?.value || 'this';
+
+    if (scope === 'this') {
+      SCHEDULE = SCHEDULE.filter(e => e.id !== id);
+    } else if (scope === 'all') {
+      SCHEDULE = SCHEDULE.filter(e => e.recurrenceId !== ev.recurrenceId);
+    } else if (scope === 'future') {
+      SCHEDULE = SCHEDULE.filter(e => !(e.recurrenceId === ev.recurrenceId && e.date >= ev.date));
+    }
+
+    renderCalendar();
+    updateNextGame();
+    updateTodaySchedule();
+    await saveScheduleToSupabase();
+    document.getElementById('edit-cal-event-overlay')?.remove();
+    showToast('Event deleted ✓');
   }
 
   async function deleteCalEvent(id) {
