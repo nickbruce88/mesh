@@ -470,7 +470,7 @@
   .notif-time { font-size:11px;color:var(--fg-3);margin-top:3px; }
   .notif-badge { position:absolute;top:2px;right:2px;background:var(--team-primary);color:var(--bg);font-size:9px;font-weight:800;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg); }
   .notif-btn-wrap { position:relative; }
-  .notif-overlay { position:absolute;inset:0;z-index:75;display:none; }
+  .notif-overlay { position:fixed;inset:0;z-index:75;display:none;background:transparent; }
   .notif-overlay.open { display:block; }
 
   /* ===== PROFILE MODAL ===== */
@@ -1928,7 +1928,7 @@
   <!-- Coach Home -->
   <div id="tab-coach-home" class="scroll-content">
     <div class="greeting">Good morning, <span>Coach</span> 👋</div>
-    <div class="sub-greeting">Nampa Bulldogs · 2024 Season</div>
+    <div class="sub-greeting">Nampa Bulldogs · 2026 Season</div>
 
     <!-- Join code card — always visible for easy sharing -->
     <div id="invite-banner" style="background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;-webkit-tap-highlight-color:transparent">
@@ -2036,9 +2036,9 @@
 
           <!-- P2 — Defensive Indy — 10 min -->
           <div class="pgrid-row row-defense" style="--dur:10" draggable="true" data-period-id="P2" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target has-note" onclick="openPeriodNote('P2', '9:42 – 9:52 AM', 'Defensive Indy')">
+            <div class="grid-time-cell note-target" onclick="openPeriodNote('P2', '9:42 – 9:52 AM', 'Defensive Indy')">
               <div class="gt-time">9:42</div><div class="gt-dur">10 min</div><div class="gt-num">P2</div>
-              <div class="note-badge" title="Has a note">●</div>
+              
             </div>
             <div class="pgrid-cols">
               <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div>
@@ -2046,7 +2046,7 @@
               <div class="grid-cell active-cell" data-col="WR"><div class="cell-activity">1 on 1's</div></div>
               <div class="grid-cell active-cell" data-col="OL"><div class="cell-activity">Wash/Wall</div></div>
               <div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach Batke','Bag Drills')"><div class="cell-activity">Bag Drills</div><div class="cell-sub">First steps</div></div>
-              <div class="grid-cell active-cell has-note" data-col="LB" onclick="openCellNote('P2','LB','Coach Good','Stance, Get Offs')"><div class="cell-activity">Stance, Get Offs</div><div class="note-badge cell-note-badge" title="Has a note">●</div></div>
+              <div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach Good','Stance, Get Offs')"><div class="cell-activity">Stance, Get Offs</div></div>
               <div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach Randolph','Drops, Breaks')"><div class="cell-activity">Drops, Breaks</div></div>
             </div>
           </div>
@@ -2059,7 +2059,7 @@
             <div class="pgrid-cols">
               <div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P3','QB','Coach Waite','QB Throwing')"><div class="cell-activity">QB Throwing</div></div>
               <div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P3','RB','Coach Bruce','Run Reads')"><div class="cell-activity">Run Reads</div></div>
-              <div class="grid-cell active-cell has-note" data-col="WR" onclick="openCellNote('P3','WR','Coach Estrada','Release vs Press')"><div class="cell-activity">Release vs Press</div><div class="note-badge cell-note-badge" title="Has a note">●</div></div>
+              <div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P3','WR','Coach Estrada','Release vs Press')"><div class="cell-activity">Release vs Press</div></div>
               <div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P3','OL','Coach Dunn','Wash/Wall')"><div class="cell-activity">Wash/Wall</div><div class="cell-sub">H Car/H Cold</div></div>
               <div class="grid-cell active-cell" data-col="DL"><div class="cell-activity">Stretch & rest</div></div>
               <div class="grid-cell active-cell" data-col="LB"><div class="cell-activity">Stretch & rest</div></div>
@@ -2085,9 +2085,9 @@
 
           <!-- P5 — Install — 10 min -->
           <div class="pgrid-row row-install" style="--dur:10" draggable="true" data-period-id="P5" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target has-note" onclick="openPeriodNote('P5', '10:17 – 10:27 AM', 'Install')">
+            <div class="grid-time-cell note-target" onclick="openPeriodNote('P5', '10:17 – 10:27 AM', 'Install')">
               <div class="gt-time">10:17</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div>
-              <div class="note-badge" title="Has a note">●</div>
+              
             </div>
             <div class="pgrid-cols">
               <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div>
@@ -2118,9 +2118,9 @@
 
           <!-- P7 — Full Team — 15 min -->
           <div class="pgrid-row row-team" style="--dur:15" draggable="true" data-period-id="P7" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target has-note" onclick="openPeriodNote('P7', '10:39 – 10:54 AM', 'Full Team')">
+            <div class="grid-time-cell note-target" onclick="openPeriodNote('P7', '10:39 – 10:54 AM', 'Full Team')">
               <div class="gt-time">10:39</div><div class="gt-dur">15 min</div><div class="gt-num">P7</div>
-              <div class="note-badge" title="Has a note">●</div>
+              
             </div>
             <div class="grid-cell cell-span left-align"><div class="cell-activity">Full Team — 5 O / 5 D</div><div class="cell-sub">Red zone install reps — run script below</div></div>
           </div>
@@ -2448,7 +2448,7 @@
         <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">📅</div>
         <div>
           <div class="more-menu-label">Schedule</div>
-          <div class="more-menu-sub">2024 season · Export to calendar</div>
+          <div class="more-menu-sub">2026 season · Export to calendar</div>
         </div>
         <div class="more-menu-arrow">›</div>
       </div>
@@ -2604,7 +2604,11 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Roster</div>
-        <button class="btn-sm" onclick="toggleRosterFilter()" id="roster-filter-btn" style="margin-left:auto">Filter</button>
+        <div style="display:flex;gap:6px;margin-left:auto">
+          <button class="btn-sm" onclick="openRosterImport()">📥 Import</button>
+          <button class="btn-sm" onclick="openAddPlayerManual()" style="background:var(--team-primary);color:var(--team-primary-text);border-color:var(--team-primary)">+ Player</button>
+          <button class="btn-sm" onclick="toggleRosterFilter()" id="roster-filter-btn">Filter</button>
+        </div>
       </div>
 
       <!-- Filter dropdown panel -->
@@ -2723,11 +2727,12 @@
         <!-- Session picker -->
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
           <input type="date" id="att-date" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--fg);font-size:13px;flex:1;min-width:140px">
-          <div style="display:flex;gap:6px;flex-wrap:wrap" id="att-session-tabs">
-            <div class="att-session-tab active" data-type="practice" onclick="setAttSession('practice',this)">Practice</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center" id="att-session-tabs">
+            <div class="att-session-tab" data-type="practice" onclick="setAttSession('practice',this)">Practice</div>
             <div class="att-session-tab" data-type="game" onclick="setAttSession('game',this)">Game</div>
             <div class="att-session-tab" data-type="film" onclick="setAttSession('film',this)">Film</div>
             <div class="att-session-tab" data-type="lifting" onclick="setAttSession('lifting',this)">Lifting</div>
+            <span id="att-session-required" style="font-size:11px;color:var(--red);display:none">← Required</span>
           </div>
         </div>
 
@@ -2839,6 +2844,111 @@
 
   </div><!-- end tab-coach-more -->
 
+  <!-- ROSTER IMPORT MODAL -->
+  <div id="roster-import-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px" onclick="closeRosterImport(event)">
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:17px;font-weight:700;color:var(--fg)">Import roster</div>
+        <div onclick="closeRosterImport()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+      </div>
+      <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Upload a CSV or paste from Google Sheets / Excel</div>
+
+      <!-- Format guide -->
+      <div style="background:var(--bg-3);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:12px">
+        <div style="font-weight:700;color:var(--fg);margin-bottom:6px">Required columns (in any order):</div>
+        <div style="font-family:monospace;color:var(--team-primary);margin-bottom:4px">name, number, position, year</div>
+        <div style="color:var(--fg-3);margin-bottom:8px">Optional: height, weight, gpa, parent_name, parent_phone, parent_email</div>
+        <div style="font-weight:700;color:var(--fg);margin-bottom:4px">Example:</div>
+        <div style="font-family:monospace;color:var(--fg-2);line-height:1.6;font-size:11px">
+          name,number,position,year<br>
+          Kyle Reed,7,QB,Senior<br>
+          Andre Washington,34,RB,Junior
+        </div>
+      </div>
+
+      <!-- File upload -->
+      <div style="border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px;cursor:pointer" onclick="document.getElementById('roster-csv-input').click()">
+        <div style="font-size:24px;margin-bottom:6px">📄</div>
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload CSV</div>
+        <div style="font-size:12px;color:var(--fg-3);margin-top:4px">or drag and drop a .csv file</div>
+        <input type="file" id="roster-csv-input" accept=".csv" style="display:none" onchange="handleRosterCSV(event)">
+      </div>
+
+      <div style="text-align:center;color:var(--fg-3);font-size:12px;margin-bottom:14px">— or paste CSV data directly —</div>
+
+      <textarea id="roster-csv-paste" placeholder="Paste CSV data here..." style="width:100%;height:120px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical"></textarea>
+
+      <div id="roster-import-preview" style="display:none;margin-top:12px"></div>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="previewRosterCSV()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Preview</button>
+        <button onclick="confirmRosterImport()" class="btn-primary" style="flex:2;font-size:14px">Import players</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD PLAYER MANUALLY MODAL -->
+  <div id="add-player-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px" onclick="closeAddPlayerManual(event)">
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:17px;font-weight:700;color:var(--fg)">Add player</div>
+        <div onclick="closeAddPlayerManual()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div style="grid-column:1/-1">
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Full name *</label>
+          <input type="text" id="ap-name" class="input-field" placeholder="e.g. Kyle Reed" style="width:100%">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Jersey # *</label>
+          <input type="number" id="ap-number" class="input-field" placeholder="e.g. 7" style="width:100%">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Position *</label>
+          <select id="ap-position" class="input-field" style="width:100%">
+            <option value="">Select...</option>
+            <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
+            <option>OL</option><option>LT</option><option>LG</option><option>C</option><option>RG</option><option>RT</option>
+            <option>DE</option><option>DT</option><option>OLB</option><option>ILB</option><option>LB</option>
+            <option>CB</option><option>S</option><option>FS</option><option>SS</option>
+            <option>K</option><option>P</option><option>LS</option><option>ATH</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Year *</label>
+          <select id="ap-year" class="input-field" style="width:100%">
+            <option value="">Select...</option>
+            <option>Freshman</option><option>Sophomore</option><option>Junior</option><option>Senior</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Height</label>
+          <input type="text" id="ap-height" class="input-field" placeholder='e.g. 6&apos;2"' style="width:100%">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Weight</label>
+          <input type="number" id="ap-weight" class="input-field" placeholder="lbs" style="width:100%">
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;margin-top:4px">Parent / Guardian (optional)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+        <div style="grid-column:1/-1">
+          <input type="text" id="ap-parent-name" class="input-field" placeholder="Parent name" style="width:100%">
+        </div>
+        <div>
+          <input type="tel" id="ap-parent-phone" class="input-field" placeholder="Phone number" style="width:100%">
+        </div>
+        <div>
+          <input type="email" id="ap-parent-email" class="input-field" placeholder="Email address" style="width:100%">
+        </div>
+      </div>
+
+      <button onclick="saveAddPlayerManual()" class="btn-primary" style="width:100%;font-size:14px">Add to roster</button>
+    </div>
+  </div>
+
   <!-- IMPORT MENU OVERLAY -->
   <div id="import-menu-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:none;align-items:center;justify-content:center;padding:20px" onclick="closeImportMenu(event)">
     <div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:16px;padding:24px;width:100%;max-width:400px" onclick="event.stopPropagation()">
@@ -2913,7 +3023,7 @@
   </div>
 
   <!-- ADD GAME MODAL -->
-  <div id="add-game-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:92;display:none;align-items:center;justify-content:center;padding:20px" onclick="closeAddGame(event)">
+  <div id="add-game-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px" onclick="closeAddGame(event)">
     <div class="ap-modal" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto">
       <div class="ap-head">
         <div class="ap-title" id="add-game-title">Add Game</div>
@@ -3093,7 +3203,7 @@
   <!-- Parent Home -->
   <div id="tab-parent-home" class="scroll-content" style="display:none">
     <div class="greeting">Hi, <span>Marcus's</span> family 👋</div>
-    <div class="sub-greeting">Nampa Bulldogs · 2024 Season</div>
+    <div class="sub-greeting">Nampa Bulldogs · 2026 Season</div>
     <div style="background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
       <div style="font-size:24px">🏈</div>
       <div style="font-size:13px;color:var(--gray-1);line-height:1.4"><span style="color:var(--team-primary);font-weight:600">Next: Friday Oct 18 vs Emmett</span><br>Nampa High School · 7:00 PM kickoff</div>
@@ -3265,7 +3375,7 @@
         </div>
       </div>
 
-      <div class="section-label">2024 Season stats</div>
+      <div class="section-label">2026 Season stats</div>
       <div class="stats-grid">
         <div class="stat-box"><div class="stat-box-num green">34</div><div class="stat-box-label">Receptions</div></div>
         <div class="stat-box"><div class="stat-box-num">487</div><div class="stat-box-label">Rec Yards</div></div>
@@ -3507,7 +3617,7 @@
           <div style="margin-top:6px"><span class="pill pill-green">4.52 40-yard dash</span></div>
         </div>
       </div>
-      <div class="section-label">2024 Season stats</div>
+      <div class="section-label">2026 Season stats</div>
       <div class="stats-grid">
         <div class="stat-box"><div class="stat-box-num green">34</div><div class="stat-box-label">Receptions</div></div>
         <div class="stat-box"><div class="stat-box-num">487</div><div class="stat-box-label">Rec Yards</div></div>
@@ -4289,7 +4399,7 @@
         <div class="ap-title">Export to Calendar</div>
         <div class="ap-close" onclick="closeCalExport()">✕</div>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px;line-height:1.6">Downloads a <strong style="color:var(--white)">.ics file</strong> you can import into Apple Calendar, Google Calendar, or Outlook. All 2024 season games will be added.</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px;line-height:1.6">Downloads a <strong style="color:var(--white)">.ics file</strong> you can import into Apple Calendar, Google Calendar, or Outlook. All 2026 season games will be added.</div>
       <div style="background:var(--black-3);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:12px;color:var(--gray-3);line-height:1.6">
         💡 <strong style="color:var(--gray-1)">How to import:</strong> After downloading, tap the file to open it. Your phone will ask which calendar app to add it to. Tap Add.
       </div>
@@ -4728,7 +4838,7 @@
   // ===== ATTENDANCE =====
   let attState = {}; // { playerId: status }
   let attDate = '';
-  let attSessionType = 'practice';
+  let attSessionType = '';
   let attSaving = false;
 
   function initAttendance() {
@@ -5005,6 +5115,38 @@
 
   async function saveRoll() {
     if (attSaving) return;
+
+    // Validate date
+    if (!attDate) {
+      showToast('Please select a date before saving');
+      document.getElementById('att-date')?.focus();
+      return;
+    }
+
+    // Validate session type — required
+    if (!attSessionType) {
+      const reqEl = document.getElementById('att-session-required');
+      if (reqEl) {
+        reqEl.style.display = 'inline';
+        setTimeout(() => reqEl.style.display = 'none', 3000);
+      }
+      // Highlight the session tabs
+      const tabsEl = document.getElementById('att-session-tabs');
+      if (tabsEl) {
+        tabsEl.style.outline = '2px solid var(--red)';
+        tabsEl.style.borderRadius = '20px';
+        setTimeout(() => { tabsEl.style.outline = ''; tabsEl.style.borderRadius = ''; }, 3000);
+      }
+      showToast('Please select a session type (Practice, Game, Film, or Lifting)');
+      return;
+    }
+
+    // Validate at least one player marked
+    if (!Object.keys(attState).length) {
+      showToast('No attendance marked yet — mark at least one player before saving');
+      return;
+    }
+
     attSaving = true;
     const btn = document.getElementById('save-roll-btn');
     if (btn) btn.textContent = 'Saving...';
@@ -5626,11 +5768,13 @@
           if (exists) { skipped++; return; }
           SCHEDULE.push({
             id: 'ics_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-            opponent: ev.title,
+            opponent: ev.opponent || ev.title,
+            title: ev.title,
             date: ev.date,
-            time: ev.time || '19:00',
+            time: ev.time || '',
             location: ev.location || '',
-            homeAway: ev.homeAway || 'home',
+            homeAway: ev.homeAway || null,
+            tag: ev.tag || 'other',
             notes: ev.description || '',
             source: 'import'
           });
@@ -5957,6 +6101,223 @@
       const preview = item.querySelector('.msg-group-preview')?.textContent?.toLowerCase() || '';
       item.style.display = (!q || name.includes(q) || preview.includes(q)) ? '' : 'none';
     });
+  }
+
+  // ===== ROSTER IMPORT =====
+  let rosterImportParsed = [];
+
+  function openRosterImport() {
+    document.getElementById('roster-import-overlay').style.display = 'flex';
+    document.getElementById('roster-import-preview').style.display = 'none';
+    document.getElementById('roster-csv-paste').value = '';
+    rosterImportParsed = [];
+  }
+
+  function closeRosterImport(e) {
+    if (!e || e.target === document.getElementById('roster-import-overlay'))
+      document.getElementById('roster-import-overlay').style.display = 'none';
+  }
+
+  function handleRosterCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('roster-csv-paste').value = e.target.result;
+      previewRosterCSV();
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  function parseRosterCSV(text) {
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return [];
+
+    // Parse header
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z_]/g,''));
+    const colMap = {
+      name: headers.findIndex(h => h === 'name' || h === 'fullname' || h === 'player'),
+      num: headers.findIndex(h => h === 'number' || h === 'num' || h === 'jersey' || h === '#'),
+      pos: headers.findIndex(h => h === 'position' || h === 'pos'),
+      year: headers.findIndex(h => h === 'year' || h === 'grade' || h === 'class'),
+      height: headers.findIndex(h => h === 'height' || h === 'ht'),
+      weight: headers.findIndex(h => h === 'weight' || h === 'wt' || h === 'lbs'),
+      gpa: headers.findIndex(h => h === 'gpa'),
+      parent_name: headers.findIndex(h => h.includes('parent') && h.includes('name')),
+      parent_phone: headers.findIndex(h => h.includes('phone') || h.includes('cell')),
+      parent_email: headers.findIndex(h => h.includes('email')),
+    };
+
+    if (colMap.name === -1) return null; // no name column
+
+    return lines.slice(1).map(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+      const get = (idx) => idx !== -1 ? cols[idx] || '' : '';
+      return {
+        name: get(colMap.name),
+        num: get(colMap.num),
+        pos: get(colMap.pos).toUpperCase(),
+        year: get(colMap.year),
+        height: get(colMap.height),
+        weight: get(colMap.weight),
+        gpa: get(colMap.gpa),
+        parent_name: get(colMap.parent_name),
+        parent_phone: get(colMap.parent_phone),
+        parent_email: get(colMap.parent_email),
+      };
+    }).filter(p => p.name);
+  }
+
+  function previewRosterCSV() {
+    const text = document.getElementById('roster-csv-paste').value.trim();
+    const preview = document.getElementById('roster-import-preview');
+    if (!text) { preview.style.display = 'none'; return; }
+
+    const parsed = parseRosterCSV(text);
+    if (parsed === null) {
+      preview.style.display = 'block';
+      preview.innerHTML = '<div style="color:var(--red);font-size:13px">⚠️ Could not find a "name" column. Check your CSV headers.</div>';
+      return;
+    }
+    if (!parsed.length) {
+      preview.style.display = 'block';
+      preview.innerHTML = '<div style="color:var(--red);font-size:13px">⚠️ No player rows found.</div>';
+      return;
+    }
+
+    rosterImportParsed = parsed;
+    preview.style.display = 'block';
+    preview.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${parsed.length} players found</div>
+      <div style="background:var(--bg-3);border-radius:var(--radius-sm);overflow:hidden;max-height:200px;overflow-y:auto">
+        ${parsed.map(p => `
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px">
+            <div style="font-weight:600;color:var(--fg)">${p.name}</div>
+            <div style="color:var(--fg-3)">${p.pos||'—'}</div>
+            <div style="color:var(--fg-3)">#${p.num||'—'}</div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  async function confirmRosterImport() {
+    const text = document.getElementById('roster-csv-paste').value.trim();
+    if (!rosterImportParsed.length && text) previewRosterCSV();
+    if (!rosterImportParsed.length) { showToast('Preview your data first'); return; }
+
+    const programId = await getValidProgramId();
+    if (!programId) { showToast('No program found — please set up your program first'); return; }
+
+    let added = 0;
+    const rows = rosterImportParsed.map(p => ({
+      program_id: programId,
+      name: p.name,
+      num: p.num,
+      pos: p.pos,
+      year: p.year,
+      height: p.height,
+      weight: p.weight,
+      gpa: p.gpa,
+      parent_name: p.parent_name,
+      parent_phone: p.parent_phone,
+      parent_email: p.parent_email,
+      role: 'player',
+      status: 'Active',
+    }));
+
+    try {
+      const { data, error } = await db.from('players').insert(rows).select();
+      if (error) throw error;
+      added = data?.length || rows.length;
+      // Add to local PLAYERS array
+      (data || rows).forEach(p => {
+        PLAYERS.push({
+          id: p.id || 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+          db_id: p.id,
+          name: p.name, num: p.num, pos: p.pos, year: p.year,
+          height: p.height, weight: p.weight, gpa: p.gpa,
+          parent_name: p.parent_name, parent_phone: p.parent_phone, parent_email: p.parent_email,
+          role: 'player', status: 'Active', group: '',
+          notes: [], discipline: [], academic: [],
+        });
+      });
+      syncRosterData();
+      renderCoachRoster();
+      closeRosterImport();
+      showToast(`Added ${added} player${added !== 1 ? 's' : ''} ✓`);
+    } catch(e) {
+      console.error('Roster import error:', e);
+      showToast('Error importing — check your data and try again');
+    }
+  }
+
+  // ===== ADD PLAYER MANUALLY =====
+  function openAddPlayerManual() {
+    document.getElementById('add-player-overlay').style.display = 'flex';
+    ['ap-name','ap-number','ap-height','ap-weight','ap-parent-name','ap-parent-phone','ap-parent-email'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('ap-position').value = '';
+    document.getElementById('ap-year').value = '';
+    setTimeout(() => document.getElementById('ap-name')?.focus(), 100);
+  }
+
+  function closeAddPlayerManual(e) {
+    if (!e || e.target === document.getElementById('add-player-overlay'))
+      document.getElementById('add-player-overlay').style.display = 'none';
+  }
+
+  async function saveAddPlayerManual() {
+    const name = document.getElementById('ap-name')?.value.trim();
+    const num = document.getElementById('ap-number')?.value.trim();
+    const pos = document.getElementById('ap-position')?.value;
+    const year = document.getElementById('ap-year')?.value;
+
+    const errors = [];
+    if (!name) errors.push('Full name');
+    if (!num) errors.push('Jersey number');
+    if (!pos) errors.push('Position');
+    if (!year) errors.push('Year/Grade');
+
+    if (errors.length) {
+      showToast(`Please fill in: ${errors.join(', ')}`);
+      return;
+    }
+
+    const programId = await getValidProgramId();
+    if (!programId) { showToast('No program found'); return; }
+
+    const row = {
+      program_id: programId,
+      name, num, pos, year,
+      height: document.getElementById('ap-height')?.value.trim() || '',
+      weight: document.getElementById('ap-weight')?.value.trim() || '',
+      parent_name: document.getElementById('ap-parent-name')?.value.trim() || '',
+      parent_phone: document.getElementById('ap-parent-phone')?.value.trim() || '',
+      parent_email: document.getElementById('ap-parent-email')?.value.trim() || '',
+      role: 'player',
+      status: 'Active',
+    };
+
+    try {
+      const { data, error } = await db.from('players').insert([row]).select();
+      if (error) throw error;
+      const saved = data?.[0] || row;
+      PLAYERS.push({
+        id: saved.id || 'local_' + Date.now(),
+        db_id: saved.id,
+        ...row,
+        group: '', notes: [], discipline: [], academic: [],
+      });
+      syncRosterData();
+      renderCoachRoster();
+      closeAddPlayerManual();
+      showToast(`${name} added to roster ✓`);
+    } catch(e) {
+      console.error('Add player error:', e);
+      showToast('Error saving — try again');
+    }
   }
 
   // ===== NAVIGATION HELPER =====
@@ -6560,7 +6921,7 @@
       // Update coach home team name
       const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
       const coachSub = document.getElementById('coach-home-sub');
-      if (coachSub) coachSub.textContent = teamName + ' · 2024 Season';
+      if (coachSub) coachSub.textContent = teamName + ' · 2026 Season';
     }
     applyTheme();
   }
@@ -6766,12 +7127,16 @@
     menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
   }
 
+  let currentDCLevel = 'Varsity';
+
   function selectLevel(level) {
+    currentDCLevel = level;
     document.getElementById('level-current').textContent = level;
     document.querySelectorAll('.level-menu-item').forEach(item => {
       item.classList.toggle('active', item.textContent.trim() === level);
     });
     document.getElementById('level-menu').style.display = 'none';
+    renderDepthChart();
   }
 
   function filterUnit(unit, el) {
@@ -6823,6 +7188,9 @@
   function selectDay(day, el, isBlank) {
     document.querySelectorAll('.day-pill').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
+    // Track day index for note keys
+    const dayOrder = ['Mon','Tue','Wed','Thu','Fri'];
+    currentPracticeDay = dayOrder.indexOf(day);
     const info = DAY_INFO[day];
     document.getElementById('practice-day-sub').textContent = info.sub;
     document.getElementById('blank-day-name').textContent = info.full;
@@ -6925,7 +7293,9 @@
     currentNoteModalPeriodName = periodName;
     document.getElementById('note-modal-title').textContent = periodName + ' note';
     document.getElementById('note-modal-sub').textContent = timeRange + ' · ' + periodId;
-    document.getElementById('note-modal-textarea').value = '';
+    // Load existing note
+    const existing = PRACTICE_NOTES[noteKey(periodId, null)] || '';
+    document.getElementById('note-modal-textarea').value = existing;
     document.getElementById('note-modal-textarea').placeholder = 'Add a note for this period… e.g. "OL focus on pad level"';
     document.getElementById('note-modal-textarea').readOnly = !isHeadCoach;
     document.getElementById('note-modal-footer').textContent = isHeadCoach
@@ -6942,34 +7312,44 @@
 
   function openCellNote(periodId, posGroup, coachName, activity) {
     if (event) event.stopPropagation();
+    currentNoteModalPeriodId = periodId;
     currentCellPos = posGroup;
-    // Find the cell element to update on insert
     currentCellEl = document.querySelector(
       `[data-period-id="${periodId}"] [data-col="${posGroup}"]`
     );
     document.getElementById('note-modal-title').textContent = posGroup + ' — ' + activity;
     document.getElementById('note-modal-sub').textContent = periodId + ' · ' + coachName;
-    document.getElementById('note-modal-textarea').value = '';
+    // Load existing note
+    const existing = PRACTICE_NOTES[noteKey(periodId, posGroup)] || '';
+    document.getElementById('note-modal-textarea').value = existing;
     document.getElementById('note-modal-textarea').placeholder = 'Add a coaching note for this cell…';
     document.getElementById('note-modal-textarea').readOnly = !isHeadCoach;
     document.getElementById('note-modal-footer').textContent = isHeadCoach
       ? 'Visible to all staff · You can edit this note'
       : 'Visible to all staff · Only the head coach can edit';
-    // Show drill picker, reset state
     document.getElementById('drill-picker-section').style.display = isHeadCoach ? 'block' : 'none';
     selectedDrillId = null;
     drillDropdownOpen = false;
     document.getElementById('drill-picker-label').textContent = 'Search drills…';
-    document.getElementById('drill-picker-label').style.color = 'var(--gray-3)';
-    document.getElementById('drill-picker-trigger').style.borderColor = 'var(--black-4)';
+    document.getElementById('drill-picker-label').style.color = 'var(--fg-3)';
+    document.getElementById('drill-picker-trigger').style.borderColor = 'var(--border)';
     document.getElementById('drill-picker-caret').style.transform = '';
     document.getElementById('drill-dropdown-panel').style.display = 'none';
     document.getElementById('drill-picker-preview').style.display = 'none';
     document.getElementById('drill-insert-btn').disabled = true;
     document.getElementById('note-modal-overlay').style.display = 'flex';
-  }
 
-  let selectedDrillId = null;
+    // Load existing drill if attached
+    const drillKey = noteKey(periodId, posGroup);
+    const attachedDrill = CELL_DRILLS[drillKey];
+    const drillSection = document.getElementById('note-modal-drill-section');
+    if (attachedDrill) {
+      const drill = DRILLS.find(d => d.id === attachedDrill.id) || attachedDrill;
+      showDrillInModal(drill);
+    } else if (drillSection) {
+      drillSection.style.display = 'none';
+    }
+  }
   let drillDropdownOpen = false;
 
   function toggleDrillDropdown() {
@@ -7065,26 +7445,134 @@
   function updateDrillPicker() {} // no-op — kept for any stale refs
   function previewPickedDrill() {} // no-op
 
+  // Store drills attached to cells: key = "dayIndex_periodId_pos"
+  let CELL_DRILLS = {};
+
   function insertPickedDrill() {
-    if (!selectedDrillId) return;
+    if (!selectedDrillId || !currentNoteModalPeriodId || !currentCellPos) return;
     const drill = DRILLS.find(d => d.id === selectedDrillId);
     if (!drill) return;
+
+    // Store drill reference
+    const key = noteKey(currentNoteModalPeriodId, currentCellPos);
+    CELL_DRILLS[key] = { id: drill.id, title: drill.title, desc: drill.desc, video: drill.video || '' };
+
+    // Add cone badge to cell (don't replace the activity name)
     if (currentCellEl) {
-      const actEl = currentCellEl.querySelector('.cell-activity');
-      if (actEl) actEl.textContent = drill.title;
+      let badge = currentCellEl.querySelector('.drill-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'drill-badge';
+        badge.title = drill.title;
+        badge.textContent = '🎯';
+        badge.style.cssText = 'position:absolute;top:4px;left:4px;font-size:10px;line-height:1';
+        currentCellEl.appendChild(badge);
+      } else {
+        badge.title = drill.title;
+      }
     }
+
+    // Update modal title hint
     document.getElementById('note-modal-title').textContent =
       (currentCellPos || '') + ' — ' + drill.title;
+
+    // Show drill preview section in modal
+    showDrillInModal(drill);
+
     // Reset picker
     selectedDrillId = null;
     document.getElementById('drill-picker-label').textContent = 'Search drills…';
-    document.getElementById('drill-picker-label').style.color = 'var(--gray-3)';
+    document.getElementById('drill-picker-label').style.color = 'var(--fg-3)';
     document.getElementById('drill-picker-preview').style.display = 'none';
     document.getElementById('drill-insert-btn').disabled = true;
-    showToast('"' + drill.title + '" inserted ✓');
+    showToast('"' + drill.title + '" attached ✓');
+  }
+
+  function showDrillInModal(drill) {
+    // Show or update the drill info section below the textarea
+    let drillSection = document.getElementById('note-modal-drill-section');
+    if (!drillSection) {
+      drillSection = document.createElement('div');
+      drillSection.id = 'note-modal-drill-section';
+      const footer = document.getElementById('note-modal-footer');
+      if (footer) footer.parentElement.insertBefore(drillSection, footer);
+    }
+    drillSection.innerHTML = `
+      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin:10px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:12px;font-weight:700;color:var(--fg)">🎯 ${drill.title}</div>
+          <div onclick="removeDrillFromCell()" style="font-size:11px;color:var(--red);cursor:pointer">Remove</div>
+        </div>
+        ${drill.desc ? `<div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${drill.desc}</div>` : ''}
+        ${drill.video ? `<a href="${drill.video}" target="_blank" style="font-size:11px;color:var(--team-primary)">▶ Watch video</a>` : ''}
+      </div>`;
+    drillSection.style.display = 'block';
+  }
+
+  function removeDrillFromCell() {
+    if (!currentNoteModalPeriodId || !currentCellPos) return;
+    const key = noteKey(currentNoteModalPeriodId, currentCellPos);
+    delete CELL_DRILLS[key];
+    // Remove badge from cell
+    currentCellEl?.querySelector('.drill-badge')?.remove();
+    // Hide section
+    const section = document.getElementById('note-modal-drill-section');
+    if (section) section.style.display = 'none';
+    showToast('Drill removed');
+  }
+
+  // ===== PRACTICE NOTES DATA STORE =====
+  // Keys: "dayIndex_periodId" for period notes, "dayIndex_periodId_pos" for cell notes
+  let currentPracticeDay = 0; // 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri
+  let PRACTICE_NOTES = {};
+
+  function noteKey(periodId, pos) {
+    const day = currentPracticeDay ?? 0;
+    return pos ? `${day}_${periodId}_${pos}` : `${day}_${periodId}`;
   }
 
   function saveNoteModal() {
+    const text = document.getElementById('note-modal-textarea')?.value.trim() || '';
+    const key = currentCellPos
+      ? noteKey(currentNoteModalPeriodId, currentCellPos)
+      : noteKey(currentNoteModalPeriodId, null);
+
+    if (text) {
+      PRACTICE_NOTES[key] = text;
+    } else {
+      delete PRACTICE_NOTES[key];
+    }
+
+    // Update dot indicator on the cell/period
+    if (currentCellEl) {
+      let dot = currentCellEl.querySelector('.note-badge');
+      if (text && !dot) {
+        dot = document.createElement('span');
+        dot.className = 'note-badge cell-note-badge';
+        dot.title = 'Has a note';
+        dot.textContent = '●';
+        currentCellEl.appendChild(dot);
+      } else if (!text && dot) {
+        dot.remove();
+      }
+    } else if (currentNoteModalPeriodId) {
+      const timeCell = document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"] .grid-time-cell`);
+      if (timeCell) {
+        let dot = timeCell.querySelector('.note-badge');
+        if (text && !dot) {
+          dot = document.createElement('span');
+          dot.className = 'note-badge';
+          dot.title = 'Has a note';
+          dot.textContent = '●';
+          timeCell.appendChild(dot);
+        } else if (!text && dot) {
+          dot.remove();
+        }
+      }
+    }
+
+    // Save to Supabase practice plan
+    savePracticePlanToSupabase();
     closeNoteModal();
     showToast('Note saved ✓');
   }
@@ -7097,7 +7585,28 @@
 
   // ===== ADD PERIOD =====
   let pendingPeriodType = null;
-  let periodCounter = 8; // next available period number for naming
+  // Period counters per type — tracks how many of each type have been added
+  const periodTypeCounters = { P: 0, W: 0, T: 0, F: 0 };
+
+  function getNextPeriodId(type) {
+    // Count existing periods of this type in the grid
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid) { periodTypeCounters[type] = (periodTypeCounters[type] || 0) + 1; return type + periodTypeCounters[type]; }
+    const existing = pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)');
+    let count = 0;
+    existing.forEach(row => {
+      const id = row.dataset.periodId || '';
+      if (id.startsWith(type)) count++;
+    });
+    return type + (count + 1);
+  }
+
+  function getPeriodTypePrefix(type) {
+    // type is 'team', 'group', 'break'
+    if (type === 'break') return 'W'; // Water/transition
+    if (type === 'film') return 'F';
+    return 'P'; // Practice periods
+  }
 
   function openAddPeriod() {
     document.getElementById('ap-step-type').style.display = 'block';
@@ -7178,22 +7687,25 @@
     const name = document.getElementById('ap-name').value.trim() || 'New Period';
     const duration = parseInt(document.getElementById('ap-duration').value) || 10;
     const insertAfter = document.getElementById('ap-insert-after').value;
-
-    // Calculate start time automatically
     const startTime = calcNextPeriodTime(insertAfter, duration);
 
-    periodCounter++;
-    const newId = pendingPeriodType === 'break' ? 'T' + periodCounter : 'P' + periodCounter;
+    // Generate type-specific period ID
+    const prefix = getPeriodTypePrefix(pendingPeriodType);
+    const newId = getNextPeriodId(prefix);
+
     const rowClass = pendingPeriodType === 'team' ? 'row-team' : pendingPeriodType === 'break' ? 'row-transition' : 'row-special';
+
+    // Delete button HTML
+    const deleteBtn = `<button onclick="deletePeriod('${newId}',this)" style="background:none;border:none;color:var(--fg-3);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0" title="Delete period">✕</button>`;
 
     let innerHtml;
     if (pendingPeriodType === 'group') {
       const cols = ['QB','RB','WR','OL','DL','LB','DB'];
       const cells = cols.map(c => `<div class="grid-cell active-cell" data-col="${c}"><div class="cell-activity">${name}</div></div>`).join('');
-      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', 'New', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="pgrid-cols">${cells}</div>`;
+      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div>${deleteBtn}</div><div class="pgrid-cols">${cells}</div>`;
     } else {
       const labelClass = pendingPeriodType === 'break' ? ' transition-label' : '';
-      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', 'New', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity${labelClass}">${name}</div></div>`;
+      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div>${deleteBtn}</div><div class="grid-cell cell-span left-align"><div class="cell-activity${labelClass}">${name}</div></div>`;
     }
 
     const newRow = document.createElement('div');
@@ -7212,18 +7724,12 @@
       pgrid.appendChild(newRow);
     } else {
       const afterRow = pgrid.querySelector(`[data-period-id="${insertAfter}"]`);
-      if (afterRow && afterRow.nextSibling) {
-        pgrid.insertBefore(newRow, afterRow.nextSibling);
-      } else if (afterRow) {
-        pgrid.appendChild(newRow);
-      } else {
-        pgrid.appendChild(newRow);
-      }
+      if (afterRow?.nextSibling) pgrid.insertBefore(newRow, afterRow.nextSibling);
+      else pgrid.appendChild(newRow);
     }
 
     closeAddPeriod();
 
-    // If "Create script" was toggled, register it
     if (apScriptEnabled) {
       SCRIPTED_PERIODS.add(newId);
       PERIOD_SCRIPTS[newId] = { name, plays: [] };
@@ -7231,12 +7737,27 @@
       renderScriptSection();
     }
 
-    // Reset toggle
     apScriptEnabled = false;
     const toggle = document.getElementById('ap-script-toggle');
     const knob = document.getElementById('ap-script-knob');
-    if (toggle) toggle.style.background = 'var(--black-5)';
-    if (knob) { knob.style.left = '3px'; knob.style.background = 'var(--gray-2)'; }
+    if (toggle) toggle.style.background = 'var(--bg-5)';
+    if (knob) { knob.style.left = '3px'; knob.style.background = 'var(--fg-3)'; }
+  }
+
+  function deletePeriod(periodId, btnEl) {
+    const row = btnEl.closest('.pgrid-row');
+    if (!row) return;
+    // Clean up notes for this period
+    const day = currentPracticeDay ?? 0;
+    Object.keys(PRACTICE_NOTES).forEach(k => {
+      if (k.startsWith(`${day}_${periodId}`)) delete PRACTICE_NOTES[k];
+    });
+    // Clean up scripts
+    SCRIPTED_PERIODS.delete(periodId);
+    delete PERIOD_SCRIPTS[periodId];
+    row.remove();
+    renderScriptSection();
+    showToast('Period removed');
   }
 
   // ===== DRAG TO REORDER =====
@@ -8187,7 +8708,7 @@
               <div style="width:28px;height:28px;border-radius:50%;background:${g.color};flex-shrink:0;cursor:pointer;border:2px solid var(--border)" onclick="cycleGroupColorDC(${i})" title="Click to change color"></div>
               <input value="${g.name}"
                 style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--fg);font-family:var(--font);outline:none"
-                oninput="TEAM_GROUPS[${i}].name=this.value;renderCoachRoster()"
+                oninput="renameGroup(${i}, this.value)"
                 onfocus="this.style.borderColor='var(--team-primary)'"
                 onblur="this.style.borderColor='var(--border)'">
               <div style="font-size:12px;color:var(--fg-3)">${players.filter(p => p.group === g.name).length} players</div>
@@ -11234,18 +11755,21 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 
     const eventsHTML = dayEvents.length ? dayEvents.map(e => `
-      <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--black-4)">
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="width:4px;border-radius:2px;background:${tagColor(e.tag||'other')};align-self:stretch;flex-shrink:0"></div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${e.opponent||e.title||'—'}</div>
-          <div style="font-size:11px;color:var(--gray-3);margin-top:2px">${e.time ? formatTime(e.time) : ''}${e.location ? ' · '+e.location : ''}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--fg)">${e.opponent||e.title||'—'}</div>
+          <div style="font-size:11px;color:var(--fg-3);margin-top:2px">${e.time ? formatTime(e.time) : ''}${e.location ? ' · '+e.location : ''}</div>
           ${e.homeAway ? `<div style="font-size:10px;font-weight:700;color:${e.homeAway==='home'?'var(--green)':'var(--amber)'};margin-top:3px">${e.homeAway.toUpperCase()}</div>` : ''}
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
           <div style="font-size:10px;padding:2px 7px;border-radius:10px;background:${tagColor(e.tag||'other')}22;color:${tagColor(e.tag||'other')};font-weight:600">${tagLabel(e.tag||'other')}</div>
-          <div onclick="deleteCalEvent('${e.id}');document.getElementById('cal-day-detail-overlay').remove()" style="font-size:10px;color:var(--gray-3);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--black-4)">Remove</div>
+          <div style="display:flex;gap:4px">
+            <div onclick="document.getElementById('cal-day-detail-overlay').remove();openEditCalEvent('${e.id}')" style="font-size:10px;color:var(--team-primary);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--team-primary)">Edit</div>
+            <div onclick="deleteCalEvent('${e.id}');document.getElementById('cal-day-detail-overlay').remove()" style="font-size:10px;color:var(--fg-3);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">Remove</div>
+          </div>
         </div>
-      </div>`).join('') : '<div style="font-size:13px;color:var(--gray-3);padding:8px 0">No events yet</div>';
+      </div>`).join('') : '<div style="font-size:13px;color:var(--fg-3);padding:8px 0">No events yet</div>';
 
     overlay.innerHTML = `
       <div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto">
@@ -11339,6 +11863,82 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     await saveScheduleToSupabase();
     document.getElementById('add-event-overlay')?.remove();
     showToast('Event added ✓');
+  }
+
+  function openEditCalEvent(id) {
+    const ev = SCHEDULE.find(e => e.id === id);
+    if (!ev) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'edit-cal-event-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:17px;font-weight:700;color:var(--fg)">Edit event</div>
+          <div onclick="document.getElementById('edit-cal-event-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Event name</label>
+          <input type="text" id="ece-name" class="input-field" value="${ev.opponent||ev.title||''}" style="width:100%">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Date</label>
+            <input type="date" id="ece-date" class="input-field" value="${ev.date||''}" style="width:100%">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Time</label>
+            <input type="time" id="ece-time" class="input-field" value="${ev.time||''}" style="width:100%">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Type / Color</label>
+            <select id="ece-tag" class="input-field" style="width:100%">
+              <option value="">No tag</option>
+              ${Object.entries(EVENT_TAGS).map(([k,v]) => `<option value="${k}" ${ev.tag===k?'selected':''}>${v.label}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Home / Away</label>
+            <select id="ece-ha" class="input-field" style="width:100%">
+              <option value="" ${!ev.homeAway?'selected':''}>—</option>
+              <option value="home" ${ev.homeAway==='home'?'selected':''}>Home</option>
+              <option value="away" ${ev.homeAway==='away'?'selected':''}>Away</option>
+              <option value="neutral" ${ev.homeAway==='neutral'?'selected':''}>Neutral</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Location</label>
+          <input type="text" id="ece-location" class="input-field" value="${ev.location||''}" placeholder="Optional" style="width:100%">
+        </div>
+        <button onclick="saveEditCalEvent('${id}')" class="btn-primary" style="width:100%;font-size:14px">Save changes</button>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  async function saveEditCalEvent(id) {
+    const idx = SCHEDULE.findIndex(e => e.id === id);
+    if (idx === -1) return;
+    SCHEDULE[idx] = {
+      ...SCHEDULE[idx],
+      opponent: document.getElementById('ece-name')?.value.trim() || SCHEDULE[idx].opponent,
+      title: document.getElementById('ece-name')?.value.trim() || SCHEDULE[idx].title,
+      date: document.getElementById('ece-date')?.value || SCHEDULE[idx].date,
+      time: document.getElementById('ece-time')?.value || SCHEDULE[idx].time,
+      tag: document.getElementById('ece-tag')?.value || '',
+      homeAway: document.getElementById('ece-ha')?.value || null,
+      location: document.getElementById('ece-location')?.value.trim() || '',
+    };
+    SCHEDULE.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    renderCalendar();
+    updateNextGame();
+    updateTodaySchedule();
+    await saveScheduleToSupabase();
+    document.getElementById('edit-cal-event-overlay')?.remove();
+    showToast('Event updated ✓');
   }
 
   async function deleteCalEvent(id) {
@@ -11727,14 +12327,23 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       // Update greeting if we have user info
       if (user?.name) {
         const greetingSpan = document.querySelector('#tab-' + appRole + '-home .greeting span');
-        if (greetingSpan) greetingSpan.textContent = user.name.split(' ').slice(-1)[0];
+        if (greetingSpan) greetingSpan.textContent = user.name || 'Coach';
+        // Fix greeting word based on time of day
+        const greetingEl = document.querySelector('#tab-' + appRole + '-home .greeting');
+        if (greetingEl) {
+          const hour = new Date().getHours();
+          const word = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+          const span = greetingEl.querySelector('span');
+          greetingEl.childNodes[0].textContent = word + ', ';
+          if (!span) greetingEl.innerHTML = `${word}, <span>${user.name || 'Coach'}</span> 👋`;
+        }
       }
 
       // Update team name displays
       if (program) {
         document.querySelectorAll('.sub-greeting').forEach(el => {
           if (el.textContent.includes('Nampa Bulldogs')) {
-            el.textContent = program.team_name + ' · 2024 Season';
+            el.textContent = program.team_name + ' · ' + new Date().getFullYear() + ' Season';
           }
         });
         const homeCode = document.getElementById('home-join-code');
@@ -11812,10 +12421,19 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--black-4)';
       row.innerHTML = `
         <div style="width:28px;height:28px;border-radius:50%;background:${g.color};flex-shrink:0;cursor:pointer" onclick="cycleGroupColor(${i})"></div>
-        <input value="${g.name}" style="flex:1;background:var(--black-3);border:1px solid var(--black-4);border-radius:6px;padding:7px 10px;font-size:14px;color:var(--white);font-family:var(--font);outline:none" data-group-idx="${i}" oninput="TEAM_GROUPS[${i}].name=this.value;renderCoachRoster()" onfocus="this.style.borderColor='var(--team-primary)'" onblur="this.style.borderColor='var(--black-4)'">
+        <input value="${g.name}" style="flex:1;background:var(--black-3);border:1px solid var(--black-4);border-radius:6px;padding:7px 10px;font-size:14px;color:var(--white);font-family:var(--font);outline:none" data-group-idx="${i}" oninput="renameGroup(${i}, this.value)" onfocus="this.style.borderColor='var(--team-primary)'" onblur="this.style.borderColor='var(--black-4)'">
         <div style="color:var(--red);font-size:20px;cursor:pointer;padding:0 4px;opacity:0.7" onclick="deleteGroup(${i})">✕</div>`;
       container.appendChild(row);
     });
+  }
+
+  function renameGroup(idx, newName) {
+    const oldName = TEAM_GROUPS[idx].name;
+    TEAM_GROUPS[idx].name = newName;
+    // Update all players referencing the old name
+    PLAYERS.forEach(p => { if (p.group === oldName) p.group = newName; });
+    syncRosterData();
+    renderCoachRoster();
   }
 
   function cycleGroupColor(idx) {
