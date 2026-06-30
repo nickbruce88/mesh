@@ -7136,15 +7136,24 @@
 
   // ===== AUTO SESSION RESTORE =====
   async function checkExistingSession() {
-    // Don't auto-restore if user explicitly logged out (no local role stored)
+    // Don't auto-restore if user explicitly logged out
     const role = localStorage.getItem('mesh_role');
-    if (!role) return false;
+    if (!role) {
+      console.log('No local role — skipping session restore');
+      return false;
+    }
 
     try {
       const { data } = await db.auth.getSession();
-      if (!data.session) return false;
+      if (!data?.session?.user) {
+        console.log('No active Supabase session');
+        localStorage.removeItem('mesh_role'); // clear stale role
+        return false;
+      }
 
       const uid = data.session.user.id;
+      console.log('Restoring session — uid:', uid);
+
       const { data: prog } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
       if (prog) {
         localStorage.setItem('mesh_program_id', prog.id);
@@ -7154,11 +7163,17 @@
         localStorage.setItem('mesh_user', JSON.stringify({ name: prog.coach_name, role: prog.coach_role }));
         obProgram.teamName = prog.team_name;
         obProgram.coachName = prog.coach_name;
+        console.log('Session restored successfully');
         login('coach');
         return true;
+      } else {
+        console.warn('Session exists but no program found');
+        return false;
       }
-    } catch(e) { console.warn('Session restore error:', e); }
-    return false;
+    } catch(e) {
+      console.warn('Session restore error:', e);
+      return false;
+    }
   }
 
   // ===== THREE JOIN CODE GENERATION =====
@@ -14401,21 +14416,16 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   document.addEventListener('DOMContentLoaded', () => { renderDrillLibrary(); renderScriptSection(); renderDepthChart(); });
 
   async function logOut() {
+    closeProfileModal();
     try {
       await db.auth.signOut();
-    } catch(e) {}
+      console.log('Supabase session cleared');
+    } catch(e) { console.warn('Sign out error:', e); }
     try {
-      localStorage.removeItem('mesh_role');
-      localStorage.removeItem('mesh_user');
-      localStorage.removeItem('mesh_current_program');
-      localStorage.removeItem('mesh_program_id');
-      localStorage.removeItem('mesh_joining_code');
-      localStorage.removeItem('mesh_joining_program_id');
-      localStorage.removeItem('mesh_auth_uid');
-      localStorage.removeItem('mesh_auth_email');
-      localStorage.removeItem('mesh_team_name');
+      ['mesh_role','mesh_user','mesh_current_program','mesh_program_id',
+       'mesh_joining_code','mesh_joining_program_id','mesh_auth_uid',
+       'mesh_auth_email','mesh_team_name'].forEach(k => localStorage.removeItem(k));
     } catch(e) {}
-    closeProfileModal();
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-login').classList.add('active');
     showToast('Signed out ✓');
