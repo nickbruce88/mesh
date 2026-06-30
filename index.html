@@ -1624,14 +1624,61 @@
 
 <!-- ONBOARDING: LANDING -->
 <div id="screen-login" class="screen active">
-  <!-- Background video -->
+  <!-- Background video carousel -->
   <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0">
-    <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;opacity:0.22">
-      <source src="https://videos.pexels.com/video-files/11918917/11918917-hd_1920_1080_60fps.mp4" type="video/mp4">
-    </video>
-    <!-- Dark gradient overlay so text stays readable -->
-    <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.7) 100%)"></div>
+    <video id="bg-vid-a" muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.5s ease"></video>
+    <video id="bg-vid-b" muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.5s ease"></video>
+    <!-- Dark gradient overlay -->
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.65) 100%)"></div>
   </div>
+  <script>
+  (function() {
+    // Sport video IDs from Pexels — each is a different sport/field
+    const SPORT_VIDEOS = [
+      { id: '34682825', fps: '25', label: 'American Football' },  // High school football field aerial night
+      { id: '2249402',  fps: '25', label: 'Soccer'            },  // Soccer field aerial night
+      { id: '20698839', fps: '25', label: 'Baseball'          },  // Baseball diamond aerial
+      { id: '33277901', fps: '25', label: 'Basketball'        },  // Basketball court aerial
+      { id: '2657257',  fps: '25', label: 'Soccer Stadium'    },  // Soccer stadium night
+    ];
+
+    function buildUrl(v) {
+      return 'https://videos.pexels.com/video-files/' + v.id + '/' + v.id + '-hd_1920_1080_' + v.fps + 'fps.mp4';
+    }
+
+    const vidA = document.getElementById('bg-vid-a');
+    const vidB = document.getElementById('bg-vid-b');
+    let current = 0;
+    let activeEl = vidA;
+    let inactiveEl = vidB;
+    const DISPLAY_TIME = 9000; // ms to show each video
+
+    function loadNext() {
+      const nextIdx = (current + 1) % SPORT_VIDEOS.length;
+      inactiveEl.src = buildUrl(SPORT_VIDEOS[nextIdx]);
+      inactiveEl.load();
+      inactiveEl.oncanplay = function() {
+        inactiveEl.play().catch(() => {});
+        // Crossfade
+        inactiveEl.style.opacity = '0.22';
+        activeEl.style.opacity = '0';
+        // Swap
+        const tmp = activeEl; activeEl = inactiveEl; inactiveEl = tmp;
+        current = nextIdx;
+        setTimeout(loadNext, DISPLAY_TIME);
+      };
+    }
+
+    // Start first video
+    vidA.src = buildUrl(SPORT_VIDEOS[0]);
+    vidA.load();
+    vidA.oncanplay = function() {
+      vidA.play().catch(() => {});
+      vidA.style.opacity = '0.22';
+      setTimeout(loadNext, DISPLAY_TIME);
+    };
+  })();
+  </script>
 
   <div style="width:100%;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center">
     <!-- Logo -->
