@@ -4433,7 +4433,7 @@
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
       <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v30.4</div>
+      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v31.1</div>
     </div>
   </div>
 
@@ -4482,7 +4482,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v30.4';
+  const APP_VERSION = 'v31.1';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -11366,44 +11366,82 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function setDiscStatus(player, key) {
-    if (key === player.disciplinaryStatus) return; // no change
+    if (key === player.disciplinaryStatus) return;
 
-    // Require a note explaining the status change
     const statusLabel = DISC_STATUSES.find(s => s.key === key)?.label || key;
-    const note = prompt(`Changing status to "${statusLabel}" — add a note explaining why (required):`);
-    if (note === null) return; // cancelled
-    if (!note.trim()) {
-      showToast('A note is required to change disciplinary status');
+
+    // Show inline note modal instead of prompt()
+    showDiscNoteModal(player, key, statusLabel);
+  }
+
+  function showDiscNoteModal(player, newKey, statusLabel) {
+    // Remove any existing modal
+    document.getElementById('disc-note-modal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'disc-note-modal';
+    modal.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end;justify-content:center';
+    modal.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:520px;padding:20px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
+        <div style="font-size:16px;font-weight:700;color:var(--fg);margin-bottom:4px">Change status to "${statusLabel}"</div>
+        <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">A note is required to change disciplinary status.</div>
+        <textarea id="disc-note-input" placeholder="Explain the reason for this status change…" style="width:100%;min-height:90px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:13px;font-family:var(--font);resize:vertical;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button onclick="document.getElementById('disc-note-modal').remove()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Cancel</button>
+          <button onclick="confirmDiscStatusChange()" style="flex:2;background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">Save & update status</button>
+        </div>
+      </div>`;
+
+    // Store pending change
+    modal._player = player;
+    modal._newKey = newKey;
+    modal._statusLabel = statusLabel;
+    window._pendingDiscChange = { player, newKey, statusLabel };
+
+    const container = document.querySelector('.phone') || document.body;
+    modal.onclick = e => { if (e.target === modal) modal.remove(); };
+    container.appendChild(modal);
+    setTimeout(() => document.getElementById('disc-note-input')?.focus(), 100);
+  }
+
+  async function confirmDiscStatusChange() {
+    const { player, newKey, statusLabel } = window._pendingDiscChange || {};
+    if (!player) return;
+
+    const note = document.getElementById('disc-note-input')?.value.trim();
+    if (!note) {
+      document.getElementById('disc-note-input').style.border = '1.5px solid var(--red)';
+      document.getElementById('disc-note-input').placeholder = 'A note is required…';
       return;
     }
+
+    document.getElementById('disc-note-modal')?.remove();
 
     // Log the status change as a discipline note
     const changeNote = {
       type: 'discipline',
-      text: `Status changed to ${statusLabel}: ${note.trim()}`,
+      text: `Status changed to ${statusLabel}: ${note}`,
       author: localStorage.getItem('mesh_user_name') || 'Coach',
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }),
     };
     if (!player.discipline) player.discipline = [];
     player.discipline.unshift(changeNote);
 
-    player.disciplinaryStatus = key;
+    player.disciplinaryStatus = newKey;
     renderDiscStatusRow(player);
     renderPPDiscipline(player);
     renderCoachRoster();
 
-    // Save to Supabase
     if (player.db_id) {
       try {
-        await db.from('players')
-          .update({ disciplinary_status: key })
-          .eq('id', player.db_id);
+        await db.from('players').update({ disciplinary_status: newKey }).eq('id', player.db_id);
       } catch(e) { console.error('Disc status save error:', e); }
     } else {
-      try { localStorage.setItem('mesh_disc_' + player.id, key); } catch(e) {}
+      try { localStorage.setItem('mesh_disc_' + player.id, newKey); } catch(e) {}
     }
 
     showToast('Status updated — note logged ✓');
+    window._pendingDiscChange = null;
   }
 
   // ===== PROGRAM ID HELPER =====
