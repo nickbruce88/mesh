@@ -1777,16 +1777,7 @@
 
       chips.forEach(c => { c.textContent = c.dataset.label; });
 
-      function setLogo() {
-        const meshLogo = document.getElementById('login-mesh-logo');
-        if (meshLogo && meshLogo.complete && meshLogo.src) {
-          logoEl.src = meshLogo.src;
-        } else if (meshLogo) {
-          meshLogo.addEventListener('load', () => { logoEl.src = meshLogo.src; }, { once: true });
-        }
-      }
-
-      setTimeout(() => { setLogo(); init(); }, 400);
+      setTimeout(() => { init(); }, 400);
 
       function init() {
         // Fix chips at center, move only via transform
@@ -7203,6 +7194,8 @@
     const topbarLogo = document.getElementById('topbar-mesh-logo');
     const sidebarLogo = document.getElementById('sidebar-mesh-logo');
     if (loginLogo) loginLogo.src = logoSrc;
+    const animLogo = document.getElementById('anim-mesh-logo');
+    if (animLogo) animLogo.src = logoSrc;
     if (topbarLogo) topbarLogo.src = logoSrc;
     // Sidebar logo: in light mode sidebar is team-colored so use light logo; in dark use dark logo
     if (sidebarLogo) sidebarLogo.src = MESH_LOGO_LIGHT;
