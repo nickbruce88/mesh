@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>mesh — Nampa Bulldogs</title>
+<title>Mesh</title>
+  <link rel="icon" id="favicon" type="image/png" href="">
 <style>
   :root {
     /* Dark mode (default) */
@@ -1767,7 +1768,6 @@
     <script>
     (function() {
       const chips = Array.from(document.querySelectorAll('.mesh-chip'));
-      const logoEl = document.getElementById('anim-mesh-logo');
       const cx = 170, cy = 170;
       const orbitR = 130;
       const N = chips.length;
@@ -1775,16 +1775,14 @@
 
       chips.forEach(c => { c.textContent = c.dataset.label; });
 
-      setTimeout(() => { init(); }, 400);
+      setTimeout(init, 400);
 
       function init() {
-        // Fix chips at center, move only via transform
         chips.forEach(c => {
-          const w = c.offsetWidth || 100;
-          const h = c.offsetHeight || 28;
-          c._w = w; c._h = h;
-          c.style.left = (cx - w / 2) + 'px';
-          c.style.top  = (cy - h / 2) + 'px';
+          c._w = c.offsetWidth || 100;
+          c._h = c.offsetHeight || 28;
+          c.style.left = (cx - c._w / 2) + 'px';
+          c.style.top  = (cy - c._h / 2) + 'px';
           c.style.opacity = '0';
           c.style.transform = 'translate(0,0)';
           c.style.willChange = 'transform, opacity';
@@ -1792,84 +1790,94 @@
 
         let orbitAngle = 0;
         let rafId = null;
-        let phase = 'idle'; // idle | orbit | collapse
 
         function orbitFrame() {
-          orbitAngle += ORBIT_SPEED;
-          chips.forEach((c, i) => {
-            const angle = orbitAngle + (2 * Math.PI * i / N) - Math.PI / 2;
-            c.style.transform = `translate(${orbitR * Math.cos(angle)}px, ${orbitR * Math.sin(angle)}px)`;
-          });
+          try {
+            orbitAngle += ORBIT_SPEED;
+            chips.forEach((c, i) => {
+              const angle = orbitAngle + (2 * Math.PI * i / N) - Math.PI / 2;
+              c.style.transform = 'translate(' + (orbitR * Math.cos(angle)) + 'px,' + (orbitR * Math.sin(angle)) + 'px)';
+            });
+          } catch(e) {}
           rafId = requestAnimationFrame(orbitFrame);
         }
 
         function runLoop() {
-          cancelAnimationFrame(rafId);
-          rafId = null;
-          phase = 'idle';
-
-          // Reset chips
-          chips.forEach(c => {
-            c.getAnimations().forEach(a => a.cancel());
-            c.style.transition = 'none';
-            c.style.transform = 'translate(0,0)';
-            c.style.opacity = '0';
-          });
-
-          // Phase 1: fade all chips in at orbit positions simultaneously
-          // Set their transform to orbit positions first, then fade in
-          chips.forEach((c, i) => {
-            const angle = (2 * Math.PI * i / N) - Math.PI / 2;
-            c.style.transform = `translate(${orbitR * Math.cos(angle)}px, ${orbitR * Math.sin(angle)}px)`;
-          });
-
-          // Stagger fade in
-          chips.forEach((c, i) => {
-            setTimeout(() => {
-              c.style.transition = 'opacity 0.5s ease';
-              c.style.opacity = '1';
-            }, 200 + i * 150);
-          });
-
-          // Phase 2: start orbiting after all faded in
-          const orbitStart = 200 + N * 150 + 300;
-          setTimeout(() => {
-            chips.forEach(c => { c.style.transition = 'none'; });
-            phase = 'orbit';
-            rafId = requestAnimationFrame(orbitFrame);
-          }, orbitStart);
-
-          // Phase 3: collapse into logo after orbiting for 3s
-          const collapseStart = orbitStart + 3000;
-          setTimeout(() => {
+          try {
             cancelAnimationFrame(rafId);
             rafId = null;
-            phase = 'collapse';
 
-            chips.forEach((c, i) => {
-              const style = window.getComputedStyle(c);
-              const mat = new DOMMatrix(style.transform);
-              const fromTx = mat.m41;
-              const fromTy = mat.m42;
-
-              setTimeout(() => {
-                c.animate([
-                  { transform: `translate(${fromTx}px,${fromTy}px)`, opacity: 1 },
-                  { transform: 'translate(0px,0px)',                  opacity: 0 }
-                ], {
-                  duration: 600,
-                  easing: 'cubic-bezier(0.4,0,0.2,1)',
-                  fill: 'forwards'
-                }).onfinish = () => {
-                  c.style.opacity = '0';
-                  c.style.transform = 'translate(0,0)';
-                };
-              }, i * 80);
+            chips.forEach(c => {
+              try { c.getAnimations().forEach(a => a.cancel()); } catch(e) {}
+              c.style.transition = 'none';
+              c.style.transform = 'translate(0,0)';
+              c.style.opacity = '0';
             });
 
-            // Restart after collapse completes
-            setTimeout(runLoop, N * 80 + 700);
-          }, collapseStart);
+            // Phase 1: position chips at orbit angles, fade in staggered
+            chips.forEach((c, i) => {
+              const angle = (2 * Math.PI * i / N) - Math.PI / 2;
+              c.style.transform = 'translate(' + (orbitR * Math.cos(angle)) + 'px,' + (orbitR * Math.sin(angle)) + 'px)';
+            });
+            chips.forEach((c, i) => {
+              setTimeout(() => {
+                c.style.transition = 'opacity 0.5s ease';
+                c.style.opacity = '1';
+              }, 200 + i * 150);
+            });
+
+            // Phase 2: start orbit after fade-in
+            const orbitAt = 200 + N * 150 + 400;
+            setTimeout(() => {
+              chips.forEach(c => { c.style.transition = 'none'; });
+              orbitAngle = 0;
+              rafId = requestAnimationFrame(orbitFrame);
+            }, orbitAt);
+
+            // Phase 3: collapse after 3s of orbit
+            const collapseAt = orbitAt + 3000;
+            setTimeout(() => {
+              cancelAnimationFrame(rafId);
+              rafId = null;
+
+              chips.forEach((c, i) => {
+                // Fallback position from orbitAngle
+                let fromTx, fromTy;
+                try {
+                  const mat = new DOMMatrix(window.getComputedStyle(c).transform);
+                  fromTx = mat.m41; fromTy = mat.m42;
+                } catch(e) {
+                  const angle = orbitAngle + (2 * Math.PI * i / N) - Math.PI / 2;
+                  fromTx = orbitR * Math.cos(angle);
+                  fromTy = orbitR * Math.sin(angle);
+                }
+
+                setTimeout(() => {
+                  try {
+                    const anim = c.animate([
+                      { transform: 'translate(' + fromTx + 'px,' + fromTy + 'px)', opacity: 1 },
+                      { transform: 'translate(0px,0px)', opacity: 0 }
+                    ], { duration: 600, easing: 'cubic-bezier(0.4,0,0.2,1)', fill: 'forwards' });
+                    anim.onfinish = () => {
+                      c.style.opacity = '0';
+                      c.style.transform = 'translate(0,0)';
+                    };
+                  } catch(e) {
+                    c.style.opacity = '0';
+                    c.style.transform = 'translate(0,0)';
+                  }
+                }, i * 80);
+              });
+
+              // Restart — generous delay to ensure all collapse anims finish
+              setTimeout(runLoop, N * 80 + 1000);
+
+            }, collapseAt);
+
+          } catch(e) {
+            // Safety net — always restart
+            setTimeout(runLoop, 1500);
+          }
         }
 
         runLoop();
@@ -6760,6 +6768,7 @@
     if (userEl) userEl.textContent = userName;
     if (roleEl) roleEl.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
     if (avatarEl) avatarEl.textContent = getInitialsFromSession();
+    document.title = teamName ? 'Mesh — ' + teamName : 'Mesh';
   }
 
   function updateDesktopSidebarActive(itemId) {
@@ -7195,11 +7204,20 @@
     const animLogo = document.getElementById('anim-mesh-logo');
     if (animLogo) animLogo.src = logoSrc;
     if (topbarLogo) topbarLogo.src = logoSrc;
-    // Sidebar logo: in light mode sidebar is team-colored so use light logo; in dark use dark logo
     if (sidebarLogo) sidebarLogo.src = MESH_LOGO_LIGHT;
+
+    // Set favicon to Mesh logo
+    const favicon = document.getElementById('favicon');
+    if (favicon) favicon.href = MESH_LOGO_DARK;
 
     // Persist preference
     try { localStorage.setItem('mesh_theme', themeMode); } catch(e) {}
+  }
+
+  // Update browser tab title dynamically
+  function updatePageTitle() {
+    const programName = document.getElementById('topbar-program-name')?.textContent?.trim();
+    document.title = programName ? 'Mesh — ' + programName : 'Mesh';
   }
 
   function toggleTheme() {
