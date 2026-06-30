@@ -3768,8 +3768,11 @@
       <!-- EQUIPMENT -->
       <div class="pp-section" id="pp-equipment">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:13px;color:var(--gray-2)">Items currently assigned to this player</div>
-          <button class="btn-sm" onclick="openAssignToPlayer()">+ Assign</button>
+          <div style="font-size:13px;color:var(--fg-3)">Items assigned to this player</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-sm" onclick="openQRScannerForPlayer()" style="background:var(--team-primary);color:white;border-color:var(--team-primary)">📷 Scan</button>
+            <button class="btn-sm" onclick="openAssignToPlayer()">+ Assign</button>
+          </div>
         </div>
         <div id="pp-equipment-list"></div>
       </div>
@@ -4298,28 +4301,32 @@
   <div id="qr-scanner-overlay" style="position:absolute;inset:0;background:var(--black);z-index:95;display:none;flex-direction:column">
     <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--black-4);flex-shrink:0">
       <div class="pp-back" onclick="closeQRScanner()">‹</div>
-      <div style="font-size:17px;font-weight:700">Scan QR Code</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">Scan QR Code</div>
+        <div style="font-size:12px;color:var(--team-primary);font-weight:600;margin-top:1px" id="qr-player-context" style="display:none"></div>
+      </div>
     </div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
-      <div style="width:220px;height:220px;border:3px solid var(--team-primary);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;position:relative;background:var(--black-2)">
+      <div style="width:240px;height:240px;border:3px solid var(--team-primary);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;position:relative;background:var(--black-2);overflow:hidden">
         <video id="qr-video" style="width:100%;height:100%;object-fit:cover;border-radius:14px;display:none"></video>
+        <canvas id="qr-canvas" style="display:none"></canvas>
         <div id="qr-placeholder" style="text-align:center">
           <div style="font-size:48px;margin-bottom:8px">📷</div>
           <div style="font-size:13px;color:var(--gray-2)">Camera preview</div>
         </div>
         <!-- Corner brackets -->
-        <div style="position:absolute;top:10px;left:10px;width:20px;height:20px;border-top:3px solid var(--team-primary);border-left:3px solid var(--team-primary)"></div>
-        <div style="position:absolute;top:10px;right:10px;width:20px;height:20px;border-top:3px solid var(--team-primary);border-right:3px solid var(--team-primary)"></div>
-        <div style="position:absolute;bottom:10px;left:10px;width:20px;height:20px;border-bottom:3px solid var(--team-primary);border-left:3px solid var(--team-primary)"></div>
-        <div style="position:absolute;bottom:10px;right:10px;width:20px;height:20px;border-bottom:3px solid var(--team-primary);border-right:3px solid var(--team-primary)"></div>
+        <div style="position:absolute;top:10px;left:10px;width:24px;height:24px;border-top:3px solid var(--team-primary);border-left:3px solid var(--team-primary);border-radius:2px 0 0 0"></div>
+        <div style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-top:3px solid var(--team-primary);border-right:3px solid var(--team-primary);border-radius:0 2px 0 0"></div>
+        <div style="position:absolute;bottom:10px;left:10px;width:24px;height:24px;border-bottom:3px solid var(--team-primary);border-left:3px solid var(--team-primary);border-radius:0 0 0 2px"></div>
+        <div style="position:absolute;bottom:10px;right:10px;width:24px;height:24px;border-bottom:3px solid var(--team-primary);border-right:3px solid var(--team-primary);border-radius:0 0 2px 0"></div>
       </div>
-      <div style="font-size:15px;font-weight:600;margin-bottom:8px" id="qr-scan-status">Point camera at a Mesh equipment QR code</div>
-      <div style="font-size:13px;color:var(--gray-3);margin-bottom:24px">Hold steady — scanning automatically</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px" id="qr-scan-status">Point camera at a Mesh QR code</div>
+      <div style="font-size:12px;color:var(--gray-3);margin-bottom:20px">Scanning automatically when detected</div>
       <button class="note-modal-save" onclick="startQRCamera()" id="qr-start-btn">Start camera</button>
-      <div style="margin-top:16px">
-        <div style="font-size:12px;color:var(--gray-3);margin-bottom:8px">Or enter ID manually</div>
+      <div style="margin-top:16px;width:100%;max-width:280px">
+        <div style="font-size:12px;color:var(--gray-3);margin-bottom:8px">Or enter item ID manually</div>
         <div style="display:flex;gap:8px">
-          <input class="add-drill-input" id="qr-manual-input" placeholder="MESH-HELM-001" style="margin:0">
+          <input class="add-drill-input" id="qr-manual-input" placeholder="MESH-HELM-001" style="margin:0;flex:1">
           <button class="btn-sm" onclick="lookupManualID()" style="flex-shrink:0">Look up</button>
         </div>
       </div>
@@ -4492,7 +4499,7 @@
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
       <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v31.2</div>
+      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v31.3</div>
     </div>
   </div>
 
@@ -4539,9 +4546,11 @@
 </div><!-- end phone -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v31.2';
+  const APP_VERSION = 'v31.3';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -12280,73 +12289,61 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   // ===== QR CODE GENERATION =====
   // Pure JS QR code using a simple matrix approach
+  // ===== QR CODE GENERATION (real) =====
   function renderQRCode(containerId, text, size) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    // Use a canvas-based simple QR visual (placeholder pattern for demo)
-    // In production this would use a QR library — for now we create a visual representation
     container.innerHTML = '';
-    const canvas = document.createElement('canvas');
-    canvas.width = size || 140;
-    canvas.height = size || 140;
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    const ctx = canvas.getContext('2d');
-    const s = canvas.width;
+    const sz = size || 140;
 
-    // White background
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, s, s);
-
-    // Generate a deterministic pattern from the text
-    const seed = text.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
-    const modules = 21; // standard QR size
-    const cellSize = Math.floor(s / (modules + 2));
-    const offset = Math.floor((s - cellSize * modules) / 2);
-
-    ctx.fillStyle = '#000';
-
-    // Draw finder patterns (corners)
-    function drawFinder(x, y) {
-      ctx.fillRect(x, y, 7*cellSize, 7*cellSize);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(x+cellSize, y+cellSize, 5*cellSize, 5*cellSize);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(x+2*cellSize, y+2*cellSize, 3*cellSize, 3*cellSize);
+    if (window.QRCode) {
+      // qrcodejs API
+      new QRCode(container, {
+        text,
+        width: sz,
+        height: sz,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      // Fallback — text only
+      container.innerHTML = `<div style="width:${sz}px;height:${sz}px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #ccc;font-size:10px;font-weight:700;word-break:break-all;padding:8px;text-align:center;color:#000">${text}</div>`;
     }
-    drawFinder(offset, offset);
-    drawFinder(offset + (modules-7)*cellSize, offset);
-    drawFinder(offset, offset + (modules-7)*cellSize);
-
-    // Data modules — deterministic from seed
-    let rng = seed;
-    function nextBit() { rng = (rng * 1103515245 + 12345) & 0x7fffffff; return rng % 2; }
-
-    for (let row = 0; row < modules; row++) {
-      for (let col = 0; col < modules; col++) {
-        // Skip finder pattern areas
-        if ((row < 8 && col < 8) || (row < 8 && col >= modules-8) || (row >= modules-8 && col < 8)) continue;
-        if (nextBit()) {
-          ctx.fillStyle = '#000';
-          ctx.fillRect(offset + col*cellSize, offset + row*cellSize, cellSize-1, cellSize-1);
-        }
-      }
-    }
-
-    container.appendChild(canvas);
   }
 
-  // ===== QR SCANNER =====
+  // ===== QR SCANNER (real jsQR) =====
   let qrStream = null;
+  let qrScanRAF = null;
+  let qrPlayerContext = null; // set when opened from player card
+  let qrLastScan = 0;
 
   function openQRScanner() {
+    qrPlayerContext = null;
+    const ctx = document.getElementById('qr-player-context');
+    if (ctx) ctx.textContent = '';
     document.getElementById('qr-scanner-overlay').style.display = 'flex';
-    document.getElementById('qr-scan-status').textContent = 'Point camera at a Mesh equipment QR code';
+    document.getElementById('qr-scan-status').textContent = 'Point camera at a Mesh QR code';
+    document.getElementById('qr-manual-input').value = '';
+  }
+
+  function openQRScannerForPlayer() {
+    const player = PLAYERS.find(p => p.id === currentPlayerId);
+    if (!player) return;
+    qrPlayerContext = player;
+    const ctx = document.getElementById('qr-player-context');
+    if (ctx) ctx.textContent = `Checking out to ${player.name}`;
+    document.getElementById('qr-scanner-overlay').style.display = 'flex';
+    document.getElementById('qr-scan-status').textContent = `Scan gear to check out to ${player.name}`;
+    document.getElementById('qr-manual-input').value = '';
+    // Auto-start camera
+    startQRCamera();
   }
 
   function closeQRScanner() {
     stopQRCamera();
     document.getElementById('qr-scanner-overlay').style.display = 'none';
+    qrPlayerContext = null;
   }
 
   async function startQRCamera() {
@@ -12354,31 +12351,61 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     btn.textContent = 'Starting…';
     btn.disabled = true;
     try {
-      qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      qrStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
       const video = document.getElementById('qr-video');
       video.srcObject = qrStream;
-      video.play();
+      await video.play();
       video.style.display = 'block';
       document.getElementById('qr-placeholder').style.display = 'none';
       btn.textContent = 'Stop camera';
       btn.disabled = false;
       btn.onclick = stopQRCamera;
-      document.getElementById('qr-scan-status').textContent = 'Scanning… hold steady over the QR code';
-      // For demo purposes, auto-detect after 2s
-      setTimeout(() => {
-        simulateQRScan('MESH-HELM-002');
-      }, 2500);
+      document.getElementById('qr-scan-status').textContent = 'Scanning… hold steady';
+      // Start scan loop
+      scanQRFrame();
     } catch(e) {
       btn.textContent = 'Start camera';
       btn.disabled = false;
+      btn.onclick = startQRCamera;
       document.getElementById('qr-scan-status').textContent = 'Camera access denied — use manual entry below';
     }
   }
 
+  function scanQRFrame() {
+    const video = document.getElementById('qr-video');
+    const canvas = document.getElementById('qr-canvas');
+    if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      qrScanRAF = requestAnimationFrame(scanQRFrame);
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    if (window.jsQR) {
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data) {
+        const now = Date.now();
+        if (now - qrLastScan > 2000) { // debounce 2s between scans
+          qrLastScan = now;
+          onQRDetected(code.data);
+          return; // stop loop after detection
+        }
+      }
+    }
+    qrScanRAF = requestAnimationFrame(scanQRFrame);
+  }
+
   function stopQRCamera() {
+    cancelAnimationFrame(qrScanRAF);
+    qrScanRAF = null;
     if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
     const video = document.getElementById('qr-video');
-    video.style.display = 'none';
+    if (video) video.style.display = 'none';
     document.getElementById('qr-placeholder').style.display = 'block';
     const btn = document.getElementById('qr-start-btn');
     btn.textContent = 'Start camera';
@@ -12386,19 +12413,62 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     btn.onclick = startQRCamera;
   }
 
-  function simulateQRScan(id) {
+  function onQRDetected(data) {
+    // Expect data to be a Mesh item ID like MESH-HELM-001
+    const id = data.trim().toUpperCase();
+    const item = INVENTORY.find(i => i.id === id);
     stopQRCamera();
-    closeQRScanner();
-    showItemActionSheet(id);
+
+    if (!item) {
+      document.getElementById('qr-scan-status').textContent = `⚠️ Unknown code: ${id}`;
+      setTimeout(() => {
+        document.getElementById('qr-scan-status').textContent = 'Point camera at a Mesh QR code';
+        startQRCamera();
+      }, 2000);
+      return;
+    }
+
+    // If we have player context, auto-assign and show confirmation
+    if (qrPlayerContext) {
+      closeQRScanner();
+      checkoutItemToPlayer(item, qrPlayerContext);
+    } else {
+      closeQRScanner();
+      showItemActionSheet(id);
+    }
+  }
+
+  function checkoutItemToPlayer(item, player) {
+    const prev = item.assignedTo;
+    item.assignedTo = player.name;
+    renderInventory();
+    renderPPEquipment(player);
+
+    // Show confirmation bottom sheet
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end';
+    modal.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:20px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
+        <div style="text-align:center;font-size:32px;margin-bottom:8px">✅</div>
+        <div style="font-size:16px;font-weight:700;color:var(--fg);text-align:center;margin-bottom:4px">${item.name}</div>
+        <div style="font-size:13px;color:var(--fg-3);text-align:center;margin-bottom:4px">Checked out to <strong style="color:var(--fg)">${player.name}</strong></div>
+        ${prev ? `<div style="font-size:12px;color:var(--amber);text-align:center;margin-bottom:16px">Previously assigned to ${prev}</div>` : '<div style="margin-bottom:16px"></div>'}
+        <div style="display:flex;gap:8px">
+          <button onclick="this.closest('[style*=inset]').remove();openQRScannerForPlayer()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Scan next</button>
+          <button onclick="this.closest('[style*=inset]').remove()" style="flex:1;background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">Done</button>
+        </div>
+      </div>`;
+    (document.querySelector('.phone') || document.body).appendChild(modal);
   }
 
   function lookupManualID() {
     const id = document.getElementById('qr-manual-input').value.trim().toUpperCase();
     if (!id) return;
-    const item = INVENTORY.find(i => i.id === id);
-    if (!item) { showToast('No item found with ID: ' + id); return; }
-    closeQRScanner();
-    showItemActionSheet(id);
+    onQRDetected(id);
+  }
+
+  function simulateQRScan(id) {
+    onQRDetected(id);
   }
 
   // ===== ITEM ACTION SHEET (post-scan) =====
