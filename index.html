@@ -1757,7 +1757,7 @@
     <!-- CTAs -->
     <div style="width:100%;display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
       <!-- Coach CTA -->
-      <div onclick="showCoachOnboarding()" style="background:var(--team-primary);border-radius:var(--radius);padding:18px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:opacity 0.15s" onmousedown="this.style.opacity='0.85'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='0.85'" ontouchend="this.style.opacity='1'">
+      <div onclick="showScreen('screen-beta')" style="background:var(--team-primary);border-radius:var(--radius);padding:18px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:opacity 0.15s" onmousedown="this.style.opacity='0.85'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='0.85'" ontouchend="this.style.opacity='1'">
         <div style="font-size:28px;flex-shrink:0">🎙️</div>
         <div>
           <div style="font-size:15px;font-weight:700;color:white">Set up my program</div>
@@ -1779,12 +1779,63 @@
 
     <!-- Sign in -->
     <div style="font-size:13px;color:rgba(255,255,255,0.6);text-align:center">
-      Already set up? <span style="color:white;font-weight:600;cursor:pointer" onclick="login()">Sign in →</span>
+      Already set up? <span style="color:white;font-weight:600;cursor:pointer" onclick="showScreen('screen-signin')">Sign in →</span>
     </div>
   </div>
 </div>
 
-<!-- ONBOARDING: COACH SETUP (multi-step) -->
+<!-- BETA GATE: Enter invite code -->
+<div id="screen-beta" class="screen" style="justify-content:flex-start;padding:32px 24px;overflow-y:auto">
+  <div style="width:100%;max-width:420px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:32px">
+      <div style="font-size:24px;color:var(--team-primary);cursor:pointer" onclick="showScreen('screen-login')">‹</div>
+      <div style="font-size:20px;font-weight:700">Beta access</div>
+    </div>
+    <div style="font-size:14px;color:var(--fg-2);margin-bottom:6px">Mesh is currently invite-only.</div>
+    <div style="font-size:13px;color:var(--fg-3);margin-bottom:24px">Enter the beta code you received to get started.</div>
+    <div class="ob-field-label">Beta invite code</div>
+    <input class="input-field" id="beta-code-input" placeholder="e.g. MESH-BETA-XXXX" style="text-transform:uppercase;letter-spacing:0.08em;font-size:18px;text-align:center;margin-bottom:8px" oninput="this.value=this.value.toUpperCase()">
+    <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="beta-code-error"></div>
+    <button class="btn-primary" onclick="verifyBetaCode()">Continue →</button>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--fg-3)">Don't have a code? <a href="mailto:hello@meshsports.co" style="color:var(--team-primary);font-weight:600">Request access</a></div>
+  </div>
+</div>
+
+<!-- AUTH: Create account (email + password) -->
+<div id="screen-create-account" class="screen" style="justify-content:flex-start;padding:32px 24px;overflow-y:auto">
+  <div style="width:100%;max-width:420px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:32px">
+      <div style="font-size:24px;color:var(--team-primary);cursor:pointer" onclick="showScreen('screen-beta')">‹</div>
+      <div style="font-size:20px;font-weight:700">Create your account</div>
+    </div>
+    <div style="font-size:13px;color:var(--fg-3);margin-bottom:24px">This is how you'll sign in to Mesh going forward.</div>
+    <div class="ob-field-label">Email address</div>
+    <input class="input-field" id="signup-email" type="email" placeholder="coach@school.edu" style="margin-bottom:14px" autocomplete="email">
+    <div class="ob-field-label">Password</div>
+    <input class="input-field" id="signup-password" type="password" placeholder="At least 8 characters" style="margin-bottom:8px" autocomplete="new-password">
+    <div class="ob-field-label">Confirm password</div>
+    <input class="input-field" id="signup-password-confirm" type="password" placeholder="Re-enter password" style="margin-bottom:8px" autocomplete="new-password">
+    <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="signup-error"></div>
+    <button class="btn-primary" id="signup-btn" onclick="createAccount()">Create account →</button>
+  </div>
+</div>
+
+<!-- AUTH: Sign in (returning users) -->
+<div id="screen-signin" class="screen" style="justify-content:flex-start;padding:32px 24px;overflow-y:auto">
+  <div style="width:100%;max-width:420px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:32px">
+      <div style="font-size:24px;color:var(--team-primary);cursor:pointer" onclick="showScreen('screen-login')">‹</div>
+      <div style="font-size:20px;font-weight:700">Sign in</div>
+    </div>
+    <div class="ob-field-label">Email address</div>
+    <input class="input-field" id="signin-email" type="email" placeholder="coach@school.edu" style="margin-bottom:14px" autocomplete="email">
+    <div class="ob-field-label">Password</div>
+    <input class="input-field" id="signin-password" type="password" placeholder="Your password" style="margin-bottom:8px" autocomplete="current-password">
+    <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="signin-error"></div>
+    <button class="btn-primary" id="signin-btn" onclick="signIn()">Sign in →</button>
+    <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--fg-3)">Forgot your password? <span onclick="sendPasswordReset()" style="color:var(--team-primary);font-weight:600;cursor:pointer">Reset it</span></div>
+  </div>
+</div>
 <div id="screen-setup" class="screen" style="justify-content:flex-start;padding:0;overflow-y:auto">
   <div style="width:100%;padding:32px 24px 40px">
     <div style="display:flex;gap:4px;margin-bottom:28px">
@@ -1900,11 +1951,26 @@
       <div style="text-align:center;padding:20px 0">
         <div style="font-size:48px;margin-bottom:16px">🎉</div>
         <div style="font-size:22px;font-weight:800;margin-bottom:8px">You're all set!</div>
-        <div style="font-size:14px;color:var(--gray-2);margin-bottom:28px;line-height:1.6">Share your join code with players and parents to get started.</div>
-        <div style="background:var(--black-2);border:1.5px solid var(--team-primary);border-radius:var(--radius);padding:20px;margin-bottom:24px">
-          <div style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Share this join code</div>
-          <div style="font-size:36px;font-weight:800;letter-spacing:0.15em;color:var(--team-primary);font-family:monospace;margin-bottom:8px" id="ob-done-code">——</div>
-          <button class="btn-sm" style="width:100%;text-align:center;padding:10px" onclick="copyJoinCode()">📋 Copy code</button>
+        <div style="font-size:14px;color:var(--gray-2);margin-bottom:28px;line-height:1.6">Share the right code with each group to get started.</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;text-align:left">
+          <div style="background:var(--black-2);border:1.5px solid var(--team-primary);border-radius:var(--radius);padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">👨‍🏫 Coach code</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:0.12em;color:var(--team-primary);font-family:monospace" id="ob-done-code-coach">——</div>
+            <div style="font-size:11px;color:var(--gray-3);margin-top:4px">Share with assistant coaches &amp; staff only</div>
+            <button class="btn-sm" style="width:100%;text-align:center;padding:8px;margin-top:8px" onclick="copyCode('ob-done-code-coach')">📋 Copy coach code</button>
+          </div>
+          <div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius);padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">🏈 Player code</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:0.12em;color:var(--fg-2);font-family:monospace" id="ob-done-code-player">——</div>
+            <div style="font-size:11px;color:var(--gray-3);margin-top:4px">Share with players only</div>
+            <button class="btn-sm" style="width:100%;text-align:center;padding:8px;margin-top:8px" onclick="copyCode('ob-done-code-player')">📋 Copy player code</button>
+          </div>
+          <div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius);padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">👨‍👩‍👧 Parent code</div>
+            <div style="font-size:22px;font-weight:800;letter-spacing:0.12em;color:var(--fg-2);font-family:monospace" id="ob-done-code-parent">——</div>
+            <div style="font-size:11px;color:var(--gray-3);margin-top:4px">Share with parents &amp; guardians only</div>
+            <button class="btn-sm" style="width:100%;text-align:center;padding:8px;margin-top:8px" onclick="copyCode('ob-done-code-parent')">📋 Copy parent code</button>
+          </div>
         </div>
         <button class="btn-primary" onclick="finishSetup()">Go to my dashboard →</button>
       </div>
@@ -2781,31 +2847,26 @@
       <!-- TAKE ROLL VIEW -->
       <div id="att-roll-view">
         <!-- Session picker -->
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
           <input type="date" id="att-date" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--fg);font-size:13px;flex:1;min-width:140px">
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center" id="att-session-tabs">
-            <div class="att-session-tab" data-type="practice" onclick="setAttSession('practice',this)">Practice</div>
-            <div class="att-session-tab" data-type="game" onclick="setAttSession('game',this)">Game</div>
-            <div class="att-session-tab" data-type="film" onclick="setAttSession('film',this)">Film</div>
-            <div class="att-session-tab" data-type="lifting" onclick="setAttSession('lifting',this)">Lifting</div>
+            <div class="att-session-tab" data-type="Practice" onclick="setAttSession('Practice',this)">Practice</div>
+            <div class="att-session-tab" data-type="Game" onclick="setAttSession('Game',this)">Game</div>
+            <div class="att-session-tab" data-type="Film" onclick="setAttSession('Film',this)">Film</div>
+            <div class="att-session-tab" data-type="Lifting" onclick="setAttSession('Lifting',this)">Lifting</div>
             <span id="att-session-required" style="font-size:11px;color:var(--red);display:none">← Required</span>
           </div>
+        </div>
+
+        <!-- Sessions indicator for selected date -->
+        <div id="att-sessions-indicator" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center;min-height:22px">
+          <!-- populated by renderSessionsIndicator() -->
         </div>
 
         <!-- Filters row -->
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <select id="att-filter-pos" onchange="renderAttPlayerList()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;font-family:var(--font)">
             <option value="">All positions</option>
-            <option value="QB">QB</option>
-            <option value="RB">RB</option>
-            <option value="WR">WR</option>
-            <option value="TE">TE</option>
-            <option value="OL">OL</option>
-            <option value="DL">DL</option>
-            <option value="LB">LB</option>
-            <option value="CB">CB</option>
-            <option value="S">S</option>
-            <option value="K/P">K/P</option>
           </select>
           <select id="att-filter-year" onchange="renderAttPlayerList()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;font-family:var(--font)">
             <option value="">All grades</option>
@@ -2846,14 +2907,15 @@
       <div id="att-history-view" style="display:none">
         <!-- History filters -->
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-          <select id="hist-filter-type" onchange="loadAttHistory()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;font-family:var(--font);flex:1">
+          <select id="hist-filter-type" onchange="renderAttHistory()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;font-family:var(--font);flex:1">
             <option value="">All session types</option>
-            <option value="practice">Practice</option>
-            <option value="game">Game</option>
-            <option value="film">Film</option>
-            <option value="lifting">Lifting</option>
+            <option value="Practice">Practice</option>
+            <option value="Game">Game</option>
+            <option value="Film">Film</option>
+            <option value="Lifting">Lifting</option>
           </select>
-          <input type="month" id="hist-filter-month" onchange="loadAttHistory()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;flex:1">
+          <input type="date" id="hist-filter-date" onchange="renderAttHistory()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;flex:1" placeholder="Filter by date">
+          <button onclick="document.getElementById('hist-filter-date').value='';document.getElementById('hist-filter-type').value='';renderAttHistory()" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--fg-3);cursor:pointer;font-family:var(--font);flex-shrink:0">Clear</button>
         </div>
         <div id="att-history-list"><div style="color:var(--fg-3);font-size:13px">No sessions recorded yet</div></div>
       </div>
@@ -4507,7 +4569,7 @@
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
       <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v31.3</div>
+      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32</div>
     </div>
   </div>
 
@@ -4558,7 +4620,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v31.3';
+  const APP_VERSION = 'v32';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -4875,8 +4937,7 @@
   let attSaving = false;
 
   function initAttendance() {
-    syncRosterData(); // Make sure PLAYERS is synced to window.ROSTER_DATA
-    // Set today's date
+    syncRosterData();
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth()+1).padStart(2,'0');
@@ -4885,10 +4946,72 @@
     const dateEl = document.getElementById('att-date');
     if (dateEl) {
       dateEl.value = attDate;
-      dateEl.onchange = (e) => { attDate = e.target.value; loadAttendanceForSession(); };
+      dateEl.onchange = (e) => {
+        attDate = e.target.value;
+        loadAttendanceForSession();
+      };
     }
+
+    // Build position filter — offense first, then defense, then ST
+    const OFF_ORDER = ['QB','RB','FB','WR','TE','H','X','Y','Z','OL','LT','LG','C','RG','RT','ATH'];
+    const DEF_ORDER = ['DE','DT','NT','DL','OLB','ILB','MLB','LB','CB','S','FS','SS'];
+    const ST_ORDER  = ['K','P','LS','KR','PR'];
+
+    const posSelect = document.getElementById('att-filter-pos');
+    if (posSelect) {
+      const offPos = new Set();
+      const defPos = new Set();
+      const stPos  = new Set();
+      const otherPos = new Set();
+
+      (window.ROSTER_DATA || PLAYERS).forEach(p => {
+        if (p.posOff) p.posOff.split('/').forEach(s => offPos.add(s.trim().toUpperCase()));
+        if (p.posDef) p.posDef.split('/').forEach(s => defPos.add(s.trim().toUpperCase()));
+        if (p.posST)  p.posST.split('/').forEach(s => stPos.add(s.trim().toUpperCase()));
+        if (p.pos && !p.posOff && !p.posDef) {
+          const primary = p.pos.split('/')[0].trim().toUpperCase();
+          if (DEF_ORDER.includes(primary)) defPos.add(primary);
+          else if (ST_ORDER.includes(primary)) stPos.add(primary);
+          else offPos.add(primary);
+        }
+      });
+
+      // Sort within each group by standard order
+      const sortByOrder = (set, order) =>
+        [...set].sort((a,b) => {
+          const ai = order.indexOf(a), bi = order.indexOf(b);
+          return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+
+      posSelect.innerHTML = '<option value="">All positions</option>';
+
+      const sortedOff = sortByOrder(offPos, OFF_ORDER);
+      const sortedDef = sortByOrder(defPos, DEF_ORDER);
+      const sortedST  = sortByOrder(stPos, ST_ORDER);
+
+      if (sortedOff.length) {
+        const og = document.createElement('optgroup');
+        og.label = 'Offense';
+        sortedOff.forEach(pos => { const o = document.createElement('option'); o.value = pos; o.textContent = pos; og.appendChild(o); });
+        posSelect.appendChild(og);
+      }
+      if (sortedDef.length) {
+        const dg = document.createElement('optgroup');
+        dg.label = 'Defense';
+        sortedDef.forEach(pos => { const o = document.createElement('option'); o.value = pos; o.textContent = pos; dg.appendChild(o); });
+        posSelect.appendChild(dg);
+      }
+      if (sortedST.length) {
+        const sg = document.createElement('optgroup');
+        sg.label = 'Special Teams';
+        sortedST.forEach(pos => { const o = document.createElement('option'); o.value = pos; o.textContent = pos; sg.appendChild(o); });
+        posSelect.appendChild(sg);
+      }
+    }
+
     renderAttPlayerList();
     loadAttendanceForSession();
+    renderAttHistory();
     loadAttHistory();
   }
 
@@ -4924,15 +5047,24 @@
     const list = document.getElementById('att-player-list');
     if (!list) return;
 
-    const posFilter = document.getElementById('att-filter-pos')?.value || '';
+    const posFilter  = document.getElementById('att-filter-pos')?.value || '';
     const yearFilter = document.getElementById('att-filter-year')?.value || '';
     const statusFilter = document.getElementById('att-filter-status')?.value || '';
 
-    let players = window.ROSTER_DATA || [];
+    let players = [...(window.ROSTER_DATA || PLAYERS)];
 
-    // Apply filters
-    if (posFilter) players = players.filter(p => p.pos === posFilter);
+    // Position filter matches any of off/def/st positions
+    if (posFilter) {
+      players = players.filter(p => {
+        const allPos = [p.posOff, p.posDef, p.posST, p.pos]
+          .filter(Boolean)
+          .flatMap(s => s.split('/').map(x => x.trim().toUpperCase()));
+        return allPos.includes(posFilter.toUpperCase());
+      });
+    }
+
     if (yearFilter) players = players.filter(p => p.year === yearFilter);
+
     if (statusFilter === 'unmarked') {
       players = players.filter(p => !attState[p.id]);
     } else if (statusFilter) {
@@ -4941,39 +5073,121 @@
 
     if (!players.length) {
       list.innerHTML = '<div style="color:var(--fg-3);font-size:13px;padding:20px 0">No players match the current filter</div>';
+      updateAttCounters();
       return;
     }
 
-    // Sort by position then name
-    players = [...players].sort((a,b) => (a.pos||'').localeCompare(b.pos||'') || (a.name||'').localeCompare(b.name||''));
+    // Default sort: last name alphabetical
+    players.sort((a, b) => {
+      const lastA = (a.name || '').split(' ').pop();
+      const lastB = (b.name || '').split(' ').pop();
+      return lastA.localeCompare(lastB);
+    });
 
-    // Group by position if pos filter is off
-    let html = '';
-    let lastPos = null;
+    list.innerHTML = '';
     players.forEach(p => {
-      if (!posFilter && p.pos !== lastPos) {
-        lastPos = p.pos;
-        html += `<div style="font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;padding:10px 0 4px;border-top:1px solid var(--border);margin-top:4px">${p.pos || '—'}</div>`;
-      }
       const status = attState[p.id];
-      html += `<div class="att-player-row" id="att-row-${p.id}">
+
+      // Build position display — RB/LB format
+      const posParts = [p.posOff, p.posDef, p.posST].filter(Boolean);
+      const posLine = posParts.length ? posParts.join('/') : (p.pos || '—');
+
+      const row = document.createElement('div');
+      row.className = 'att-player-row';
+      row.id = `att-row-${p.id}`;
+      row.innerHTML = `
         <div style="width:34px;height:34px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">
           ${(p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
         </div>
         <div class="att-player-info">
           <div class="att-player-name">${p.name||'—'}</div>
-          <div class="att-player-meta">${p.pos||'—'} · ${p.year||'—'} · #${p.num||'—'}</div>
+          <div class="att-player-meta">${posLine || '—'} · ${p.year||'—'} · ${p.num||'—'}</div>
         </div>
         <div class="att-pills">
           <div class="att-pill${status==='present'?' active-present':''}" data-pid="${p.id}" data-status="present" onclick="setAttStatus('${p.id}','present',this)">Present</div>
           <div class="att-pill${status==='absent'?' active-absent':''}" data-pid="${p.id}" data-status="absent" onclick="setAttStatus('${p.id}','absent',this)">Absent</div>
           <div class="att-pill${status==='late'?' active-late':''}" data-pid="${p.id}" data-status="late" onclick="setAttStatus('${p.id}','late',this)">Late</div>
           <div class="att-pill${status==='excused'?' active-excused':''}" data-pid="${p.id}" data-status="excused" onclick="setAttStatus('${p.id}','excused',this)">Excused</div>
-        </div>
-      </div>`;
+        </div>`;
+      list.appendChild(row);
     });
-    list.innerHTML = html;
     updateAttCounters();
+  }
+
+  function renderAttHistory() {
+    const histEl = document.getElementById('att-history-list');
+    if (!histEl) return;
+
+    const typeFilter = document.getElementById('hist-filter-type')?.value || '';
+    const dateFilter = document.getElementById('hist-filter-date')?.value || '';
+
+    // Gather all locally saved records
+    const records = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('att_')) {
+        try {
+          const rec = JSON.parse(localStorage.getItem(key));
+          if (rec && rec.date) records.push(rec);
+        } catch(e) {}
+      }
+    }
+    if (window.ATT_LOCAL_HISTORY) {
+      Object.values(window.ATT_LOCAL_HISTORY).forEach(rec => {
+        if (!records.find(r => r.date === rec.date && r.sessionType === rec.sessionType)) {
+          records.push(rec);
+        }
+      });
+    }
+
+    // Apply filters — strict matching, blank filter means no results if nothing matches
+    let filtered = records;
+    if (typeFilter) filtered = filtered.filter(r => (r.sessionType || '').toLowerCase() === typeFilter.toLowerCase());
+    if (dateFilter) filtered = filtered.filter(r => r.date === dateFilter);
+
+    if (!filtered.length) {
+      const msg = (typeFilter || dateFilter)
+        ? 'No sessions found for the selected filter'
+        : 'No sessions recorded yet';
+      histEl.innerHTML = `<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:32px 0">${msg}</div>`;
+      return;
+    }
+
+    // Sort newest first
+    filtered.sort((a, b) => b.date.localeCompare(a.date));
+
+    histEl.innerHTML = '';
+    filtered.forEach(rec => {
+      const state = rec.state || {};
+      const total   = Object.keys(state).length;
+      const present = Object.values(state).filter(s => s === 'present').length;
+      const absent  = Object.values(state).filter(s => s === 'absent').length;
+      const late    = Object.values(state).filter(s => s === 'late').length;
+      const excused = Object.values(state).filter(s => s === 'excused').length;
+
+      const d = new Date(rec.date + 'T12:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--fg)">${dateStr}</div>
+            <div style="font-size:12px;color:var(--fg-3)">${rec.sessionType || 'Practice'} · ${total} players</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:${total > 0 && present/total >= 0.9 ? 'var(--green)' : 'var(--amber)'}">
+            ${present}/${total} present
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:11px">
+          <span style="color:var(--green)">✓ ${present} present</span>
+          <span style="color:var(--red)">✕ ${absent} absent</span>
+          ${late    ? `<span style="color:var(--amber)">⏱ ${late} late</span>`    : ''}
+          ${excused ? `<span style="color:var(--fg-3)">⊘ ${excused} excused</span>` : ''}
+        </div>`;
+      histEl.appendChild(card);
+    });
   }
 
   async function loadAttHistory() {
@@ -5118,63 +5332,114 @@
     updateAttCounters();
   }
 
-  async function loadAttendanceForSession() {
+  const SESSION_TYPES = ['Practice', 'Game', 'Film', 'Lifting'];
+
+  function renderSessionsIndicator() {
+    const el = document.getElementById('att-sessions-indicator');
+    if (!el || !attDate) return;
+    el.innerHTML = '';
+
+    // Check which session types have saved data — handle both old lowercase and new capitalized keys
+    const savedSessions = SESSION_TYPES.filter(type => {
+      const keyNew = `att_${attDate}_${type}`;
+      const keyOld = `att_${attDate}_${type.toLowerCase()}`;
+      try { return !!localStorage.getItem(keyNew) || !!localStorage.getItem(keyOld); } catch(e) { return false; }
+    });
+
+    if (savedSessions.length === 0) {
+      el.innerHTML = `<span style="font-size:11px;color:var(--fg-3)">No sessions saved for this date</span>`;
+      return;
+    }
+
+    savedSessions.forEach(type => {
+      const isActive = type === attSessionType;
+      const badge = document.createElement('div');
+      badge.style.cssText = `font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;cursor:pointer;border:1px solid var(--green);color:${isActive ? '#fff' : 'var(--green)'};background:${isActive ? 'var(--green)' : 'rgba(57,255,20,0.1)'}`;
+      badge.innerHTML = `✓ ${type}`;
+      badge.title = `Click to view ${type} roll`;
+      badge.onclick = () => {
+        document.querySelectorAll('.att-session-tab').forEach(t => {
+          t.classList.toggle('active', t.dataset.type === type);
+        });
+        attSessionType = type;
+        loadAttendanceForSession();
+      };
+      el.appendChild(badge);
+    });
+  }
+
+  function loadAttendanceForSession() {
     if (!attDate) return;
-    const programId = await getValidProgramId();
-    if (!programId) return;
+
+    // Load from localStorage — check both capitalized and lowercase session type keys
+    const key = `att_${attDate}_${attSessionType}`;
+    const keyOld = `att_${attDate}_${attSessionType.toLowerCase()}`;
+    let loaded = false;
     try {
-      const { data } = await db.from('attendance')
+      const saved = localStorage.getItem(key) || localStorage.getItem(keyOld);
+      if (saved) {
+        const rec = JSON.parse(saved);
+        attState = { ...(rec.state || {}) };
+        loaded = true;
+        // Normalize old lowercase key to capitalized
+        if (!localStorage.getItem(key) && localStorage.getItem(keyOld)) {
+          rec.sessionType = attSessionType;
+          localStorage.setItem(key, JSON.stringify(rec));
+          localStorage.removeItem(keyOld);
+        }
+      }
+    } catch(e) {}
+
+    // Check in-memory history too
+    if (!loaded && (window.ATT_LOCAL_HISTORY?.[key] || window.ATT_LOCAL_HISTORY?.[keyOld])) {
+      attState = { ...((window.ATT_LOCAL_HISTORY[key] || window.ATT_LOCAL_HISTORY[keyOld]).state || {}) };
+      loaded = true;
+    }
+
+    // If nothing found, clear state for a blank sheet
+    if (!loaded) attState = {};
+
+    renderAttPlayerList();
+    renderSessionsIndicator();
+
+    // Also try to sync from Supabase in background if available
+    getValidProgramId().then(programId => {
+      if (!programId || !attSessionType) return;
+      db.from('attendance')
         .select('*')
         .eq('program_id', programId)
         .eq('date', attDate)
-        .eq('session_type', attSessionType);
-      attState = {};
-      (data||[]).forEach(row => { attState[row.player_id] = row.status; });
-      // Re-render pills
-      const players = window.ROSTER_DATA || [];
-      players.forEach(p => {
-        const row = document.getElementById('att-row-' + p.id);
-        if (!row) return;
-        row.querySelectorAll('.att-pill').forEach(pill => {
-          pill.className = 'att-pill';
-          if (attState[p.id] && pill.dataset.status === attState[p.id]) {
-            pill.classList.add('active-' + attState[p.id]);
-          }
-        });
-      });
-      updateAttCounters();
-    } catch(e) { console.error('Load attendance error:', e); }
+        .eq('session_type', attSessionType)
+        .then(({ data }) => {
+          if (!data?.length) return;
+          data.forEach(row => { attState[row.player_id] = row.status; });
+          // Merge into local storage
+          const merged = { date: attDate, sessionType: attSessionType, state: { ...attState }, savedAt: new Date().toISOString() };
+          try { localStorage.setItem(key, JSON.stringify(merged)); } catch(e) {}
+          renderAttPlayerList();
+          renderSessionsIndicator();
+        }).catch(() => {});
+    }).catch(() => {});
   }
 
   async function saveRoll() {
     if (attSaving) return;
 
-    // Validate date
     if (!attDate) {
       showToast('Please select a date before saving');
       document.getElementById('att-date')?.focus();
       return;
     }
 
-    // Validate session type — required
     if (!attSessionType) {
       const reqEl = document.getElementById('att-session-required');
-      if (reqEl) {
-        reqEl.style.display = 'inline';
-        setTimeout(() => reqEl.style.display = 'none', 3000);
-      }
-      // Highlight the session tabs
+      if (reqEl) { reqEl.style.display = 'inline'; setTimeout(() => reqEl.style.display = 'none', 3000); }
       const tabsEl = document.getElementById('att-session-tabs');
-      if (tabsEl) {
-        tabsEl.style.outline = '2px solid var(--red)';
-        tabsEl.style.borderRadius = '20px';
-        setTimeout(() => { tabsEl.style.outline = ''; tabsEl.style.borderRadius = ''; }, 3000);
-      }
-      showToast('Please select a session type (Practice, Game, Film, or Lifting)');
+      if (tabsEl) { tabsEl.style.outline = '2px solid var(--red)'; tabsEl.style.borderRadius = '20px'; setTimeout(() => { tabsEl.style.outline = ''; tabsEl.style.borderRadius = ''; }, 3000); }
+      showToast('Please select a session type');
       return;
     }
 
-    // Validate at least one player marked
     if (!Object.keys(attState).length) {
       showToast('No attendance marked yet — mark at least one player before saving');
       return;
@@ -5182,30 +5447,48 @@
 
     attSaving = true;
     const btn = document.getElementById('save-roll-btn');
-    if (btn) btn.textContent = 'Saving...';
-    const programId = await getValidProgramId();
-    if (!programId) { attSaving = false; return; }
-    const rows = Object.entries(attState).map(([playerId, status]) => ({
-      program_id: programId,
-      player_id: playerId,
+    if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+    // Build record
+    const record = {
       date: attDate,
-      session_type: attSessionType,
-      status
-    }));
-    try {
-      if (rows.length) {
-        await db.from('attendance').upsert(rows, {
-          onConflict: 'program_id,player_id,date,session_type'
-        });
-      }
-      showToast('Roll saved ✓');
-      loadAttHistory();
-    } catch(e) {
-      console.error('Save roll error:', e);
-      showToast('Error saving — try again');
-    }
+      sessionType: attSessionType,
+      state: { ...attState },
+      savedAt: new Date().toISOString(),
+    };
+
+    // Save locally immediately
+    const key = `att_${attDate}_${attSessionType}`;
+    try { localStorage.setItem(key, JSON.stringify(record)); } catch(e) {}
+
+    // Add to local history
+    if (!window.ATT_LOCAL_HISTORY) window.ATT_LOCAL_HISTORY = {};
+    window.ATT_LOCAL_HISTORY[key] = record;
+
+    showToast('Roll saved ✓');
+    if (btn) { btn.textContent = 'Save roll'; btn.disabled = false; }
     attSaving = false;
-    if (btn) btn.textContent = 'Save roll';
+    renderAttHistory();
+    renderSessionsIndicator();
+
+    // Sync to Supabase in background
+    try {
+      const programId = await getValidProgramId();
+      if (programId) {
+        const rows = Object.entries(attState).map(([playerId, status]) => ({
+          program_id: programId,
+          player_id: playerId,
+          date: attDate,
+          session_type: attSessionType,
+          status
+        }));
+        if (rows.length) {
+          await db.from('attendance').upsert(rows, { onConflict: 'program_id,player_id,date,session_type' });
+        }
+      }
+    } catch(e) {
+      console.warn('Attendance Supabase sync failed:', e);
+    }
   }
 
   // ===== PERFORMANCE =====
@@ -6707,10 +6990,182 @@
     document.getElementById(id).classList.add('active');
   }
 
-  function showCoachOnboarding() {
-    showScreen('screen-setup');
-    obGoToStep(1);
+  // ===== BETA CODE VERIFICATION =====
+  // Codes stored in Supabase beta_codes table: { code, used, created_at }
+  // For now we also support a hardcoded list for initial testing
+
+  async function verifyBetaCode() {
+    const code = document.getElementById('beta-code-input').value.trim().toUpperCase();
+    const errEl = document.getElementById('beta-code-error');
+    if (!code) { errEl.textContent = 'Please enter your beta code'; return; }
+    errEl.textContent = 'Checking…';
+
+    try {
+      const { data, error } = await db.from('beta_codes')
+        .select('*')
+        .eq('code', code)
+        .eq('used', false)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        errEl.textContent = 'Invalid or already used code. Contact us at hello@meshsports.co';
+        return;
+      }
+      // Valid — store code for use after signup
+      localStorage.setItem('mesh_beta_code', code);
+      errEl.textContent = '';
+      showScreen('screen-create-account');
+    } catch(e) {
+      console.error('Beta code check error:', e);
+      errEl.textContent = 'Could not verify code — check your connection and try again';
+    }
   }
+
+  // ===== ACCOUNT CREATION =====
+  async function createAccount() {
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const confirm = document.getElementById('signup-password-confirm').value;
+    const errEl = document.getElementById('signup-error');
+    const btn = document.getElementById('signup-btn');
+
+    errEl.textContent = '';
+    if (!email) { errEl.textContent = 'Please enter your email'; return; }
+    if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email'; return; }
+    if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters'; return; }
+    if (password !== confirm) { errEl.textContent = 'Passwords don\'t match'; return; }
+
+    btn.textContent = 'Creating account…';
+    btn.disabled = true;
+
+    try {
+      const { data, error } = await db.auth.signUp({ email, password });
+      if (error) throw error;
+
+      // Store email for use in onboarding
+      localStorage.setItem('mesh_auth_email', email);
+      localStorage.setItem('mesh_auth_uid', data.user?.id || '');
+
+      errEl.textContent = '';
+      btn.textContent = 'Create account →';
+      btn.disabled = false;
+      showCoachOnboarding();
+    } catch(e) {
+      errEl.textContent = e.message || 'Could not create account — try again';
+      btn.textContent = 'Create account →';
+      btn.disabled = false;
+    }
+  }
+
+  // ===== SIGN IN (returning users) =====
+  async function signIn() {
+    const email = document.getElementById('signin-email').value.trim();
+    const password = document.getElementById('signin-password').value;
+    const errEl = document.getElementById('signin-error');
+    const btn = document.getElementById('signin-btn');
+
+    errEl.textContent = '';
+    if (!email || !password) { errEl.textContent = 'Please enter your email and password'; return; }
+
+    btn.textContent = 'Signing in…';
+    btn.disabled = true;
+
+    try {
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      // Load their program
+      const uid = data.user.id;
+      const { data: prog } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
+      if (prog) {
+        localStorage.setItem('mesh_program_id', prog.id);
+        localStorage.setItem('mesh_team_name', prog.team_name);
+        localStorage.setItem('mesh_current_program', prog.coach_code);
+        localStorage.setItem('mesh_role', 'coach');
+        localStorage.setItem('mesh_user', JSON.stringify({ name: prog.coach_name, role: prog.coach_role }));
+        obProgram.teamName = prog.team_name;
+        obProgram.schoolName = prog.school_name;
+        obProgram.coachName = prog.coach_name;
+      }
+
+      btn.textContent = 'Sign in →';
+      btn.disabled = false;
+      login('coach');
+    } catch(e) {
+      errEl.textContent = e.message || 'Invalid email or password';
+      btn.textContent = 'Sign in →';
+      btn.disabled = false;
+    }
+  }
+
+  async function sendPasswordReset() {
+    const email = document.getElementById('signin-email').value.trim();
+    if (!email) { document.getElementById('signin-error').textContent = 'Enter your email first'; return; }
+    try {
+      await db.auth.resetPasswordForEmail(email, { redirectTo: 'https://meshsports.co' });
+      showToast('Reset email sent — check your inbox ✓');
+    } catch(e) {
+      showToast('Could not send reset email');
+    }
+  }
+
+  // ===== AUTO SESSION RESTORE =====
+  async function checkExistingSession() {
+    try {
+      const { data } = await db.auth.getSession();
+      if (!data.session) return false;
+
+      const uid = data.session.user.id;
+      const { data: prog } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
+      if (prog) {
+        localStorage.setItem('mesh_program_id', prog.id);
+        localStorage.setItem('mesh_team_name', prog.team_name);
+        localStorage.setItem('mesh_current_program', prog.coach_code);
+        localStorage.setItem('mesh_role', 'coach');
+        localStorage.setItem('mesh_user', JSON.stringify({ name: prog.coach_name, role: prog.coach_role }));
+        obProgram.teamName = prog.team_name;
+        obProgram.coachName = prog.coach_name;
+        login('coach');
+        return true;
+      }
+    } catch(e) { console.warn('Session restore error:', e); }
+    return false;
+  }
+
+  // ===== THREE JOIN CODE GENERATION =====
+  function generateThreeJoinCodes() {
+    const school = document.getElementById('ob-school-name')?.value.trim() || 'MESH';
+    const letters = school.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4);
+    const rand = () => Math.random().toString(36).toUpperCase().slice(2, 5);
+    return {
+      coachCode:  letters + '-COACH-' + rand(),
+      playerCode: letters + '-PLAY-'  + rand(),
+      parentCode: letters + '-PAR-'   + rand(),
+    };
+  }
+
+  function generateJoinCode() {
+    const { coachCode, playerCode, parentCode } = generateThreeJoinCodes();
+    obProgram.coachCode  = coachCode;
+    obProgram.playerCode = playerCode;
+    obProgram.parentCode = parentCode;
+    obProgram.joinCode   = coachCode; // backwards compat
+    const el = document.getElementById('ob-join-code');
+    if (el) el.textContent = coachCode;
+  }
+
+  function copyCode(elementId) {
+    const text = document.getElementById(elementId)?.textContent;
+    if (!text || text === '——') return;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => showToast('Code copied ✓'));
+    } else {
+      showToast('Code: ' + text);
+    }
+  }
+
+  function copyJoinCode() { copyCode('ob-done-code-coach'); }
 
   function showJoinFlow() {
     showScreen('screen-join');
@@ -6720,6 +7175,16 @@
     document.getElementById('join-code-error').textContent = '';
     joinSelectedRole = null;
   }
+
+  function showCoachOnboarding() {
+    showScreen('screen-setup');
+    obGoToStep(1);
+  }
+
+  // Check for existing Supabase session on page load — auto-login returning users
+  window.addEventListener('DOMContentLoaded', () => {
+    checkExistingSession();
+  });
 
   function obGoToStep(n) {
     document.querySelectorAll('#screen-setup .ob-step').forEach(s => s.classList.remove('active'));
@@ -6790,44 +7255,66 @@
   }
 
   async function saveProgram() {
+    const uid = localStorage.getItem('mesh_auth_uid') || '';
+    const betaCode = localStorage.getItem('mesh_beta_code') || '';
+
+    // Ensure we have three codes
+    if (!obProgram.coachCode) {
+      const codes = generateThreeJoinCodes();
+      obProgram.coachCode  = codes.coachCode;
+      obProgram.playerCode = codes.playerCode;
+      obProgram.parentCode = codes.parentCode;
+    }
+
+    // Update step 4 display
+    const c = document.getElementById('ob-done-code-coach');
+    const p = document.getElementById('ob-done-code-player');
+    const pa = document.getElementById('ob-done-code-parent');
+    if (c)  c.textContent  = obProgram.coachCode;
+    if (p)  p.textContent  = obProgram.playerCode;
+    if (pa) pa.textContent = obProgram.parentCode;
+
     try {
       const { data, error } = await db.from('programs')
         .insert({
-          join_code: obProgram.joinCode,
-          team_name: obProgram.teamName,
-          school_name: obProgram.schoolName,
-          sport: obProgram.sport,
-          coach_name: obProgram.coachName,
-          coach_role: obProgram.role,
-          primary_color: document.getElementById('input-primary')?.value || '#39ff14',
-          secondary_color: document.getElementById('input-secondary')?.value || '#ff4444',
+          owner_id:        uid || null,
+          join_code:       obProgram.coachCode, // backwards compat
+          coach_code:      obProgram.coachCode,
+          player_code:     obProgram.playerCode,
+          parent_code:     obProgram.parentCode,
+          team_name:       obProgram.teamName,
+          school_name:     obProgram.schoolName,
+          sport:           obProgram.sport,
+          coach_name:      obProgram.coachName,
+          coach_role:      obProgram.role,
+          primary_color:   document.getElementById('input-primary')?.value || '#7f1d1d',
+          secondary_color: document.getElementById('input-secondary')?.value || '#ef4444',
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Also save coach to coaches table
-      await db.from('coaches').insert({
-        program_id: data.id,
-        name: obProgram.coachName,
-        role: obProgram.role,
-      });
+      // Mark beta code as used
+      if (betaCode) {
+        await db.from('beta_codes').update({ used: true, used_by: uid, used_at: new Date().toISOString() }).eq('code', betaCode);
+        localStorage.removeItem('mesh_beta_code');
+      }
 
-      // Store locally for this session
-      localStorage.setItem('mesh_program_id', data.id);
-      localStorage.setItem('mesh_current_program', obProgram.joinCode);
-      localStorage.setItem('mesh_role', 'coach');
-      localStorage.setItem('mesh_team_name', obProgram.teamName || obProgram.schoolName);
+      // Store locally
+      localStorage.setItem('mesh_program_id',      data.id);
+      localStorage.setItem('mesh_current_program', obProgram.coachCode);
+      localStorage.setItem('mesh_role',            'coach');
+      localStorage.setItem('mesh_team_name',       obProgram.teamName || obProgram.schoolName);
       localStorage.setItem('mesh_user', JSON.stringify({ name: obProgram.coachName, role: obProgram.role }));
 
-      console.log('Program saved to Supabase:', data);
+      console.log('Program saved to Supabase:', data.id);
     } catch(e) {
       console.error('Supabase save error:', e);
-      // Fall back to localStorage only
+      // Fallback to localStorage
       try {
         const programs = JSON.parse(localStorage.getItem(MESH_PROGRAMS_KEY) || '{}');
-        programs[obProgram.joinCode] = { ...obProgram, createdAt: Date.now(), roster: [] };
+        programs[obProgram.coachCode] = { ...obProgram, createdAt: Date.now(), roster: [] };
         localStorage.setItem(MESH_PROGRAMS_KEY, JSON.stringify(programs));
       } catch(le) {}
     }
