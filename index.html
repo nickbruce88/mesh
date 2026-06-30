@@ -2705,35 +2705,39 @@
         </div>
       </div>
 
-      <!-- Stats row -->
+      <!-- Stats row — clickable tiles -->
       <div style="display:flex;gap:8px;margin-bottom:14px" id="inv-stats-row"></div>
 
-      <!-- Filter + scan row -->
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-        <select id="inv-cat-filter" class="drill-picker-select" style="flex:1;font-size:13px" onchange="renderInventory()">
-          <option value="all">All categories</option>
-          <option value="Helmet">Helmets</option>
-          <option value="Shoulder Pads">Shoulder Pads</option>
-          <option value="Jersey (Home)">Jerseys (Home)</option>
-          <option value="Jersey (Away)">Jerseys (Away)</option>
-          <option value="Pants">Pants</option>
-          <option value="Girdle">Girdles</option>
-          <option value="Cleats">Cleats</option>
-          <option value="Other">Other</option>
-        </select>
-        <button class="btn-sm" onclick="openQRScanner()" style="display:flex;align-items:center;gap:5px;padding:8px 12px;white-space:nowrap">
-          <span>📷</span> Scan
-        </button>
+      <!-- Equipment Type filter -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center" id="inv-cat-tabs">
+        <span style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em">Equipment Type:</span>
+        <div class="filter-chip active" onclick="setInvCatFilter('all',this)">All</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Helmet',this)">Helmets</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Shoulder Pads',this)">Shoulder Pads</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Jersey (Home)',this)">Jersey (Home)</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Jersey (Away)',this)">Jersey (Away)</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Pants',this)">Pants</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Girdle',this)">Girdles</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Cleats',this)">Cleats</div>
+        <div class="filter-chip" onclick="setInvCatFilter('Other',this)">Other</div>
       </div>
 
       <!-- Condition filter chips -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="inv-condition-filters">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center" id="inv-condition-filters">
+        <span style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em">Condition:</span>
         <div class="filter-chip active" onclick="setInvCondFilter('all',this)">All</div>
         <div class="filter-chip" onclick="setInvCondFilter('Excellent',this)">Excellent</div>
         <div class="filter-chip" onclick="setInvCondFilter('Good',this)">Good</div>
         <div class="filter-chip" onclick="setInvCondFilter('Fair',this)">Fair</div>
         <div class="filter-chip" onclick="setInvCondFilter('Poor',this)">Poor</div>
         <div class="filter-chip" onclick="setInvCondFilter('Retired',this)">Retired</div>
+      </div>
+
+      <!-- Scan button -->
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+        <button class="btn-sm" onclick="openQRScanner()" style="display:flex;align-items:center;gap:5px;padding:8px 12px">
+          <span>📷</span> Scan
+        </button>
       </div>
 
       <!-- Inventory list -->
@@ -4208,28 +4212,60 @@
 
   <!-- ===== CSV IMPORT MODAL ===== -->
   <div id="csv-import-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center;padding:24px">
-    <div class="ap-modal" onclick="event.stopPropagation()">
+    <div class="ap-modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto">
       <div class="ap-head">
-        <div class="ap-title">Import from CSV</div>
+        <div class="ap-title">Import Inventory</div>
         <div class="ap-close" onclick="closeCSVImport()">✕</div>
       </div>
-      <div class="ap-sub">Export your Google Sheet or Excel file as CSV, then paste or upload it here.</div>
-      <div style="background:var(--black-3);border:1px solid var(--black-4);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--gray-3);margin-bottom:12px;line-height:1.6">
-        <strong style="color:var(--gray-1)">Expected columns:</strong><br>
-        Item Name, Category, Brand/Model, Condition, Size, Quantity
+
+      <!-- Mode selector -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div id="inv-import-mode-list" onclick="setInvImportMode('list',this)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--team-primary);background:var(--team-primary-glow);cursor:pointer;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:var(--team-primary)">📋 Equipment List</div>
+          <div style="font-size:11px;color:var(--fg-3);margin-top:2px">Master inventory — items & quantities</div>
+        </div>
+        <div id="inv-import-mode-checkout" onclick="setInvImportMode('checkout',this)" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-3);cursor:pointer;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:var(--fg)">🏈 Gear Checkout</div>
+          <div style="font-size:11px;color:var(--fg-3);margin-top:2px">Players already have gear assigned</div>
+        </div>
       </div>
-      <div class="add-drill-label">Paste CSV data</div>
-      <textarea class="add-note-textarea" id="csv-paste-input" style="min-height:120px;font-family:monospace;font-size:12px" placeholder="Item Name,Category,Brand/Model,Condition,Size,Quantity&#10;Schutt Helmet 1,Helmet,Schutt F7,Excellent,Large,1&#10;Riddell Helmet 2,Helmet,Riddell SpeedFlex,Good,Medium,1"></textarea>
-      <div style="text-align:center;color:var(--gray-3);font-size:12px;margin:8px 0">— or —</div>
-      <div class="pb-upload-btn" style="margin-bottom:12px">
+
+      <!-- Mode descriptions -->
+      <div id="inv-import-desc-list" style="background:var(--bg-3);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--fg-3);margin-bottom:12px;line-height:1.6">
+        <strong style="color:var(--fg)">Equipment List columns:</strong><br>
+        <span style="font-family:monospace;color:var(--team-primary)">name, category, brand, condition, size, quantity</span><br>
+        Category: Helmet, Shoulder Pads, Jersey (Home), Jersey (Away), Pants, Girdle, Cleats, Other<br>
+        <button onclick="downloadInvListTemplate()" style="margin-top:8px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font)">📥 Download Equipment List Template</button>
+      </div>
+      <div id="inv-import-desc-checkout" style="display:none;background:var(--bg-3);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--fg-3);margin-bottom:12px;line-height:1.6">
+        <strong style="color:var(--fg)">Gear Checkout format:</strong><br>
+        Row 1: Player names in Column A, equipment types as column headers<br>
+        Grade section rows (SENIORS, JUNIORS, etc.) are skipped automatically<br>
+        <span style="font-family:monospace;color:var(--team-primary)">X</span> = item assigned · Model/size text = item details<br>
+        <button onclick="downloadInvCheckoutTemplate()" style="margin-top:8px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font)">📥 Download Gear Checkout Template</button>
+      </div>
+
+
+
+      <!-- Upload / paste -->
+      <div style="text-align:center;color:var(--fg-3);font-size:12px;margin:8px 0">— or —</div>
+      <div class="pb-upload-btn" style="margin-bottom:10px">
         📎 Upload .csv file
         <input type="file" accept=".csv,.txt" onchange="handleCSVFile(event)">
       </div>
-      <div id="csv-preview" style="display:none;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin-bottom:6px" id="csv-preview-label"></div>
-        <div style="max-height:120px;overflow-y:auto;background:var(--black-3);border-radius:var(--radius-sm);padding:8px" id="csv-preview-list"></div>
+      <div style="text-align:center;color:var(--fg-3);font-size:12px;margin:8px 0">— or paste CSV —</div>
+      <textarea class="add-note-textarea" id="csv-paste-input" style="min-height:100px;font-family:monospace;font-size:11px" placeholder="Paste your CSV data here..."></textarea>
+
+      <!-- Preview -->
+      <div id="csv-preview" style="display:none;margin:10px 0">
+        <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:6px" id="csv-preview-label"></div>
+        <div style="max-height:120px;overflow-y:auto;background:var(--bg-3);border-radius:var(--radius-sm);padding:8px" id="csv-preview-list"></div>
       </div>
-      <button class="note-modal-save" onclick="importCSV()">Import items</button>
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="previewInvCSV()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Preview</button>
+        <button onclick="importCSV()" class="btn-primary" style="flex:2;font-size:13px">Import</button>
+      </div>
     </div>
   </div>
 
@@ -9336,33 +9372,98 @@
 
     const players = window.ROSTER_DATA || PLAYERS.filter(p => p.role !== 'coach');
 
+    body.innerHTML = '';
+
     // ── Section 1: Manage group names & colors ──
-    let html = `
-      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div style="font-size:14px;font-weight:700;color:var(--fg)">Manage groups</div>
-          <button onclick="addNewGroup();renderDCGroups()" style="background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">+ Add group</button>
-        </div>
-        <div id="dc-group-manager-list">
-          ${TEAM_GROUPS.map((g, i) => `
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-              <div style="width:28px;height:28px;border-radius:50%;background:${g.color};flex-shrink:0;cursor:pointer;border:2px solid var(--border)" onclick="cycleGroupColorDC(${i})" title="Click to change color"></div>
-              <input value="${g.name}"
-                style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--fg);font-family:var(--font);outline:none"
-                oninput="renameGroup(${i}, this.value)"
-                onfocus="this.style.borderColor='var(--team-primary)'"
-                onblur="this.style.borderColor='var(--border)'">
-              <div style="font-size:12px;color:var(--fg-3)">${players.filter(p => p.group === g.name).length} players</div>
-              <div onclick="deleteGroup(${i});renderDCGroups()" style="color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;opacity:0.7">✕</div>
-            </div>`).join('')}
-        </div>
-      </div>
+    const manageCard = document.createElement('div');
+    manageCard.style.cssText = 'background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px';
 
-      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Players by group</div>`;
+    const manageHeader = document.createElement('div');
+    manageHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px';
+    manageHeader.innerHTML = '<div style="font-size:14px;font-weight:700;color:var(--fg)">Manage groups</div>';
+    const addBtn = document.createElement('button');
+    addBtn.style.cssText = 'background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)';
+    addBtn.textContent = '+ Add group';
+    addBtn.onclick = () => { addNewGroup(); renderDCGroups(); };
+    manageHeader.appendChild(addBtn);
+    manageCard.appendChild(manageHeader);
 
-    // ── Section 2: Players organized by group with reassign ──
+    const groupList = document.createElement('div');
+    groupList.id = 'dc-group-manager-list';
+    TEAM_GROUPS.forEach((g, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)';
+
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:28px;height:28px;border-radius:50%;background:${g.color};flex-shrink:0;cursor:pointer;border:2px solid var(--border)`;
+      dot.title = 'Click to change color';
+      dot.onclick = () => cycleGroupColorDC(i);
+
+      const input = document.createElement('input');
+      input.value = g.name;
+      input.dataset.oldName = g.name;
+      input.style.cssText = 'flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--fg);font-family:var(--font);outline:none';
+      input.onfocus = function() { this.dataset.oldName = TEAM_GROUPS[i].name; this.style.borderColor = 'var(--team-primary)'; };
+      input.onblur = function() {
+        this.style.borderColor = 'var(--border)';
+        renameGroup(i, this.value, this.dataset.oldName);
+        // Update player list section without full re-render
+        renderDCGroupPlayers(body, players);
+      };
+      input.onkeydown = function(e) { if (e.key === 'Enter') this.blur(); };
+
+      const count = document.createElement('div');
+      count.style.cssText = 'font-size:12px;color:var(--fg-3)';
+      count.textContent = players.filter(p => p.group === g.name).length + ' players';
+
+      const del = document.createElement('div');
+      del.style.cssText = 'color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;opacity:0.7';
+      del.textContent = '✕';
+      del.onclick = () => { deleteGroup(i); renderDCGroups(); };
+
+      row.appendChild(dot);
+      row.appendChild(input);
+      row.appendChild(count);
+      row.appendChild(del);
+      groupList.appendChild(row);
+    });
+    manageCard.appendChild(groupList);
+
+    // Save button
+    const saveBtn = document.createElement('button');
+    saveBtn.style.cssText = 'width:100%;margin-top:14px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)';
+    saveBtn.textContent = 'Save & apply';
+    saveBtn.onclick = () => {
+      document.querySelectorAll('#dc-group-manager-list input').forEach((inp, i) => {
+        if (TEAM_GROUPS[i] && inp.value.trim()) renameGroup(i, inp.value, inp.dataset.oldName || TEAM_GROUPS[i].name);
+      });
+      syncGroupViews();
+      renderDCGroups();
+      showToast('Groups saved ✓');
+    };
+    manageCard.appendChild(saveBtn);
+    body.appendChild(manageCard);
+
+    // ── Section 2: Players by group ──
+    const sectionLabel = document.createElement('div');
+    sectionLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px';
+    sectionLabel.textContent = 'Players by group';
+    body.appendChild(sectionLabel);
+
+    const playerSection = document.createElement('div');
+    playerSection.id = 'dc-groups-player-section';
+    body.appendChild(playerSection);
+    renderDCGroupPlayers(body, players);
+  }
+
+  function renderDCGroupPlayers(body, players) {
+    if (!players) players = window.ROSTER_DATA || PLAYERS.filter(p => p.role !== 'coach');
+    let section = document.getElementById('dc-groups-player-section');
+    if (!section) return;
+    section.innerHTML = '';
+
     const allPos = ['QB','RB','WR','TE','OL','LT','LG','C','RG','RT','DE','DT','DL','OLB','ILB','LB','CB','S','FS','SS','K','P','LS','KR','ATH'];
-    const posOrder = (pos) => { const i = allPos.indexOf(pos); return i === -1 ? 99 : i; };
+    const posOrder = pos => { const i = allPos.indexOf(pos); return i === -1 ? 99 : i; };
 
     const groups = {};
     TEAM_GROUPS.forEach(g => { groups[g.name] = []; });
@@ -9377,31 +9478,49 @@
       if (!groupPlayers.length && groupName === 'Unassigned') return;
       const groupDef = TEAM_GROUPS.find(g => g.name === groupName);
       const color = groupDef?.color || 'var(--fg-3)';
-      const bg = groupDef?.bg || 'var(--bg-3)';
-
       const sorted = [...groupPlayers].sort((a,b) => posOrder(a.pos||'ATH') - posOrder(b.pos||'ATH') || (a.name||'').localeCompare(b.name||''));
 
-      html += `
-        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
-            <div style="font-size:15px;font-weight:700;color:var(--fg)">${groupName}</div>
-            <div style="font-size:12px;color:var(--fg-3);margin-left:auto">${groupPlayers.length} players</div>
-          </div>
-          ${sorted.length ? sorted.map(p => `
-            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-              <div style="font-size:11px;font-weight:700;color:${color};min-width:36px">${p.pos||'—'}</div>
-              <div style="font-size:13px;font-weight:600;color:var(--fg);flex:1">${p.name} <span style="color:var(--fg-3);font-weight:400">#${p.num||'—'}</span></div>
-              <select onchange="reassignPlayerGroup('${p.id}',this.value);renderDCGroups()"
-                style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:11px;color:var(--fg);font-family:var(--font);cursor:pointer">
-                ${TEAM_GROUPS.map(g => `<option value="${g.name}" ${p.group===g.name?'selected':''}>${g.name}</option>`).join('')}
-                <option value="Unassigned" ${!p.group||p.group==='Unassigned'?'selected':''}>Unassigned</option>
-              </select>
-            </div>`).join('') : `<div style="color:var(--fg-3);font-size:13px;padding:8px 0">No players assigned to this group yet</div>`}
-        </div>`;
-    });
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px';
 
-    body.innerHTML = html;
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px';
+      header.innerHTML = `<div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div><div style="font-size:15px;font-weight:700;color:var(--fg)">${groupName}</div><div style="font-size:12px;color:var(--fg-3);margin-left:auto">${groupPlayers.length} players</div>`;
+      card.appendChild(header);
+
+      if (sorted.length) {
+        sorted.forEach(p => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)';
+          row.innerHTML = `
+            <div style="font-size:11px;font-weight:700;color:${color};min-width:36px">${p.pos||'—'}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--fg);flex:1">${p.name} <span style="color:var(--fg-3);font-weight:400">${p.num||'—'}</span></div>`;
+          const sel = document.createElement('select');
+          sel.style.cssText = 'background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:11px;color:var(--fg);font-family:var(--font);cursor:pointer';
+          TEAM_GROUPS.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.name;
+            opt.textContent = g.name;
+            if (p.group === g.name) opt.selected = true;
+            sel.appendChild(opt);
+          });
+          const unassigned = document.createElement('option');
+          unassigned.value = 'Unassigned';
+          unassigned.textContent = 'Unassigned';
+          if (!p.group || p.group === 'Unassigned') unassigned.selected = true;
+          sel.appendChild(unassigned);
+          sel.onchange = function() { reassignPlayerGroup(p.id, this.value); renderDCGroupPlayers(body, null); };
+          row.appendChild(sel);
+          card.appendChild(row);
+        });
+      } else {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'color:var(--fg-3);font-size:13px;padding:8px 0';
+        empty.textContent = 'No players assigned to this group yet';
+        card.appendChild(empty);
+      }
+      section.appendChild(card);
+    });
   }
 
   function cycleGroupColorDC(idx) {
@@ -9413,13 +9532,12 @@
     const p = PLAYERS.find(pl => pl.id === playerId || pl.db_id === playerId);
     if (p) {
       p.group = groupName === 'Unassigned' ? '' : groupName;
-      // Save to Supabase if real player
       if (p.db_id) {
         getValidProgramId().then(id => {
           if (id) db.from('players').update({ group_name: p.group }).eq('id', p.db_id).then(() => {});
         });
       }
-      renderCoachRoster();
+      syncGroupViews();
     }
   }
 
@@ -11411,17 +11529,23 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     showToast(`${player.name} — levels updated`);
   }
 
+  // Syncs all group-related UIs after any change
+  function syncGroupViews() {
+    renderCoachRoster();
+    renderGroupFilterRow();
+    // Update DC groups if visible
+    const dcGroupsBody = document.getElementById('dc-groups-body');
+    if (dcGroupsBody && dcGroupsBody.children.length > 0) renderDCGroups();
+    // Update open player profile group pills
+    if (currentPlayerId) {
+      const player = PLAYERS.find(p => p.id === currentPlayerId);
+      if (player) refreshProfileGroupPills(player);
+    }
+  }
+
   function assignGroup(player, groupName) {
     player.group = groupName;
-    // Re-render group pills
-    const groupRow = document.getElementById('pp-group-row');
-    groupRow.querySelectorAll('.pp-group-pill').forEach((pill, i) => {
-      const g = TEAM_GROUPS[i];
-      pill.classList.toggle('selected', g.name === groupName);
-      pill.style.borderColor = g.name === groupName ? g.color : 'transparent';
-    });
-    // Update roster dot
-    renderCoachRoster();
+    syncGroupViews();
     showToast(`${player.name} moved to ${groupName} group`);
   }
 
@@ -11647,46 +11771,68 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   };
 
   // Seed inventory data
-  let INVENTORY = [
-    { id:'MESH-HELM-001', name:'Schutt Helmet 1', category:'Helmet', brand:'Schutt F7', condition:'Excellent', size:'Large', qty:1, assignedTo:null },
-    { id:'MESH-HELM-002', name:'Schutt Helmet 2', category:'Helmet', brand:'Schutt F7', condition:'Good', size:'Large', qty:1, assignedTo:'' },
-    { id:'MESH-HELM-003', name:'Schutt Helmet 3', category:'Helmet', brand:'Schutt F7', condition:'Good', size:'Medium', qty:1, assignedTo:'' },
-    { id:'MESH-HELM-004', name:'Riddell Helmet 4', category:'Helmet', brand:'Riddell SpeedFlex', condition:'Fair', size:'XL', qty:1, assignedTo:'Brody Hansen' },
-    { id:'MESH-HELM-005', name:'Riddell Helmet 5', category:'Helmet', brand:'Riddell SpeedFlex', condition:'Poor', size:'Large', qty:1, assignedTo:null },
-    { id:'MESH-SPAD-001', name:'Shoulder Pads 1', category:'Shoulder Pads', brand:'Riddell Power', condition:'Excellent', size:'Large', qty:1, assignedTo:'' },
-    { id:'MESH-SPAD-002', name:'Shoulder Pads 2', category:'Shoulder Pads', brand:'Riddell Power', condition:'Good', size:'XL', qty:1, assignedTo:'Brody Hansen' },
-    { id:'MESH-SPAD-003', name:'Shoulder Pads 3', category:'Shoulder Pads', brand:'Schutt Recruit', condition:'Fair', size:'Medium', qty:1, assignedTo:null },
-    { id:'MESH-JRSH-001', name:'Home Jersey #22', category:'Jersey (Home)', brand:'Nike', condition:'Excellent', size:'Large', qty:1, assignedTo:'' },
-    { id:'MESH-JRSH-002', name:'Home Jersey #7', category:'Jersey (Home)', brand:'Nike', condition:'Excellent', size:'Medium', qty:1, assignedTo:'' },
-    { id:'MESH-JRSA-001', name:'Away Jersey #22', category:'Jersey (Away)', brand:'Nike', condition:'Good', size:'Large', qty:1, assignedTo:'' },
-    { id:'MESH-CLTS-001', name:'Cleats - Marcus', category:'Cleats', brand:'Nike Alpha', condition:'Good', size:'10.5', qty:1, assignedTo:'' },
-  ];
+  let INVENTORY = [];;
 
   let invCondFilter = 'all';
+  let invCatFilter = 'all';
+  let invAssignFilter = 'all';
   let currentItemId = null;
   let editingItemId = null;
   let scanResultId = null;
 
+  function setInvAssignFilter(val) {
+    invAssignFilter = val;
+    renderInventory();
+  }
+
+  function setInvCatFilter(val, el) {
+    invCatFilter = val;
+    document.querySelectorAll('#inv-cat-tabs .filter-chip').forEach(c => c.classList.remove('active'));
+    if (el) el.classList.add('active');
+    renderInventory();
+  }
+
   // ===== RENDER INVENTORY =====
   function renderInventory() {
-    const catFilter = document.getElementById('inv-cat-filter')?.value || 'all';
-    let items = INVENTORY.filter(item => {
-      const catMatch = catFilter === 'all' || item.category === catFilter;
+    const catFiltered = INVENTORY.filter(i => invCatFilter === 'all' || i.category === invCatFilter);
+
+    let items = catFiltered.filter(item => {
       const condMatch = invCondFilter === 'all' || item.condition === invCondFilter;
-      return catMatch && condMatch;
+      const assignMatch = invAssignFilter === 'all'
+        || (invAssignFilter === 'assigned' && item.assignedTo)
+        || (invAssignFilter === 'available' && !item.assignedTo)
+        || (invAssignFilter === 'poor' && item.condition === 'Poor');
+      return condMatch && assignMatch;
     });
 
-    // Stats row
+    // Stats tiles — clickable, highlight active filter
+    const total = catFiltered.length;
+    const assigned = catFiltered.filter(i => i.assignedTo).length;
+    const available = total - assigned;
+    const poor = catFiltered.filter(i => i.condition === 'Poor').length;
+    const label = invCatFilter === 'all' ? 'Total' : invCatFilter.split(' ')[0] + 's';
+
     const statsRow = document.getElementById('inv-stats-row');
     if (statsRow) {
-      const total = INVENTORY.length;
-      const assigned = INVENTORY.filter(i => i.assignedTo).length;
-      const needsRepair = INVENTORY.filter(i => i.condition === 'Poor').length;
-      statsRow.innerHTML = `
-        <div class="inv-stat-box"><div class="inv-stat-num">${total}</div><div class="inv-stat-lbl">Total</div></div>
-        <div class="inv-stat-box"><div class="inv-stat-num" style="color:var(--team-primary)">${assigned}</div><div class="inv-stat-lbl">Assigned</div></div>
-        <div class="inv-stat-box"><div class="inv-stat-num" style="color:var(--amber)">${total - assigned}</div><div class="inv-stat-lbl">Available</div></div>
-        <div class="inv-stat-box"><div class="inv-stat-num" style="color:var(--red)">${needsRepair}</div><div class="inv-stat-lbl">Poor</div></div>`;
+      const tiles = [
+        { key: 'all',       num: total,     lbl: label,     color: 'var(--fg)' },
+        { key: 'assigned',  num: assigned,  lbl: 'Assigned', color: 'var(--team-primary)' },
+        { key: 'available', num: available, lbl: 'Available', color: 'var(--amber)' },
+        { key: 'poor',      num: poor,      lbl: 'Poor',     color: 'var(--red)' },
+      ];
+      statsRow.innerHTML = '';
+      tiles.forEach(t => {
+        const box = document.createElement('div');
+        box.className = 'inv-stat-box';
+        box.style.cursor = 'pointer';
+        box.style.transition = 'opacity 0.15s';
+        box.style.opacity = invAssignFilter !== 'all' && invAssignFilter !== t.key ? '0.45' : '1';
+        box.style.outline = invAssignFilter === t.key && t.key !== 'all' ? `2px solid ${t.color}` : 'none';
+        box.style.borderRadius = 'var(--radius-sm)';
+        box.onclick = () => setInvAssignFilter(invAssignFilter === t.key ? 'all' : t.key);
+        box.innerHTML = `<div class="inv-stat-num" style="color:${t.color}">${t.num}</div><div class="inv-stat-lbl">${t.lbl}</div>`;
+        statsRow.appendChild(box);
+      });
     }
 
     // Update menu subtitle
@@ -12303,9 +12449,23 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   // ===== CSV IMPORT =====
+  let invImportMode = 'list'; // 'list' | 'checkout'
+
+  function setInvImportMode(mode, el) {
+    invImportMode = mode;
+    document.getElementById('inv-import-mode-list').style.borderColor = mode === 'list' ? 'var(--team-primary)' : 'var(--border)';
+    document.getElementById('inv-import-mode-list').style.background = mode === 'list' ? 'var(--team-primary-glow)' : 'var(--bg-3)';
+    document.getElementById('inv-import-mode-checkout').style.borderColor = mode === 'checkout' ? 'var(--team-primary)' : 'var(--border)';
+    document.getElementById('inv-import-mode-checkout').style.background = mode === 'checkout' ? 'var(--team-primary-glow)' : 'var(--bg-3)';
+    document.getElementById('inv-import-desc-list').style.display = mode === 'list' ? 'block' : 'none';
+    document.getElementById('inv-import-desc-checkout').style.display = mode === 'checkout' ? 'block' : 'none';
+    document.getElementById('csv-preview').style.display = 'none';
+  }
+
   function openCSVImport() {
     document.getElementById('csv-paste-input').value = '';
     document.getElementById('csv-preview').style.display = 'none';
+    setInvImportMode('list');
     document.getElementById('csv-import-overlay').style.display = 'flex';
   }
 
@@ -12319,65 +12479,327 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const reader = new FileReader();
     reader.onload = e => {
       document.getElementById('csv-paste-input').value = e.target.result;
-      previewCSV(e.target.result);
+      // Auto-detect mode from content
+      autoDetectInvMode(e.target.result);
+      previewInvCSV();
     };
     reader.readAsText(file);
+    event.target.value = '';
   }
 
-  function previewCSV(text) {
-    const rows = parseCSV(text);
-    if (rows.length === 0) return;
+  function autoDetectInvMode(text) {
+    const firstLines = text.split('\n').slice(0,3).join(' ').toLowerCase();
+    // Gear checkout signals: grade keywords, X marks in columns, player-name structure
+    const checkoutSignals = ['seniors', 'juniors', 'sophomores', 'freshmen', 'helmet model', 'shoulder pads', 'knee pads', 'mouthpiece'];
+    const isCheckout = checkoutSignals.some(s => firstLines.includes(s));
+    setInvImportMode(isCheckout ? 'checkout' : 'list');
+  }
+
+  // ── Equipment List Parser ──
+  function parseInvListCSV(text) {
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g,''));
+    const colMap = {
+      name:      headers.findIndex(h => h.includes('name') || h.includes('item')),
+      category:  headers.findIndex(h => h.includes('cat') || h.includes('type')),
+      brand:     headers.findIndex(h => h.includes('brand') || h.includes('model')),
+      condition: headers.findIndex(h => h.includes('cond')),
+      size:      headers.findIndex(h => h.includes('size')),
+      qty:       headers.findIndex(h => h.includes('qty') || h.includes('quant') || h.includes('count')),
+      assignedTo:headers.findIndex(h => h.includes('assign') || h.includes('player')),
+    };
+
+    const start = colMap.name !== -1 ? 1 : 0;
+    return lines.slice(start).map(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+      const get = i => i !== -1 ? cols[i] || '' : '';
+      const name = get(colMap.name) || cols[0] || '';
+      if (!name || name.toLowerCase().includes('example') || name.startsWith('(')) return null;
+      const rawCat = get(colMap.category) || cols[1] || '';
+      const category = matchCategory(rawCat) || 'Other';
+      return {
+        name, category,
+        brand: get(colMap.brand) || cols[2] || '',
+        condition: matchCondition(get(colMap.condition) || cols[3] || '') || 'Good',
+        size: get(colMap.size) || cols[4] || '',
+        qty: parseInt(get(colMap.qty) || cols[5]) || 1,
+        assignedTo: get(colMap.assignedTo) || '',
+      };
+    }).filter(Boolean);
+  }
+
+  // ── Gear Checkout Parser ──
+  const GRADE_KEYWORDS = ['seniors', 'juniors', 'sophomores', 'freshmen', 'varsity', 'jv', 'freshman'];
+
+  function parseGearCheckoutCSV(text) {
+    const lines = text.trim().split(/\r?\n/).map(l =>
+      l.split(',').map(c => c.trim().replace(/^"|"$/g,''))
+    );
+
+    // Find header row
+    let headerRowIdx = -1;
+    for (let i = 0; i < Math.min(5, lines.length); i++) {
+      const row = lines[i].join(' ').toLowerCase();
+      if (row.includes('helmet') || row.includes('shoulder') || row.includes('pants') || row.includes('girdle')) {
+        headerRowIdx = i;
+        break;
+      }
+    }
+    if (headerRowIdx === -1) return [];
+
+    const headers = lines[headerRowIdx].map(h => h.trim());
+
+    // Map each header to its equipment type (or null to skip)
+    // Detail columns (model, size, year) get merged into their base type
+    // Truly unrecognized columns are skipped with a warning
+    function classifyHeader(h) {
+      const hl = h.toLowerCase();
+      // Helmet — including "Helmet Model", "Helmet Size" etc.
+      if (hl.includes('helmet')) return { type: 'Helmet', role: hl.includes('model') || hl.includes('brand') ? 'brand' : hl.includes('size') ? 'size' : hl.includes('year') || hl.includes('refurb') ? 'year' : 'assign' };
+      // Shoulder Pads
+      if (hl.includes('shoulder')) return { type: 'Shoulder Pads', role: 'assign' };
+      // Pants
+      if (hl.includes('pant')) return { type: 'Pants', role: 'assign' };
+      // Girdle
+      if (hl.includes('girdle')) return { type: 'Girdle', role: 'assign' };
+      // Cleats
+      if (hl.includes('cleat')) return { type: 'Cleats', role: 'assign' };
+      // Jerseys
+      if (hl.includes('jersey')) {
+        const type = hl.includes('away') ? 'Jersey (Away)' : 'Jersey (Home)';
+        return { type, role: 'assign' };
+      }
+      // Known "Other" items — mouthpiece, knee pads, backplate, etc.
+      if (hl.includes('mouthpiece') || hl.includes('mouth piece')) return { type: 'Mouthpiece', role: 'assign' };
+      if (hl.includes('knee')) return { type: 'Knee Pads', role: 'assign' };
+      if (hl.includes('backplate') || hl.includes('back plate')) return { type: 'Backplate', role: 'assign' };
+      if (hl.includes('chin')) return { type: 'Chin Strap', role: 'assign' };
+      if (hl.includes('visor')) return { type: 'Visor', role: 'assign' };
+      if (hl.includes('glove')) return { type: 'Gloves', role: 'assign' };
+      // Standalone detail columns with no equipment context — skip
+      if (hl.includes('year') || hl.includes('refurb') || hl.includes('serial') || hl.includes('notes')) return null;
+      // Anything else — unrecognized
+      return 'unknown';
+    }
+
+    // Build column map
+    const colMap = {}; // type → { brandCol, sizeCol, assignCols[] }
+    const skippedCols = [];
+
+    headers.forEach((h, idx) => {
+      if (idx === 0 || !h) return;
+      const info = classifyHeader(h);
+      if (info === null) return; // silently skip detail-only columns
+      if (info === 'unknown') { skippedCols.push({ idx, name: h }); return; }
+      const { type, role } = info;
+      if (!colMap[type]) colMap[type] = { type, brandCol: -1, sizeCol: -1, assignCols: [] };
+      if (role === 'brand' && colMap[type].brandCol === -1) colMap[type].brandCol = idx;
+      else if (role === 'size' && colMap[type].sizeCol === -1) colMap[type].sizeCol = idx;
+      else colMap[type].assignCols.push(idx);
+    });
+
+    const items = [];
+    const nameCounters = {};
+
+    for (let i = headerRowIdx + 1; i < lines.length; i++) {
+      const row = lines[i];
+      const playerName = row[0]?.trim();
+      if (!playerName) continue;
+      if (GRADE_KEYWORDS.some(k => playerName.toLowerCase().startsWith(k))) continue;
+
+      Object.values(colMap).forEach(({ type, brandCol, sizeCol, assignCols }) => {
+        // Check if player has this item
+        const brandVal = brandCol !== -1 ? row[brandCol]?.trim() : '';
+        const sizeVal  = sizeCol  !== -1 ? row[sizeCol]?.trim()  : '';
+        const assigned = assignCols.some(c => {
+          const v = row[c]?.trim();
+          return v && v !== '' && v.toLowerCase() !== 'no';
+        });
+
+        // Has item if brand/size filled in OR an assign column is marked
+        const isX = v => v === 'X' || v === 'x' || v === '✓' || v === 'yes';
+        const hasItem = (brandVal && brandVal !== '?') || sizeVal
+          || assignCols.some(c => isX(row[c]?.trim() || ''))
+          || assignCols.some(c => { const v = row[c]?.trim(); return v && !isX(v) && v !== '?'; });
+
+        if (!hasItem) return;
+
+        // Parse "Brand (Size)" from brand column if size not separate
+        let brand = brandVal || '';
+        let size  = sizeVal  || '';
+        if (brand && !size) {
+          const match = brand.match(/^(.+?)\s*\(([^)]+)\)$/);
+          if (match) { brand = match[1].trim(); size = match[2].trim(); }
+        }
+        // Also check assign columns for brand/size text
+        if (!brand) {
+          assignCols.forEach(c => {
+            const v = row[c]?.trim();
+            if (!v || isX(v) || v === '?') return;
+            const match = v.match(/^(.+?)\s*\(([^)]+)\)$/);
+            if (match) { brand = brand || match[1].trim(); size = size || match[2].trim(); }
+            else if (!brand) brand = v;
+          });
+        }
+
+        // Generate sequential name
+        const brandKey = (type + '|' + brand).toLowerCase();
+        if (!nameCounters[brandKey]) nameCounters[brandKey] = 0;
+        nameCounters[brandKey]++;
+        const itemName = brand ? `${brand} ${nameCounters[brandKey]}` : `${type} ${nameCounters[brandKey]}`;
+
+        const invCategory = ['Helmet','Shoulder Pads','Pants','Girdle','Cleats','Jersey (Home)','Jersey (Away)'].includes(type)
+          ? type : 'Other';
+
+        items.push({ name: itemName, category: invCategory, brand, size, condition: 'Good', qty: 1, assignedTo: playerName });
+      });
+    }
+    window._gearParseSkipped = skippedCols;
+    return items;
+  }
+
+  function matchCategory(raw) {
+    if (!raw) return '';
+    const r = raw.toLowerCase();
+    if (r.includes('helmet')) return 'Helmet';
+    if (r.includes('shoulder')) return 'Shoulder Pads';
+    if (r.includes('jersey') && r.includes('home')) return 'Jersey (Home)';
+    if (r.includes('jersey') && r.includes('away')) return 'Jersey (Away)';
+    if (r.includes('jersey')) return 'Jersey (Home)';
+    if (r.includes('pant')) return 'Pants';
+    if (r.includes('girdle')) return 'Girdle';
+    if (r.includes('cleat')) return 'Cleats';
+    if (r.includes('pad') && !r.includes('shoulder')) return 'Other';
+    return INV_CATEGORIES.find(c => c.toLowerCase() === r) || '';
+  }
+
+  function matchCondition(raw) {
+    const r = raw.toLowerCase();
+    if (r.includes('excel')) return 'Excellent';
+    if (r.includes('good')) return 'Good';
+    if (r.includes('fair')) return 'Fair';
+    if (r.includes('poor')) return 'Poor';
+    if (r.includes('retir')) return 'Retired';
+    return '';
+  }
+
+  function parseGearCheckoutCSVFull(text) {
+    // Returns { items, skippedCols }
+    // Temporarily capture skipped cols by running parse with tracking
+    const result = { items: [], skippedCols: [] };
+    // We'll use a wrapper — parse sets window._lastSkippedCols
+    window._gearParseSkipped = [];
+    result.items = parseGearCheckoutCSV(text);
+    result.skippedCols = window._gearParseSkipped || [];
+    return result;
+  }
+
+  function previewInvCSV() {
+    const text = document.getElementById('csv-paste-input').value.trim();
+    if (!text) { showToast('Paste or upload a CSV first'); return; }
+    if (invImportMode === 'list') autoDetectInvMode(text);
+
+    let rows, skipped = [];
+    if (invImportMode === 'checkout') {
+      const full = parseGearCheckoutCSVFull(text);
+      rows = full.items;
+      skipped = full.skippedCols;
+    } else {
+      rows = parseInvListCSV(text);
+    }
+
     const preview = document.getElementById('csv-preview');
     const label = document.getElementById('csv-preview-label');
     const list = document.getElementById('csv-preview-list');
-    label.textContent = `${rows.length} item${rows.length > 1 ? 's' : ''} ready to import`;
-    list.innerHTML = rows.slice(0,5).map(r =>
-      `<div style="font-size:12px;padding:3px 0;color:var(--gray-1);border-bottom:1px solid var(--black-4)">${r.name} · ${r.category} · ${r.condition}</div>`
-    ).join('') + (rows.length > 5 ? `<div style="font-size:11px;color:var(--gray-3);padding:4px 0">…and ${rows.length-5} more</div>` : '');
+
+    if (rows.length === 0) {
+      label.textContent = 'No valid rows found — check your format';
+      list.innerHTML = '';
+      preview.style.display = 'block';
+      return;
+    }
+
+    label.textContent = `${rows.length} item${rows.length !== 1 ? 's' : ''} ready to import`;
+
+    let html = rows.slice(0,6).map(r =>
+      `<div style="font-size:11px;padding:3px 0;color:var(--fg-2);border-bottom:1px solid var(--border)">${r.name}${r.assignedTo ? ' → ' + r.assignedTo : ''} · ${r.category}${r.size ? ' · ' + r.size : ''}</div>`
+    ).join('') + (rows.length > 6 ? `<div style="font-size:11px;color:var(--fg-3);padding:4px 0">…and ${rows.length-6} more</div>` : '');
+
+    // Show skipped column warnings
+    if (skipped.length > 0) {
+      html += `<div style="margin-top:8px;padding:8px;background:rgba(255,184,0,0.1);border:1px solid var(--amber);border-radius:var(--radius-sm)">
+        <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:4px">⚠️ Unrecognized columns — skipped:</div>
+        ${skipped.map(s => `<div style="font-size:11px;color:var(--fg-2);padding:2px 0">"${s.name}" — <span style="color:var(--fg-3)">not a recognized equipment type, data excluded</span></div>`).join('')}
+        <div style="font-size:10px;color:var(--fg-3);margin-top:4px">Rename these columns to a supported type (Helmet, Shoulder Pads, Pants, Girdle, Cleats, Jersey, etc.) and re-upload to include them.</div>
+      </div>`;
+    }
+
+    list.innerHTML = html;
     preview.style.display = 'block';
   }
 
-  function parseCSV(text) {
-    const lines = text.trim().split('\n').filter(Boolean);
-    if (lines.length < 2) return [];
-    // Skip header row
-    const dataLines = lines[0].toLowerCase().includes('item name') ? lines.slice(1) : lines;
-    return dataLines.map(line => {
-      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-      return {
-        name: cols[0] || 'Item',
-        category: INV_CATEGORIES.find(c => c.toLowerCase() === (cols[1]||'').toLowerCase()) || 'Other',
-        brand: cols[2] || '',
-        condition: INV_CONDITIONS.find(c => c.toLowerCase() === (cols[3]||'').toLowerCase()) || 'Good',
-        size: cols[4] || '',
-        qty: parseInt(cols[5]) || 1,
-      };
-    }).filter(r => r.name);
-  }
+  function parseCSV(text) { return parseInvListCSV(text); } // backwards compat
 
   function importCSV() {
     const text = document.getElementById('csv-paste-input').value.trim();
-    if (!text) { showToast('Please paste or upload CSV data'); return; }
-    const rows = parseCSV(text);
-    if (rows.length === 0) { showToast('No valid rows found — check column order'); return; }
+    if (!text) { showToast('Paste or upload a CSV first'); return; }
+    const rows = invImportMode === 'checkout' ? parseGearCheckoutCSV(text) : parseInvListCSV(text);
+    if (rows.length === 0) { showToast('No valid rows found — check your format'); return; }
     rows.forEach(r => {
-      INVENTORY.push({
-        id: generateItemId(r.category),
-        name: r.name,
-        category: r.category,
-        brand: r.brand,
-        condition: r.condition,
-        size: r.size,
-        qty: r.qty,
-        assignedTo: null
-      });
+      for (let i = 0; i < (r.qty || 1); i++) {
+        INVENTORY.push({
+          id: generateItemId(r.category),
+          name: r.qty > 1 ? `${r.name} ${i+1}` : r.name,
+          category: r.category,
+          brand: r.brand || '',
+          condition: r.condition || 'Good',
+          size: r.size || '',
+          qty: 1,
+          assignedTo: r.assignedTo || '',
+        });
+      }
     });
     closeCSVImport();
     renderInventory();
-    showToast(`${rows.length} item${rows.length>1?'s':''} imported ✓`);
+    showToast(`${rows.length} item${rows.length > 1 ? 's' : ''} imported ✓`);
   }
 
-  // Initialize inventory on More tab open — handled inside showMoreSection directly
+  // ── Template Downloads ──
+  function downloadInvListTemplate() {
+    const csv = [
+      '# If no name is provided, items will be named by Brand/Model + number (e.g. "Riddell SpeedFlex 1")',
+      'name,category,brand,condition,size,quantity',
+      'Schutt Helmet 1,Helmet,Schutt F7,Excellent,Large,1',
+      'Riddell Helmet 2,Helmet,Riddell SpeedFlex,Good,Medium,1',
+      'Home Jersey 12,Jersey (Home),Russell Athletic,Good,XL,1',
+      'Practice Pants 1,Pants,,Good,Large,1',
+      'Shoulder Pads 1,Shoulder Pads,Schutt,Fair,Medium,1',
+      '(add more rows below),,,,,',
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+    a.download = 'mesh-inventory-template.csv';
+    a.click();
+  }
+
+  function downloadInvCheckoutTemplate() {
+    const csv = [
+      '# Items without a name are auto-named by Brand/Model + number in order they appear (e.g. "Riddell SpeedFlex 1")',
+      'Player Name,Helmet Model,Helmet Size,Year Refurbished,Shoulder Pads,Knee Pads,Practice Pants,Girdle,Backplate,Mouthpiece',
+      'SENIORS,,,,,,,,',
+      'John Smith,Riddell SpeedFlex,Large,2026,Schutt (M),,X,X,,X',
+      'Mike Johnson,Schutt F7,Medium,2025,Riddell Power (S),,X,,,X',
+      'JUNIORS,,,,,,,,',
+      'Tyler Brown,,,,,,,,,X',
+      '(add more rows below),,,,,,,,,',
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+    a.download = 'mesh-gear-checkout-template.csv';
+    a.click();
+  }
 
   // ===== PARENT MORE TAB =====
   function showParentSection(section) {
@@ -13505,36 +13927,46 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     TEAM_GROUPS.forEach((g, i) => {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--black-4)';
-      row.innerHTML = `
-        <div style="width:28px;height:28px;border-radius:50%;background:${g.color};flex-shrink:0;cursor:pointer" onclick="cycleGroupColor(${i})"></div>
-        <input value="${g.name}" style="flex:1;background:var(--black-3);border:1px solid var(--black-4);border-radius:6px;padding:7px 10px;font-size:14px;color:var(--white);font-family:var(--font);outline:none" data-group-idx="${i}" oninput="renameGroup(${i}, this.value)" onfocus="this.style.borderColor='var(--team-primary)'" onblur="this.style.borderColor='var(--black-4)'">
-        <div style="color:var(--red);font-size:20px;cursor:pointer;padding:0 4px;opacity:0.7" onclick="deleteGroup(${i})">✕</div>`;
+      const dot = document.createElement('div');
+      dot.style.cssText = `width:28px;height:28px;border-radius:50%;background:${g.color};flex-shrink:0;cursor:pointer`;
+      dot.onclick = () => cycleGroupColor(i);
+      const input = document.createElement('input');
+      input.value = g.name;
+      input.dataset.oldName = g.name;
+      input.style.cssText = 'flex:1;background:var(--black-3);border:1px solid var(--black-4);border-radius:6px;padding:7px 10px;font-size:14px;color:var(--white);font-family:var(--font);outline:none';
+      input.onfocus = function() { this.dataset.oldName = TEAM_GROUPS[i].name; this.style.borderColor = 'var(--team-primary)'; };
+      input.onblur = function() { this.style.borderColor = 'var(--black-4)'; renameGroup(i, this.value, this.dataset.oldName); };
+      input.onkeydown = function(e) { if (e.key === 'Enter') this.blur(); };
+      const del = document.createElement('div');
+      del.style.cssText = 'color:var(--red);font-size:20px;cursor:pointer;padding:0 4px;opacity:0.7';
+      del.textContent = '✕';
+      del.onclick = () => deleteGroup(i);
+      row.appendChild(dot);
+      row.appendChild(input);
+      row.appendChild(del);
       container.appendChild(row);
     });
   }
 
-  function renameGroup(idx, newName) {
-    const oldName = TEAM_GROUPS[idx].name;
-    TEAM_GROUPS[idx].name = newName;
-    // Update all players referencing the old name
-    PLAYERS.forEach(p => { if (p.group === oldName) p.group = newName; });
-    syncRosterData();
-    renderCoachRoster();
+  function renameGroup(idx, newName, oldName) {
+    if (!newName.trim() || newName === oldName) return;
+    TEAM_GROUPS[idx].name = newName.trim();
+    PLAYERS.forEach(p => { if (p.group === oldName) p.group = newName.trim(); });
+    syncRosterData?.();
   }
 
   function cycleGroupColor(idx) {
     const current = GROUP_COLORS.indexOf(TEAM_GROUPS[idx].color);
     const next = (current + 1) % GROUP_COLORS.length;
     TEAM_GROUPS[idx].color = GROUP_COLORS[next];
-    TEAM_GROUPS[idx].bg = GROUP_COLORS[next] + '26'; // ~15% opacity hex
+    TEAM_GROUPS[idx].bg = GROUP_COLORS[next] + '26';
     renderGroupManagerList();
-    renderCoachRoster();
+    syncGroupViews();
   }
 
   function addNewGroup() {
     TEAM_GROUPS.push({ name: 'New Group', color: GROUP_COLORS[TEAM_GROUPS.length % GROUP_COLORS.length], bg: GROUP_COLORS[TEAM_GROUPS.length % GROUP_COLORS.length] + '26' });
     renderGroupManagerList();
-    // Focus the new input
     const inputs = document.querySelectorAll('#group-manager-list input');
     if (inputs.length) { inputs[inputs.length-1].focus(); inputs[inputs.length-1].select(); }
   }
@@ -13543,21 +13975,18 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (TEAM_GROUPS.length <= 1) { showToast('Need at least one group'); return; }
     const deleted = TEAM_GROUPS[idx].name;
     TEAM_GROUPS.splice(idx, 1);
-    // Reassign any players on the deleted group to first group
     PLAYERS.forEach(p => { if (p.group === deleted) p.group = TEAM_GROUPS[0].name; });
     renderGroupManagerList();
-    renderCoachRoster();
+    syncGroupViews();
   }
 
   function saveGroups() {
+    document.querySelectorAll('#group-manager-list input').forEach((input, i) => {
+      const oldName = input.dataset.oldName || TEAM_GROUPS[i]?.name;
+      if (TEAM_GROUPS[i] && input.value.trim()) renameGroup(i, input.value, oldName);
+    });
     closeGroupManager();
-    renderGroupFilterRow();
-    renderCoachRoster();
-    // Refresh group pills in open player profile
-    if (currentPlayerId) {
-      const player = PLAYERS.find(p => p.id === currentPlayerId);
-      if (player) refreshProfileGroupPills(player);
-    }
+    syncGroupViews();
     showToast('Groups saved ✓');
   }
 
