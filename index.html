@@ -123,7 +123,6 @@
   .notif-btn { width: 32px; height: 32px; background: var(--bg-3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; position: relative; }
   .school-logo-slot { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; flex-shrink: 0; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
   .school-logo-slot img { width: 100%; height: 100%; object-fit: contain; }
-  .notif-btn::after { content: ''; width: 8px; height: 8px; background: var(--team-primary); border-radius: 50%; position: absolute; top: 3px; right: 3px; border: 1.5px solid var(--bg); }
   .avatar { width: 32px; height: 32px; background: var(--team-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--team-primary-text); cursor: pointer; margin-left: 8px; }
   .scroll-content { flex: 1; overflow-y: auto; padding: 16px 20px 80px; -webkit-overflow-scrolling: touch; }
   .scroll-content::-webkit-scrollbar { display: none; }
@@ -881,6 +880,8 @@
       height: calc(100vh - 57px);
       overflow: hidden;
       position: relative;
+      max-width: 100% !important;
+      margin: 0 !important;
     }
 
     /* Left panel — narrow thread list */
@@ -1019,9 +1020,10 @@
 
     /* Action sheet inner panel — centered card instead of bottom slide */
     #action-sheet-overlay > div,
-    #share-invite-overlay > div {
+    #share-invite-overlay > div,
+    #new-group-overlay > div {
       border-radius: 16px !important;
-      width: 420px !important;
+      width: 480px !important;
       max-width: 90vw;
       margin: 0 auto;
     }
@@ -2042,7 +2044,7 @@
     <div style="display:flex;align-items:center;gap:4px">
       <div class="notif-btn-wrap">
         <div class="notif-btn" onclick="toggleNotifPanel()" id="notif-btn">🔔</div>
-        <div class="notif-badge" id="notif-badge">3</div>
+        <div class="notif-badge" id="notif-badge" style="display:none">0</div>
       </div>
       <!-- Avatar hidden on desktop via CSS — profile is in sidebar footer -->
       <div class="avatar desktop-hide-avatar" id="user-avatar" onclick="openProfileModal()" style="cursor:pointer">CW</div>
@@ -2930,7 +2932,7 @@
       </div>
 
       <!-- File upload -->
-      <div style="border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px;cursor:pointer" onclick="document.getElementById('roster-csv-input').click()">
+      <div id="roster-upload-zone" style="border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px;cursor:pointer;transition:border-color 0.15s" onclick="document.getElementById('roster-csv-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--team-primary)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleRosterCSVDrop(event)">
         <div style="font-size:24px;margin-bottom:6px">📄</div>
         <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload CSV</div>
         <div style="font-size:12px;color:var(--fg-3);margin-top:4px">or drag and drop a .csv file</div>
@@ -2939,13 +2941,13 @@
 
       <div style="text-align:center;color:var(--fg-3);font-size:12px;margin-bottom:14px">— or paste CSV data directly —</div>
 
-      <textarea id="roster-csv-paste" placeholder="Paste CSV data here..." style="width:100%;height:120px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical"></textarea>
+      <textarea id="roster-csv-paste" placeholder="Paste CSV data here..." style="width:100%;height:100px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical" oninput="rosterImportParsed=[];document.getElementById('roster-import-preview').style.display='none'"></textarea>
 
       <div id="roster-import-preview" style="display:none;margin-top:12px"></div>
 
       <div style="display:flex;gap:8px;margin-top:14px">
-        <button onclick="previewRosterCSV()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Preview</button>
-        <button onclick="confirmRosterImport()" class="btn-primary" style="flex:2;font-size:14px">Import players</button>
+        <button onclick="closeRosterImport()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Cancel</button>
+        <button id="roster-import-btn" onclick="confirmRosterImport()" class="btn-primary" style="flex:2;font-size:14px">Import players</button>
       </div>
     </div>
   </div>
@@ -2964,8 +2966,8 @@
           <input type="text" id="apm-name" class="input-field" placeholder="e.g. John Smith" style="width:100%">
         </div>
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Jersey # *</label>
-          <input type="number" id="apm-number" class="input-field" placeholder="e.g. 7" style="width:100%">
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Jersey #</label>
+          <input type="number" id="apm-number" class="input-field" placeholder="e.g. 7 (optional)" style="width:100%">
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Off. Position</label>
@@ -3781,13 +3783,16 @@
   </div>
 
   <!-- ===== NEW GROUP MODAL (COACH) ===== -->
-  <div id="new-group-overlay">
+  <div id="new-group-overlay" onclick="closeNewGroupModal()">
     <div class="new-group-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
 
       <!-- Step 1: Members -->
       <div class="ng-step active" id="ng-step-1">
-        <div style="font-size:16px;font-weight:700;margin-bottom:4px">New message group</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:16px;font-weight:700">New message group</div>
+          <div onclick="closeNewGroupModal()" style="cursor:pointer;font-size:20px;color:var(--fg-3);line-height:1">✕</div>
+        </div>
         <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Select members to include in this group.</div>
         <div class="ng-validation" id="ng-validation"></div>
         <div style="font-size:12px;font-weight:600;color:var(--fg-3);margin-bottom:8px">Coaches & Staff</div>
@@ -3799,9 +3804,12 @@
 
       <!-- Step 2: Name (optional) -->
       <div class="ng-step" id="ng-step-2">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <div style="color:var(--team-primary);cursor:pointer;font-size:22px" onclick="ngGoToStep(1)">‹</div>
-          <div style="font-size:16px;font-weight:700">Name your group</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="color:var(--team-primary);cursor:pointer;font-size:22px" onclick="ngGoToStep(1)">‹</div>
+            <div style="font-size:16px;font-weight:700">Name your group</div>
+          </div>
+          <div onclick="closeNewGroupModal()" style="cursor:pointer;font-size:20px;color:var(--fg-3);line-height:1">✕</div>
         </div>
         <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Optional — leave blank to use member names.</div>
         <input id="ng-name-input" class="ap-input" placeholder="e.g. Offensive Staff, Senior Parents…" style="margin-bottom:16px">
@@ -3811,7 +3819,7 @@
   </div>
 
   <!-- ===== PLAYER NEW MESSAGE MODAL ===== -->
-  <div id="player-new-msg-overlay">
+  <div id="player-new-msg-overlay" onclick="closePlayerNewMsg()">
     <div class="new-group-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -3834,7 +3842,7 @@
   </div>
 
   <!-- ===== GROUP MANAGER MODAL ===== -->
-  <div id="group-manager-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:flex-end">
+  <div id="group-manager-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:flex-end" onclick="closeGroupManager()">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4)" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -4214,7 +4222,7 @@
   </div>
 
   <!-- ===== CSV IMPORT MODAL ===== -->
-  <div id="csv-import-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center;padding:24px">
+  <div id="csv-import-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center;padding:24px" onclick="closeCSVImport()">
     <div class="ap-modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto">
       <div class="ap-head">
         <div class="ap-title">Import Inventory</div>
@@ -6166,16 +6174,29 @@
       document.getElementById('roster-import-overlay').style.display = 'none';
   }
 
+  function handleRosterCSVDrop(event) {
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    loadRosterFile(file);
+  }
+
   function handleRosterCSV(event) {
     const file = event.target.files[0];
     if (!file) return;
+    loadRosterFile(file);
+    event.target.value = '';
+  }
+
+  function loadRosterFile(file) {
+    // Update upload zone to show filename
+    const zone = document.getElementById('roster-upload-zone');
+    if (zone) zone.innerHTML = `<div style="font-size:20px;margin-bottom:6px">✅</div><div style="font-size:13px;font-weight:600;color:var(--fg)">${file.name}</div><div style="font-size:12px;color:var(--fg-3);margin-top:4px">Parsing…</div><input type="file" id="roster-csv-input" accept=".csv" style="display:none" onchange="handleRosterCSV(event)">`;
     const reader = new FileReader();
     reader.onload = e => {
       document.getElementById('roster-csv-paste').value = e.target.result;
       previewRosterCSV();
     };
     reader.readAsText(file);
-    event.target.value = '';
   }
 
   function parseRosterCSV(text) {
@@ -6226,32 +6247,48 @@
   function previewRosterCSV() {
     const text = document.getElementById('roster-csv-paste').value.trim();
     const preview = document.getElementById('roster-import-preview');
+    const importBtn = document.getElementById('roster-import-btn');
     if (!text) { preview.style.display = 'none'; return; }
 
     const parsed = parseRosterCSV(text);
     if (parsed === null) {
       preview.style.display = 'block';
-      preview.innerHTML = '<div style="color:var(--red);font-size:13px">⚠️ Could not find a "name" column. Check your CSV headers.</div>';
+      preview.innerHTML = '<div style="background:rgba(255,68,68,0.1);border:1px solid var(--red);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red)">⚠️ Could not find a "name" column. Check your CSV headers.</div>';
       return;
     }
     if (!parsed.length) {
       preview.style.display = 'block';
-      preview.innerHTML = '<div style="color:var(--red);font-size:13px">⚠️ No player rows found.</div>';
+      preview.innerHTML = '<div style="background:rgba(255,68,68,0.1);border:1px solid var(--red);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red)">⚠️ No player rows found. Make sure your CSV has data below the header row.</div>';
       return;
     }
 
     rosterImportParsed = parsed;
+
+    // Count how many have positions
+    const withPos = parsed.filter(p => p.pos).length;
+    const withParent = parsed.filter(p => p.parent_name).length;
+
     preview.style.display = 'block';
     preview.innerHTML = `
-      <div style="font-size:12px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${parsed.length} players found</div>
-      <div style="background:var(--bg-3);border-radius:var(--radius-sm);overflow:hidden;max-height:200px;overflow-y:auto">
-        ${parsed.map(p => `
-          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px">
+      <div style="background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#39ff14;margin-bottom:2px">✓ ${parsed.length} players ready to import</div>
+        <div style="font-size:11px;color:var(--fg-3)">${withPos} with positions · ${withParent} with parent info</div>
+      </div>
+      <div style="background:var(--bg-3);border-radius:var(--radius-sm);overflow:hidden;max-height:180px;overflow-y:auto">
+        ${parsed.slice(0, 50).map(p => `
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
             <div style="font-weight:600;color:var(--fg)">${p.name}</div>
-            <div style="color:var(--fg-3)">${p.pos||'—'}</div>
-            <div style="color:var(--fg-3)">#${p.num||'—'}</div>
+            <div style="color:var(--fg-3)">${p.posOff || p.pos || '—'}</div>
+            <div style="color:var(--fg-3)">#${p.num || '—'}</div>
           </div>`).join('')}
+        ${parsed.length > 50 ? `<div style="font-size:11px;color:var(--fg-3);padding:8px 12px">…and ${parsed.length - 50} more</div>` : ''}
       </div>`;
+
+    // Update import button to show count and highlight
+    if (importBtn) {
+      importBtn.textContent = `Import ${parsed.length} players →`;
+      importBtn.style.background = 'var(--team-primary)';
+    }
   }
 
   async function confirmRosterImport() {
@@ -6336,7 +6373,6 @@
 
     const errors = [];
     if (!name) errors.push('Full name');
-    if (!num) errors.push('Jersey number');
     if (!posOff && !posDef && !posST) errors.push('At least one position');
     if (!year) errors.push('Year/Grade');
 
@@ -6350,7 +6386,7 @@
     const unit = posOff ? 'Offense' : posDef ? 'Defense' : 'Special Teams';
 
     const row = {
-      name, num: '#' + num.replace('#',''), pos, posOff: posOff || '', posDef: posDef || '', posST: posST || '', year,
+      name, num: num ? '#' + num.replace('#','') : '—', pos, posOff: posOff || '', posDef: posDef || '', posST: posST || '', year,
       height: document.getElementById('apm-height')?.value.trim() || '',
       weight: document.getElementById('apm-weight')?.value.trim() || '',
       parent: document.getElementById('apm-parent-name')?.value.trim() || '',
@@ -8755,7 +8791,7 @@
 
   // ===== NOTIFICATIONS =====
   let notifOpen = false;
-  let notifCount = 3;
+  let notifCount = 0;
   function toggleNotifPanel() {
     notifOpen = !notifOpen;
     document.getElementById('notif-panel').classList.toggle('open', notifOpen);
