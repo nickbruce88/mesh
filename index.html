@@ -1060,7 +1060,16 @@
     #notif-panel.open {
       transform: translateY(0) !important;
     }
-    #screen-login,
+    #screen-login {
+      max-width: 100% !important;
+      width: 100vw !important;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 32px;
+      margin: 0;
+    }
+
     #screen-setup,
     #screen-join {
       max-width: 480px;
@@ -1077,6 +1086,12 @@
     body:has(#screen-setup.active),
     body:has(#screen-join.active) {
       justify-content: center !important;
+    }
+
+    /* Login screen takes full viewport */
+    body:has(#screen-login.active) .phone {
+      max-width: 100% !important;
+      width: 100vw !important;
     }
 
   }
@@ -1633,54 +1648,84 @@
   </div>
   <script>
   (function() {
-    // Sport video IDs from Pexels — each is a different sport/field
     const SPORT_VIDEOS = [
-      { id: '34682825', fps: '25', label: 'American Football' },  // High school football field aerial night
-      { id: '2249402',  fps: '25', label: 'Soccer'            },  // Soccer field aerial night
-      { id: '20698839', fps: '25', label: 'Baseball'          },  // Baseball diamond aerial
-      { id: '33277901', fps: '25', label: 'Basketball'        },  // Basketball court aerial
-      { id: '2657257',  fps: '25', label: 'Soccer Stadium'    },  // Soccer stadium night
+      'https://videos.pexels.com/video-files/34682825/34682825-sd_960_540_25fps.mp4',  // American football field aerial night
+      'https://videos.pexels.com/video-files/2249402/2249402-sd_960_506_25fps.mp4',   // Soccer field aerial night
+      'https://videos.pexels.com/video-files/20698839/20698839-hd_1920_1080_30fps.mp4', // Baseball diamond aerial
+      'https://videos.pexels.com/video-files/2657257/2657257-hd_1920_1080_30fps.mp4',  // Soccer stadium night
+      'https://videos.pexels.com/video-files/29905702/29905702-hd_1920_1080_25fps.mp4', // Football stadium aerial
     ];
-
-    function buildUrl(v) {
-      return 'https://videos.pexels.com/video-files/' + v.id + '/' + v.id + '-hd_1920_1080_' + v.fps + 'fps.mp4';
-    }
 
     const vidA = document.getElementById('bg-vid-a');
     const vidB = document.getElementById('bg-vid-b');
+    if (!vidA || !vidB) return;
+
     let current = 0;
     let activeEl = vidA;
     let inactiveEl = vidB;
-    const DISPLAY_TIME = 9000; // ms to show each video
+    const DISPLAY_TIME = 10000;
+
+    function showVideo(el) {
+      el.style.opacity = '0.25';
+    }
+    function hideVideo(el) {
+      el.style.opacity = '0';
+    }
+
+    function startFirst() {
+      activeEl.src = SPORT_VIDEOS[0];
+      activeEl.load();
+      // Try both oncanplay and a timeout fallback
+      let started = false;
+      activeEl.oncanplay = function() {
+        if (started) return;
+        started = true;
+        activeEl.play().catch(() => {});
+        showVideo(activeEl);
+        setTimeout(loadNext, DISPLAY_TIME);
+      };
+      // Fallback: if canplay never fires, try playing anyway after 3s
+      setTimeout(() => {
+        if (!started) {
+          started = true;
+          activeEl.play().catch(() => {});
+          showVideo(activeEl);
+          setTimeout(loadNext, DISPLAY_TIME);
+        }
+      }, 3000);
+    }
 
     function loadNext() {
       const nextIdx = (current + 1) % SPORT_VIDEOS.length;
-      inactiveEl.src = buildUrl(SPORT_VIDEOS[nextIdx]);
+      inactiveEl.src = SPORT_VIDEOS[nextIdx];
       inactiveEl.load();
-      inactiveEl.oncanplay = function() {
+      let switched = false;
+
+      function doSwitch() {
+        if (switched) return;
+        switched = true;
         inactiveEl.play().catch(() => {});
-        // Crossfade
-        inactiveEl.style.opacity = '0.22';
-        activeEl.style.opacity = '0';
-        // Swap
+        showVideo(inactiveEl);
+        hideVideo(activeEl);
         const tmp = activeEl; activeEl = inactiveEl; inactiveEl = tmp;
         current = nextIdx;
         setTimeout(loadNext, DISPLAY_TIME);
-      };
+      }
+
+      inactiveEl.oncanplay = doSwitch;
+      setTimeout(doSwitch, 4000); // fallback if canplay doesn't fire
     }
 
-    // Start first video
-    vidA.src = buildUrl(SPORT_VIDEOS[0]);
-    vidA.load();
-    vidA.oncanplay = function() {
-      vidA.play().catch(() => {});
-      vidA.style.opacity = '0.22';
-      setTimeout(loadNext, DISPLAY_TIME);
-    };
+    // Kick off
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startFirst);
+    } else {
+      startFirst();
+    }
   })();
   </script>
 
-  <div style="width:100%;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center">
+  <div style="width:100%;max-width:480px;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;margin:0 auto">
     <!-- Logo -->
     <div style="margin-bottom:8px;margin-top:20px">
       <img id="login-mesh-logo" src="" alt="mesh" style="height:130px;display:block;margin:0 auto">
