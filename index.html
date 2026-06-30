@@ -7114,7 +7114,7 @@
 
       btn.textContent = 'Sign in →';
       btn.disabled = false;
-      login('coach');
+      restoreSession();
     } catch(e) {
       console.error('Sign in error:', e);
       errEl.textContent = e.message || 'Invalid email or password';
@@ -7164,7 +7164,7 @@
         obProgram.teamName = prog.team_name;
         obProgram.coachName = prog.coach_name;
         console.log('Session restored successfully');
-        login('coach');
+        restoreSession();
         return true;
       } else {
         console.warn('Session exists but no program found');
@@ -14445,25 +14445,25 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
       console.log('Restoring session — role:', role, 'code:', joinCode);
 
-      // Look up program from Supabase
+      // Look up program from Supabase — try coach_code first, fall back to join_code
       let program = null;
       try {
         const { data } = await db.from('programs')
           .select('*')
-          .eq('join_code', joinCode)
+          .or(`coach_code.eq.${joinCode},join_code.eq.${joinCode}`)
           .maybeSingle();
         if (data) {
           program = data;
-          // Cache program ID
           localStorage.setItem('mesh_program_id', data.id);
-          // Restore team colors if saved
           if (data.primary_color) updateTeamColor('primary', data.primary_color);
           if (data.secondary_color) updateTeamColor('secondary', data.secondary_color);
-          // Update obProgram state
-          obProgram.joinCode = data.join_code;
-          obProgram.teamName = data.team_name;
+          obProgram.joinCode   = data.coach_code || data.join_code;
+          obProgram.coachCode  = data.coach_code;
+          obProgram.playerCode = data.player_code;
+          obProgram.parentCode = data.parent_code;
+          obProgram.teamName   = data.team_name;
           obProgram.schoolName = data.school_name;
-          obProgram.coachName = data.coach_name;
+          obProgram.coachName  = data.coach_name;
         }
       } catch(e) {
         console.error('Session restore Supabase error:', e);
