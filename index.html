@@ -94,7 +94,7 @@
   .screen.active { display: flex; }
 
   /* LOGIN */
-  #screen-login { justify-content: center; align-items: center; padding: 40px 32px; }
+  #screen-login { justify-content: flex-start; align-items: center; padding: 0 28px 40px; background: var(--bg); position: relative; overflow: hidden; }
   .logo-mark { width: 72px; height: 72px; background: var(--green); border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; box-shadow: 0 0 40px var(--green-glow); font-size: 36px; }
   .logo-name { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; text-align: center; }
   .logo-name span { color: var(--team-primary); }
@@ -1624,14 +1624,61 @@
 
 <!-- ONBOARDING: LANDING -->
 <div id="screen-login" class="screen active">
-  <div style="width:100%">
-    <div style="text-align:center;margin-bottom:36px">
-      <img id="login-mesh-logo" src="" alt="mesh" style="height:80px;display:block;margin:0 auto 16px">
-      <div class="logo-tagline">The coaching platform for your whole program</div>
+  <!-- Background video -->
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0">
+    <video autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;opacity:0.22">
+      <source src="https://videos.pexels.com/video-files/11918917/11918917-hd_1920_1080_60fps.mp4" type="video/mp4">
+    </video>
+    <!-- Dark gradient overlay so text stays readable -->
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.7) 100%)"></div>
+  </div>
+
+  <div style="width:100%;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center">
+    <!-- Logo -->
+    <div style="margin-bottom:8px;margin-top:20px">
+      <img id="login-mesh-logo" src="" alt="mesh" style="height:130px;display:block;margin:0 auto">
     </div>
-    <button class="btn-primary" onclick="showCoachOnboarding()" style="margin-bottom:12px">🎙️ Set up my program</button>
-    <button class="btn-primary" onclick="showJoinFlow()" style="background:var(--black-3);border:1px solid var(--black-4);color:var(--white)">🏈 Join a program</button>
-    <div class="login-footer" style="margin-top:16px">Already set up? <span style="color:var(--team-primary);cursor:pointer" onclick="login()">Sign in →</span></div>
+
+    <!-- Slogan -->
+    <div style="font-size:15px;font-weight:700;color:white;letter-spacing:0.01em;text-align:center;margin-bottom:4px;text-shadow:0 1px 4px rgba(0,0,0,0.5)">Stop juggling. Start coaching.</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.7);text-align:center;margin-bottom:40px">One platform. Every moving part.</div>
+
+    <!-- Feature pills -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:36px;padding:0 8px">
+      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">📋 Practice Plans</span>
+      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">📊 Depth Charts</span>
+      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">✅ Attendance</span>
+      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">📅 Calendar</span>
+      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">💬 Messaging</span>
+    </div>
+
+    <!-- CTAs -->
+    <div style="width:100%;display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+      <!-- Coach CTA -->
+      <div onclick="showCoachOnboarding()" style="background:var(--team-primary);border-radius:var(--radius);padding:18px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:opacity 0.15s" onmousedown="this.style.opacity='0.85'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='0.85'" ontouchend="this.style.opacity='1'">
+        <div style="font-size:28px;flex-shrink:0">🎙️</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:white">Set up my program</div>
+          <div style="font-size:11.5px;color:rgba(255,255,255,0.75);margin-top:2px">I'm a coach — create a new program</div>
+        </div>
+        <div style="margin-left:auto;color:rgba(255,255,255,0.7);font-size:20px">›</div>
+      </div>
+
+      <!-- Player/Parent CTA -->
+      <div onclick="showJoinFlow()" style="background:var(--bg-2);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:opacity 0.15s" onmousedown="this.style.opacity='0.75'" onmouseup="this.style.opacity='1'" ontouchstart="this.style.opacity='0.75'" ontouchend="this.style.opacity='1'">
+        <div style="font-size:28px;flex-shrink:0">🏈</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--fg)">Join a program</div>
+          <div style="font-size:11.5px;color:var(--fg-3);margin-top:2px">I'm a player or parent — enter my code</div>
+        </div>
+        <div style="margin-left:auto;color:var(--fg-3);font-size:20px">›</div>
+      </div>
+    </div>
+
+    <!-- Sign in -->
+    <div style="font-size:13px;color:rgba(255,255,255,0.6);text-align:center">
+      Already set up? <span style="color:white;font-weight:600;cursor:pointer" onclick="login()">Sign in →</span>
+    </div>
   </div>
 </div>
 
