@@ -233,8 +233,8 @@
   .arrow-btn { width: 32px; height: 32px; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--fg-2); }
   .day-pills { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
   .day-pills::-webkit-scrollbar { display: none; }
-  .day-pill { flex-shrink: 0; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--border); }
-  .day-pill.active { background: var(--team-primary); color: var(--bg); border-color: var(--team-primary); font-weight: 700; }
+  .day-pill { flex-shrink: 0; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; background: var(--bg-3); color: var(--fg); border: 1px solid var(--border); text-align:center; line-height:1.3; }
+  .day-pill.active { background: var(--team-primary); color: var(--team-primary-text); border-color: var(--team-primary); font-weight: 700; }
   .template-row { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
   .template-row::-webkit-scrollbar { display: none; }
   .template-chip { flex-shrink: 0; padding: 7px 12px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--fg-2); cursor: pointer; white-space: nowrap; }
@@ -316,30 +316,8 @@
 
   /* ===== PER-COACH COLUMN COLORS ===== */
   /* Subtle persistent wash so a coach can re-find their column instantly after losing their place */
-  .grid-col-head[data-col="QB"], .grid-cell[data-col="QB"] { background-image: linear-gradient(rgba(255,82,82,0.06), rgba(255,82,82,0.06)); }
-  .grid-col-head[data-col="RB"], .grid-cell[data-col="RB"] { background-image: linear-gradient(rgba(255,159,28,0.07), rgba(255,159,28,0.07)); }
-  .grid-col-head[data-col="WR"], .grid-cell[data-col="WR"] { background-image: linear-gradient(rgba(255,235,59,0.07), rgba(255,235,59,0.07)); }
-  .grid-col-head[data-col="OL"], .grid-cell[data-col="OL"] { background-image: linear-gradient(rgba(0,200,150,0.07), rgba(0,200,150,0.07)); }
-  .grid-col-head[data-col="DL"], .grid-cell[data-col="DL"] { background-image: linear-gradient(rgba(41,121,255,0.07), rgba(41,121,255,0.07)); }
-  .grid-col-head[data-col="LB"], .grid-cell[data-col="LB"] { background-image: linear-gradient(rgba(186,104,255,0.08), rgba(186,104,255,0.08)); }
-  .grid-col-head[data-col="DB"], .grid-cell[data-col="DB"] { background-image: linear-gradient(rgba(57,255,20,0.06), rgba(57,255,20,0.06)); }
-  /* Active cells get a stronger version of their coach color, layered on top of the row-type tint */
-  .grid-cell.active-cell[data-col="QB"] { background-color: rgba(255,82,82,0.13); }
-  .grid-cell.active-cell[data-col="RB"] { background-color: rgba(255,159,28,0.14); }
-  .grid-cell.active-cell[data-col="WR"] { background-color: rgba(255,235,59,0.14); }
-  .grid-cell.active-cell[data-col="OL"] { background-color: rgba(0,200,150,0.14); }
-  .grid-cell.active-cell[data-col="DL"] { background-color: rgba(41,121,255,0.14); }
-  .grid-cell.active-cell[data-col="LB"] { background-color: rgba(186,104,255,0.16); }
-  .grid-cell.active-cell[data-col="DB"] { background-color: rgba(57,255,20,0.13); }
-  /* Small color dot next to each coach's name in the header for quick legend recognition */
+  /* Column colors are set dynamically by applyColumnColors() based on PRACTICE_POSITION_GROUPS */
   .gc-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
-  .gc-dot.dot-QB { background: #ff5252; }
-  .gc-dot.dot-RB { background: #ff9f1c; }
-  .gc-dot.dot-WR { background: #ffeb3b; }
-  .gc-dot.dot-OL { background: #00c896; }
-  .gc-dot.dot-DL { background: #2979ff; }
-  .gc-dot.dot-LB { background: #ba68ff; }
-  .gc-dot.dot-DB { background: #39ff14; }
 
   /* Row type tinting — applies to inactive/full-span cells only.
      Active cells get their color exclusively from the per-coach palette below for visual uniformity. */
@@ -364,7 +342,7 @@
   .note-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .note-card-time { font-size: 11px; color: var(--fg-3); }
   .note-card-body { font-size: 13px; color: var(--fg-2); line-height: 1.5; }
-  .reminder-row { font-size: 13px; color: var(--gray-1); padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .reminder-row { font-size: 13px; color: var(--fg); padding: 8px 0; border-bottom: 1px solid var(--border); }
   .reminder-row:last-child { border-bottom: none; }
 
   /* COMMS (coach) */
@@ -851,10 +829,10 @@
       background: var(--bg-2);
     }
 
-    /* Fix grid alignment on desktop — use fixed min-width per cell */
+    /* Fix grid alignment on desktop — use fixed min/max-width per cell */
     .pgrid-cols { min-width: 560px; }
-    .grid-col-head, .grid-cell { min-width: 80px; }
-    .grid-cell.cell-span { min-width: 0; }
+    .grid-col-head, .grid-cell { min-width: 80px; max-width: 160px; }
+    .grid-cell.cell-span { min-width: 0; max-width: none; }
 
     /* ===== DESKTOP DEPTH CHART ===== */
     .dc-desktop-grid {
@@ -1521,7 +1499,7 @@
 
   /* ===== NOTE MODAL ===== */
   #note-modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; }
-  .note-modal { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; padding: 18px; }
+  .note-modal { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 480px; padding: 18px; max-height: 85vh; overflow-y: auto; }
   .note-modal-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
   .note-modal-title { font-size: 15px; font-weight: 700; color: var(--fg); }
   .note-modal-sub { font-size: 11.5px; color: var(--fg-3); margin-top: 2px; }
@@ -1981,152 +1959,46 @@
   <div id="tab-coach-practice" class="scroll-content" style="display:none;padding-left:0;padding-right:0">
     <div style="padding:0 20px">
       <div class="week-nav">
-        <div><div class="week-title">Week 7</div><div class="week-sub" id="practice-day-sub">Tuesday, Oct 15 · Full Pads</div></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button onclick="changeWeek(-1)" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);width:28px;height:28px;cursor:pointer;font-size:16px;color:var(--fg-2);display:flex;align-items:center;justify-content:center">‹</button>
+          <div><div class="week-title" id="practice-week-title">Week 7</div><div class="week-sub" id="practice-day-sub">Tuesday, Oct 15 · Full Pads</div></div>
+          <button onclick="changeWeek(1)" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);width:28px;height:28px;cursor:pointer;font-size:16px;color:var(--fg-2);display:flex;align-items:center;justify-content:center">›</button>
+        </div>
         <button class="btn-sm" id="practice-edit-btn" onclick="openActionSheet()">⚙️ Actions</button>
       </div>
       <div class="day-pills">
-        <div class="day-pill" onclick="selectDay('Mon', this, true)">Mon</div>
-        <div class="day-pill active" onclick="selectDay('Tue', this, false)">Tue</div>
-        <div class="day-pill" onclick="selectDay('Wed', this, true)">Wed</div>
-        <div class="day-pill" onclick="selectDay('Thu', this, true)">Thu</div>
-        <div class="day-pill" onclick="selectDay('Fri', this, true)" style="color:var(--team-primary)">Fri 🏈</div>
+        <div class="day-pill" onclick="selectDay('Sun', this)">Sun</div>
+        <div class="day-pill" onclick="selectDay('Mon', this)">Mon</div>
+        <div class="day-pill" onclick="selectDay('Tue', this)">Tue</div>
+        <div class="day-pill" onclick="selectDay('Wed', this)">Wed</div>
+        <div class="day-pill" onclick="selectDay('Thu', this)">Thu</div>
+        <div class="day-pill" onclick="selectDay('Fri', this)">Fri</div>
+        <div class="day-pill" onclick="selectDay('Sat', this)">Sat</div>
       </div>
     </div>
 
     <!-- EXISTING DAY CONTENT -->
-    <div id="practice-day-filled">
-
-      <div style="padding:0 20px">
-        <div class="col-filter-hint" id="col-filter-hint">💡 Tap a coach's name to filter to just their column</div>
-      </div>
-
-      <!-- Grid scroll wrapper -->
-      <div class="grid-scroll-wrap">
-        <div class="pgrid" id="practice-grid-table">
-
-          <!-- HEADER ROW -->
-          <div class="pgrid-row pgrid-header">
-            <div class="grid-corner"><div class="grid-corner-label">Period</div></div>
-            <div class="pgrid-cols">
-              <div class="grid-col-head" data-col="QB" onclick="toggleColFilter('QB', this)"><div class="gc-name"><span class="gc-dot dot-QB"></span>QB</div><div class="gc-coach">Coach Waite</div></div>
-              <div class="grid-col-head" data-col="RB" onclick="toggleColFilter('RB', this)"><div class="gc-name"><span class="gc-dot dot-RB"></span>RB</div><div class="gc-coach">Coach Bruce</div></div>
-              <div class="grid-col-head" data-col="WR" onclick="toggleColFilter('WR', this)"><div class="gc-name"><span class="gc-dot dot-WR"></span>WR</div><div class="gc-coach">Coach Estrada</div></div>
-              <div class="grid-col-head" data-col="OL" onclick="toggleColFilter('OL', this)"><div class="gc-name"><span class="gc-dot dot-OL"></span>OL</div><div class="gc-coach">Coach Dunn</div></div>
-              <div class="grid-col-head" data-col="DL" onclick="toggleColFilter('DL', this)"><div class="gc-name"><span class="gc-dot dot-DL"></span>DL</div><div class="gc-coach">Coach Batke</div></div>
-              <div class="grid-col-head" data-col="LB" onclick="toggleColFilter('LB', this)"><div class="gc-name"><span class="gc-dot dot-LB"></span>LB</div><div class="gc-coach">Coach Good</div></div>
-              <div class="grid-col-head" data-col="DB" onclick="toggleColFilter('DB', this)"><div class="gc-name"><span class="gc-dot dot-DB"></span>DB</div><div class="gc-coach">Coach Randolph</div></div>
-            </div>
-          </div>
-
-          <!-- P1 — Team Warm Up — 10 min -->
-          <div class="pgrid-row row-allteam" style="--dur:10" draggable="true" data-period-id="P1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('P1', '9:30 – 9:40 AM', 'Team Warm Up')">
-              <div class="gt-time">9:30</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div>
-            </div>
-            <div class="grid-cell cell-span left-align"><div class="cell-activity">Team Warm Up — all groups together</div><div class="cell-sub">South side of field</div></div>
-          </div>
-
-          <!-- T1 — Transition — 2 min -->
-          <div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('T1', '9:40 – 9:42 AM', 'Transition')">
-              <div class="gt-time">9:40</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div>
-            </div>
-            <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div>
-          </div>
-
-          <!-- P2 — Defensive Indy — 10 min -->
-          <div class="pgrid-row row-defense" style="--dur:10" draggable="true" data-period-id="P2" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('P2', '9:42 – 9:52 AM', 'Defensive Indy')">
-              <div class="gt-time">9:42</div><div class="gt-dur">10 min</div><div class="gt-num">P2</div>
-              
-            </div>
-            <div class="pgrid-cols">
-              <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div>
-              <div class="grid-cell active-cell" data-col="RB"><div class="cell-activity">Mesh</div></div>
-              <div class="grid-cell active-cell" data-col="WR"><div class="cell-activity">1 on 1's</div></div>
-              <div class="grid-cell active-cell" data-col="OL"><div class="cell-activity">Wash/Wall</div></div>
-              <div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach Batke','Bag Drills')"><div class="cell-activity">Bag Drills</div><div class="cell-sub">First steps</div></div>
-              <div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach Good','Stance, Get Offs')"><div class="cell-activity">Stance, Get Offs</div></div>
-              <div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach Randolph','Drops, Breaks')"><div class="cell-activity">Drops, Breaks</div></div>
-            </div>
-          </div>
-
-          <!-- P3 — Offensive Indy — 10 min -->
-          <div class="pgrid-row row-offense" style="--dur:10" draggable="true" data-period-id="P3" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('P3', '9:52 – 10:02 AM', 'Offensive Indy')">
-              <div class="gt-time">9:52</div><div class="gt-dur">10 min</div><div class="gt-num">P3</div>
-            </div>
-            <div class="pgrid-cols">
-              <div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P3','QB','Coach Waite','QB Throwing')"><div class="cell-activity">QB Throwing</div></div>
-              <div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P3','RB','Coach Bruce','Run Reads')"><div class="cell-activity">Run Reads</div></div>
-              <div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P3','WR','Coach Estrada','Release vs Press')"><div class="cell-activity">Release vs Press</div></div>
-              <div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P3','OL','Coach Dunn','Wash/Wall')"><div class="cell-activity">Wash/Wall</div><div class="cell-sub">H Car/H Cold</div></div>
-              <div class="grid-cell active-cell" data-col="DL"><div class="cell-activity">Stretch & rest</div></div>
-              <div class="grid-cell active-cell" data-col="LB"><div class="cell-activity">Stretch & rest</div></div>
-              <div class="grid-cell active-cell" data-col="DB"><div class="cell-activity">Stretch & rest</div></div>
-            </div>
-          </div>
-
-          <!-- W1 — Water Break — 5 min -->
-          <div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('W1', '10:02 – 10:07 AM', 'Water Break')">
-              <div class="gt-time">10:02</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div>
-            </div>
-            <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break — all groups</div></div>
-          </div>
-
-          <!-- P4 — Tackle Circuit — 10 min -->
-          <div class="pgrid-row row-special" style="--dur:10" draggable="true" data-period-id="P4" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('P4', '10:07 – 10:17 AM', 'Tackle Circuit')">
-              <div class="gt-time">10:07</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div>
-            </div>
-            <div class="grid-cell cell-span left-align"><div class="cell-activity">Tackle Circuit — full team rotation</div><div class="cell-sub">All position groups rotate through stations</div></div>
-          </div>
-
-          <!-- P5 — Install — 10 min -->
-          <div class="pgrid-row row-install" style="--dur:10" draggable="true" data-period-id="P5" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('P5', '10:17 – 10:27 AM', 'Install')">
-              <div class="gt-time">10:17</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div>
-              
-            </div>
-            <div class="pgrid-cols">
-              <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div>
-              <div class="grid-cell active-cell" data-col="RB"><div class="cell-activity">Mesh</div></div>
-              <div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P5','WR','Coach Estrada','ROA-Dog, Cali')"><div class="cell-activity">ROA-Dog, Cali</div></div>
-              <div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P5','OL','Coach Dunn','Dart/Bolt Install')"><div class="cell-activity">Dart/Bolt Install</div></div>
-              <div class="grid-cell active-cell" data-col="DL"><div class="cell-activity">Stretch & rest</div></div>
-              <div class="grid-cell active-cell" data-col="LB"><div class="cell-activity">Stretch & rest</div></div>
-              <div class="grid-cell active-cell" data-col="DB"><div class="cell-activity">Stretch & rest</div></div>
-            </div>
-          </div>
-
-          <!-- T2 — Transition — 2 min -->
-          <div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('T2', '10:27 – 10:29 AM', 'Transition')">
-              <div class="gt-time">10:27</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div>
-            </div>
-            <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Crossover</div></div>
-          </div>
-
-          <!-- P6 — Unit Crossover — 10 min -->
-          <div class="pgrid-row row-cross" style="--dur:10" draggable="true" data-period-id="P6" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('P6', '10:29 – 10:39 AM', 'Unit Crossover')">
-              <div class="gt-time">10:29</div><div class="gt-dur">10 min</div><div class="gt-num">P6</div>
-            </div>
-            <div class="grid-cell cell-span left-align"><div class="cell-activity">Unit Crossover — Skelly</div><div class="cell-sub">Offense vs Defense, live look</div></div>
-          </div>
-
-          <!-- P7 — Full Team — 15 min -->
-          <div class="pgrid-row row-team" style="--dur:15" draggable="true" data-period-id="P7" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)">
-            <div class="grid-time-cell note-target" onclick="openPeriodNote('P7', '10:39 – 10:54 AM', 'Full Team')">
-              <div class="gt-time">10:39</div><div class="gt-dur">15 min</div><div class="gt-num">P7</div>
-              
-            </div>
-            <div class="grid-cell cell-span left-align"><div class="cell-activity">Full Team — 5 O / 5 D</div><div class="cell-sub">Red zone install reps — run script below</div></div>
-          </div>
-
+    <!-- Hint — always visible -->
+    <div style="padding:0 20px 6px;display:none" id="col-filter-hint-wrap">
+      <div class="col-filter-hint" id="col-filter-hint">💡 Tap a coach's name to filter to just their column</div>
+    </div>
+    <!-- Header + grid — shown when day has a plan, hidden when blank -->
+    <div id="practice-grid-wrap" style="display:none">
+      <div class="pgrid-row pgrid-header" id="practice-grid-header" style="border:1px solid var(--border);border-radius:var(--radius-sm) var(--radius-sm) 0 0;border-bottom:none">
+        <div class="grid-corner"><div class="grid-corner-label">Period</div></div>
+        <div class="pgrid-cols" id="practice-grid-header-cols">
+          <div class="grid-col-head" data-col="QB" onclick="toggleColFilter('QB', this)"><div class="gc-name"><span class="gc-dot dot-QB"></span>QB</div><div class="gc-coach">Coach Waite</div></div>
+          <div class="grid-col-head" data-col="RB" onclick="toggleColFilter('RB', this)"><div class="gc-name"><span class="gc-dot dot-RB"></span>RB</div><div class="gc-coach">Coach Bruce</div></div>
+          <div class="grid-col-head" data-col="WR" onclick="toggleColFilter('WR', this)"><div class="gc-name"><span class="gc-dot dot-WR"></span>WR</div><div class="gc-coach">Coach Estrada</div></div>
+          <div class="grid-col-head" data-col="OL" onclick="toggleColFilter('OL', this)"><div class="gc-name"><span class="gc-dot dot-OL"></span>OL</div><div class="gc-coach">Coach Dunn</div></div>
+          <div class="grid-col-head" data-col="DL" onclick="toggleColFilter('DL', this)"><div class="gc-name"><span class="gc-dot dot-DL"></span>DL</div><div class="gc-coach">Coach Batke</div></div>
+          <div class="grid-col-head" data-col="LB" onclick="toggleColFilter('LB', this)"><div class="gc-name"><span class="gc-dot dot-LB"></span>LB</div><div class="gc-coach">Coach Good</div></div>
+          <div class="grid-col-head" data-col="DB" onclick="toggleColFilter('DB', this)"><div class="gc-name"><span class="gc-dot dot-DB"></span>DB</div><div class="gc-coach">Coach Randolph</div></div>
         </div>
       </div>
+      <div class="grid-scroll-wrap" style="margin-top:0;border-radius:0 0 var(--radius-sm) var(--radius-sm)">
+        <div id="practice-day-filled" style="display:none">
+          <div class="pgrid" id="practice-grid-table"></div>
 
     <div style="padding:0 20px">
       <button class="add-period-btn" style="margin-top:10px" onclick="openAddPeriod()">+ Add period</button>
@@ -2158,6 +2030,8 @@
       </div>
     </div>
     </div><!-- end practice-day-filled -->
+      </div><!-- end grid-scroll-wrap -->
+    </div><!-- end practice-grid-wrap -->
 
     <!-- SIMPLE PRACTICE VIEW -->
     <div id="practice-simple" style="display:none;padding:0 20px 80px">
@@ -2195,10 +2069,9 @@
     <div class="action-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div class="action-sheet-title">Tuesday Practice</div>
-      <div class="action-sheet-item" onclick="closeActionSheet();showToast('PDF export coming soon 🖨️')">🖨️ Export PDF</div>
-      <div class="action-sheet-item" onclick="closeActionSheet();showToast('Day duplicated ✓')">📋 Duplicate to another day</div>
+      <div class="action-sheet-item" onclick="closeActionSheet();openCloneTemplate('load')">📋 Load template</div>
       <div class="action-sheet-item" onclick="closeActionSheet();openSaveTemplate()">💾 Save as template</div>
-      <div class="action-sheet-item" onclick="closeActionSheet();showToast('Position group editor coming soon ⚙️')">⚙️ Edit position groups</div>
+      <div class="action-sheet-item" onclick="closeActionSheet();openEditPositionGroups()">⚙️ Edit position groups</div>
       <div class="action-sheet-item danger" onclick="closeActionSheet();clearPracticeDay()">🗑️ Clear this day</div>
       <button class="action-sheet-cancel" onclick="closeActionSheet(event)">Cancel</button>
     </div>
@@ -4647,8 +4520,10 @@
       const matchId = tab === 'more' ? null : tab;
       if (matchId) updateDesktopSidebarActive(matchId);
       if (tab === 'more') showMoreSection(role === 'coach' ? 'roster' : 'myplayer');
-      if (tab === 'practice') applyDesktopPracticeLayout();
+      if (tab === 'practice') { applyDesktopPracticeLayout(); setTimeout(initPracticeToToday, 50); }
       if (tab === 'messages') applyDesktopMessagesLayout();
+    } else {
+      if (tab === 'practice') setTimeout(initPracticeToToday, 50);
     }
   }
 
@@ -4657,12 +4532,17 @@
     if (!tab || tab.classList.contains('desktop-applied')) return;
     tab.classList.add('desktop-applied');
 
-    // Wrap content in two-panel layout — main grid only, no sidebar
-    const inner = tab.innerHTML;
-    tab.innerHTML = `
-      <div class="practice-desktop-layout">
-        <div class="practice-desktop-main">${inner}</div>
-      </div>`;
+    // Use DOM manipulation to avoid re-escaping onclick attributes
+    const layout = document.createElement('div');
+    layout.className = 'practice-desktop-layout';
+    const main = document.createElement('div');
+    main.className = 'practice-desktop-main';
+
+    // Move all children into main without touching innerHTML
+    while (tab.firstChild) main.appendChild(tab.firstChild);
+    layout.appendChild(main);
+    tab.appendChild(layout);
+
     renderScriptSection();
   }
 
@@ -7217,35 +7097,80 @@
     document.getElementById('action-sheet-overlay').style.display = 'none';
   }
 
-  const DAY_INFO = {
-    Mon: { full: 'Monday', sub: 'Monday, Oct 14 · Helmets only', blank: true },
-    Tue: { full: 'Tuesday', sub: 'Tuesday, Oct 15 · Full Pads', blank: false },
-    Wed: { full: 'Wednesday', sub: 'Wednesday, Oct 16', blank: true },
-    Thu: { full: 'Thursday', sub: 'Thursday, Oct 17 · Walkthrough', blank: true },
-    Fri: { full: 'Friday', sub: 'Friday, Oct 18 · Game day', blank: true }
-  };
+  // Per-day grid state storage: key = "weekOffset_dayKey" -> gridHTML string
+  const DAY_GRIDS = {};
+  let currentDayKey = null; // e.g. "0_Tue"
 
-  function selectDay(day, el, isBlank) {
-    document.querySelectorAll('.day-pill').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
-    // Track day index for note keys
-    const dayOrder = ['Mon','Tue','Wed','Thu','Fri'];
-    currentPracticeDay = dayOrder.indexOf(day);
-    const info = DAY_INFO[day];
-    document.getElementById('practice-day-sub').textContent = info.sub;
-    document.getElementById('blank-day-name').textContent = info.full;
+  const DAY_ORDER = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  function getDayKey(weekOffset, dayLabel) {
+    return `${weekOffset}_${dayLabel}`;
+  }
+
+  function saveDayGrid() {
+    if (!currentDayKey) return;
+    // Only save if the practice day is actually showing content (not blank)
+    const filled = document.getElementById('practice-day-filled');
+    if (!filled || filled.style.display === 'none') return;
+    const pgrid = document.getElementById('practice-grid-table');
+    if (pgrid) DAY_GRIDS[currentDayKey] = pgrid.innerHTML;
+  }
+
+  function selectDay(day, el) {
+    saveDayGrid();
+
+    getPracticePills().forEach(p => p.classList.remove('active'));
+    if (el) {
+      el.classList.add('active');
+      el.style.color = ''; // clear any inline today-highlight color
+      el.style.fontWeight = '';
+    }
+
+    currentPracticeDay = DAY_ORDER.indexOf(day);
+    currentDayKey = getDayKey(practiceWeekOffset, day);
+
+    // Build date label from actual date
+    const days = getWeekDates(practiceWeekOffset);
+    const dayObj = days.find(d => d.label === day);
+    const dateLabel = dayObj
+      ? dayObj.date.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' })
+      : day;
+    const sub = document.getElementById('practice-day-sub');
+    if (sub) sub.textContent = dateLabel;
+    const blank_name = document.getElementById('blank-day-name');
+    if (blank_name) blank_name.textContent = day;
+
     const filled = document.getElementById('practice-day-filled');
     const blank = document.getElementById('practice-day-blank');
     const editBtn = document.getElementById('practice-edit-btn');
-    if (isBlank) {
-      filled.style.display = 'none';
-      blank.style.display = 'block';
-      editBtn.style.display = 'none';
+    const gridWrap = document.getElementById('practice-grid-wrap');
+    const hintWrap = document.getElementById('col-filter-hint-wrap');
+
+    const savedGrid = DAY_GRIDS[currentDayKey];
+    if (savedGrid) {
+      const pgrid = document.getElementById('practice-grid-table');
+      if (pgrid) pgrid.innerHTML = savedGrid;
+      renderGridHeader();
+      if (filled) filled.style.display = 'block';
+      if (gridWrap) gridWrap.style.display = 'block';
+      if (blank) blank.style.display = 'none';
+      if (hintWrap) hintWrap.style.display = '';
+      if (editBtn) editBtn.style.display = isHeadCoach ? 'inline-block' : 'none';
     } else {
-      filled.style.display = 'block';
-      blank.style.display = 'none';
-      editBtn.style.display = isHeadCoach ? 'inline-block' : 'none';
+      if (filled) filled.style.display = 'none';
+      if (gridWrap) gridWrap.style.display = 'none';
+      if (blank) blank.style.display = 'block';
+      if (hintWrap) hintWrap.style.display = 'none';
+      if (editBtn) editBtn.style.display = 'none';
     }
+  }
+
+  function getPracticePills() {
+    // Scope to practice tab only to avoid picking up other role tabs
+    const practiceTab = document.getElementById('tab-coach-practice') ||
+                        document.querySelector('.practice-desktop-main') ||
+                        document.body;
+    return Array.from(practiceTab.querySelectorAll('.day-pill'));
   }
 
   // ===== HEAD COACH / ASSISTANT PERMISSION MODEL =====
@@ -7728,7 +7653,385 @@
     if (textarea) textarea.value = '';
   }
 
-  // ===== ADD PERIOD =====
+  // ===== WEEK NAVIGATION =====
+  let practiceWeekOffset = 0; // 0 = current week
+
+  // Returns all 7 days Sun-Sat for the given week offset
+  function getWeekDates(offset) {
+    const now = new Date();
+    const sun = new Date(now);
+    sun.setDate(now.getDate() - now.getDay() + offset * 7); // back to this week's Sunday
+    return DAY_ORDER.map((label, i) => {
+      const d = new Date(sun);
+      d.setDate(sun.getDate() + i);
+      return { label, date: d };
+    });
+  }
+
+  function updateWeekHeader() {
+    const days = getWeekDates(practiceWeekOffset);
+    const mon = days[1].date; // Mon = index 1
+    const fri = days[5].date; // Fri = index 5
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+
+    const weekNum = practiceWeekOffset === 0 ? 'This week'
+      : practiceWeekOffset === 1 ? 'Next week'
+      : practiceWeekOffset === -1 ? 'Last week'
+      : `${monthNames[mon.getMonth()]} ${mon.getDate()} – ${monthNames[fri.getMonth()]} ${fri.getDate()}`;
+    const title = document.getElementById('practice-week-title');
+    if (title) title.textContent = weekNum;
+
+    // Update each pill with correct date — let CSS handle colors
+    const pills = getPracticePills();
+    days.forEach((dayObj, i) => {
+      if (!pills[i]) return;
+      const isToday = dayObj.date.toDateString() === now.toDateString();
+      pills[i].innerHTML = `${dayObj.label}<br><span style="font-size:9px;font-weight:400">${dayObj.date.getDate()}</span>`;
+      // Only add today indicator if not already active
+      pills[i].style.color = '';
+      pills[i].style.fontWeight = '';
+      if (isToday && !pills[i].classList.contains('active')) {
+        pills[i].style.color = 'var(--team-primary)';
+        pills[i].style.fontWeight = '700';
+      }
+    });
+  }
+
+  function changeWeek(delta) {
+    saveDayGrid();
+    practiceWeekOffset += delta;
+    updateWeekHeader();
+    // Select today if visible, else Monday
+    const days = getWeekDates(practiceWeekOffset);
+    const now = new Date();
+    const todayIdx = days.findIndex(d => d.date.toDateString() === now.toDateString());
+    const targetIdx = todayIdx !== -1 ? todayIdx : 1;
+    const pills = getPracticePills();
+    pills.forEach(p => p.classList.remove('active'));
+    if (pills[targetIdx]) {
+      pills[targetIdx].classList.add('active');
+      selectDay(DAY_ORDER[targetIdx], pills[targetIdx]);
+    }
+    showToast(delta > 0 ? 'Next week ›' : '‹ Previous week');
+  }
+
+  function initPracticeToToday() {
+    practiceWeekOffset = 0;
+    updateWeekHeader();
+    const days = getWeekDates(0);
+    const now = new Date();
+    const todayIdx = days.findIndex(d => d.date.toDateString() === now.toDateString());
+    const targetIdx = todayIdx !== -1 ? todayIdx : 1; // default Mon if today not in week
+    const pills = getPracticePills();
+    pills.forEach(p => p.classList.remove('active'));
+    if (pills[targetIdx]) {
+      pills[targetIdx].classList.add('active');
+      selectDay(DAY_ORDER[targetIdx], pills[targetIdx]);
+    }
+  }
+
+  // ===== EDIT POSITION GROUPS =====
+  let PRACTICE_POSITION_GROUPS = [
+    { label:'QB', color:'#ff5252' },
+    { label:'RB', color:'#ff9f1c' },
+    { label:'WR', color:'#ffeb3b' },
+    { label:'OL', color:'#00c896' },
+    { label:'DL', color:'#2979ff' },
+    { label:'LB', color:'#ba68ff' },
+    { label:'DB', color:'#39ff14' },
+  ];
+
+  let PRACTICE_COACHES = [
+    { name:'Coach Waite', pos:'QB' },
+    { name:'Coach Bruce', pos:'RB' },
+    { name:'Coach Estrada', pos:'WR' },
+    { name:'Coach Dunn', pos:'OL' },
+  ];
+
+  let _epgDragSrc = null;
+
+  function openEditPositionGroups() {
+    let overlay = document.getElementById('edit-pos-groups-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'edit-pos-groups-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;margin:auto" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div>
+            <div style="font-size:17px;font-weight:700;color:var(--fg)">Position groups & coaches</div>
+            <div style="font-size:12px;color:var(--fg-3);margin-top:2px">Drag to reorder · click color to change</div>
+          </div>
+          <div onclick="document.getElementById('edit-pos-groups-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Position groups</div>
+        <div id="epg-pos-list"></div>
+        <button onclick="epgAddPosition()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font);margin-top:8px;margin-bottom:20px">+ Add position group</button>
+
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Coaches</div>
+        <div id="epg-coach-list"></div>
+        <button onclick="epgAddCoach()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font);margin-top:8px;margin-bottom:20px">+ Add coach</button>
+
+        <div style="display:flex;gap:8px">
+          <button onclick="document.getElementById('edit-pos-groups-overlay').remove()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">Cancel</button>
+          <button onclick="savePositionGroups()" class="btn-primary" style="flex:2;font-size:14px">Save & apply</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    // Re-render header after any overlay interaction to fix blank cell bug
+    overlay.addEventListener('click', () => setTimeout(renderGridHeader, 50));
+    epgRenderPositions();
+    epgRenderCoaches();
+  }
+
+  function epgUpdateColor(i, value) {
+    PRACTICE_POSITION_GROUPS[i].color = value;
+    const dot = document.getElementById('epg-dot-' + i);
+    if (dot) dot.style.background = value;
+    applyColumnColors();
+  }
+
+  function epgRenderPositions() {
+    const list = document.getElementById('epg-pos-list');
+    if (!list) return;
+    list.innerHTML = '';
+    PRACTICE_POSITION_GROUPS.forEach((g, i) => {
+      const row = document.createElement('div');
+      row.id = 'epg-pos-' + i;
+      row.draggable = true;
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)';
+      row.ondragstart = e => epgDragStart(e, i, 'pos');
+      row.ondragover = e => epgDragOver(e);
+      row.ondrop = e => epgDrop(e, i, 'pos');
+      row.ondragend = e => epgDragEnd(e);
+
+      // Drag handle
+      const handle = document.createElement('div');
+      handle.style.cssText = 'color:var(--fg-3);cursor:grab;font-size:18px;padding:0 2px;user-select:none';
+      handle.textContent = '⠿';
+
+      // Color picker wrapper
+      const colorWrap = document.createElement('div');
+      colorWrap.style.cssText = 'position:relative;flex-shrink:0';
+
+      const dot = document.createElement('div');
+      dot.id = 'epg-dot-' + i;
+      dot.style.cssText = 'width:26px;height:26px;border-radius:50%;background:' + g.color + ';cursor:pointer;border:2px solid var(--border)';
+      dot.title = 'Change color';
+      dot.onclick = () => document.getElementById('epg-color-' + i).click();
+
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.id = 'epg-color-' + i;
+      colorInput.value = g.color;
+      colorInput.style.cssText = 'position:absolute;width:0;height:0;opacity:0;top:0;left:0;pointer-events:none';
+      colorInput.onchange = function() { epgUpdateColor(i, this.value); };
+
+      colorWrap.appendChild(dot);
+      colorWrap.appendChild(colorInput);
+
+      // Label input
+      const labelInput = document.createElement('input');
+      labelInput.value = g.label;
+      labelInput.id = 'epg-label-' + i;
+      labelInput.maxLength = 6;
+      labelInput.style.cssText = 'flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;font-weight:700;color:var(--fg);font-family:var(--font);outline:none;text-transform:uppercase';
+      labelInput.oninput = function() { PRACTICE_POSITION_GROUPS[i].label = this.value.trim().toUpperCase(); };
+
+      // Delete button
+      const del = document.createElement('div');
+      del.style.cssText = 'color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;opacity:0.7;flex-shrink:0';
+      del.textContent = '✕';
+      del.onclick = () => epgRemovePos(i);
+
+      row.appendChild(handle);
+      row.appendChild(colorWrap);
+      row.appendChild(labelInput);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  function epgRemovePos(i) {
+    PRACTICE_POSITION_GROUPS.splice(i, 1);
+    epgRenderPositions();
+    epgRenderCoaches();
+  }
+
+  function epgRenderCoaches() {
+    const list = document.getElementById('epg-coach-list');
+    if (!list) return;
+    list.innerHTML = '';
+    PRACTICE_COACHES.forEach((c, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)';
+
+      const nameInput = document.createElement('input');
+      nameInput.value = c.name;
+      nameInput.placeholder = 'Coach name';
+      nameInput.style.cssText = 'flex:2;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--fg);font-family:var(--font);outline:none';
+      nameInput.oninput = function() { PRACTICE_COACHES[i].name = this.value; };
+
+      const posSelect = document.createElement('select');
+      posSelect.style.cssText = 'flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 8px;font-size:12px;color:var(--fg);font-family:var(--font)';
+      posSelect.onchange = function() { PRACTICE_COACHES[i].pos = this.value; };
+      const blankOpt = document.createElement('option');
+      blankOpt.value = ''; blankOpt.textContent = 'Group';
+      posSelect.appendChild(blankOpt);
+      PRACTICE_POSITION_GROUPS.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.label; opt.textContent = g.label;
+        if (c.pos === g.label) opt.selected = true;
+        posSelect.appendChild(opt);
+      });
+
+      const del = document.createElement('div');
+      del.style.cssText = 'color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;opacity:0.7;flex-shrink:0';
+      del.textContent = '✕';
+      del.onclick = () => { PRACTICE_COACHES.splice(i, 1); epgRenderCoaches(); };
+
+      row.appendChild(nameInput);
+      row.appendChild(posSelect);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  function epgAddPosition() {
+    PRACTICE_POSITION_GROUPS.push({ label: 'NEW', color: '#888888' });
+    epgRenderPositions();
+    epgRenderCoaches();
+    // Focus last input
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('#epg-pos-list input[type="text"],#epg-pos-list input:not([type])');
+      inputs[inputs.length-1]?.focus();
+      inputs[inputs.length-1]?.select();
+    }, 50);
+  }
+
+  function epgAddCoach() {
+    PRACTICE_COACHES.push({ name: '', pos: '' });
+    epgRenderCoaches();
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('#epg-coach-list input');
+      inputs[inputs.length-1]?.focus();
+    }, 50);
+    renderGridHeader();
+  }
+
+  function epgDragStart(e, idx, type) {
+    _epgDragSrc = { idx, type };
+    e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.style.opacity = '0.4';
+  }
+
+  function epgDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+
+  function epgDrop(e, targetIdx, type) {
+    e.preventDefault();
+    if (!_epgDragSrc || _epgDragSrc.type !== type || _epgDragSrc.idx === targetIdx) return;
+    const arr = type === 'pos' ? PRACTICE_POSITION_GROUPS : PRACTICE_COACHES;
+    const moved = arr.splice(_epgDragSrc.idx, 1)[0];
+    arr.splice(targetIdx, 0, moved);
+    if (type === 'pos') epgRenderPositions(); else epgRenderCoaches();
+  }
+
+  function epgDragEnd(e) {
+    e.currentTarget.style.opacity = '';
+    _epgDragSrc = null;
+  }
+
+  function renderGridHeader() {
+    const header = document.getElementById('practice-grid-header-cols');
+    if (!header) return;
+    header.innerHTML = '';
+    PRACTICE_POSITION_GROUPS.forEach(g => {
+      const coach = PRACTICE_COACHES.find(c => c.pos === g.label);
+      const cell = document.createElement('div');
+      cell.className = 'grid-col-head';
+      cell.dataset.col = g.label;
+      cell.onclick = function() { toggleColFilter(g.label, this); };
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'gc-name';
+      const dot = document.createElement('span');
+      dot.className = 'gc-dot';
+      dot.style.cssText = 'background:' + g.color + ';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px';
+      nameDiv.appendChild(dot);
+      nameDiv.appendChild(document.createTextNode(g.label));
+      const coachDiv = document.createElement('div');
+      coachDiv.className = 'gc-coach';
+      coachDiv.textContent = coach ? coach.name : '';
+      cell.appendChild(nameDiv);
+      cell.appendChild(coachDiv);
+      header.appendChild(cell);
+    });
+    applyColumnColors();
+  }
+
+  function applyColumnColors() {
+    let styleEl = document.getElementById('practice-col-colors');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'practice-col-colors';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = PRACTICE_POSITION_GROUPS.map(g => {
+      const hex = g.color.replace('#','');
+      const r = parseInt(hex.substring(0,2),16);
+      const gg = parseInt(hex.substring(2,4),16);
+      const b = parseInt(hex.substring(4,6),16);
+      return '.grid-col-head[data-col="' + g.label + '"],.grid-cell[data-col="' + g.label + '"]{background-image:linear-gradient(rgba(' + r + ',' + gg + ',' + b + ',0.08),rgba(' + r + ',' + gg + ',' + b + ',0.08));}' +
+        '.grid-cell.active-cell[data-col="' + g.label + '"]{background-color:rgba(' + r + ',' + gg + ',' + b + ',0.15);}';
+    }).join('\n');
+  }
+
+  function savePositionGroups() {
+    // Collect latest label values from inputs (colors already updated via epgUpdateColor)
+    document.querySelectorAll('#epg-pos-list input:not([type="color"])').forEach((inp, i) => {
+      if (PRACTICE_POSITION_GROUPS[i]) PRACTICE_POSITION_GROUPS[i].label = inp.value.trim().toUpperCase() || PRACTICE_POSITION_GROUPS[i].label;
+    });
+    // Collect coach name values
+    document.querySelectorAll('#epg-coach-list input').forEach((inp, i) => {
+      if (PRACTICE_COACHES[i]) PRACTICE_COACHES[i].name = inp.value.trim();
+    });
+    document.querySelectorAll('#epg-coach-list select').forEach((sel, i) => {
+      if (PRACTICE_COACHES[i]) PRACTICE_COACHES[i].pos = sel.value;
+    });
+
+    document.getElementById('edit-pos-groups-overlay')?.remove();
+
+    // Use renderGridHeader which builds the header correctly via DOM API
+    renderGridHeader();
+
+    // Rebuild per-group cells in all group rows (exclude the header row) (exclude the header row)
+    document.querySelectorAll('.pgrid-row:not(.pgrid-header)').forEach(row => {
+      const cols = row.querySelector('.pgrid-cols');
+      if (!cols) return;
+      const periodId = row.dataset.periodId || 'P1';
+      const actText = cols.querySelector('.cell-activity')?.textContent || '';
+      const cells = PRACTICE_POSITION_GROUPS.map(g => {
+        const el = document.createElement('div');
+        el.className = 'grid-cell active-cell';
+        el.dataset.col = g.label;
+        el.onclick = () => openCellNote(periodId, g.label, 'Coach', actText);
+        el.innerHTML = '<div class="cell-activity">' + actText + '</div>';
+        return el.outerHTML;
+      });
+      cols.innerHTML = cells.join('');
+    });
+
+    applyColumnColors();
+    showToast('Position groups saved ✓');
+  }
   let pendingPeriodType = null;
   // Period counters per type — tracks how many of each type have been added
   const periodTypeCounters = { P: 0, W: 0, T: 0, F: 0 };
@@ -8025,45 +8328,103 @@
 
   const PREMADE_TEMPLATES = [
     {
-      name: 'Standard Tuesday',
-      savedAt: null,
-      premade: true,
-      periods: [],
-      description: '8 periods · Indy → Crossover → Team'
+      name: 'Example Detailed Plan',
+      savedAt: null, premade: true, type: 'detailed',
+      description: '7 periods · Full detailed view with coaches',
+      gridHTML: `<!-- P1 — Team Warm Up — 10 min --> <div class="pgrid-row row-allteam" style="--dur:10" draggable="true" data-period-id="P1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P1', '9:30 – 9:40 AM', 'Team Warm Up')"> <div class="gt-time">9:30</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Team Warm Up — all groups together</div><div class="cell-sub">South side of field</div></div> </div> <!-- T1 — Transition — 2 min --> <div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('T1', '9:40 – 9:42 AM', 'Transition')"> <div class="gt-time">9:40</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div> </div> <!-- P2 — Defensive Indy — 10 min --> <div class="pgrid-row row-defense" style="--dur:10" draggable="true" data-period-id="P2" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P2', '9:42 – 9:52 AM', 'Defensive Indy')"> <div class="gt-time">9:42</div><div class="gt-dur">10 min</div><div class="gt-num">P2</div> </div> <div class="pgrid-cols"> <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="RB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="WR"><div class="cell-activity">1 on 1's</div></div> <div class="grid-cell active-cell" data-col="OL"><div class="cell-activity">Wash/Wall</div></div> <div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach Batke','Bag Drills')"><div class="cell-activity">Bag Drills</div><div class="cell-sub">First steps</div></div> <div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach Good','Stance, Get Offs')"><div class="cell-activity">Stance, Get Offs</div></div> <div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach Randolph','Drops, Breaks')"><div class="cell-activity">Drops, Breaks</div></div> </div> </div> <!-- P3 — Offensive Indy — 10 min --> <div class="pgrid-row row-offense" style="--dur:10" draggable="true" data-period-id="P3" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P3', '9:52 – 10:02 AM', 'Offensive Indy')"> <div class="gt-time">9:52</div><div class="gt-dur">10 min</div><div class="gt-num">P3</div> </div> <div class="pgrid-cols"> <div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P3','QB','Coach Waite','QB Throwing')"><div class="cell-activity">QB Throwing</div></div> <div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P3','RB','Coach Bruce','Run Reads')"><div class="cell-activity">Run Reads</div></div> <div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P3','WR','Coach Estrada','Release vs Press')"><div class="cell-activity">Release vs Press</div></div> <div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P3','OL','Coach Dunn','Wash/Wall')"><div class="cell-activity">Wash/Wall</div><div class="cell-sub">H Car/H Cold</div></div> <div class="grid-cell active-cell" data-col="DL"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="LB"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="DB"><div class="cell-activity">Stretch & rest</div></div> </div> </div> <!-- W1 — Water Break — 5 min --> <div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('W1', '10:02 – 10:07 AM', 'Water Break')"> <div class="gt-time">10:02</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break — all groups</div></div> </div> <!-- P4 — Tackle Circuit — 10 min --> <div class="pgrid-row row-special" style="--dur:10" draggable="true" data-period-id="P4" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P4', '10:07 – 10:17 AM', 'Tackle Circuit')"> <div class="gt-time">10:07</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Tackle Circuit — full team rotation</div><div class="cell-sub">All position groups rotate through stations</div></div> </div> <!-- P5 — Install — 10 min --> <div class="pgrid-row row-install" style="--dur:10" draggable="true" data-period-id="P5" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P5', '10:17 – 10:27 AM', 'Install')"> <div class="gt-time">10:17</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div> </div> <div class="pgrid-cols"> <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="RB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P5','WR','Coach Estrada','ROA-Dog, Cali')"><div class="cell-activity">ROA-Dog, Cali</div></div> <div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P5','OL','Coach Dunn','Dart/Bolt Install')"><div class="cell-activity">Dart/Bolt Install</div></div> <div class="grid-cell active-cell" data-col="DL"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="LB"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="DB"><div class="cell-activity">Stretch & rest</div></div> </div> </div> <!-- T2 — Transition — 2 min --> <div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('T2', '10:27 – 10:29 AM', 'Transition')"> <div class="gt-time">10:27</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Crossover</div></div> </div> <!-- P6 — Unit Crossover — 10 min --> <div class="pgrid-row row-cross" style="--dur:10" draggable="true" data-period-id="P6" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P6', '10:29 – 10:39 AM', 'Unit Crossover')"> <div class="gt-time">10:29</div><div class="gt-dur">10 min</div><div class="gt-num">P6</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Unit Crossover — Skelly</div><div class="cell-sub">Offense vs Defense, live look</div></div> </div> <!-- P7 — Full Team — 15 min --> <div class="pgrid-row row-team" style="--dur:15" draggable="true" data-period-id="P7" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P7', '10:39 – 10:54 AM', 'Full Team')"> <div class="gt-time">10:39</div><div class="gt-dur">15 min</div><div class="gt-num">P7</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Full Team — 5 O / 5 D</div><div class="cell-sub">Red zone install reps — run script below</div></div> </div>`
     },
     {
-      name: 'Game Week Thursday',
-      savedAt: null,
-      premade: true,
-      periods: [],
-      description: '5 periods · Walkthrough, light pads'
+      name: 'Walkthrough',
+      savedAt: null, premade: true, type: 'detailed',
+      description: '4 periods · Install review, light pads',
+      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','3:30 PM','Dynamic Warm Up')"><div class="gt-time">3:30 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Dynamic Warm Up</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','3:40 PM','Transition to Indy')"><div class="gt-time">3:40 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div></div><div class="pgrid-row row-special" style="--dur:15" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','3:42 PM','Walkthrough Indy')"><div class="gt-time">3:42 PM</div><div class="gt-dur">15 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','QB mechanics')"><div class="cell-activity">QB mechanics</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Ball security')"><div class="cell-activity">Ball security</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Route concepts')"><div class="cell-activity">Route concepts</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Assignment review')"><div class="cell-activity">Assignment review</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Gap responsibility')"><div class="cell-activity">Gap responsibility</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Coverage keys')"><div class="cell-activity">Coverage keys</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Leverage technique')"><div class="cell-activity">Leverage technique</div></div></div></div><div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','3:57 PM','Water break')"><div class="gt-time">3:57 PM</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T2','4:02 PM','Transition to Team')"><div class="gt-time">4:02 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Team</div></div></div><div class="pgrid-row row-team" style="--dur:20" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','4:04 PM','Team Walkthrough — script vs scout look')"><div class="gt-time">4:04 PM</div><div class="gt-dur">20 min</div><div class="gt-num">P3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team Walkthrough — script vs scout look</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T3" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T3','4:24 PM','Transition')"><div class="gt-time">4:24 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','4:26 PM','2-minute drill walkthrough')"><div class="gt-time">4:26 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">2-minute drill walkthrough</div></div></div>`
     },
     {
-      name: 'Bye Week Wednesday',
-      savedAt: null,
-      premade: true,
-      periods: [],
-      description: '6 periods · Fundamentals focus'
+      name: 'Conditioning Day',
+      savedAt: null, premade: true, type: 'detailed',
+      description: '5 periods · Circuits, gassers, competitive drills',
+      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','3:30 PM','Dynamic Warm Up + stretch')"><div class="gt-time">3:30 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Dynamic Warm Up + stretch</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','3:40 PM','Transition')"><div class="gt-time">3:40 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-special" style="--dur:10" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','3:42 PM','Position drills')"><div class="gt-time">3:42 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','3:52 PM','Water break')"><div class="gt-time">3:52 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-team" style="--dur:15" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','3:55 PM','Circuit stations — full team rotation')"><div class="gt-time">3:55 PM</div><div class="gt-dur">15 min</div><div class="gt-num">P3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Circuit stations — full team rotation</div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W2" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W2','4:10 PM','Water break')"><div class="gt-time">4:10 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','4:13 PM','Competitive team drills')"><div class="gt-time">4:13 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Competitive team drills</div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W3" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W3','4:23 PM','Water break')"><div class="gt-time">4:23 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P5" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P5','4:26 PM','Gassers / conditioning runs')"><div class="gt-time">4:26 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Gassers / conditioning runs</div></div></div>`
     },
     {
-      name: 'Two-a-Day (Camp)',
-      savedAt: null,
-      premade: true,
-      periods: [],
-      description: '9 periods · AM install / PM walkthrough'
+      name: 'Game Week Practice',
+      savedAt: null, premade: true, type: 'detailed',
+      description: '5 periods · Install, team walkthrough, special teams',
+      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','3:30 PM','Warm Up — helmets only')"><div class="gt-time">3:30 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Warm Up — helmets only</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','3:40 PM','Transition to Indy')"><div class="gt-time">3:40 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div></div><div class="pgrid-row row-special" style="--dur:12" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','3:42 PM','Game plan install — key concepts')"><div class="gt-time">3:42 PM</div><div class="gt-dur">12 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','Protection calls + checks')"><div class="cell-activity">Protection calls + checks</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Blitz pickup + routes')"><div class="cell-activity">Blitz pickup + routes</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Leverage + go-routes')"><div class="cell-activity">Leverage + go-routes</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Pass pro vs their fronts')"><div class="cell-activity">Pass pro vs their fronts</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Stunt package')"><div class="cell-activity">Stunt package</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Coverage responsibilities')"><div class="cell-activity">Coverage responsibilities</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Press technique + bail')"><div class="cell-activity">Press technique + bail</div></div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','3:54 PM','Water break')"><div class="gt-time">3:54 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-team" style="--dur:20" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','3:57 PM','Team walkthrough — scripted vs look')"><div class="gt-time">3:57 PM</div><div class="gt-dur">20 min</div><div class="gt-num">P3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team walkthrough — scripted vs look</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T2','4:17 PM','Transition')"><div class="gt-time">4:17 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','4:19 PM','Special teams walkthrough')"><div class="gt-time">4:19 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Special teams walkthrough</div></div></div><div class="pgrid-row row-team" style="--dur:5" draggable="true" data-period-id="P5" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P5','4:29 PM','Team breakdown + reminders')"><div class="gt-time">4:29 PM</div><div class="gt-dur">5 min</div><div class="gt-num">P5</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team breakdown + reminders</div></div></div>`
     },
     {
-      name: 'Monday Film + Walkthrough',
-      savedAt: null,
-      premade: true,
-      periods: [],
-      description: '4 periods · Film review, light install'
+      name: 'Summer Practice',
+      savedAt: null, premade: true, type: 'detailed',
+      description: '5 periods · Morning session, fundamentals + team',
+      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','8:00 AM','Morning Warm Up')"><div class="gt-time">8:00 AM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Morning Warm Up</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','8:10 AM','Transition')"><div class="gt-time">8:10 AM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-special" style="--dur:20" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','8:12 AM','Individual fundamentals')"><div class="gt-time">8:12 AM</div><div class="gt-dur">20 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','Footwork + throwing mechanics')"><div class="cell-activity">Footwork + throwing mechanics</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Cuts + receiving')"><div class="cell-activity">Cuts + receiving</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Release + route running')"><div class="cell-activity">Release + route running</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Hand placement + footwork')"><div class="cell-activity">Hand placement + footwork</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Get-offs + hand usage')"><div class="cell-activity">Get-offs + hand usage</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Drops + blitz timing')"><div class="cell-activity">Drops + blitz timing</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Backpedal + breaks')"><div class="cell-activity">Backpedal + breaks</div></div></div></div><div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','8:32 AM','Water break')"><div class="gt-time">8:32 AM</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-special" style="--dur:15" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','8:37 AM','Group competition')"><div class="gt-time">8:37 AM</div><div class="gt-dur">15 min</div><div class="gt-num">P3</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P3','QB','Coach','Air it out — routes on air')"><div class="cell-activity">Air it out — routes on air</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P3','RB','Coach','1 on 1 vs LB')"><div class="cell-activity">1 on 1 vs LB</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P3','WR','Coach','1 on 1 vs DB')"><div class="cell-activity">1 on 1 vs DB</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P3','OL','Coach','Pass pro sets')"><div class="cell-activity">Pass pro sets</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P3','DL','Coach','1 on 1 pass rush')"><div class="cell-activity">1 on 1 pass rush</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P3','LB','Coach','Zone drops')"><div class="cell-activity">Zone drops</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P3','DB','Coach','1 on 1 coverage')"><div class="cell-activity">1 on 1 coverage</div></div></div></div><div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W2" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W2','8:52 AM','Water break')"><div class="gt-time">8:52 AM</div><div class="gt-dur">5 min</div><div class="gt-num">W2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T2','8:57 AM','Transition to Team')"><div class="gt-time">8:57 AM</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Team</div></div></div><div class="pgrid-row row-team" style="--dur:20" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','8:59 AM','Team — 7 on 7 + team run')"><div class="gt-time">8:59 AM</div><div class="gt-dur">20 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team — 7 on 7 + team run</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P5" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P5','9:19 AM','Conditioning')"><div class="gt-time">9:19 AM</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Conditioning</div></div></div>`
+    },
+    {
+      name: 'Standard Practice',
+      savedAt: null, premade: true, type: 'simple',
+      description: '7 blocks · Full practice, offense + defense',
+      blocks: [
+        { name: 'Dynamic Warm Up', duration: 10, tag: 'team', start: '3:30' },
+        { name: 'O Indy', duration: 15, tag: 'offense', start: '3:40' },
+        { name: 'D Indy', duration: 15, tag: 'defense', start: '3:55' },
+        { name: 'Water Break', duration: 5, tag: 'break', start: '4:10' },
+        { name: 'Unit Crossover', duration: 15, tag: 'team', start: '4:15' },
+        { name: 'Team', duration: 20, tag: 'team', start: '4:30' },
+        { name: 'Conditioning', duration: 10, tag: 'special', start: '4:50' },
+      ]
+    },
+    {
+      name: 'Walkthrough',
+      savedAt: null, premade: true, type: 'simple',
+      description: '4 blocks · Helmets only, game plan review',
+      blocks: [
+        { name: 'Warm Up', duration: 10, tag: 'team', start: '3:30' },
+        { name: 'O Walkthrough', duration: 20, tag: 'offense', start: '3:40' },
+        { name: 'D Walkthrough', duration: 20, tag: 'defense', start: '4:00' },
+        { name: 'Team Walkthrough', duration: 20, tag: 'team', start: '4:20' },
+      ]
+    },
+    {
+      name: 'Conditioning Day',
+      savedAt: null, premade: true, type: 'simple',
+      description: '5 blocks · No pads, circuits + gassers',
+      blocks: [
+        { name: 'Dynamic Warm Up', duration: 10, tag: 'team', start: '3:30' },
+        { name: 'Position Drills', duration: 15, tag: 'special', start: '3:40' },
+        { name: 'Water Break', duration: 5, tag: 'break', start: '3:55' },
+        { name: 'Circuit Stations', duration: 20, tag: 'team', start: '4:00' },
+        { name: 'Gassers / Sprints', duration: 15, tag: 'special', start: '4:20' },
+      ]
+    },
+    {
+      name: 'Game Week Practice',
+      savedAt: null, premade: true, type: 'simple',
+      description: '5 blocks · Short, sharp, game-week focus',
+      blocks: [
+        { name: 'Warm Up', duration: 10, tag: 'team', start: '3:30' },
+        { name: 'Game Plan Install', duration: 20, tag: 'special', start: '3:40' },
+        { name: 'Water Break', duration: 5, tag: 'break', start: '4:00' },
+        { name: 'Team Walkthrough', duration: 20, tag: 'team', start: '4:05' },
+        { name: 'Special Teams', duration: 10, tag: 'special', start: '4:25' },
+      ]
+    },
+    {
+      name: 'Summer Practice',
+      savedAt: null, premade: true, type: 'simple',
+      description: '6 blocks · Morning session, fundamentals + 7-on-7',
+      blocks: [
+        { name: 'Warm Up', duration: 10, tag: 'team', start: '8:00' },
+        { name: 'O Indy', duration: 20, tag: 'offense', start: '8:10' },
+        { name: 'D Indy', duration: 20, tag: 'defense', start: '8:30' },
+        { name: 'Water Break', duration: 5, tag: 'break', start: '8:50' },
+        { name: '7 on 7', duration: 20, tag: 'team', start: '8:55' },
+        { name: 'Conditioning', duration: 15, tag: 'special', start: '9:15' },
+      ]
     },
   ];
 
   async function openCloneTemplate(mode) {
     cloneTemplateMode = mode;
     selectedTemplateName = null;
+    const currentType = planMode || 'detailed'; // 'simple' or 'detailed'
     document.getElementById('ct-title').textContent = mode === 'clone' ? 'Clone from a template' : 'Load a template';
     document.getElementById('ct-sub').textContent = mode === 'clone'
       ? "Pick a saved template to copy into today's plan — you can edit anything after."
@@ -8074,36 +8435,35 @@
     btn.textContent = 'Select a template above';
     document.getElementById('clone-template-overlay').style.display = 'flex';
 
-    // Load real templates from Supabase
     const ctList = document.getElementById('ct-list');
     ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:16px">Loading templates…</div>';
 
     loadedTemplates = await loadPracticePlansFromSupabase();
 
-    // Combine premade + saved templates (premade first)
-    const allTemplates = [...PREMADE_TEMPLATES, ...loadedTemplates];
+    // Filter to only show templates matching the current view type
+    const filteredPremade = PREMADE_TEMPLATES.filter(t => !t.type || t.type === currentType);
+    const filteredSaved = loadedTemplates.filter(t => !t.type || t.type === currentType);
+    const allTemplates = [...filteredPremade, ...filteredSaved];
 
     if (allTemplates.length === 0) {
-      ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:20px 0">No templates available.</div>';
+      ctList.innerHTML = '<div style="text-align:center;color:var(--fg-3);font-size:13px;padding:20px 0">No ' + currentType + ' templates saved yet.</div>';
       return;
     }
 
     ctList.innerHTML = '';
 
-    // Section header for premade
-    if (PREMADE_TEMPLATES.length > 0) {
+    if (filteredPremade.length > 0) {
       const header = document.createElement('div');
-      header.style.cssText = 'font-size:10px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 8px';
+      header.style.cssText = 'font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 8px';
       header.textContent = 'Premade templates';
       ctList.appendChild(header);
     }
 
     allTemplates.forEach((plan, i) => {
       const isPremade = plan.premade;
-      if (!isPremade && i === PREMADE_TEMPLATES.length) {
-        // Add divider before saved templates
+      if (!isPremade && i === filteredPremade.length) {
         const div = document.createElement('div');
-        div.style.cssText = 'font-size:10px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;padding:12px 0 8px;border-top:1px solid var(--black-4);margin-top:8px';
+        div.style.cssText = 'font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;padding:12px 0 8px;border-top:1px solid var(--border);margin-top:8px';
         div.textContent = 'Your saved templates';
         ctList.appendChild(div);
       }
@@ -8114,13 +8474,10 @@
 
       const item = document.createElement('div');
       item.className = 'ct-item';
-      item.innerHTML = `
-        <div class="ct-item-icon">${icon}</div>
-        <div class="ct-item-content">
-          <div class="ct-item-name">${plan.name}</div>
-          <div class="ct-item-sub">${sub}</div>
-        </div>`;
-      item.onclick = () => selectTemplate(plan.name, item, i);
+      item.innerHTML = '<div class="ct-item-icon">' + icon + '</div><div class="ct-item-content"><div class="ct-item-name">' + plan.name + '</div><div class="ct-item-sub">' + sub + '</div></div>';
+      // Find original index for applyTemplate
+      const origIdx = [...PREMADE_TEMPLATES, ...loadedTemplates].indexOf(plan);
+      item.onclick = () => selectTemplate(plan.name, item, origIdx);
       ctList.appendChild(item);
     });
   }
@@ -8147,44 +8504,48 @@
     if (!selectedTemplateName) return;
     closeCloneTemplate();
 
-    // Combine premade + saved to find the right plan
     const allTemplates = [...PREMADE_TEMPLATES, ...loadedTemplates];
     const plan = selectedTemplateIdx !== null ? allTemplates[selectedTemplateIdx] : null;
+    if (!plan) return;
 
-    if (plan && plan.periods && plan.periods.length > 0) {
-      // Restore scripted periods
+    // Simple template
+    if (plan.type === 'simple' || plan.blocks) {
+      launchSimpleMode(plan.blocks || []);
+      document.getElementById('practice-day-sub').textContent = 'Loaded from "' + selectedTemplateName + '"';
+      showToast('Loaded "' + selectedTemplateName + '" ✓');
+      return;
+    }
+
+    // Detailed template
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid) return;
+
+    if (plan.gridHTML) {
+      pgrid.innerHTML = plan.gridHTML;
+    } else if (plan.periods && plan.periods.length > 0) {
       SCRIPTED_PERIODS.clear();
       if (plan.scriptedPeriods) plan.scriptedPeriods.forEach(p => SCRIPTED_PERIODS.add(p));
-
-      // Restore scripts
-      if (plan.scripts) {
-        Object.keys(plan.scripts).forEach(key => {
-          PERIOD_SCRIPTS[key] = plan.scripts[key];
-        });
-      }
-
-      // Restore cell activities in the grid
+      if (plan.scripts) Object.keys(plan.scripts).forEach(k => { PERIOD_SCRIPTS[k] = plan.scripts[k]; });
       plan.periods.forEach(period => {
         period.cells?.forEach(cell => {
-          const cellEl = document.querySelector(`[data-period-id="${period.id}"] [data-col="${cell.col}"] .cell-activity`);
+          const cellEl = document.querySelector('[data-period-id="' + period.id + '"] [data-col="' + cell.col + '"] .cell-activity');
           if (cellEl && cell.activity) cellEl.textContent = cell.activity;
         });
       });
-
-      renderScriptSection();
-      showToast('Loaded "' + selectedTemplateName + '" ✓');
-    } else {
-      showToast('Loaded "' + selectedTemplateName + '" ✓');
     }
 
-    // Show the practice day
-    const filled = document.getElementById('practice-day-filled');
-    const blank = document.getElementById('practice-day-blank');
-    const editBtn = document.getElementById('practice-edit-btn');
+    renumberPeriods();
+    renderScriptSection();
+    renderGridHeader();
+    if (currentDayKey) DAY_GRIDS[currentDayKey] = pgrid.innerHTML;
+
     document.getElementById('practice-day-sub').textContent = 'Loaded from "' + selectedTemplateName + '"';
-    blank.style.display = 'none';
-    filled.style.display = 'block';
-    if (isHeadCoach) editBtn.style.display = 'inline-block';
+    document.getElementById('practice-day-blank').style.display = 'none';
+    document.getElementById('practice-day-filled').style.display = 'block';
+    document.getElementById('practice-grid-wrap').style.display = 'block';
+    if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
+
+    showToast('Loaded "' + selectedTemplateName + '" ✓');
   }
 
   function showSubScreen(name) {
@@ -9816,14 +10177,19 @@
       SCRIPTED_PERIODS.delete(id);
       delete PERIOD_SCRIPTS[id];
       showToast('Script removed from ' + (currentNoteModalPeriodName || id));
+      updatePeriodScriptBtn();
+      renderScriptSection();
     } else {
-      // Add script
+      // Add script and open editor immediately
       SCRIPTED_PERIODS.add(id);
       PERIOD_SCRIPTS[id] = { name: currentNoteModalPeriodName || id, plays: [] };
-      showToast('Script created for ' + (currentNoteModalPeriodName || id));
+      updatePeriodScriptBtn();
+      renderScriptSection();
+      closeNoteModal();
+      // Open the script editor for this period
+      setTimeout(() => openScriptEdit(id), 150);
+      showToast('Script created — add your plays below');
     }
-    updatePeriodScriptBtn();
-    renderScriptSection();
   }
 
   function updatePeriodScriptBtn() {
@@ -9920,10 +10286,15 @@
 
   function addScriptPlay() {
     if (!editingScriptPeriod || !PERIOD_SCRIPTS[editingScriptPeriod]) return;
-    PERIOD_SCRIPTS[editingScriptPeriod].plays.push('New play');
+    // Save current input values first so they aren't lost on re-render
+    const currentInputs = document.querySelectorAll('.script-edit-input');
+    if (currentInputs.length) {
+      PERIOD_SCRIPTS[editingScriptPeriod].plays = Array.from(currentInputs).map(i => i.value.trim()).filter(Boolean);
+    }
+    PERIOD_SCRIPTS[editingScriptPeriod].plays.push('');
     renderScriptEditRows();
     const inputs = document.querySelectorAll('.script-edit-input');
-    if (inputs.length) { inputs[inputs.length-1].focus(); inputs[inputs.length-1].select(); }
+    if (inputs.length) { inputs[inputs.length-1].focus(); }
   }
 
   function removeScriptPlay(idx) {
@@ -9969,6 +10340,7 @@
     const plan = {
       name: planName || 'Practice Plan',
       savedAt: new Date().toISOString(),
+      type: planMode || 'detailed',
       periods: [],
       scripts: PERIOD_SCRIPTS,
       scriptedPeriods: [...SCRIPTED_PERIODS]
@@ -10044,7 +10416,7 @@
 
   // ===== CLEAR PRACTICE DAY =====
   function clearPracticeDay() {
-    document.getElementById('practice-day-filled').style.display = 'none';
+    document.getElementById('practice-day-filled').style.display = 'none'; (document.getElementById('practice-grid-wrap')||{style:{}}).style.display = 'none';
     document.getElementById('practice-simple').style.display = 'none';
     document.getElementById('practice-day-blank').style.display = 'block';
     document.getElementById('practice-edit-btn').style.display = 'none';
@@ -10111,7 +10483,7 @@
       launchSimpleMode([]);
     } else {
       // Show detailed blank
-      document.getElementById('practice-day-filled').style.display = 'none';
+      document.getElementById('practice-day-filled').style.display = 'none'; (document.getElementById('practice-grid-wrap')||{style:{}}).style.display = 'none';
       document.getElementById('practice-simple').style.display = 'none';
       // open add period immediately so they can start building
       document.getElementById('practice-day-blank').style.display = 'none';
@@ -10127,7 +10499,7 @@
     Array.from(pgrid.children).forEach(row => {
       if (!row.classList.contains('pgrid-header')) row.remove();
     });
-    document.getElementById('practice-day-filled').style.display = 'block';
+    document.getElementById('practice-day-filled').style.display = 'block'; document.getElementById('practice-grid-wrap').style.display = 'block';
     document.getElementById('practice-simple').style.display = 'none';
     document.getElementById('practice-day-blank').style.display = 'none';
     if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
@@ -10178,13 +10550,21 @@
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
+          max_tokens: 2000,
           messages: [{ role: 'user', content: prompt }]
         })
       });
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('AI Coach API error:', response.status, errText);
+        throw new Error('API ' + response.status);
+      }
       const data = await response.json();
       const text = data.content.map(b => b.text || '').join('');
       clearInterval(msgTimer);
@@ -10230,7 +10610,7 @@ Start time is 3:30 PM. Include 6-10 blocks. Include a water break. End with team
     } else {
       return base + `
 
-The position groups are: QB, RB, WR, OL, DL, LB, DB.
+The position groups are: ${PRACTICE_POSITION_GROUPS.map(g => g.label).join(', ')}.
 Return ONLY a JSON object (no markdown, no explanation) with this exact structure:
 {
   "periods": [
@@ -10263,7 +10643,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       { name: 'Team', duration: 30, tag: 'team', start: '4:55' },
       { name: 'Conditioning', duration: 15, tag: 'special', start: '5:25' },
     ];
-    document.getElementById('practice-day-filled').style.display = 'none';
+    document.getElementById('practice-day-filled').style.display = 'none'; (document.getElementById('practice-grid-wrap')||{style:{}}).style.display = 'none';
     document.getElementById('practice-day-blank').style.display = 'none';
     document.getElementById('practice-simple').style.display = 'block';
     if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
@@ -10328,7 +10708,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       special: 'row-special', transition: 'row-transition', water: 'row-water',
       install: 'row-install', cross: 'row-cross'
     };
-    const COLS = ['QB','RB','WR','OL','DL','LB','DB'];
+    const COLS = PRACTICE_POSITION_GROUPS.map(g => g.label);
 
     periods.forEach(p => {
       const rowClass = typeClassMap[p.type] || 'row-allteam';
@@ -10363,10 +10743,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       pgrid.appendChild(row);
     });
 
-    document.getElementById('practice-day-filled').style.display = 'block';
+    document.getElementById('practice-day-filled').style.display = 'block'; document.getElementById('practice-grid-wrap').style.display = 'block';
     document.getElementById('practice-simple').style.display = 'none';
     document.getElementById('practice-day-blank').style.display = 'none';
     if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
+    renderGridHeader();
     showToast('AI Coach plan loaded ✓');
   }
 
