@@ -1218,9 +1218,9 @@
   .pp-group-badge { font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px; }
 
   /* Tab nav inside profile */
-  .pp-tab-nav { display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto; }
+  .pp-tab-nav { display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch; }
   .pp-tab-nav::-webkit-scrollbar { display:none; }
-  .pp-tab-btn { padding:10px 12px;font-size:12px;font-weight:600;color:var(--fg-2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;font-family:var(--font);background:none;border-top:none;border-left:none;border-right:none; }
+  .pp-tab-btn { padding:10px 10px;font-size:11.5px;font-weight:600;color:var(--fg-2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;font-family:var(--font);background:none;border-top:none;border-left:none;border-right:none;flex-shrink:0; }
   .pp-tab-btn.active { color:var(--team-primary);border-bottom-color:var(--team-primary); }
 
   /* Profile body */
@@ -1240,7 +1240,7 @@
   .pp-note-head { display:flex;align-items:center;justify-content:space-between;margin-bottom:6px; }
   .pp-note-author { font-size:12px;font-weight:700;color:var(--team-primary); }
   .pp-note-date { font-size:11px;color:var(--fg-3); }
-  .pp-note-text { font-size:13px;color:var(--gray-1);line-height:1.5; }
+  .pp-note-text { font-size:13px;color:var(--fg);line-height:1.5; }
   .pp-note-tag { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:8px;display:inline-block; }
   .pp-note-tag.general { background:var(--border);color:var(--fg-2); }
   .pp-note-tag.discipline { background:rgba(255,68,68,0.12);color:var(--red); }
@@ -2099,7 +2099,7 @@
     </div>
     <div class="card" style="margin-top:10px"><div style="font-size:12px;color:var(--gray-2);margin-bottom:5px">📣 All parents · 2h ago</div><div style="font-size:14px;font-weight:600">Game Friday — kickoff at 7PM</div><div style="font-size:12px;color:var(--gray-3);margin-top:3px">Sent via Messages → All Parents</div></div>
     <div class="card"><div style="font-size:12px;color:var(--gray-2);margin-bottom:5px">📋 Practice plan saved · Yesterday</div><div style="font-size:14px;font-weight:600">Tuesday Week 7 practice plan</div><div style="font-size:12px;color:var(--gray-3);margin-top:3px">Saved as template by Coach Waite</div></div>
-    <div class="card"><div style="font-size:12px;color:var(--gray-2);margin-bottom:5px">👤 Player update · 1h ago</div><div style="font-size:14px;font-weight:600">Andre Washington — status updated to Questionable</div><div style="font-size:12px;color:var(--gray-3);margin-top:3px">Updated in Player Profile</div></div>
+    
   </div>
 
   <!-- Coach Practice — GRID PLANNER -->
@@ -2219,6 +2219,8 @@
       <div class="action-sheet-item" onclick="closeActionSheet();openCloneTemplate('load')">📋 Load template</div>
       <div class="action-sheet-item" onclick="closeActionSheet();openSaveTemplate()">💾 Save as template</div>
       <div class="action-sheet-item" onclick="closeActionSheet();openEditPositionGroups()">⚙️ Edit position groups</div>
+      <div class="action-sheet-item" onclick="closeActionSheet();exportPracticePlan()">📤 Export plan</div>
+      <div class="action-sheet-item" onclick="closeActionSheet();printPracticePlan()">🖨️ Print plan</div>
       <div class="action-sheet-item danger" onclick="closeActionSheet();clearPracticeDay()">🗑️ Clear this day</div>
       <button class="action-sheet-cancel" onclick="closeActionSheet(event)">Cancel</button>
     </div>
@@ -2901,7 +2903,11 @@
       </div>
       <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Upload a CSV or paste from Google Sheets / Excel</div>
 
-      <!-- Format guide -->
+      <!-- Google Sheets tip -->
+      <div style="background:var(--team-primary-glow);border:1px solid var(--team-primary);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--fg)">
+        <div style="font-weight:700;margin-bottom:3px">📊 From Google Sheets:</div>
+        File → Download → Comma Separated Values (.csv) — then upload below. Or copy your cells and paste directly.
+      </div>
       <div style="background:var(--bg-3);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:12px">
         <div style="font-weight:700;color:var(--fg);margin-bottom:6px">Required columns (in any order):</div>
         <div style="font-family:monospace;color:var(--team-primary);margin-bottom:4px">name, number, position, year</div>
@@ -2909,8 +2915,8 @@
         <div style="font-weight:700;color:var(--fg);margin-bottom:4px">Example:</div>
         <div style="font-family:monospace;color:var(--fg-2);line-height:1.6;font-size:11px">
           name,number,position,year<br>
-          Kyle Reed,7,QB,Senior<br>
-          Andre Washington,34,RB,Junior
+          John Smith,7,QB,Senior<br>
+          Mike Johnson,34,RB,Junior
         </div>
       </div>
 
@@ -2946,15 +2952,15 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div style="grid-column:1/-1">
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Full name *</label>
-          <input type="text" id="ap-name" class="input-field" placeholder="e.g. Kyle Reed" style="width:100%">
+          <input type="text" id="apm-name" class="input-field" placeholder="e.g. John Smith" style="width:100%">
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Jersey # *</label>
-          <input type="number" id="ap-number" class="input-field" placeholder="e.g. 7" style="width:100%">
+          <input type="number" id="apm-number" class="input-field" placeholder="e.g. 7" style="width:100%">
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Position *</label>
-          <select id="ap-position" class="input-field" style="width:100%">
+          <select id="apm-position" class="input-field" style="width:100%">
             <option value="">Select...</option>
             <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
             <option>OL</option><option>LT</option><option>LG</option><option>C</option><option>RG</option><option>RT</option>
@@ -2965,31 +2971,31 @@
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Year *</label>
-          <select id="ap-year" class="input-field" style="width:100%">
+          <select id="apm-year" class="input-field" style="width:100%">
             <option value="">Select...</option>
             <option>Freshman</option><option>Sophomore</option><option>Junior</option><option>Senior</option>
           </select>
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Height</label>
-          <input type="text" id="ap-height" class="input-field" placeholder='e.g. 6&apos;2"' style="width:100%">
+          <input type="text" id="apm-height" class="input-field" placeholder='e.g. 6&apos;2"' style="width:100%">
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Weight</label>
-          <input type="number" id="ap-weight" class="input-field" placeholder="lbs" style="width:100%">
+          <input type="number" id="apm-weight" class="input-field" placeholder="lbs" style="width:100%">
         </div>
       </div>
 
       <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;margin-top:4px">Parent / Guardian (optional)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
         <div style="grid-column:1/-1">
-          <input type="text" id="ap-parent-name" class="input-field" placeholder="Parent name" style="width:100%">
+          <input type="text" id="apm-parent-name" class="input-field" placeholder="Parent name" style="width:100%">
         </div>
         <div>
-          <input type="tel" id="ap-parent-phone" class="input-field" placeholder="Phone number" style="width:100%">
+          <input type="tel" id="apm-parent-phone" class="input-field" placeholder="Phone number" style="width:100%">
         </div>
         <div>
-          <input type="email" id="ap-parent-email" class="input-field" placeholder="Email address" style="width:100%">
+          <input type="email" id="apm-parent-email" class="input-field" placeholder="Email address" style="width:100%">
         </div>
       </div>
 
@@ -3148,67 +3154,13 @@
       </div>
 
       <!-- Thread list — scrollable -->
-      <div class="msg-group-list" style="flex:1;overflow-y:auto">
-      <div class="msg-group-item" id="mgi-staff" onclick="openThread('staff')">
-        <div class="msg-group-avatar group-staff">🎙️</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">All Staff</div><div class="inbox-time">12m ago</div></div>
-          <div class="msg-group-preview" id="mgp-staff">Coach Diaz: Tape from Ridgevue is uploaded, check the...</div>
-          <div class="msg-group-meta">9 coaches · Auto group</div>
+      <div class="msg-group-list" id="coach-msg-group-list" style="flex:1;overflow-y:auto">
+        <div id="coach-msg-empty" style="text-align:center;padding:48px 20px">
+          <div style="font-size:36px;margin-bottom:10px">💬</div>
+          <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">No messages yet</div>
+          <div style="font-size:12px;color:var(--fg-3)">Create a group to start messaging your staff, players, or parents.</div>
         </div>
-        <div class="unread-dot" id="mgu-staff"></div>
-      </div>
-
-      <div class="msg-group-item" id="mgi-parents" onclick="openThread('parents')">
-        <div class="msg-group-avatar group-parents">👨‍👩‍👧</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">All Parents</div><div class="inbox-time">2h ago</div></div>
-          <div class="msg-group-preview" id="mgp-parents">You: Game Friday — kickoff has been moved to 7:00 PM...</div>
-          <div class="msg-group-meta">62 parents · Auto group</div>
-        </div>
-        <div class="unread-dot" style="opacity:0"></div>
-      </div>
-
-      <div class="msg-group-item" id="mgi-offense" onclick="openThread('offense')">
-        <div class="msg-group-avatar group-custom" style="background:rgba(255,68,68,0.12);color:var(--red)">O</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">Offensive Staff</div><div class="inbox-time">Yesterday</div></div>
-          <div class="msg-group-preview" id="mgp-offense">Coach Reed: Let's get Dart/Bolt cleaned up before Friday</div>
-          <div class="msg-group-meta">4 coaches · Custom group</div>
-        </div>
-        <div class="unread-dot" id="mgu-offense"></div>
-      </div>
-
-      <div class="msg-group-item" id="mgi-defense" onclick="openThread('defense')">
-        <div class="msg-group-avatar group-custom" style="background:rgba(77,159,255,0.12);color:var(--blue)">D</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">Defensive Staff</div><div class="inbox-time">Yesterday</div></div>
-          <div class="msg-group-preview" id="mgp-defense">Coach Batke: Stunt package is in for Friday</div>
-          <div class="msg-group-meta">4 coaches · Custom group</div>
-        </div>
-        <div class="unread-dot" style="opacity:0"></div>
-      </div>
-
-      <div class="msg-group-item" id="mgi-db" onclick="openThread('db')">
-        <div class="msg-group-avatar group-custom" style="background:rgba(255,180,0,0.12);color:var(--amber)">DB</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">DB Room</div><div class="inbox-time">Mon</div></div>
-          <div class="msg-group-preview" id="mgp-db">Coach Randolph: Press technique reps tomorrow</div>
-          <div class="msg-group-meta">2 coaches · Custom group</div>
-        </div>
-        <div class="unread-dot" style="opacity:0"></div>
-      </div>
-
-      <div class="msg-group-item" id="mgi-senior" onclick="openThread('senior')">
-        <div class="msg-group-avatar group-parents" style="background:var(--team-primary-glow-sm)">🎓</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">Senior Parents</div><div class="inbox-time">Last week</div></div>
-          <div class="msg-group-preview" id="mgp-senior">You: Senior night details are below for Nov 1st...</div>
-          <div class="msg-group-meta">11 parents · Custom group</div>
-        </div>
-        <div class="unread-dot" style="opacity:0"></div>
-      </div>
-    </div><!-- end msg-group-list -->
+      </div><!-- end msg-group-list -->
 
       <!-- New message button pinned to bottom of left panel -->
       <div class="msg-new-btn-wrap">
@@ -3325,35 +3277,13 @@
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Messages</div>
         <button class="btn-sm" onclick="openParentNewMsg()">+ New</button>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:12px">Nampa Bulldogs coaching staff</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:12px">Coaching staff</div>
     </div>
     <div class="msg-group-list">
-      <div class="msg-group-item" onclick="openThread('parents')">
-        <div class="msg-group-avatar group-parents">👨‍👩‍👧</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">All Parents</div><div class="inbox-time">2h ago</div></div>
-          <div class="msg-group-preview" id="mgp-parents-par">Coach Williams: Game Friday — kickoff moved to 7:00 PM...</div>
-          <div class="msg-group-meta">62 parents · Program announcements</div>
-        </div>
-        <div class="unread-dot"></div>
-      </div>
-      <div class="msg-group-item" onclick="openThread('senior')">
-        <div class="msg-group-avatar group-parents" style="background:var(--team-primary-glow-sm)">🎓</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">Senior Parents</div><div class="inbox-time">Last week</div></div>
-          <div class="msg-group-preview">Coach Waite: Senior night is Nov 1st. Details are below...</div>
-          <div class="msg-group-meta">11 parents · Senior group</div>
-        </div>
-        <div class="unread-dot" style="opacity:0"></div>
-      </div>
-      <div class="msg-group-item" onclick="openParentDirectThread()">
-        <div class="msg-group-avatar" style="background:var(--team-primary-glow-sm);color:var(--team-primary)">CW</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">Coach Williams</div><div class="inbox-time">Sun</div></div>
-          <div class="msg-group-preview">You: Hi Coach, will Marcus need his away jersey for Friday's game?</div>
-          <div class="msg-group-meta">Direct message</div>
-        </div>
-        <div class="unread-dot" style="opacity:0"></div>
+      <div style="text-align:center;padding:48px 20px">
+        <div style="font-size:36px;margin-bottom:10px">💬</div>
+        <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">No messages yet</div>
+        <div style="font-size:12px;color:var(--fg-3)">Your coach will send messages here.</div>
       </div>
     </div>
   </div>
@@ -3368,7 +3298,7 @@
 
       <div class="more-menu-item" onclick="showParentSection('myplayer')">
         <div class="more-menu-icon" style="background:var(--team-primary-glow-sm)">🏈</div>
-        <div><div class="more-menu-label">My Player</div><div class="more-menu-sub">Marcus Johnson · #22 · WR</div></div>
+        <div><div class="more-menu-label">My Player</div><div class="more-menu-sub" id="player-menu-sub">My profile</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
       <div class="more-menu-item" onclick="showParentSection('checklist')">
@@ -3397,7 +3327,7 @@
       <div class="player-hero" style="margin-bottom:16px">
         <div class="player-jersey">#22</div>
         <div>
-          <div class="player-name">Marcus Johnson</div>
+          <div class="player-name" id="player-name-display2">—</div>
           <div class="player-pos">Wide Receiver · <span>1st String</span></div>
           <div style="margin-top:6px"><span class="pill pill-green">Active</span></div>
         </div>
@@ -3461,7 +3391,7 @@
         <div class="more-back-btn" onclick="backToParentMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Preseason Checklist</div>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:10px">Marcus Johnson · Eligibility requirements</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:10px">Player · Eligibility requirements</div>
       <div class="checklist-progress-card">
         <div class="checklist-progress-row"><div class="checklist-progress-label">3 of 5 complete</div><div class="checklist-progress-pct">60%</div></div>
         <div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:60%"></div></div>
@@ -3595,7 +3525,7 @@
   <div id="tab-player-more" class="scroll-content" style="display:none;padding:0 20px 80px">
     <div class="more-menu" id="player-more-menu">
       <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px;padding-top:4px">More</div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Marcus Johnson · #22 · WR</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Player profile</div>
 
       <div class="more-menu-item" onclick="showPlayerSection('stats')">
         <div class="more-menu-icon" style="background:var(--team-primary-glow-sm)">📊</div>
@@ -3660,7 +3590,7 @@
       <div class="player-hero">
         <div class="player-jersey">#22</div>
         <div>
-          <div class="player-name">Marcus Johnson</div>
+          <div class="player-name" id="player-name-display2">—</div>
           <div class="player-pos">Wide Receiver · <span>1st String</span></div>
           <div style="margin-top:6px"><span class="pill pill-green">4.52 40-yard dash</span></div>
         </div>
@@ -3706,30 +3636,17 @@
         <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Depth Chart</div>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:14px">Nampa Bulldogs · Varsity</div>
       <div class="unit-filter" style="margin-bottom:14px">
         <div class="unit-chip active" onclick="filterUnit('all',this)">All</div>
         <div class="unit-chip" onclick="filterUnit('offense',this)">Offense</div>
         <div class="unit-chip" onclick="filterUnit('defense',this)">Defense</div>
         <div class="unit-chip" onclick="filterUnit('special',this)">Special Teams</div>
       </div>
-      <div class="unit-block" data-unit="offense">
-        <div class="unit-label">Offense</div>
-        <div class="pos-row"><div class="pos-tag">QB</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Kyle Reed</span><span class="dc-num">#7</span></div><div class="dc-player"><span class="dc-string">2</span><span class="dc-name">Tyler Mosier</span><span class="dc-num">#14</span></div></div></div>
-        <div class="pos-row"><div class="pos-tag">RB</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Andre Washington</span><span class="dc-num">#34</span></div><div class="dc-player"><span class="dc-string">2</span><span class="dc-name">Jordan Pak</span><span class="dc-num">#21</span></div></div></div>
-        <div class="pos-row"><div class="pos-tag">WR1</div><div class="pos-players"><div class="dc-player starter" style="background:var(--team-primary-glow-sm);border-radius:4px;padding:2px 4px"><span class="dc-string">1</span><span class="dc-name" style="color:var(--team-primary);font-weight:700">Marcus Johnson</span><span class="dc-num">#22</span><span class="pill pill-green" style="margin-left:6px;font-size:9px">YOU</span></div><div class="dc-player"><span class="dc-string">2</span><span class="dc-name">Caleb Ortiz</span><span class="dc-num">#5</span></div></div></div>
-        <div class="pos-row"><div class="pos-tag">OL</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Brody Hansen</span><span class="dc-num">#71</span></div><div class="dc-player"><span class="dc-string">2</span><span class="dc-name">Wyatt Klein</span><span class="dc-num">#54</span></div></div></div>
-      </div>
-      <div class="unit-block" data-unit="defense">
-        <div class="unit-label">Defense</div>
-        <div class="pos-row"><div class="pos-tag">DE</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Isaiah Cole</span><span class="dc-num">#42</span></div><div class="dc-player"><span class="dc-string">2</span><span class="dc-name">Gage Fenton</span><span class="dc-num">#49</span></div></div></div>
-        <div class="pos-row"><div class="pos-tag">LB</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Trevin Good</span><span class="dc-num">#44</span></div><div class="dc-player"><span class="dc-string">2</span><span class="dc-name">Devon Torres</span><span class="dc-num">#55</span></div></div></div>
-        <div class="pos-row"><div class="pos-tag">CB</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Jaylen Moore</span><span class="dc-num">#11</span></div><div class="dc-player"><span class="dc-string">2</span><span class="dc-name">Ryan Castillo</span><span class="dc-num">#9</span></div></div></div>
-      </div>
-      <div class="unit-block" data-unit="special">
-        <div class="unit-label">Special Teams</div>
-        <div class="pos-row"><div class="pos-tag">K/P</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Felix Marsh</span><span class="dc-num">#19</span></div></div></div>
-        <div class="pos-row"><div class="pos-tag">KR</div><div class="pos-players"><div class="dc-player starter"><span class="dc-string">1</span><span class="dc-name">Marcus Johnson</span><span class="dc-num">#22</span><span class="pill pill-green" style="margin-left:6px;font-size:9px">YOU</span></div></div></div>
+      <div id="player-dc-body">
+        <div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">
+          <div style="font-size:32px;margin-bottom:10px">📋</div>
+          Depth chart not set up yet
+        </div>
       </div>
     </div>
 
@@ -3763,7 +3680,7 @@
     <div class="pp-hero">
       <div class="pp-jersey" id="pp-jersey">#22</div>
       <div>
-        <div class="pp-hero-name" id="pp-hero-name">Marcus Johnson</div>
+        <div class="pp-hero-name" id="pp-hero-name">—</div>
         <div class="pp-hero-pos" id="pp-hero-pos">Wide Receiver · Varsity</div>
         <div class="pp-hero-badges" id="pp-hero-badges"></div>
       </div>
@@ -3785,10 +3702,6 @@
         <div class="section-label">Team group</div>
         <div class="pp-group-row" id="pp-group-row"></div>
 
-        <div class="section-label" style="margin-top:16px">Disciplinary status</div>
-        <div class="disc-status-row" id="pp-disc-status-row"></div>
-        <div style="font-size:11px;color:var(--gray-3);margin-bottom:10px" id="pp-disc-status-desc"></div>
-
         <div class="section-label" style="margin-top:16px">Player info</div>
         <div id="pp-info-rows"></div>
 
@@ -3804,6 +3717,9 @@
 
       <!-- DISCIPLINE LOG -->
       <div class="pp-section" id="pp-discipline">
+        <div class="section-label" style="margin-bottom:8px">Disciplinary status</div>
+        <div class="disc-status-row" id="pp-disc-status-row"></div>
+        <div style="font-size:11px;color:var(--fg-3);margin-bottom:14px" id="pp-disc-status-desc"></div>
         <div class="pp-add-note-btn" onclick="openAddNote('discipline')">⚠️ Log discipline incident</div>
         <div id="pp-discipline-list"></div>
       </div>
@@ -3839,27 +3755,27 @@
     <div class="new-group-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
 
-      <!-- Step 1: Name -->
+      <!-- Step 1: Members -->
       <div class="ng-step active" id="ng-step-1">
         <div style="font-size:16px;font-weight:700;margin-bottom:4px">New message group</div>
-        <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Give the group a name, then add members.</div>
-        <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin-bottom:8px">Group name</div>
-        <input id="ng-name-input" class="ap-input" placeholder="e.g. Offensive Staff, Senior Parents…" style="margin-bottom:16px">
-        <button class="note-modal-save" onclick="ngGoToStep(2)">Next → Add members</button>
+        <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Select members to include in this group.</div>
+        <div class="ng-validation" id="ng-validation"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--fg-3);margin-bottom:8px">Coaches & Staff</div>
+        <div id="ng-coaches-list"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--fg-3);margin:12px 0 8px">Players & Parents</div>
+        <div id="ng-players-list"></div>
+        <button class="note-modal-save" style="margin-top:14px" onclick="ngGoToStep(2)">Next → Name your group</button>
       </div>
 
-      <!-- Step 2: Members -->
+      <!-- Step 2: Name (optional) -->
       <div class="ng-step" id="ng-step-2">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <div style="color:var(--team-primary);cursor:pointer;font-size:22px" onclick="ngGoToStep(1)">‹</div>
-          <div style="font-size:16px;font-weight:700" id="ng-step2-title">Add members</div>
+          <div style="font-size:16px;font-weight:700">Name your group</div>
         </div>
-        <div class="ng-validation" id="ng-validation"></div>
-        <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin-bottom:8px">Coaches & Staff</div>
-        <div id="ng-coaches-list"></div>
-        <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin:12px 0 8px">Players & Parents</div>
-        <div id="ng-players-list"></div>
-        <button class="note-modal-save" style="margin-top:14px" id="ng-create-btn" onclick="createNewGroup()">Create group</button>
+        <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Optional — leave blank to use member names.</div>
+        <input id="ng-name-input" class="ap-input" placeholder="e.g. Offensive Staff, Senior Parents…" style="margin-bottom:16px">
+        <button class="note-modal-save" id="ng-create-btn" onclick="createNewGroup()">Create group</button>
       </div>
     </div>
   </div>
@@ -4492,25 +4408,9 @@
       <div class="notif-panel-title">Notifications</div>
       <div class="notif-panel-close" onclick="toggleNotifPanel()">✕</div>
     </div>
-    <div class="notif-item" onclick="markNotifRead(this)">
-      <div class="notif-dot" id="nd1"></div>
-      <div><div class="notif-text"><span>Coach Diaz</span> uploaded new film from Ridgevue game</div><div class="notif-time">12 min ago · All Staff</div></div>
-    </div>
-    <div class="notif-item" onclick="markNotifRead(this)">
-      <div class="notif-dot" id="nd2"></div>
-      <div><div class="notif-text"><span>Andre Washington</span> updated injury status — questionable Friday</div><div class="notif-time">1h ago · Roster</div></div>
-    </div>
-    <div class="notif-item" onclick="markNotifRead(this)">
-      <div class="notif-dot" id="nd3"></div>
-      <div><div class="notif-text">Practice plan for <span>Tuesday Week 7</span> was viewed by 6 coaches</div><div class="notif-time">2h ago · Practice</div></div>
-    </div>
-    <div class="notif-item" onclick="markNotifRead(this)">
-      <div class="notif-dot read"></div>
-      <div><div class="notif-text" style="color:var(--fg-2)">Parent document center updated — 3 new files added</div><div class="notif-time">Yesterday</div></div>
-    </div>
-    <div class="notif-item" onclick="markNotifRead(this)">
-      <div class="notif-dot read"></div>
-      <div><div class="notif-text" style="color:var(--fg-2)"><span>Coach Reed</span> replied in Offensive Staff thread</div><div class="notif-time">Yesterday</div></div>
+    <div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">
+      <div style="font-size:32px;margin-bottom:10px">🔔</div>
+      No notifications yet
     </div>
   </div>
 
@@ -4533,6 +4433,7 @@
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
       <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
+      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v30.4</div>
     </div>
   </div>
 
@@ -4581,6 +4482,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ===== SUPABASE CLIENT =====
+  const APP_VERSION = 'v30.4';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -6316,13 +6218,13 @@
   // ===== ADD PLAYER MANUALLY =====
   function openAddPlayerManual() {
     document.getElementById('add-player-overlay').style.display = 'flex';
-    ['ap-name','ap-number','ap-height','ap-weight','ap-parent-name','ap-parent-phone','ap-parent-email'].forEach(id => {
+    ['apm-name','apm-number','apm-height','apm-weight','apm-parent-name','apm-parent-phone','apm-parent-email'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
-    document.getElementById('ap-position').value = '';
-    document.getElementById('ap-year').value = '';
-    setTimeout(() => document.getElementById('ap-name')?.focus(), 100);
+    document.getElementById('apm-position').value = '';
+    document.getElementById('apm-year').value = '';
+    setTimeout(() => document.getElementById('apm-name')?.focus(), 100);
   }
 
   function closeAddPlayerManual(e) {
@@ -6331,10 +6233,10 @@
   }
 
   async function saveAddPlayerManual() {
-    const name = document.getElementById('ap-name')?.value.trim();
-    const num = document.getElementById('ap-number')?.value.trim();
-    const pos = document.getElementById('ap-position')?.value;
-    const year = document.getElementById('ap-year')?.value;
+    const name = document.getElementById('apm-name')?.value.trim();
+    const num = document.getElementById('apm-number')?.value.trim();
+    const pos = document.getElementById('apm-position')?.value;
+    const year = document.getElementById('apm-year')?.value;
 
     const errors = [];
     if (!name) errors.push('Full name');
@@ -6347,38 +6249,47 @@
       return;
     }
 
-    const programId = await getValidProgramId();
-    if (!programId) { showToast('No program found'); return; }
-
     const row = {
-      program_id: programId,
-      name, num, pos, year,
-      height: document.getElementById('ap-height')?.value.trim() || '',
-      weight: document.getElementById('ap-weight')?.value.trim() || '',
-      parent_name: document.getElementById('ap-parent-name')?.value.trim() || '',
-      parent_phone: document.getElementById('ap-parent-phone')?.value.trim() || '',
-      parent_email: document.getElementById('ap-parent-email')?.value.trim() || '',
-      role: 'player',
+      name, num: '#' + num.replace('#',''), pos, year,
+      height: document.getElementById('apm-height')?.value.trim() || '',
+      weight: document.getElementById('apm-weight')?.value.trim() || '',
+      parent: document.getElementById('apm-parent-name')?.value.trim() || '',
+      parentPhone: document.getElementById('apm-parent-phone')?.value.trim() || '',
+      parentEmail: document.getElementById('apm-parent-email')?.value.trim() || '',
+      unit: ['QB','RB','WR','TE','OL','LT','LG','C','RG','RT'].includes(pos) ? 'Offense' : ['DE','DT','OLB','ILB','LB','CB','S','FS','SS'].includes(pos) ? 'Defense' : 'Special Teams',
       status: 'Active',
+      disciplinaryStatus: 'green',
+      group: '', notes: [], discipline: [], academic: [],
     };
 
+    // Add locally immediately
+    const localId = 'local_' + Date.now();
+    PLAYERS.push({ id: localId, ...row });
+    if (window.ROSTER_DATA) window.ROSTER_DATA.push({ id: localId, ...row });
+    syncRosterData?.();
+    renderCoachRoster();
+    closeAddPlayerManual();
+    showToast(`${name} added to roster ✓`);
+
+    // Try to persist to Supabase in background
     try {
-      const { data, error } = await db.from('players').insert([row]).select();
-      if (error) throw error;
-      const saved = data?.[0] || row;
-      PLAYERS.push({
-        id: saved.id || 'local_' + Date.now(),
-        db_id: saved.id,
-        ...row,
-        group: '', notes: [], discipline: [], academic: [],
-      });
-      syncRosterData();
-      renderCoachRoster();
-      closeAddPlayerManual();
-      showToast(`${name} added to roster ✓`);
+      const programId = await getValidProgramId();
+      if (programId) {
+        const { data, error } = await db.from('players').insert([{
+          program_id: programId,
+          name: row.name, num: row.num, pos: row.pos, year: row.year,
+          height: row.height, weight: row.weight,
+          parent_name: row.parent, parent_phone: row.parentPhone, parent_email: row.parentEmail,
+          role: 'player', status: 'Active',
+        }]).select();
+        if (!error && data?.[0]) {
+          // Update local record with real DB id
+          const p = PLAYERS.find(p => p.id === localId);
+          if (p) { p.id = data[0].id; p.db_id = data[0].id; }
+        }
+      }
     } catch(e) {
-      console.error('Add player error:', e);
-      showToast('Error saving — try again');
+      console.warn('Could not sync new player to Supabase:', e);
     }
   }
 
@@ -8792,78 +8703,9 @@
 
   // ===== MESSAGE THREADS =====
   const THREAD_DATA = {
-    staff: {
-      title: 'All Staff', sub: '9 coaches', avatarClass: 'group-staff', avatarContent: '🎙️',
-      messages: [
-        { from: 'Coach Diaz', mine: false, text: 'Tape from Ridgevue is uploaded — check the cutups in the Drive folder.', time: '12m ago' },
-        { from: 'Coach Reed', mine: false, text: 'Watched the WR cutup. Release vs press needs work — adding it to Tuesday Indy.', time: '10m ago' },
-        { from: 'You', mine: true, text: 'Good catch. Let\'s make it a focus point at walkthrough Friday morning too.', time: '8m ago' },
-      ]
-    },
-    parents: {
-      title: 'All Parents', sub: '62 parents', avatarClass: 'group-parents', avatarContent: '👨‍👩‍👧',
-      messages: [
-        { from: 'You', mine: true, text: 'Game Friday vs Emmett Huskies — kickoff has been moved to 7:00 PM. Bus leaves at 5:30 PM sharp.', time: '2h ago' },
-        { from: 'Jennifer Park', mine: false, text: 'Thank you Coach! Is there parking on the east side?', time: '1h ago' },
-        { from: 'You', mine: true, text: 'Yes — east lot opens at 5:45 PM. Student section is on the visitor side.', time: '55m ago' },
-      ]
-    },
-    offense: {
-      title: 'Offensive Staff', sub: '4 coaches', avatarClass: 'group-custom', avatarContent: 'O',
-      messages: [
-        { from: 'Coach Reed', mine: false, text: 'Let\'s get Dart/Bolt cleaned up before Friday. I want 20 install reps in P5.', time: 'Yesterday' },
-        { from: 'Coach Dunn', mine: false, text: 'OL has been sharp on the pull — I think they\'re ready.', time: 'Yesterday' },
-        { from: 'You', mine: true, text: 'Agreed. Keep Dart/Bolt in P5 and we\'ll script 5 red zone looks in P7.', time: 'Yesterday' },
-      ]
-    },
-    defense: {
-      title: 'Defensive Staff', sub: '4 coaches', avatarClass: 'group-custom', avatarContent: 'D',
-      messages: [
-        { from: 'Coach Batke', mine: false, text: 'Stunt package is locked in for Friday. Running it in P2 on Tuesday.', time: 'Yesterday' },
-        { from: 'You', mine: true, text: 'Perfect. Make sure we get the backside DB alignment right vs their trips look.', time: 'Yesterday' },
-      ]
-    },
-    db: {
-      title: 'DB Room', sub: '2 coaches', avatarClass: 'group-custom', avatarContent: 'DB',
-      messages: [
-        { from: 'Coach Randolph', mine: false, text: 'Press technique reps tomorrow in P2. Starting with footwork, then 1-on-1s.', time: 'Mon' },
-        { from: 'You', mine: true, text: 'Good. Their WR1 is their best — Jaylen needs live reps against him.', time: 'Mon' },
-      ]
-    },
-    senior: {
-      title: 'Senior Parents', sub: '11 parents', avatarClass: 'group-parents', avatarContent: '🎓',
-      messages: [
-        { from: 'You', mine: true, text: 'Senior night is Nov 1st. Details are attached — please arrive by 6:30 PM for the pre-game ceremony.', time: 'Last week' },
-      ]
-    },
-    // ===== PLAYER-PERSPECTIVE THREADS =====
-    'player-allcoaches': {
-      title: 'All Coaches', sub: '9 coaches', avatarClass: 'group-staff', avatarContent: '🎙️',
-      messages: [
-        { from: 'Coach Williams', mine: false, text: 'Marcus — report to the locker room by 5:30 PM tonight. Full pads for Friday walkthrough.', time: '2h ago' },
-        { from: 'Coach Reed', mine: false, text: 'Great effort in film this week. Keep working those releases — you\'ll see it Friday.', time: 'Yesterday' },
-        { from: 'Coach Waite', mine: false, text: 'Reminder to all skill players — away uniform is white jersey, white pants, black socks.', time: 'Mon' },
-      ]
-    },
-    'player-offense': {
-      title: 'Offensive Group', sub: 'WRs + coaches', avatarClass: 'group-custom', avatarContent: 'O',
-      messages: [
-        { from: 'Coach Reed', mine: false, text: 'WR room — I want everyone watching the slot route cutup I posted before Tuesday practice.', time: 'Yesterday' },
-        { from: 'Devin Park', mine: false, text: 'Coach, is the Dagger route in the script for Friday?', time: 'Yesterday' },
-        { from: 'Coach Reed', mine: false, text: 'Yes — it\'s in P7. Marcus and Devin both need to be sharp on the timing with Kyle.', time: 'Yesterday' },
-        { from: 'You', mine: true, text: 'Got it. I\'ll get extra reps with Kyle after Tuesday practice.', time: 'Yesterday' },
-      ]
-    },
-    'player-direct': {
-      title: 'Coach Williams + Keisha Johnson', sub: 'Coach Williams · Keisha Johnson (parent)', avatarClass: '', avatarContent: 'CW',
-      messages: [
-        { from: 'You', mine: true, text: 'Hey Coach, quick question — do I need to bring my away jersey to school on Friday or just the field house?', time: 'Mon' },
-        { from: 'Coach Williams', mine: false, text: 'Hey Marcus — just bring it to the field house by 3:30 PM. Full away uniform, both helmets if you can.', time: 'Mon' },
-        { from: 'Keisha Johnson', mine: false, text: 'Thank you Coach! I\'ll make sure he has everything ready. See you Friday night!', time: 'Mon' },
-      ]
-    },
-  };
-  let currentThread = null;
+    staff:   { title:'All Staff',   sub:'Coaches & staff', avatarClass:'group-staff',   avatarContent:'🎙️', avatarColor:'var(--team-primary)', messages:[] },
+    parents: { title:'All Parents', sub:'All parents',     avatarClass:'group-parents', avatarContent:'👨‍👩‍👧', avatarColor:'var(--blue)', messages:[] },
+  };  let currentThread = null;
   let currentThreadSubscription = null;
 
   async function openThread(id) {
@@ -9055,18 +8897,9 @@
   // ===== MESSAGING GUARDRAILS =====
 
   const STAFF_MEMBERS = [
-    { id:'c1', name:'Coach Waite',   role:'coach',  initials:'CW', color:'var(--team-primary)' },
-    { id:'c2', name:'Coach Reed',    role:'coach',  initials:'CR', color:'var(--red)' },
-    { id:'c3', name:'Coach Batke',   role:'coach',  initials:'CB', color:'var(--blue)' },
-    { id:'c4', name:'Coach Randolph',role:'coach',  initials:'CRa',color:'var(--amber)' },
-    { id:'c5', name:'Coach Dunn',    role:'coach',  initials:'CD', color:'var(--blue)' },
+    { id:'coach-self', name:'You (Head Coach)', role:'coach', initials:'HC', color:'var(--team-primary)' }
   ];
-  const PARENT_MEMBERS = [
-    { id:'par1', name:'Keisha Johnson (Marcus)',  role:'parent', initials:'KJ', color:'#a064ff' },
-    { id:'par2', name:'Diane Washington (Andre)', role:'parent', initials:'DW', color:'#a064ff' },
-    { id:'par3', name:'Jim Reed (Kyle)',           role:'parent', initials:'JR', color:'#a064ff' },
-    { id:'par4', name:'Scott Hansen (Brody)',      role:'parent', initials:'SH', color:'#a064ff' },
-  ];
+  const PARENT_MEMBERS = [];
 
   let ngSelectedMembers = new Set();
   let pnmSelectedCoach = null;
@@ -9089,10 +8922,6 @@
   function ngGoToStep(n) {
     document.querySelectorAll('.ng-step').forEach(s => s.classList.remove('active'));
     document.getElementById('ng-step-' + n).classList.add('active');
-    if (n === 2) {
-      const name = document.getElementById('ng-name-input').value.trim();
-      document.getElementById('ng-step2-title').textContent = 'Add members — ' + (name || 'New Group');
-    }
   }
 
   function renderNGMembers() {
@@ -9158,26 +8987,38 @@
   }
 
   function createNewGroup() {
-    const name = document.getElementById('ng-name-input').value.trim();
-    if (!name) {
-      document.getElementById('ng-validation').className = 'ng-validation fail';
-      document.getElementById('ng-validation').textContent = '⚠️ Please enter a group name.';
-      return;
-    }
-
     const selected = [...ngSelectedMembers];
     const coachCount = selected.filter(id => STAFF_MEMBERS.find(m => m.id === id)).length;
     const hasPlayer = selected.some(id => id.startsWith('pl-'));
     const hasParent = selected.some(id => id.startsWith('par'));
-    const totalCoaches = coachCount + 1; // creator counts as 1
+    const totalCoaches = coachCount + 1;
+
+    if (selected.length === 0) {
+      ngGoToStep(1);
+      document.getElementById('ng-validation').className = 'ng-validation fail';
+      document.getElementById('ng-validation').textContent = '⚠️ Select at least one member.';
+      return;
+    }
 
     if (hasPlayer) {
       const meetsRequirement = totalCoaches >= 2 || (totalCoaches >= 1 && hasParent);
       if (!meetsRequirement) {
+        ngGoToStep(1);
         document.getElementById('ng-validation').className = 'ng-validation fail';
         document.getElementById('ng-validation').textContent = '⚠️ Add 1 more coach or a parent to include players.';
         return;
       }
+    }
+
+    // Auto-generate name from first 2 member first names if blank
+    let name = document.getElementById('ng-name-input').value.trim();
+    if (!name) {
+      const allMembers = [...STAFF_MEMBERS, ...PLAYERS.map(p => ({ id: 'pl-' + p.id, name: p.name })), ...PARENT_MEMBERS];
+      const selectedNames = selected.map(id => {
+        const m = allMembers.find(m => m.id === id);
+        return m ? m.name.split(' ')[0] : '';
+      }).filter(Boolean);
+      name = selectedNames.slice(0, 2).join(', ') + (selected.length > 2 ? ' & ' + (selected.length - 2) + ' more' : '');
     }
 
     // Generate a unique thread ID
@@ -9197,8 +9038,11 @@
     };
 
     // Add to the coach message list UI
-    const msgList = document.querySelector('#tab-coach-messages .msg-group-list');
+    const msgList = document.getElementById('coach-msg-group-list');
     if (msgList) {
+      // Hide empty state
+      const emptyState = document.getElementById('coach-msg-empty');
+      if (emptyState) emptyState.style.display = 'none';
       const item = document.createElement('div');
       item.className = 'msg-group-item';
       item.id = 'mgi-' + threadId;
@@ -9524,28 +9368,9 @@
 
   // ===== DEPTH CHART LEGACY =====
   const DC_DATA = {
-    offense: [
-      { pos:'QB',  players:[{name:'Kyle Reed',num:'#7'},{name:'Tyler Mosier',num:'#14'},{name:'Cade Hollis',num:'#3'}] },
-      { pos:'RB',  players:[{name:'Andre Washington',num:'#34',flag:'Q'},{name:'Jordan Pak',num:'#21'}] },
-      { pos:'WR1', players:[{name:'Marcus Johnson',num:'#22'},{name:'Caleb Ortiz',num:'#5'}] },
-      { pos:'WR2', players:[{name:'Devin Park',num:'#3'},{name:'Eli Sanford',num:'#18'}] },
-      { pos:'LT',  players:[{name:'Brody Hansen',num:'#71'},{name:'Mason Idle',num:'#65'}] },
-      { pos:'C',   players:[{name:'Wyatt Klein',num:'#54'},{name:'Trey Borden',num:'#62'}] },
-    ],
-    defense: [
-      { pos:'DE',  players:[{name:'Isaiah Cole',num:'#42'},{name:'Gage Fenton',num:'#49'}] },
-      { pos:'DT',  players:[{name:'Marcus Tapia',num:'#90'},{name:'Owen Ridgely',num:'#95'}] },
-      { pos:'OLB', players:[{name:'Devon Torres',num:'#55'},{name:'Hunter Voss',num:'#52'}] },
-      { pos:'ILB', players:[{name:'Trevin Good',num:'#44'},{name:'Sam Whitley',num:'#48'}] },
-      { pos:'CB',  players:[{name:'Jaylen Moore',num:'#11'},{name:'Ryan Castillo',num:'#9'}] },
-      { pos:'FS',  players:[{name:'Bivens Carr',num:'#27'},{name:'Noah Randolph',num:'#23'}] },
-    ],
-    special: [
-      { pos:'K',  players:[{name:'Felix Marsh',num:'#19'}] },
-      { pos:'P',  players:[{name:'Felix Marsh',num:'#19'}] },
-      { pos:'KR', players:[{name:'Marcus Johnson',num:'#22'}] },
-      { pos:'LS', players:[{name:'Trey Borden',num:'#62'}] },
-    ]
+    offense: [],
+    defense: [],
+    special: []
   };
 
   let dcEditMode = false;
@@ -9560,6 +9385,19 @@
     if (!body) return;
     body.innerHTML = '';
     body.className = dcEditMode ? 'dc-edit-mode' : '';
+
+    // Empty state — no positions set up yet
+    const totalPositions = DC_DATA.offense.length + DC_DATA.defense.length + DC_DATA.special.length;
+    if (totalPositions === 0 && PLAYERS.length === 0) {
+      body.innerHTML = `
+        <div style="text-align:center;padding:48px 20px">
+          <div style="font-size:40px;margin-bottom:12px">📋</div>
+          <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:6px">Depth chart is empty</div>
+          <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Import your roster first, then use Edit mode to build your depth chart.</div>
+          <button onclick="navigateTo('roster')" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">Go to Roster →</button>
+        </div>`;
+      return;
+    }
 
     // On desktop wrap in two-column grid
     const container = isDesktop() ? document.createElement('div') : body;
@@ -9587,7 +9425,37 @@
 
         const posTag = document.createElement('div');
         posTag.className = 'pos-tag';
-        posTag.textContent = posGroup.pos;
+        if (dcEditMode) {
+          const input = document.createElement('input');
+          input.value = posGroup.pos;
+          input.style.cssText = 'background:none;border:none;border-bottom:1.5px solid var(--team-primary);color:var(--team-primary);font-size:11px;font-weight:700;width:48px;text-transform:uppercase;font-family:var(--font);outline:none;padding:0';
+          input.onchange = function() {
+            const newPos = this.value.trim().toUpperCase();
+            if (!newPos) { this.value = posGroup.pos; return; }
+            const oldPos = posGroup.pos;
+            // Update DC_DATA
+            const unitKey = posRow.closest('[data-unit]')?.dataset.unit;
+            if (unitKey) {
+              const grp = DC_DATA[unitKey].find(g => g.pos === oldPos);
+              if (grp) grp.pos = newPos;
+            }
+            posGroup.pos = newPos;
+            posTag.dataset.pos = newPos;
+            posRow.dataset.pos = newPos;
+            // Sync PLAYERS — find players in this DC position group by name and update their pos
+            const playersInGroup = posGroup.players.map(p => p.name);
+            PLAYERS.forEach(p => {
+              if (playersInGroup.includes(p.name)) p.pos = newPos;
+            });
+            if (window.ROSTER_DATA) window.ROSTER_DATA.forEach(p => {
+              if (playersInGroup.includes(p.name)) p.pos = newPos;
+            });
+            showToast(oldPos + ' → ' + newPos + ' updated');
+          };
+          posTag.appendChild(input);
+        } else {
+          posTag.textContent = posGroup.pos;
+        }
         posRow.appendChild(posTag);
 
         const playersList = document.createElement('div');
@@ -10576,6 +10444,97 @@
   }
 
   // ===== CLEAR PRACTICE DAY =====
+  function getPracticePlanHTML(forPrint) {
+    const dayLabel = DAY_ORDER[currentPracticeDay] || 'Practice';
+    const weekDates = getWeekDates(practiceWeekOffset);
+    const dayDate = weekDates[currentPracticeDay] ? weekDates[currentPracticeDay].date.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }) : dayLabel;
+    const cols = PRACTICE_POSITION_GROUPS.map(g => g.label);
+    const rows = document.querySelectorAll('#practice-grid-table .pgrid-row, #practice-day-filled .pgrid-row');
+
+    let tableRows = '';
+    rows.forEach(row => {
+      const timeCol = row.querySelector('.time-col, .period-time, [class*="time"]');
+      const isAllTeam = row.classList.contains('row-allteam') || row.classList.contains('row-break') || row.classList.contains('row-transition');
+      const periodId = row.dataset.periodId || '';
+      const dur = row.style.getPropertyValue('--dur') || '';
+
+      if (isAllTeam) {
+        const label = row.querySelector('.allteam-label, .break-label, .transition-label, span, div');
+        const sublabel = row.querySelector('.allteam-sub, .break-sub');
+        const text = label ? label.textContent.trim() : '';
+        const sub = sublabel ? sublabel.textContent.trim() : '';
+        const timeEl = row.querySelector('.period-stamp, .time-stamp');
+        const time = timeEl ? timeEl.textContent.trim() : '';
+        tableRows += `<tr class="allteam-row"><td class="time-cell">${time}<br><small>${dur ? dur + ' min' : ''}<br>${periodId}</small></td><td colspan="${cols.length}" style="text-align:left;padding-left:16px"><strong>${text}</strong>${sub ? '<br><span style="font-size:11px;color:#666">' + sub + '</span>' : ''}</td></tr>`;
+      } else {
+        const timeEl = row.querySelector('.period-stamp, .time-stamp');
+        const time = timeEl ? timeEl.textContent.trim() : '';
+        const cells = cols.map(col => {
+          const cell = row.querySelector(`[data-col="${col}"] .cell-activity`);
+          return `<td>${cell ? cell.textContent.trim() : ''}</td>`;
+        }).join('');
+        tableRows += `<tr><td class="time-cell">${time}<br><small>${dur ? dur + ' min' : ''}<br>${periodId}</small></td>${cells}</tr>`;
+      }
+    });
+
+    const colHeaders = cols.map(col => {
+      const g = PRACTICE_POSITION_GROUPS.find(g => g.label === col);
+      const coach = PRACTICE_COACHES.find(c => c.pos === col);
+      return `<th style="background:${g ? g.color + '22' : '#eee'}">${col}${coach ? '<br><small style="font-weight:400;font-size:10px">' + coach.name + '</small>' : ''}</th>`;
+    }).join('');
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Practice Plan — ${dayDate}</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 20px; color: #1a1614; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { font-size: 13px; color: #666; margin-bottom: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: center; vertical-align: middle; }
+  th { background: #f5f5f5; font-weight: 700; font-size: 11px; }
+  .time-cell { font-size: 10px; color: #888; width: 60px; white-space: nowrap; }
+  .allteam-row td { background: #f9f9f9; }
+  small { font-size: 9px; color: #999; display: block; line-height: 1.3; }
+  @media print { body { padding: 8px; } button { display: none; } }
+</style>
+</head>
+<body>
+${forPrint ? '' : '<button onclick="window.print()" style="margin-bottom:16px;padding:8px 16px;background:#8b1a1a;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Print</button><br>'}
+<h1>Practice Plan</h1>
+<div class="sub">${dayDate}</div>
+<table>
+  <thead><tr><th>Time</th>${colHeaders}</tr></thead>
+  <tbody>${tableRows || '<tr><td colspan="${cols.length + 1}" style="text-align:center;color:#999;padding:20px">No periods yet</td></tr>'}</tbody>
+</table>
+</body>
+</html>`;
+  }
+
+  function exportPracticePlan() {
+    const html = getPracticePlanHTML(false);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dayLabel = DAY_ORDER[currentPracticeDay] || 'Practice';
+    a.href = url;
+    a.download = 'practice-plan-' + dayLabel.toLowerCase() + '.html';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Practice plan exported ✓');
+  }
+
+  function printPracticePlan() {
+    const html = getPracticePlanHTML(true);
+    const win = window.open('', '_blank');
+    if (!win) { showToast('Allow popups to print'); return; }
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => win.print(), 400);
+  }
+
   function clearPracticeDay() {
     document.getElementById('practice-day-filled').style.display = 'none'; (document.getElementById('practice-grid-wrap')||{style:{}}).style.display = 'none';
     document.getElementById('practice-simple').style.display = 'none';
@@ -10920,95 +10879,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     { name: 'Gold',  color: '#ffb800', bg: 'rgba(255,184,0,0.15)'   },
   ];
 
-  const PLAYERS = [
-    { id:'p1',  name:'Kyle Reed',       num:'#7',  pos:'QB',  unit:'Offense', group:'Red',
-      height:"6'2\"", weight:'195 lbs', year:'Junior', gpa:'3.4', status:'Active', disciplinaryStatus:'green',
-      parent:'Jim Reed', parentPhone:'(208) 555-0101', parentEmail:'jreed@email.com',
-      notes:[
-        { type:'positive', text:'Outstanding leadership in film sessions this week. Showed great composure in 2-min drill.', author:'Coach Waite', date:'Oct 14' },
-        { type:'general',  text:'Needs more reps on the RPO read — getting too deep on the mesh before pulling.', author:'Coach Waite', date:'Oct 10' },
-      ],
-      discipline:[], academic:[]
-    },
-    { id:'p2',  name:'Andre Washington', num:'#34', pos:'RB', unit:'Offense', group:'Red',
-      height:"5'11\"", weight:'210 lbs', year:'Senior', gpa:'2.7', status:'Questionable', disciplinaryStatus:'yellow',
-      parent:'Diane Washington', parentPhone:'(208) 555-0202', parentEmail:'dwash@email.com',
-      notes:[
-        { type:'health', text:'Right hamstring tightness reported after Thursday practice. Day-to-day for Friday.', author:'Coach Waite', date:'Oct 15' },
-      ],
-      discipline:[], academic:[
-        { type:'academic', text:'GPA check — currently at 2.7. One more grade slip puts him below eligibility threshold. Meeting scheduled with counselor Oct 18.', author:'Coach Waite', date:'Oct 14' }
-      ]
-    },
-    { id:'p3',  name:'Marcus Johnson',   num:'#22', pos:'WR', unit:'Offense', group:'Red',
-      height:"6'1\"", weight:'185 lbs', year:'Senior', gpa:'3.8', status:'Active', disciplinaryStatus:'yellow',
-      parent:'Keisha Johnson', parentPhone:'(208) 555-0303', parentEmail:'kjohnson@email.com',
-      notes:[
-        { type:'positive', text:'Best game of the season vs Ridgevue. 8 catches for 112 yards. Motor and effort stand out every week.', author:'Coach Williams', date:'Oct 7' },
-        { type:'positive', text:'Excellent effort in film this week. Route running continues to improve — slot routes especially.', author:'Coach Reed', date:'Oct 14' },
-      ],
-      discipline:[], academic:[]
-    },
-    { id:'p4',  name:'Caleb Ortiz',      num:'#5',  pos:'WR', unit:'Offense', group:'Blue',
-      height:"5'10\"", weight:'172 lbs', year:'Sophomore', gpa:'3.1', status:'Active', disciplinaryStatus:'green',
-      parent:'Maria Ortiz', parentPhone:'(208) 555-0404', parentEmail:'mortiz@email.com',
-      notes:[], discipline:[], academic:[]
-    },
-    { id:'p5',  name:'Tyler Mosier',     num:'#14', pos:'QB', unit:'Offense', group:'Blue',
-      height:"6'0\"", weight:'180 lbs', year:'Junior', gpa:'3.0', status:'Active', disciplinaryStatus:'green',
-      parent:'Todd Mosier', parentPhone:'(208) 555-0505', parentEmail:'tmosier@email.com',
-      notes:[], discipline:[], academic:[]
-    },
-    { id:'p6',  name:'Jordan Pak',       num:'#21', pos:'RB', unit:'Offense', group:'Blue',
-      height:"5'9\"", weight:'195 lbs', year:'Junior', gpa:'2.9', status:'Active', disciplinaryStatus:'green',
-      parent:'Linda Pak', parentPhone:'(208) 555-0606', parentEmail:'lpak@email.com',
-      notes:[], discipline:[], academic:[]
-    },
-    { id:'p7',  name:'Isaiah Cole',      num:'#42', pos:'DE', unit:'Defense', group:'Red',
-      height:"6'3\"", weight:'225 lbs', year:'Senior', gpa:'3.2', status:'Active', disciplinaryStatus:'yellow',
-      parent:'Robert Cole', parentPhone:'(208) 555-0707', parentEmail:'rcole@email.com',
-      notes:[], discipline:[
-        { incident:'Unsportsmanlike conduct', date:'Sep 28', consequence:'Sat out one series vs Kuna', status:'resolved', coach:'Coach Batke' },
-      ], academic:[]
-    },
-    { id:'p8',  name:'Brody Hansen',     num:'#71', pos:'OL', unit:'Offense', group:'Red',
-      height:"6'4\"", weight:'280 lbs', year:'Senior', gpa:'3.6', status:'Active', disciplinaryStatus:'green',
-      parent:'Scott Hansen', parentPhone:'(208) 555-0808', parentEmail:'shansen@email.com',
-      notes:[], discipline:[], academic:[]
-    },
-    { id:'p9',  name:'Jaylen Moore',     num:'#11', pos:'CB', unit:'Defense', group:'Blue',
-      height:"5'11\"", weight:'175 lbs', year:'Junior', gpa:'2.5', status:'Active', disciplinaryStatus:'red',
-      parent:'Tamara Moore', parentPhone:'(208) 555-0909', parentEmail:'tmoore@email.com',
-      notes:[], discipline:[
-        { incident:'Missed mandatory film session', date:'Oct 9', consequence:'Extra conditioning Tuesday', status:'resolved', coach:'Coach Randolph' },
-        { incident:'Disrespectful to JV player during practice', date:'Oct 2', consequence:'Verbal warning — documented', status:'resolved', coach:'Coach Waite' },
-      ], academic:[
-        { type:'academic', text:'Jaylen is currently at a 2.5 GPA — flagged for monitoring. Counselor meeting Oct 20.', author:'Coach Waite', date:'Oct 12' }
-      ]
-    },
-    { id:'p13', name:'Cade Hollis', num:'#3', pos:'QB', unit:'Offense', group:'White',
-      height:"6'1\"", weight:'185 lbs', year:'Sophomore', gpa:'3.2', status:'Active',
-      parent:'Dave Hollis', parentPhone:'(208) 555-1313', parentEmail:'dhollis@email.com',
-      notes:[], discipline:[], academic:[], disciplinaryStatus:'green'
-    },
-    { id:'p10', name:'Trevin Good', num:'#44', pos:'ILB', unit:'Defense', group:'Red',
-      height:"6'1\"", weight:'220 lbs', year:'Senior', gpa:'3.9', status:'Active', disciplinaryStatus:'red',
-      parent:'Gary Good', parentPhone:'(208) 555-1010', parentEmail:'ggood@email.com',
-      notes:[
-        { type:'positive', text:'Team captain by vote. Sets the standard every day in practice. Elite film study habits.', author:'Coach Waite', date:'Sep 15' },
-      ], discipline:[], academic:[]
-    },
-    { id:'p11', name:'Devon Torres',     num:'#55', pos:'OLB', unit:'Defense', group:'Blue',
-      height:"6'2\"", weight:'215 lbs', year:'Junior', gpa:'3.0', status:'Active', disciplinaryStatus:'green',
-      parent:'Carmen Torres', parentPhone:'(208) 555-1111', parentEmail:'ctorres@email.com',
-      notes:[], discipline:[], academic:[]
-    },
-    { id:'p12', name:'Felix Marsh',      num:'#19', pos:'K/P', unit:'Special Teams', group:'White',
-      height:"6'0\"", weight:'170 lbs', year:'Junior', gpa:'3.7', status:'Active', disciplinaryStatus:'green',
-      parent:'Beth Marsh', parentPhone:'(208) 555-1212', parentEmail:'bmarsh@email.com',
-      notes:[], discipline:[], academic:[]
-    },
-  ];
+  const PLAYERS = [];
 
   let currentPlayerId = null;
   let currentNoteType = 'general';
@@ -11171,8 +11042,21 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     }
 
     container.innerHTML = '';
+    if (PLAYERS.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:40px 20px">
+          <div style="font-size:40px;margin-bottom:12px">🏈</div>
+          <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:6px">No players yet</div>
+          <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Import your roster from a spreadsheet or add players one at a time.</div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button onclick="openRosterImport()" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">📥 Import roster</button>
+            <button onclick="openAddPlayerManual()" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">+ Add player</button>
+          </div>
+        </div>`;
+      return;
+    }
     if (players.length === 0) {
-      container.innerHTML = '<div style="color:var(--gray-3);font-size:13px;text-align:center;padding:24px 0">No players match this filter</div>';
+      container.innerHTML = '<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:24px 0">No players match this filter</div>';
       return;
     }
 
@@ -11482,8 +11366,30 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function setDiscStatus(player, key) {
+    if (key === player.disciplinaryStatus) return; // no change
+
+    // Require a note explaining the status change
+    const statusLabel = DISC_STATUSES.find(s => s.key === key)?.label || key;
+    const note = prompt(`Changing status to "${statusLabel}" — add a note explaining why (required):`);
+    if (note === null) return; // cancelled
+    if (!note.trim()) {
+      showToast('A note is required to change disciplinary status');
+      return;
+    }
+
+    // Log the status change as a discipline note
+    const changeNote = {
+      type: 'discipline',
+      text: `Status changed to ${statusLabel}: ${note.trim()}`,
+      author: localStorage.getItem('mesh_user_name') || 'Coach',
+      date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }),
+    };
+    if (!player.discipline) player.discipline = [];
+    player.discipline.unshift(changeNote);
+
     player.disciplinaryStatus = key;
     renderDiscStatusRow(player);
+    renderPPDiscipline(player);
     renderCoachRoster();
 
     // Save to Supabase
@@ -11492,17 +11398,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         await db.from('players')
           .update({ disciplinary_status: key })
           .eq('id', player.db_id);
-        console.log('Disc status saved to Supabase:', key);
       } catch(e) { console.error('Disc status save error:', e); }
     } else {
-      // Save to localStorage as fallback
-      try {
-        const key2 = 'mesh_disc_' + player.id;
-        localStorage.setItem(key2, key);
-      } catch(e) {}
+      try { localStorage.setItem('mesh_disc_' + player.id, key); } catch(e) {}
     }
 
-    showToast('Disciplinary status updated ✓');
+    showToast('Status updated — note logged ✓');
   }
 
   // ===== PROGRAM ID HELPER =====
@@ -11549,17 +11450,17 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   // Seed inventory data
   let INVENTORY = [
     { id:'MESH-HELM-001', name:'Schutt Helmet 1', category:'Helmet', brand:'Schutt F7', condition:'Excellent', size:'Large', qty:1, assignedTo:null },
-    { id:'MESH-HELM-002', name:'Schutt Helmet 2', category:'Helmet', brand:'Schutt F7', condition:'Good', size:'Large', qty:1, assignedTo:'Marcus Johnson' },
-    { id:'MESH-HELM-003', name:'Schutt Helmet 3', category:'Helmet', brand:'Schutt F7', condition:'Good', size:'Medium', qty:1, assignedTo:'Kyle Reed' },
+    { id:'MESH-HELM-002', name:'Schutt Helmet 2', category:'Helmet', brand:'Schutt F7', condition:'Good', size:'Large', qty:1, assignedTo:'' },
+    { id:'MESH-HELM-003', name:'Schutt Helmet 3', category:'Helmet', brand:'Schutt F7', condition:'Good', size:'Medium', qty:1, assignedTo:'' },
     { id:'MESH-HELM-004', name:'Riddell Helmet 4', category:'Helmet', brand:'Riddell SpeedFlex', condition:'Fair', size:'XL', qty:1, assignedTo:'Brody Hansen' },
     { id:'MESH-HELM-005', name:'Riddell Helmet 5', category:'Helmet', brand:'Riddell SpeedFlex', condition:'Poor', size:'Large', qty:1, assignedTo:null },
-    { id:'MESH-SPAD-001', name:'Shoulder Pads 1', category:'Shoulder Pads', brand:'Riddell Power', condition:'Excellent', size:'Large', qty:1, assignedTo:'Marcus Johnson' },
+    { id:'MESH-SPAD-001', name:'Shoulder Pads 1', category:'Shoulder Pads', brand:'Riddell Power', condition:'Excellent', size:'Large', qty:1, assignedTo:'' },
     { id:'MESH-SPAD-002', name:'Shoulder Pads 2', category:'Shoulder Pads', brand:'Riddell Power', condition:'Good', size:'XL', qty:1, assignedTo:'Brody Hansen' },
     { id:'MESH-SPAD-003', name:'Shoulder Pads 3', category:'Shoulder Pads', brand:'Schutt Recruit', condition:'Fair', size:'Medium', qty:1, assignedTo:null },
-    { id:'MESH-JRSH-001', name:'Home Jersey #22', category:'Jersey (Home)', brand:'Nike', condition:'Excellent', size:'Large', qty:1, assignedTo:'Marcus Johnson' },
-    { id:'MESH-JRSH-002', name:'Home Jersey #7', category:'Jersey (Home)', brand:'Nike', condition:'Excellent', size:'Medium', qty:1, assignedTo:'Kyle Reed' },
-    { id:'MESH-JRSA-001', name:'Away Jersey #22', category:'Jersey (Away)', brand:'Nike', condition:'Good', size:'Large', qty:1, assignedTo:'Marcus Johnson' },
-    { id:'MESH-CLTS-001', name:'Cleats - Marcus', category:'Cleats', brand:'Nike Alpha', condition:'Good', size:'10.5', qty:1, assignedTo:'Marcus Johnson' },
+    { id:'MESH-JRSH-001', name:'Home Jersey #22', category:'Jersey (Home)', brand:'Nike', condition:'Excellent', size:'Large', qty:1, assignedTo:'' },
+    { id:'MESH-JRSH-002', name:'Home Jersey #7', category:'Jersey (Home)', brand:'Nike', condition:'Excellent', size:'Medium', qty:1, assignedTo:'' },
+    { id:'MESH-JRSA-001', name:'Away Jersey #22', category:'Jersey (Away)', brand:'Nike', condition:'Good', size:'Large', qty:1, assignedTo:'' },
+    { id:'MESH-CLTS-001', name:'Cleats - Marcus', category:'Cleats', brand:'Nike Alpha', condition:'Good', size:'10.5', qty:1, assignedTo:'' },
   ];
 
   let invCondFilter = 'all';
@@ -12310,7 +12211,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   function renderPlayerStanding() {
     // Marcus Johnson is p3 in PLAYERS
-    const player = PLAYERS.find(p => p.name === 'Marcus Johnson') || PLAYERS[0];
+    const player = PLAYERS[0] || null; if (!player) return;
     if (!player) return;
 
     // Disciplinary status card
@@ -12393,19 +12294,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   // ===== SCHEDULE CALENDAR VIEW =====
-  const SCHEDULE_EVENTS = [
-    { month:9,  day:6,  type:'game',     name:'vs. Caldwell Cougars',    result:'W 28–14' },
-    { month:9,  day:13, type:'game',     name:'at Mountain View',         result:'L 14–35' },
-    { month:9,  day:20, type:'game',     name:'vs. Twin Falls Bruins',    result:'W 21–17' },
-    { month:9,  day:27, type:'game',     name:'at Skyview Hawks',         result:'L 7–42' },
-    { month:10, day:7,  type:'practice', name:'Bye week practice',        result:'' },
-    { month:10, day:11, type:'game',     name:'vs. Ridgevue Warhawks',    result:'W 35–21' },
-    { month:10, day:15, type:'practice', name:'Practice',                 result:'3:30 – 6:00 PM' },
-    { month:10, day:17, type:'practice', name:'Walkthrough',              result:'3:30 – 5:00 PM' },
-    { month:10, day:18, type:'game',     name:'vs. Emmett Huskies',       result:'Tonight · 7:00 PM' },
-    { month:10, day:25, type:'game',     name:'at Vallivue Falcons',      result:'Away · 7:00 PM' },
-    { month:11, day:1,  type:'game',     name:'vs. Middleton Vikings',    result:'Home · 7:00 PM' },
-  ];
+  const SCHEDULE_EVENTS = [];
 
   let schedCalMonth = new Date().getMonth() + 1;
   let schedCalYear = new Date().getFullYear();
