@@ -1074,7 +1074,10 @@
     }
 
     #screen-setup,
-    #screen-join {
+    #screen-join,
+    #screen-beta,
+    #screen-create-account,
+    #screen-signin {
       max-width: 480px;
       margin: 0 auto;
       width: 100%;
@@ -1087,7 +1090,10 @@
     /* Center body when showing login screens */
     body:has(#screen-login.active),
     body:has(#screen-setup.active),
-    body:has(#screen-join.active) {
+    body:has(#screen-join.active),
+    body:has(#screen-beta.active),
+    body:has(#screen-create-account.active),
+    body:has(#screen-signin.active) {
       justify-content: center !important;
     }
 
@@ -7214,7 +7220,21 @@
       obGoToStep(3);
     } else if (currentStep === 3) {
       obGoToStep(4);
-      document.getElementById('ob-done-code').textContent = obProgram.joinCode;
+      // Generate codes if not already done
+      if (!obProgram.coachCode) {
+        const codes = generateThreeJoinCodes();
+        obProgram.coachCode  = codes.coachCode;
+        obProgram.playerCode = codes.playerCode;
+        obProgram.parentCode = codes.parentCode;
+        obProgram.joinCode   = codes.coachCode;
+      }
+      // Populate display immediately
+      const c = document.getElementById('ob-done-code-coach');
+      const p = document.getElementById('ob-done-code-player');
+      const pa = document.getElementById('ob-done-code-parent');
+      if (c)  c.textContent  = obProgram.coachCode;
+      if (p)  p.textContent  = obProgram.playerCode;
+      if (pa) pa.textContent = obProgram.parentCode;
       saveProgram();
     }
   }
