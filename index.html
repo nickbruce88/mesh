@@ -7423,6 +7423,16 @@
 
       if (error) throw error;
 
+      // Create profile row for this user
+      if (uid) {
+        await db.from('profiles').upsert({
+          id: uid,
+          program_id: data.id,
+          role: 'head_coach',
+          name: obProgram.coachName || 'Head Coach',
+        }, { onConflict: 'id' });
+      }
+
       // Mark beta code as used (skip for dev bypass)
       if (betaCode && betaCode !== '__dev__') {
         await db.from('beta_codes').update({ used: true, used_by: uid, used_at: new Date().toISOString() }).eq('code', betaCode);
