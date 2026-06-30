@@ -7004,6 +7004,15 @@
     const code = document.getElementById('beta-code-input').value.trim().toUpperCase();
     const errEl = document.getElementById('beta-code-error');
     if (!code) { errEl.textContent = 'Please enter your beta code'; return; }
+
+    // Dev bypass — never hits Supabase, never gets marked used
+    if (code === 'MESH-DEV-LOCAL') {
+      localStorage.setItem('mesh_beta_code', '__dev__');
+      errEl.textContent = '';
+      showScreen('screen-create-account');
+      return;
+    }
+
     errEl.textContent = 'Checking…';
 
     try {
@@ -7079,11 +7088,15 @@
 
     try {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
+      console.log('Sign in result:', { data, error });
       if (error) throw error;
 
-      // Load their program
       const uid = data.user.id;
-      const { data: prog } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
+      console.log('UID:', uid);
+
+      const { data: prog, error: progErr } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
+      console.log('Program lookup:', { prog, progErr });
+
       if (prog) {
         localStorage.setItem('mesh_program_id', prog.id);
         localStorage.setItem('mesh_team_name', prog.team_name);
@@ -7093,12 +7106,17 @@
         obProgram.teamName = prog.team_name;
         obProgram.schoolName = prog.school_name;
         obProgram.coachName = prog.coach_name;
+      } else {
+        console.warn('No program found for uid:', uid);
+        // Still log in even without a program — they can set one up
+        localStorage.setItem('mesh_role', 'coach');
       }
 
       btn.textContent = 'Sign in →';
       btn.disabled = false;
       login('coach');
     } catch(e) {
+      console.error('Sign in error:', e);
       errEl.textContent = e.message || 'Invalid email or password';
       btn.textContent = 'Sign in →';
       btn.disabled = false;
@@ -7118,6 +7136,10 @@
 
   // ===== AUTO SESSION RESTORE =====
   async function checkExistingSession() {
+    // Don't auto-restore if user explicitly logged out (no local role stored)
+    const role = localStorage.getItem('mesh_role');
+    if (!role) return false;
+
     try {
       const { data } = await db.auth.getSession();
       if (!data.session) return false;
@@ -7315,8 +7337,8 @@
 
       if (error) throw error;
 
-      // Mark beta code as used
-      if (betaCode) {
+      // Mark beta code as used (skip for dev bypass)
+      if (betaCode && betaCode !== '__dev__') {
         await db.from('beta_codes').update({ used: true, used_by: uid, used_at: new Date().toISOString() }).eq('code', betaCode);
         localStorage.removeItem('mesh_beta_code');
       }
@@ -14378,7 +14400,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   if (document.readyState !== 'loading') { renderDrillLibrary(); renderScriptSection(); renderDepthChart(); }
   document.addEventListener('DOMContentLoaded', () => { renderDrillLibrary(); renderScriptSection(); renderDepthChart(); });
 
-  function logOut() {
+  async function logOut() {
+    try {
+      await db.auth.signOut();
+    } catch(e) {}
     try {
       localStorage.removeItem('mesh_role');
       localStorage.removeItem('mesh_user');
@@ -14386,9 +14411,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       localStorage.removeItem('mesh_program_id');
       localStorage.removeItem('mesh_joining_code');
       localStorage.removeItem('mesh_joining_program_id');
+      localStorage.removeItem('mesh_auth_uid');
+      localStorage.removeItem('mesh_auth_email');
+      localStorage.removeItem('mesh_team_name');
     } catch(e) {}
     closeProfileModal();
-    // Return to landing screen
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-login').classList.add('active');
     showToast('Signed out ✓');
