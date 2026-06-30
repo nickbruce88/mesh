@@ -7097,6 +7097,8 @@
       const { data: prog, error: progErr } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
       console.log('Program lookup:', { prog, progErr });
 
+      if (progErr) console.error('Program lookup error:', progErr);
+
       if (prog) {
         localStorage.setItem('mesh_program_id', prog.id);
         localStorage.setItem('mesh_team_name', prog.team_name);
@@ -7106,14 +7108,15 @@
         obProgram.teamName = prog.team_name;
         obProgram.schoolName = prog.school_name;
         obProgram.coachName = prog.coach_name;
+        console.log('Program loaded:', prog.team_name);
       } else {
-        console.warn('No program found for uid:', uid);
-        // Still log in even without a program — they can set one up
+        console.warn('No program found for owner_id:', uid, '— setting role only');
         localStorage.setItem('mesh_role', 'coach');
       }
 
       btn.textContent = 'Sign in →';
       btn.disabled = false;
+      console.log('Calling restoreSession...');
       restoreSession();
     } catch(e) {
       console.error('Sign in error:', e);
