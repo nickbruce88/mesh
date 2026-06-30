@@ -2903,6 +2903,11 @@
       </div>
       <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Upload a CSV or paste from Google Sheets / Excel</div>
 
+      <!-- Download template -->
+      <button onclick="downloadRosterTemplate()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font);margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+        📥 Download blank roster template
+      </button>
+
       <!-- Google Sheets tip -->
       <div style="background:var(--team-primary-glow);border:1px solid var(--team-primary);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--fg)">
         <div style="font-weight:700;margin-bottom:3px">📊 From Google Sheets:</div>
@@ -2959,14 +2964,28 @@
           <input type="number" id="apm-number" class="input-field" placeholder="e.g. 7" style="width:100%">
         </div>
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Position *</label>
-          <select id="apm-position" class="input-field" style="width:100%">
-            <option value="">Select...</option>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Off. Position</label>
+          <select id="apm-pos-off" class="input-field" style="width:100%">
+            <option value="">None</option>
             <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
             <option>OL</option><option>LT</option><option>LG</option><option>C</option><option>RG</option><option>RT</option>
+            <option>ATH</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Def. Position</label>
+          <select id="apm-pos-def" class="input-field" style="width:100%">
+            <option value="">None</option>
             <option>DE</option><option>DT</option><option>OLB</option><option>ILB</option><option>LB</option>
             <option>CB</option><option>S</option><option>FS</option><option>SS</option>
-            <option>K</option><option>P</option><option>LS</option><option>ATH</option>
+            <option>ATH</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px">Special Teams</label>
+          <select id="apm-pos-st" class="input-field" style="width:100%">
+            <option value="">None</option>
+            <option>K</option><option>P</option><option>LS</option><option>KR</option><option>PR</option>
           </select>
         </div>
         <div>
@@ -3702,6 +3721,10 @@
         <div class="section-label">Team group</div>
         <div class="pp-group-row" id="pp-group-row"></div>
 
+        <div class="section-label" style="margin-top:16px">Team level</div>
+        <div style="font-size:12px;color:var(--fg-3);margin-bottom:8px">Select all levels this player is eligible for</div>
+        <div class="pp-group-row" id="pp-level-row"></div>
+
         <div class="section-label" style="margin-top:16px">Player info</div>
         <div id="pp-info-rows"></div>
 
@@ -4433,7 +4456,7 @@
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
       <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v31.1</div>
+      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v31.2</div>
     </div>
   </div>
 
@@ -4482,7 +4505,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v31.1';
+  const APP_VERSION = 'v31.2';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -6070,6 +6093,22 @@
   // ===== ROSTER IMPORT =====
   let rosterImportParsed = [];
 
+  function downloadRosterTemplate() {
+    const csv = [
+      'name,number,off_position,def_position,st_position,year,height,weight,gpa,parent_name,parent_phone,parent_email',
+      'John Smith,1,QB,,K,Senior,6\'2",195,3.4,Jane Smith,(208) 555-0101,jsmith@email.com',
+      'Mike Johnson,34,WR,CB,,Junior,5\'11",175,2.8,Bob Johnson,(208) 555-0102,bjohnson@email.com',
+      '(add more rows below),,,,,,,,,,'
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mesh-roster-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function openRosterImport() {
     document.getElementById('roster-import-overlay').style.display = 'flex';
     document.getElementById('roster-import-preview').style.display = 'none';
@@ -6104,6 +6143,9 @@
       name: headers.findIndex(h => h === 'name' || h === 'fullname' || h === 'player'),
       num: headers.findIndex(h => h === 'number' || h === 'num' || h === 'jersey' || h === '#'),
       pos: headers.findIndex(h => h === 'position' || h === 'pos'),
+      posOff: headers.findIndex(h => h === 'off_position' || h === 'offense' || h === 'off_pos' || h === 'offpos'),
+      posDef: headers.findIndex(h => h === 'def_position' || h === 'defense' || h === 'def_pos' || h === 'defpos'),
+      posST: headers.findIndex(h => h === 'st_position' || h === 'special_teams' || h === 'st_pos' || h === 'stpos'),
       year: headers.findIndex(h => h === 'year' || h === 'grade' || h === 'class'),
       height: headers.findIndex(h => h === 'height' || h === 'ht'),
       weight: headers.findIndex(h => h === 'weight' || h === 'wt' || h === 'lbs'),
@@ -6121,7 +6163,10 @@
       return {
         name: get(colMap.name),
         num: get(colMap.num),
-        pos: get(colMap.pos).toUpperCase(),
+        pos: (get(colMap.posOff) || get(colMap.posDef) || get(colMap.pos)).split('/')[0].trim().toUpperCase(),
+        posOff: get(colMap.posOff).toUpperCase(),
+        posDef: get(colMap.posDef).toUpperCase(),
+        posST: get(colMap.posST).toUpperCase(),
         year: get(colMap.year),
         height: get(colMap.height),
         weight: get(colMap.weight),
@@ -6169,49 +6214,51 @@
     if (!rosterImportParsed.length && text) previewRosterCSV();
     if (!rosterImportParsed.length) { showToast('Preview your data first'); return; }
 
-    const programId = await getValidProgramId();
-    if (!programId) { showToast('No program found — please set up your program first'); return; }
-
-    let added = 0;
-    const rows = rosterImportParsed.map(p => ({
-      program_id: programId,
+    // Add to local PLAYERS immediately
+    const newPlayers = rosterImportParsed.map(p => ({
+      id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2),
       name: p.name,
-      num: p.num,
-      pos: p.pos,
-      year: p.year,
-      height: p.height,
-      weight: p.weight,
-      gpa: p.gpa,
-      parent_name: p.parent_name,
-      parent_phone: p.parent_phone,
-      parent_email: p.parent_email,
-      role: 'player',
-      status: 'Active',
+      num: p.num ? ('#' + p.num.replace('#','')) : '—',
+      pos: p.posOff || p.posDef || p.pos || '',
+      posOff: p.posOff || '', posDef: p.posDef || '', posST: p.posST || '',
+      year: p.year, height: p.height, weight: p.weight, gpa: p.gpa,
+      parent: p.parent_name, parentPhone: p.parent_phone, parentEmail: p.parent_email,
+      unit: p.posOff ? 'Offense' : p.posDef ? 'Defense' : 'Special Teams',
+      status: 'Active', disciplinaryStatus: 'green',
+      teams: defaultTeamsForYear(p.year), group: '',
+      notes: [], discipline: [], academic: [],
     }));
 
+    newPlayers.forEach(p => PLAYERS.push(p));
+    if (window.ROSTER_DATA) newPlayers.forEach(p => window.ROSTER_DATA.push(p));
+    syncRosterData?.();
+    buildDCFromPlayers();
+    renderCoachRoster();
+    closeRosterImport();
+    showToast(`Added ${newPlayers.length} player${newPlayers.length !== 1 ? 's' : ''} ✓`);
+
+    // Sync to Supabase in background
     try {
-      const { data, error } = await db.from('players').insert(rows).select();
-      if (error) throw error;
-      added = data?.length || rows.length;
-      // Add to local PLAYERS array
-      (data || rows).forEach(p => {
-        PLAYERS.push({
-          id: p.id || 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-          db_id: p.id,
+      const programId = await getValidProgramId();
+      if (programId) {
+        const rows = newPlayers.map(p => ({
+          program_id: programId,
           name: p.name, num: p.num, pos: p.pos, year: p.year,
           height: p.height, weight: p.weight, gpa: p.gpa,
-          parent_name: p.parent_name, parent_phone: p.parent_phone, parent_email: p.parent_email,
-          role: 'player', status: 'Active', group: '',
-          notes: [], discipline: [], academic: [],
-        });
-      });
-      syncRosterData();
-      renderCoachRoster();
-      closeRosterImport();
-      showToast(`Added ${added} player${added !== 1 ? 's' : ''} ✓`);
+          parent_name: p.parent, parent_phone: p.parentPhone, parent_email: p.parentEmail,
+          role: 'player', status: 'Active',
+        }));
+        const { data, error } = await db.from('players').insert(rows).select();
+        if (!error && data) {
+          // Update local IDs with real DB IDs
+          data.forEach((dbRow, i) => {
+            const local = PLAYERS.find(p => p.id === newPlayers[i]?.id);
+            if (local && dbRow.id) { local.id = dbRow.id; local.db_id = dbRow.id; }
+          });
+        }
+      }
     } catch(e) {
-      console.error('Roster import error:', e);
-      showToast('Error importing — check your data and try again');
+      console.warn('Could not sync imported players to Supabase:', e);
     }
   }
 
@@ -6222,7 +6269,9 @@
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
-    document.getElementById('apm-position').value = '';
+    document.getElementById('apm-pos-off').value = '';
+    document.getElementById('apm-pos-def').value = '';
+    document.getElementById('apm-pos-st').value = '';
     document.getElementById('apm-year').value = '';
     setTimeout(() => document.getElementById('apm-name')?.focus(), 100);
   }
@@ -6235,13 +6284,15 @@
   async function saveAddPlayerManual() {
     const name = document.getElementById('apm-name')?.value.trim();
     const num = document.getElementById('apm-number')?.value.trim();
-    const pos = document.getElementById('apm-position')?.value;
+    const posOff = document.getElementById('apm-pos-off')?.value;
+    const posDef = document.getElementById('apm-pos-def')?.value;
+    const posST = document.getElementById('apm-pos-st')?.value;
     const year = document.getElementById('apm-year')?.value;
 
     const errors = [];
     if (!name) errors.push('Full name');
     if (!num) errors.push('Jersey number');
-    if (!pos) errors.push('Position');
+    if (!posOff && !posDef && !posST) errors.push('At least one position');
     if (!year) errors.push('Year/Grade');
 
     if (errors.length) {
@@ -6249,16 +6300,21 @@
       return;
     }
 
+    // Primary pos for display = off pos, or def, or st
+    const pos = posOff || posDef || posST;
+    const unit = posOff ? 'Offense' : posDef ? 'Defense' : 'Special Teams';
+
     const row = {
-      name, num: '#' + num.replace('#',''), pos, year,
+      name, num: '#' + num.replace('#',''), pos, posOff: posOff || '', posDef: posDef || '', posST: posST || '', year,
       height: document.getElementById('apm-height')?.value.trim() || '',
       weight: document.getElementById('apm-weight')?.value.trim() || '',
       parent: document.getElementById('apm-parent-name')?.value.trim() || '',
       parentPhone: document.getElementById('apm-parent-phone')?.value.trim() || '',
       parentEmail: document.getElementById('apm-parent-email')?.value.trim() || '',
-      unit: ['QB','RB','WR','TE','OL','LT','LG','C','RG','RT'].includes(pos) ? 'Offense' : ['DE','DT','OLB','ILB','LB','CB','S','FS','SS'].includes(pos) ? 'Defense' : 'Special Teams',
+      unit,
       status: 'Active',
       disciplinaryStatus: 'green',
+      teams: defaultTeamsForYear(year),
       group: '', notes: [], discipline: [], academic: [],
     };
 
@@ -6267,6 +6323,7 @@
     PLAYERS.push({ id: localId, ...row });
     if (window.ROSTER_DATA) window.ROSTER_DATA.push({ id: localId, ...row });
     syncRosterData?.();
+    buildDCFromPlayers();
     renderCoachRoster();
     closeAddPlayerManual();
     showToast(`${name} added to roster ✓`);
@@ -9373,6 +9430,55 @@
     special: []
   };
 
+  // Position order for display
+  const DC_POS_ORDER = {
+    offense: ['QB','RB','FB','WR','TE','OL','LT','LG','C','RG','RT','ATH'],
+    defense: ['DL','DE','DT','NT','LB','OLB','ILB','MLB','DB','CB','S','FS','SS','ATH'],
+    special: ['K','P','LS','KR','PR','ATH']
+  };
+
+  function buildDCFromPlayers() {
+    // Helper: add a player to a unit's position group, splitting on slashes
+    function addToUnit(unit, posStr, player) {
+      if (!posStr) return;
+      // Split on slash — "RB/Z" → ['RB', 'Z'], add to both
+      posStr.split('/').map(s => s.trim().toUpperCase()).filter(Boolean).forEach(pos => {
+        let grp = DC_DATA[unit].find(g => g.pos === pos);
+        if (!grp) {
+          grp = { pos, players: [] };
+          DC_DATA[unit].push(grp);
+        }
+        if (!grp.players.find(pl => pl.name === player.name)) {
+          grp.players.push({ name: player.name, num: player.num });
+        }
+      });
+    }
+
+    PLAYERS.forEach(p => {
+      addToUnit('offense', p.posOff, p);
+      addToUnit('defense', p.posDef, p);
+      addToUnit('special', p.posST, p);
+
+      // Fallback: if only pos is set (old format or CSV with single position col)
+      if (!p.posOff && !p.posDef && !p.posST && p.pos) {
+        const unit = p.unit === 'Offense' ? 'offense' : p.unit === 'Defense' ? 'defense' : 'special';
+        addToUnit(unit, p.pos, p);
+      }
+    });
+
+    // Sort positions within each unit by standard order
+    ['offense','defense','special'].forEach(unit => {
+      const order = DC_POS_ORDER[unit];
+      DC_DATA[unit].sort((a, b) => {
+        const ai = order.indexOf(a.pos);
+        const bi = order.indexOf(b.pos);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+    });
+
+    renderDepthChart();
+  }
+
   let dcEditMode = false;
   let dcSwapPos = null;
   let dcSwapIdx = null;
@@ -9463,6 +9569,11 @@
         playersList.id = 'dc-' + posGroup.pos;
 
         posGroup.players.forEach((p, idx) => {
+          // Filter by current level — find player in PLAYERS array and check their teams
+          const playerData = PLAYERS.find(pl => pl.name === p.name);
+          if (playerData && playerData.teams && playerData.teams.length > 0) {
+            if (!playerData.teams.includes(currentDCLevel)) return; // skip if not on this level
+          }
           playersList.appendChild(buildDCPlayerRow(p, idx, posGroup.pos, unit.key, posGroup.players.length));
         });
 
@@ -11103,10 +11214,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     // Header
     document.getElementById('pp-header-name').textContent = player.name;
-    document.getElementById('pp-header-sub').textContent = `${player.pos} · ${player.num}`;
+    const posDisplay = [player.posOff, player.posDef].filter(Boolean).join('/') || player.pos || '—';
+    document.getElementById('pp-header-sub').textContent = `${posDisplay} · ${player.num}`;
     document.getElementById('pp-jersey').textContent = player.num;
     document.getElementById('pp-hero-name').textContent = player.name;
-    document.getElementById('pp-hero-pos').textContent = `${player.pos} · ${player.unit} · ${player.year}`;
+    document.getElementById('pp-hero-pos').textContent = `${posDisplay} · ${player.unit || '—'} · ${player.year}`;
 
     // Group badges
     const badgeContainer = document.getElementById('pp-hero-badges');
@@ -11133,17 +11245,23 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Disciplinary status
     renderDiscStatusRow(player);
 
+    // Level assignment
+    renderLevelRow(player);
+
     // Info rows
     document.getElementById('pp-info-rows').innerHTML = `
       <div class="pp-info-row"><span class="pp-info-label">Jersey</span><span class="pp-info-value">${player.num}</span></div>
-      <div class="pp-info-row"><span class="pp-info-label">Position</span><span class="pp-info-value">${player.pos}</span></div>
+      ${player.posOff ? `<div class="pp-info-row"><span class="pp-info-label">Off. Position</span><span class="pp-info-value">${player.posOff}</span></div>` : ''}
+      ${player.posDef ? `<div class="pp-info-row"><span class="pp-info-label">Def. Position</span><span class="pp-info-value">${player.posDef}</span></div>` : ''}
+      ${player.posST ? `<div class="pp-info-row"><span class="pp-info-label">Special Teams</span><span class="pp-info-value">${player.posST}</span></div>` : ''}
+      ${!player.posOff && !player.posDef && !player.posST ? `<div class="pp-info-row"><span class="pp-info-label">Position</span><span class="pp-info-value">${player.pos || '—'}</span></div>` : ''}
       <div class="pp-info-row"><span class="pp-info-label">Year</span><span class="pp-info-value">${player.year}</span></div>
-      <div class="pp-info-row"><span class="pp-info-label">Height</span><span class="pp-info-value">${player.height}</span></div>
-      <div class="pp-info-row"><span class="pp-info-label">Weight</span><span class="pp-info-value">${player.weight}</span></div>
-      <div class="pp-info-row"><span class="pp-info-label">GPA</span><span class="pp-info-value" style="color:${parseFloat(player.gpa) < 2.7 ? 'var(--red)' : 'var(--white)'}">${player.gpa}</span></div>`;
+      <div class="pp-info-row"><span class="pp-info-label">Height</span><span class="pp-info-value">${player.height || '—'}</span></div>
+      <div class="pp-info-row"><span class="pp-info-label">Weight</span><span class="pp-info-value">${player.weight || '—'}</span></div>
+      <div class="pp-info-row"><span class="pp-info-label">GPA</span><span class="pp-info-value" style="color:${player.gpa && parseFloat(player.gpa) < 2.7 ? 'var(--red)' : 'var(--fg)'}">${player.gpa || '—'}</span></div>`;
 
     document.getElementById('pp-status-rows').innerHTML = `
-      <div class="pp-info-row"><span class="pp-info-label">Eligibility status</span><span class="pp-info-value">${parseFloat(player.gpa) >= 2.0 ? '✅ Eligible' : '❌ Ineligible'}</span></div>
+      <div class="pp-info-row"><span class="pp-info-label">Eligibility status</span><span class="pp-info-value">${(!player.gpa || parseFloat(player.gpa) >= 2.0) ? '✅ Eligible' : '❌ Ineligible'}</span></div>
       <div class="pp-info-row"><span class="pp-info-label">Practice status</span><span class="pp-info-value">${player.status}</span></div>
       <div class="pp-info-row"><span class="pp-info-label">Disciplinary status</span><span class="disc-status-badge ${player.disciplinaryStatus || 'green'}">${discStatusLabel(player.disciplinaryStatus || 'green')}</span></div>
       <div class="pp-info-row"><span class="pp-info-label">Discipline incidents</span><span class="pp-info-value" style="color:${player.discipline.length > 0 ? 'var(--amber)' : 'var(--gray-2)'}">${player.discipline.length > 0 ? player.discipline.length + ' on record' : 'None'}</span></div>`;
@@ -11250,6 +11368,49 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   // ===== GROUP ASSIGNMENT =====
+  const TEAM_LEVELS = ['Varsity', 'JV', 'Freshman'];
+
+  function defaultTeamsForYear(year) {
+    switch ((year || '').toLowerCase()) {
+      case 'freshman':  case '9':  return ['Freshman'];
+      case 'sophomore': case '10': return ['JV'];
+      case 'junior':    case '11': return ['JV', 'Varsity'];
+      case 'senior':    case '12': return ['Varsity'];
+      default: return ['Varsity'];
+    }
+  }
+
+  function renderLevelRow(player) {
+    const row = document.getElementById('pp-level-row');
+    if (!row) return;
+    if (!player.teams || player.teams.length === 0) {
+      player.teams = defaultTeamsForYear(player.year);
+    }
+    row.innerHTML = '';
+    TEAM_LEVELS.forEach(level => {
+      const selected = player.teams.includes(level);
+      const pill = document.createElement('div');
+      pill.className = 'pp-group-pill' + (selected ? ' selected' : '');
+      pill.textContent = level;
+      pill.style.cssText = `background:${selected ? 'var(--team-primary-glow)' : 'var(--bg-3)'};color:${selected ? 'var(--team-primary)' : 'var(--fg-2)'};border-color:${selected ? 'var(--team-primary)' : 'transparent'}`;
+      pill.onclick = () => togglePlayerLevel(player, level);
+      row.appendChild(pill);
+    });
+  }
+
+  function togglePlayerLevel(player, level) {
+    if (!player.teams) player.teams = ['Varsity'];
+    if (player.teams.includes(level)) {
+      // Don't allow removing last level
+      if (player.teams.length === 1) { showToast('Player must be on at least one level'); return; }
+      player.teams = player.teams.filter(l => l !== level);
+    } else {
+      player.teams.push(level);
+    }
+    renderLevelRow(player);
+    showToast(`${player.name} — levels updated`);
+  }
+
   function assignGroup(player, groupName) {
     player.group = groupName;
     // Re-render group pills
