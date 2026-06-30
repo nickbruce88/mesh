@@ -1737,14 +1737,156 @@
     <div style="font-size:15px;font-weight:700;color:white;letter-spacing:0.01em;text-align:center;margin-bottom:4px;text-shadow:0 1px 4px rgba(0,0,0,0.5)">Stop juggling. Start coaching.</div>
     <div style="font-size:12px;color:rgba(255,255,255,0.7);text-align:center;margin-bottom:40px">One platform. Every moving part.</div>
 
-    <!-- Feature pills -->
-    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:36px;padding:0 8px">
-      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">📋 Practice Plans</span>
-      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">📊 Depth Charts</span>
-      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">✅ Attendance</span>
-      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">📅 Calendar</span>
-      <span style="font-size:11px;font-weight:600;color:white;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;backdrop-filter:blur(4px)">💬 Messaging</span>
+    <!-- Animated features -->
+    <div id="mesh-feature-anim" style="position:relative;width:260px;height:260px;margin:0 auto 36px;flex-shrink:0">
+      <!-- Center Mesh logo — always visible -->
+      <div id="mesh-target" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;background:var(--team-primary);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;box-shadow:0 4px 24px rgba(0,0,0,0.5)">
+        <img id="anim-mesh-logo" src="" style="height:36px;display:block">
+      </div>
+      <!-- Feature chips — positioned by JS -->
+      <div class="mesh-chip" data-label="📋 Practice Plans"  style="position:absolute;opacity:0"></div>
+      <div class="mesh-chip" data-label="📊 Depth Charts"   style="position:absolute;opacity:0"></div>
+      <div class="mesh-chip" data-label="✅ Attendance"     style="position:absolute;opacity:0"></div>
+      <div class="mesh-chip" data-label="📅 Calendar"       style="position:absolute;opacity:0"></div>
+      <div class="mesh-chip" data-label="💬 Messaging"      style="position:absolute;opacity:0"></div>
+      <div class="mesh-chip" data-label="📦 Inventory"      style="position:absolute;opacity:0"></div>
+      <div class="mesh-chip" data-label="⚡ Performance"    style="position:absolute;opacity:0"></div>
     </div>
+
+    <style>
+      .mesh-chip {
+        font-size:11px;font-weight:700;color:white;
+        background:rgba(255,255,255,0.18);
+        border:1px solid rgba(255,255,255,0.35);
+        border-radius:20px;padding:5px 12px;
+        white-space:nowrap;
+        backdrop-filter:blur(6px);
+        pointer-events:none;
+        position:absolute;
+      }
+    </style>
+
+    <script>
+    (function() {
+      const chips = Array.from(document.querySelectorAll('.mesh-chip'));
+      const logoEl = document.getElementById('anim-mesh-logo');
+      const cx = 130, cy = 130;
+      const orbitR = 108;
+      const N = chips.length;
+      const ORBIT_SPEED = 0.007;
+
+      chips.forEach(c => { c.textContent = c.dataset.label; });
+
+      function setLogo() {
+        const meshLogo = document.getElementById('login-mesh-logo');
+        if (meshLogo && meshLogo.complete && meshLogo.src) {
+          logoEl.src = meshLogo.src;
+        } else if (meshLogo) {
+          meshLogo.addEventListener('load', () => { logoEl.src = meshLogo.src; }, { once: true });
+        }
+      }
+
+      setTimeout(() => { setLogo(); init(); }, 400);
+
+      function init() {
+        // Fix chips at center, move only via transform
+        chips.forEach(c => {
+          const w = c.offsetWidth || 100;
+          const h = c.offsetHeight || 28;
+          c._w = w; c._h = h;
+          c.style.left = (cx - w / 2) + 'px';
+          c.style.top  = (cy - h / 2) + 'px';
+          c.style.opacity = '0';
+          c.style.transform = 'translate(0,0)';
+          c.style.willChange = 'transform, opacity';
+        });
+
+        let orbitAngle = 0;
+        let rafId = null;
+        let phase = 'idle'; // idle | orbit | collapse
+
+        function orbitFrame() {
+          orbitAngle += ORBIT_SPEED;
+          chips.forEach((c, i) => {
+            const angle = orbitAngle + (2 * Math.PI * i / N) - Math.PI / 2;
+            c.style.transform = `translate(${orbitR * Math.cos(angle)}px, ${orbitR * Math.sin(angle)}px)`;
+          });
+          rafId = requestAnimationFrame(orbitFrame);
+        }
+
+        function runLoop() {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+          phase = 'idle';
+
+          // Reset chips
+          chips.forEach(c => {
+            c.getAnimations().forEach(a => a.cancel());
+            c.style.transition = 'none';
+            c.style.transform = 'translate(0,0)';
+            c.style.opacity = '0';
+          });
+
+          // Phase 1: fade all chips in at orbit positions simultaneously
+          // Set their transform to orbit positions first, then fade in
+          chips.forEach((c, i) => {
+            const angle = (2 * Math.PI * i / N) - Math.PI / 2;
+            c.style.transform = `translate(${orbitR * Math.cos(angle)}px, ${orbitR * Math.sin(angle)}px)`;
+          });
+
+          // Stagger fade in
+          chips.forEach((c, i) => {
+            setTimeout(() => {
+              c.style.transition = 'opacity 0.5s ease';
+              c.style.opacity = '1';
+            }, 200 + i * 150);
+          });
+
+          // Phase 2: start orbiting after all faded in
+          const orbitStart = 200 + N * 150 + 300;
+          setTimeout(() => {
+            chips.forEach(c => { c.style.transition = 'none'; });
+            phase = 'orbit';
+            rafId = requestAnimationFrame(orbitFrame);
+          }, orbitStart);
+
+          // Phase 3: collapse into logo after orbiting for 3s
+          const collapseStart = orbitStart + 3000;
+          setTimeout(() => {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+            phase = 'collapse';
+
+            chips.forEach((c, i) => {
+              const style = window.getComputedStyle(c);
+              const mat = new DOMMatrix(style.transform);
+              const fromTx = mat.m41;
+              const fromTy = mat.m42;
+
+              setTimeout(() => {
+                c.animate([
+                  { transform: `translate(${fromTx}px,${fromTy}px)`, opacity: 1 },
+                  { transform: 'translate(0px,0px)',                  opacity: 0 }
+                ], {
+                  duration: 600,
+                  easing: 'cubic-bezier(0.4,0,0.2,1)',
+                  fill: 'forwards'
+                }).onfinish = () => {
+                  c.style.opacity = '0';
+                  c.style.transform = 'translate(0,0)';
+                };
+              }, i * 80);
+            });
+
+            // Restart after collapse completes
+            setTimeout(runLoop, N * 80 + 700);
+          }, collapseStart);
+        }
+
+        runLoop();
+      }
+    })();
+    </script>
 
     <!-- CTAs -->
     <div style="width:100%;display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
