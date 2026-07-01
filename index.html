@@ -7386,6 +7386,18 @@
     const uid = localStorage.getItem('mesh_auth_uid') || '';
     const betaCode = localStorage.getItem('mesh_beta_code') || '';
 
+    console.log('saveProgram — uid:', uid, 'betaCode:', betaCode);
+
+    // Check live session in case uid wasn't stored
+    let activeUid = uid;
+    try {
+      const { data: sess } = await db.auth.getSession();
+      if (sess?.session?.user?.id) {
+        activeUid = sess.session.user.id;
+        console.log('Live session uid:', activeUid);
+      }
+    } catch(e) {}
+
     // Ensure we have three codes
     if (!obProgram.coachCode) {
       const codes = generateThreeJoinCodes();
@@ -7405,8 +7417,8 @@
     try {
       const { data, error } = await db.from('programs')
         .insert({
-          owner_id:        uid || null,
-          join_code:       obProgram.coachCode, // backwards compat
+          owner_id:        activeUid || null,
+          join_code:       obProgram.coachCode,
           coach_code:      obProgram.coachCode,
           player_code:     obProgram.playerCode,
           parent_code:     obProgram.parentCode,
@@ -7421,16 +7433,18 @@
         .select()
         .single();
 
+      console.log('Program insert:', { data, error });
       if (error) throw error;
 
       // Create profile row using security definer function (bypasses RLS chicken-and-egg)
-      if (uid) {
-        await db.rpc('create_profile', {
-          user_id: uid,
+      if (activeUid) {
+        const { error: profileErr } = await db.rpc('create_profile', {
+          user_id: activeUid,
           user_program_id: data.id,
           user_role: 'head_coach',
           user_name: obProgram.coachName || 'Head Coach',
         });
+        console.log('Profile create:', profileErr || 'success');
       }
 
       // Mark beta code as used (skip for dev bypass)
