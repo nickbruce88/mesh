@@ -2943,10 +2943,14 @@
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
           <select id="hist-filter-type" onchange="renderAttHistory()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;font-family:var(--font);flex:1">
             <option value="">All session types</option>
-            <option value="Practice">Practice</option>
-            <option value="Game">Game</option>
-            <option value="Film">Film</option>
-            <option value="Lifting">Lifting</option>
+            <option value="practice">Practice</option>
+            <option value="game">Game</option>
+            <option value="lift">Lift / S&C</option>
+            <option value="film">Film</option>
+            <option value="scrimmage">Scrimmage</option>
+            <option value="7on7">7 on 7</option>
+            <option value="camp">Camp</option>
+            <option value="other">Other</option>
           </select>
           <input type="date" id="hist-filter-date" onchange="renderAttHistory()" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--fg);font-size:12px;flex:1" placeholder="Filter by date">
           <button onclick="document.getElementById('hist-filter-date').value='';document.getElementById('hist-filter-type').value='';renderAttHistory()" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--fg-3);cursor:pointer;font-family:var(--font);flex-shrink:0">Clear</button>
@@ -5233,11 +5237,10 @@
 
     let filtered = records;
     if (typeFilter) filtered = filtered.filter(r => {
-      // Match against eventType (practice, game, film) or sessionType label
       const evType = (r.eventType || '').toLowerCase();
-      const label = (r.sessionType || '').toLowerCase();
+      const evLabel = (EVENT_TAGS[r.eventType]?.label || '').toLowerCase();
       const filter = typeFilter.toLowerCase();
-      return evType === filter || evType.includes(filter) || label.includes(filter);
+      return evType === filter || evLabel === filter || evType.includes(filter) || evLabel.includes(filter);
     });
     if (dateFilter) filtered = filtered.filter(r => r.date === dateFilter);
 
@@ -5562,10 +5565,16 @@
     if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
 
     // Build record
+    // Look up event type from SCHEDULE at save time
+    const matchedEvent = (SCHEDULE || []).find(e =>
+      e.date === attDate && (e.title || e.name || e.opponent) === attSessionType
+    );
+    const eventType = matchedEvent?.tag || window.attEventType || '';
+
     const record = {
       date: attDate,
       sessionType: attSessionType,
-      eventType: window.attEventType || '',  // e.g. 'practice', 'game', 'film'
+      eventType,
       state: { ...attState },
       savedAt: new Date().toISOString(),
     };
