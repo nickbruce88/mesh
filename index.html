@@ -5030,12 +5030,15 @@
     const val = el.value;
     const labelInput = document.getElementById('att-session-label');
     if (val === '__custom__') {
-      // Switch to custom label input
       el.style.display = 'none';
       if (labelInput) { labelInput.style.display = 'block'; labelInput.value = ''; labelInput.focus(); }
       attSessionType = '';
+      window.attEventType = '';
     } else {
       attSessionType = val;
+      // Find the event type from SCHEDULE
+      const event = (SCHEDULE || []).find(e => (e.title || e.name || e.opponent) === val && e.date === attDate);
+      window.attEventType = event?.tag || '';
       if (labelInput) labelInput.style.display = 'none';
       loadAttendanceForSession();
     }
@@ -5229,7 +5232,13 @@
     }
 
     let filtered = records;
-    if (typeFilter) filtered = filtered.filter(r => (r.sessionType||'').toLowerCase().includes(typeFilter.toLowerCase()));
+    if (typeFilter) filtered = filtered.filter(r => {
+      // Match against eventType (practice, game, film) or sessionType label
+      const evType = (r.eventType || '').toLowerCase();
+      const label = (r.sessionType || '').toLowerCase();
+      const filter = typeFilter.toLowerCase();
+      return evType === filter || evType.includes(filter) || label.includes(filter);
+    });
     if (dateFilter) filtered = filtered.filter(r => r.date === dateFilter);
 
     if (!filtered.length) {
@@ -5251,6 +5260,7 @@
       const d = new Date(rec.date + 'T12:00:00');
       const dateStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
       const label = rec.sessionType || 'Session';
+      const eventTypeLabel = rec.eventType ? (EVENT_TAGS[rec.eventType]?.label || rec.eventType) : '';
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px';
       const cardKey = rec._key;
@@ -5258,7 +5268,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div>
             <div style="font-size:14px;font-weight:700;color:var(--fg)">${dateStr}</div>
-            <div style="font-size:12px;color:var(--fg-3)">${label} · ${total} players</div>
+            <div style="font-size:12px;color:var(--fg-3)">${label}${eventTypeLabel ? ' · ' + eventTypeLabel : ''} · ${total} players</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px">
             <div style="font-size:13px;font-weight:700;color:${total > 0 && present/total >= 0.9 ? 'var(--green)' : 'var(--amber)'}">
@@ -5555,6 +5565,7 @@
     const record = {
       date: attDate,
       sessionType: attSessionType,
+      eventType: window.attEventType || '',  // e.g. 'practice', 'game', 'film'
       state: { ...attState },
       savedAt: new Date().toISOString(),
     };
