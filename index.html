@@ -657,7 +657,7 @@
     #user-avatar { display: none !important; }
 
     /* Full screen app */
-    /* App background — sport photo + team color gradient */
+    /* App background — sport photo with dark overlay */
     body:has(#screen-app.active) {
       background-image: url('https://pub-685520408d3f4bfe95c1b799f43f5106.r2.dev/pexels-kelly-28239821.jpg') !important;
       background-size: cover !important;
@@ -669,10 +669,7 @@
       content: '';
       position: fixed;
       inset: 0;
-      background:
-        radial-gradient(ellipse at top left, rgba(var(--team-primary-rgb, 127,29,29), 0.55) 0%, transparent 55%),
-        radial-gradient(ellipse at bottom right, rgba(var(--team-primary-rgb, 127,29,29), 0.25) 0%, transparent 55%),
-        rgba(0,0,0,0.68);
+      background: rgba(0,0,0,0.65);
       z-index: 0;
       pointer-events: none;
     }
@@ -694,7 +691,7 @@
       width: 240px;
       min-width: 240px;
       height: 100vh;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.5);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-right: 1px solid rgba(255,255,255,0.07);
@@ -4642,29 +4639,6 @@
   </div>
 
   <!-- ===== PROFILE MODAL ===== -->
-  <div id="profile-modal-overlay" onclick="closeProfileModal()">
-    <div class="profile-modal" onclick="event.stopPropagation()">
-      <div class="action-sheet-handle"></div>
-      <div class="profile-header">
-        <div class="profile-avatar-lg">CW</div>
-        <div>
-          <div class="profile-name">Coach Waite</div>
-          <div class="profile-role">Head Coach · Nampa Bulldogs</div>
-        </div>
-      </div>
-      <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">✏️</span> Edit profile</div>
-      <div class="profile-menu-item" onclick="closeProfileModal();openThemeColors()"><span class="pmi">🎨</span> Theme & colors</div>
-      <div class="profile-menu-item theme-toggle-btn" onclick="toggleTheme()"><span class="pmi">🌙</span> Dark mode</div>
-      <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">🔔</span> Notification settings</div>
-      <div class="profile-menu-item" onclick="closeProfileModal();openShareInvite()"><span class="pmi">🔗</span> Share invite link</div>
-      <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
-      <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
-      <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.1</div>
-    </div>
-  </div>
-
-
   <!-- ===== SCRIPT EDIT OVERLAY ===== -->
   <div id="script-edit-overlay">
     <div class="script-edit-sheet" onclick="event.stopPropagation()">
@@ -4705,6 +4679,29 @@
   </div><!-- end desktop-main -->
 </div><!-- end screen-app -->
 </div><!-- end phone -->
+
+<!-- Profile modal outside screen-app to avoid backdrop-filter stacking context -->
+<div id="profile-modal-overlay" onclick="closeProfileModal()">
+  <div class="profile-modal" onclick="event.stopPropagation()">
+    <div class="action-sheet-handle"></div>
+    <div class="profile-header">
+      <div class="profile-avatar-lg">CW</div>
+      <div>
+        <div class="profile-name">Coach Waite</div>
+        <div class="profile-role">Head Coach · Nampa Bulldogs</div>
+      </div>
+    </div>
+    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">✏️</span> Edit profile</div>
+    <div class="profile-menu-item" onclick="closeProfileModal();openThemeColors()"><span class="pmi">🎨</span> Theme & colors</div>
+    <div class="profile-menu-item theme-toggle-btn" onclick="toggleTheme()"><span class="pmi">🌙</span> Dark mode</div>
+    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">🔔</span> Notification settings</div>
+    <div class="profile-menu-item" onclick="closeProfileModal();openShareInvite()"><span class="pmi">🔗</span> Share invite link</div>
+    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
+    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
+    <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.1</div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
