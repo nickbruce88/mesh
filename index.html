@@ -4997,31 +4997,29 @@
   }
 
   function populateAttSessionPicker() {
-    // Find calendar events for the selected date
-    const events = SCHEDULE_EVENTS.filter(e => e.date === attDate);
+    // Find calendar events for the selected date from SCHEDULE array
+    const events = (SCHEDULE || []).filter(e => e.date === attDate);
     const dropdown = document.getElementById('att-event-select');
     const labelInput = document.getElementById('att-session-label');
     if (!dropdown || !labelInput) return;
 
     if (events.length > 0) {
-      // Show dropdown with events
       dropdown.style.display = 'block';
       labelInput.style.display = 'none';
       dropdown.innerHTML = '<option value="">Select event…</option>';
       events.forEach(e => {
         const opt = document.createElement('option');
-        const tag = EVENT_TAGS[e.tag]?.label || e.tag || 'Event';
-        opt.value = e.title || tag;
-        opt.textContent = `${e.title || tag}${e.time ? ' · ' + e.time : ''}`;
+        const label = e.title || e.name || e.opponent || 'Event';
+        const tag = EVENT_TAGS[e.tag]?.label || e.tag || '';
+        opt.value = label;
+        opt.textContent = `${label}${tag ? ' · ' + tag : ''}${e.time ? ' · ' + e.time : ''}`;
         dropdown.appendChild(opt);
       });
-      // Also add a "Custom label" option at the bottom
       const custom = document.createElement('option');
       custom.value = '__custom__';
       custom.textContent = '+ Custom label…';
       dropdown.appendChild(custom);
     } else {
-      // No events — show text input
       dropdown.style.display = 'none';
       labelInput.style.display = 'block';
       labelInput.value = attSessionType || '';
@@ -5213,42 +5211,36 @@
     const typeFilter = document.getElementById('hist-filter-type')?.value || '';
     const dateFilter = document.getElementById('hist-filter-date')?.value || '';
 
-    // Gather all locally saved records
+    // Gather all locally saved records by scanning localStorage
     const records = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && key.startsWith('att_')) {
         try {
           const rec = JSON.parse(localStorage.getItem(key));
-          if (rec && rec.date) records.push(rec);
+          if (rec && rec.date) { rec._key = key; records.push(rec); }
         } catch(e) {}
       }
     }
     if (window.ATT_LOCAL_HISTORY) {
-      Object.values(window.ATT_LOCAL_HISTORY).forEach(rec => {
-        if (!records.find(r => r.date === rec.date && r.sessionType === rec.sessionType)) {
-          records.push(rec);
-        }
+      Object.entries(window.ATT_LOCAL_HISTORY).forEach(([key, rec]) => {
+        if (!records.find(r => r._key === key)) { rec._key = key; records.push(rec); }
       });
     }
 
-    // Apply filters — strict matching, blank filter means no results if nothing matches
     let filtered = records;
-    if (typeFilter) filtered = filtered.filter(r => (r.sessionType || '').toLowerCase() === typeFilter.toLowerCase());
+    if (typeFilter) filtered = filtered.filter(r => (r.sessionType||'').toLowerCase().includes(typeFilter.toLowerCase()));
     if (dateFilter) filtered = filtered.filter(r => r.date === dateFilter);
 
     if (!filtered.length) {
-      const msg = (typeFilter || dateFilter)
-        ? 'No sessions found for the selected filter'
-        : 'No sessions recorded yet';
+      const msg = (typeFilter || dateFilter) ? 'No sessions found for the selected filter' : 'No sessions recorded yet';
       histEl.innerHTML = `<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:32px 0">${msg}</div>`;
       return;
     }
 
-    // Sort newest first
     filtered.sort((a, b) => b.date.localeCompare(a.date));
-
     histEl.innerHTML = '';
+
     filtered.forEach(rec => {
       const state = rec.state || {};
       const total   = Object.keys(state).length;
@@ -5256,20 +5248,23 @@
       const absent  = Object.values(state).filter(s => s === 'absent').length;
       const late    = Object.values(state).filter(s => s === 'late').length;
       const excused = Object.values(state).filter(s => s === 'excused').length;
-
       const d = new Date(rec.date + 'T12:00:00');
       const dateStr = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
-
+      const label = rec.sessionType || 'Session';
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px';
+      const cardKey = rec._key;
       card.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div>
             <div style="font-size:14px;font-weight:700;color:var(--fg)">${dateStr}</div>
-            <div style="font-size:12px;color:var(--fg-3)">${rec.sessionType || 'Practice'} · ${total} players</div>
+            <div style="font-size:12px;color:var(--fg-3)">${label} · ${total} players</div>
           </div>
-          <div style="font-size:13px;font-weight:700;color:${total > 0 && present/total >= 0.9 ? 'var(--green)' : 'var(--amber)'}">
-            ${present}/${total} present
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:13px;font-weight:700;color:${total > 0 && present/total >= 0.9 ? 'var(--green)' : 'var(--amber)'}">
+              ${present}/${total} present
+            </div>
+            <div style="font-size:16px;color:var(--fg-3);cursor:pointer;padding:4px" title="Delete" onclick="deleteAttRecord('${cardKey}')">🗑️</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;font-size:11px">
@@ -5282,7 +5277,16 @@
     });
   }
 
-  async function loadAttHistory() {
+  function deleteAttRecord(key) {
+    if (!confirm('Delete this attendance record? This cannot be undone.')) return;
+    try { localStorage.removeItem(key); } catch(e) {}
+    if (window.ATT_LOCAL_HISTORY?.[key]) delete window.ATT_LOCAL_HISTORY[key];
+    renderAttHistory();
+    renderSessionsIndicator();
+    showToast('Attendance record deleted');
+  }
+
+    async function loadAttHistory() {
     const programId = await getValidProgramId();
     if (!programId) return;
     const histEl = document.getElementById('att-history-list');
