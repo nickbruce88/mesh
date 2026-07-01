@@ -13510,9 +13510,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (!text) { showToast('Paste or upload a CSV first'); return; }
     const rows = invImportMode === 'checkout' ? parseGearCheckoutCSV(text) : parseInvListCSV(text);
     if (rows.length === 0) { showToast('No valid rows found — check your format'); return; }
+
+    const newItems = [];
     rows.forEach(r => {
       for (let i = 0; i < (r.qty || 1); i++) {
-        INVENTORY.push({
+        const item = {
           id: generateItemId(r.category),
           name: r.qty > 1 ? `${r.name} ${i+1}` : r.name,
           category: r.category,
@@ -13521,12 +13523,36 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           size: r.size || '',
           qty: 1,
           assignedTo: r.assignedTo || '',
-        });
+        };
+        INVENTORY.push(item);
+        newItems.push(item);
       }
     });
+
     closeCSVImport();
     renderInventory();
     showToast(`${rows.length} item${rows.length > 1 ? 's' : ''} imported ✓`);
+
+    // Sync to Supabase in background
+    getValidProgramId().then(programId => {
+      if (!programId) return;
+      const supabaseRows = newItems.map(item => ({
+        program_id: programId,
+        name: item.name,
+        category: item.category,
+        brand: item.brand,
+        condition: item.condition,
+        size: item.size,
+        qty: item.qty,
+        assigned_to: item.assignedTo || null,
+        item_id: item.id,
+      }));
+      db.from('inventory').insert(supabaseRows)
+        .then(({ error }) => {
+          if (error) console.error('Inventory import sync error:', error);
+          else console.log(`Inventory: ${supabaseRows.length} items saved to Supabase ✓`);
+        });
+    });
   }
 
   // ── Template Downloads ──
