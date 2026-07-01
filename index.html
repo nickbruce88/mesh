@@ -91,6 +91,10 @@
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { background: var(--bg); color: var(--fg); font-family: var(--font); min-height: 100vh; display: flex; justify-content: center; transition: background 0.2s, color 0.2s; }
   .phone { width: 100%; max-width: 420px; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; }
+  
+  #screen-app.active .phone {
+    background: transparent !important;
+  }
   .screen { display: none; flex-direction: column; flex: 1; min-height: 100vh; }
   .screen.active { display: flex; }
 
@@ -657,6 +661,22 @@
       width: 100vw;
       height: 100vh;
       overflow: hidden;
+      background-image: url('https://pub-685520408d3f4bfe95c1b799f43f5106.r2.dev/pexels-kelly-28239821.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    #screen-app::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at top left, rgba(var(--team-primary-rgb, 127,29,29), 0.55) 0%, transparent 55%),
+        radial-gradient(ellipse at bottom right, rgba(var(--team-primary-rgb, 127,29,29), 0.25) 0%, transparent 55%),
+        rgba(0,0,0,0.72);
+      z-index: 0;
+      pointer-events: none;
     }
 
     /* ===== DESKTOP SIDEBAR ===== */
@@ -666,11 +686,13 @@
       width: 240px;
       min-width: 240px;
       height: 100vh;
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--sidebar-border);
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(255,255,255,0.07);
       overflow: hidden;
       z-index: 10;
-      transition: background 0.2s;
+      position: relative;
     }
 
     .sidebar-header {
@@ -772,14 +794,18 @@
       flex: 1;
       height: 100vh;
       overflow: hidden;
-      background: var(--bg);
+      background: transparent;
+      position: relative;
+      z-index: 1;
     }
 
     /* Desktop top bar */
     .top-bar {
       padding: 14px 28px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
     /* All tab content fills remaining space */
@@ -790,6 +816,7 @@
       width: 100%;
       padding: 28px 32px 40px !important;
       margin: 0 auto;
+      background: transparent;
     }
 
     /* Hide mobile more-section navigation since sidebar handles it */
@@ -1099,7 +1126,25 @@
       justify-content: center !important;
     }
 
-    /* Login screen takes full viewport */
+    /* Glass card overrides for background mode */
+    #screen-app .card,
+    #screen-app .next-game,
+    #screen-app .action-btn,
+    #screen-app #today-schedule-card,
+    #screen-app #invite-banner,
+    #screen-app .quick-stats .stat-tile {
+      background: rgba(0,0,0,0.45) !important;
+      backdrop-filter: blur(14px) !important;
+      -webkit-backdrop-filter: blur(14px) !important;
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+
+    #screen-app .greeting { color: rgba(255,255,255,0.95); }
+    #screen-app .sub-greeting { color: rgba(255,255,255,0.5); }
+    #screen-app .section-label { color: rgba(255,255,255,0.4); }
+    #screen-app .stat-number { color: rgba(255,255,255,0.95) !important; }
+    #screen-app .stat-lbl { color: rgba(255,255,255,0.45) !important; }
+    #screen-app .stat-number.green { color: #4ade80 !important; }
     body:has(#screen-login.active) .phone {
       max-width: 100% !important;
       width: 100vw !important;
