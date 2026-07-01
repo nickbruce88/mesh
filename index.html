@@ -44,6 +44,7 @@
 
     /* Team theme — set by applyTheme() at runtime */
     --team-primary:        #7f1d1d;
+    --team-primary-rgb:    127,29,29;
     --team-primary-glow:   rgba(127,29,29,0.2);
     --team-primary-glow-sm: rgba(127,29,29,0.08);
     --team-primary-text:   #ffffff;
@@ -669,8 +670,8 @@
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(ellipse at top left, rgba(127,29,29,0.55) 0%, transparent 55%),
-        radial-gradient(ellipse at bottom right, rgba(127,29,29,0.25) 0%, transparent 55%),
+        radial-gradient(ellipse at top left, rgba(var(--team-primary-rgb, 127,29,29), 0.55) 0%, transparent 55%),
+        radial-gradient(ellipse at bottom right, rgba(var(--team-primary-rgb, 127,29,29), 0.25) 0%, transparent 55%),
         rgba(0,0,0,0.68);
       z-index: 0;
       pointer-events: none;
@@ -7889,6 +7890,7 @@
 
     // Team colors always apply regardless of mode
     rootStyle.setProperty('--team-primary', primary);
+    rootStyle.setProperty('--team-primary-rgb', rgbStr(primary));
     rootStyle.setProperty('--team-primary-glow', `rgba(${rgbStr(primary)},0.2)`);
     rootStyle.setProperty('--team-primary-glow-sm', `rgba(${rgbStr(primary)},0.08)`);
     rootStyle.setProperty('--team-primary-text', contrastText(primary));
