@@ -5298,11 +5298,11 @@
 
     try {
       let query = db.from('attendance')
-        .select('date, session_type, status, player_id')
+        .select('date, session_label, status, player_id')
         .eq('program_id', programId)
         .order('date', { ascending: false })
         .limit(200);
-      if (typeFilter) query = query.eq('session_type', typeFilter);
+      if (typeFilter) query = query.eq('session_label', typeFilter);
       if (monthFilter) {
         query = query.gte('date', monthFilter + '-01').lte('date', monthFilter + '-31');
       }
@@ -5316,8 +5316,8 @@
       // Group by date + session type
       const sessions = {};
       data.forEach(r => {
-        const key = r.date + '_' + r.session_type;
-        if (!sessions[key]) sessions[key] = { date: r.date, type: r.session_type, records: [], counts: {present:0,absent:0,late:0,excused:0} };
+        const key = r.date + '_' + r.session_label;
+        if (!sessions[key]) sessions[key] = { date: r.date, type: r.session_label, records: [], counts: {present:0,absent:0,late:0,excused:0} };
         sessions[key].records.push(r);
         if (sessions[key].counts[r.status] !== undefined) sessions[key].counts[r.status]++;
       });
@@ -5512,7 +5512,7 @@
         .select('*')
         .eq('program_id', programId)
         .eq('date', attDate)
-        .eq('session_type', attSessionType)
+        .eq('session_label', attSessionType)
         .then(({ data }) => {
           if (!data?.length) return;
           data.forEach(row => { attState[row.player_id] = row.status; });
