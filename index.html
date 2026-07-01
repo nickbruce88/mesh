@@ -4601,7 +4601,7 @@
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
       <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
       <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32</div>
+      <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.1</div>
     </div>
   </div>
 
@@ -4652,7 +4652,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v32';
+  const APP_VERSION = 'v32.1';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5514,8 +5514,13 @@
           session_type: attSessionType,
           status
         }));
-        if (rows.length) {
-          await db.from('attendance').upsert(rows, { onConflict: 'program_id,player_id,date,session_type' });
+        // Filter out local_ IDs — only sync players with real DB UUIDs
+        const syncRows = rows.filter(r => r.player_id && r.player_id.includes('-') && !r.player_id.startsWith('local_'));
+        console.log('Attendance sync — total:', rows.length, 'valid:', syncRows.length, 'sample:', syncRows[0]);
+        if (syncRows.length) {
+          const { error } = await db.from('attendance').upsert(syncRows, { onConflict: 'program_id,player_id,date,session_type' });
+          if (error) console.error('Attendance upsert error:', error);
+          else console.log('Attendance saved to Supabase ✓');
         }
       }
     } catch(e) {
@@ -12415,24 +12420,37 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   // ===== PROGRAM ID HELPER =====
   async function getValidProgramId() {
+    // First check localStorage for cached program ID
     const storedId = localStorage.getItem('mesh_program_id');
-    // Must contain a dash to be a valid UUID — reject numbers like "1" or "4"
     if (storedId && storedId.includes('-')) return storedId;
 
-    // Clear any invalid stored ID
-    if (storedId) {
-      console.log('Clearing invalid program_id from localStorage:', storedId);
-      localStorage.removeItem('mesh_program_id');
-    }
+    // Clear invalid stored ID
+    if (storedId) localStorage.removeItem('mesh_program_id');
 
+    // Try to get from live Supabase session
+    try {
+      const { data: sess } = await db.auth.getSession();
+      if (sess?.session?.user?.id) {
+        const uid = sess.session.user.id;
+        const { data } = await db.from('programs').select('id').eq('owner_id', uid).maybeSingle();
+        if (data?.id) {
+          localStorage.setItem('mesh_program_id', data.id);
+          return data.id;
+        }
+      }
+    } catch(e) {}
+
+    // Fallback: look up by coach_code or join_code
     const joinCode = localStorage.getItem('mesh_current_program');
     if (!joinCode) return null;
 
     try {
-      const { data } = await db.from('programs').select('id').eq('join_code', joinCode).maybeSingle();
+      const { data } = await db.from('programs')
+        .select('id')
+        .or(`coach_code.eq.${joinCode},join_code.eq.${joinCode}`)
+        .maybeSingle();
       if (data?.id) {
         localStorage.setItem('mesh_program_id', data.id);
-        console.log('Fetched real program_id from Supabase:', data.id);
         return data.id;
       }
     } catch(e) { console.error('getValidProgramId error:', e); }
