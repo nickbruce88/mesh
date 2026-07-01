@@ -656,27 +656,34 @@
     #user-avatar { display: none !important; }
 
     /* Full screen app */
+    /* App background — sport photo + team color gradient */
+    body:has(#screen-app.active) {
+      background-image: url('https://pub-685520408d3f4bfe95c1b799f43f5106.r2.dev/pexels-kelly-28239821.jpg') !important;
+      background-size: cover !important;
+      background-position: center !important;
+      background-attachment: fixed !important;
+    }
+
+    body:has(#screen-app.active)::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at top left, rgba(127,29,29,0.55) 0%, transparent 55%),
+        radial-gradient(ellipse at bottom right, rgba(127,29,29,0.25) 0%, transparent 55%),
+        rgba(0,0,0,0.68);
+      z-index: 0;
+      pointer-events: none;
+    }
+
     #screen-app {
       flex-direction: row;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      background-image: url('https://pub-685520408d3f4bfe95c1b799f43f5106.r2.dev/pexels-kelly-28239821.jpg');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-    }
-
-    #screen-app::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse at top left, rgba(var(--team-primary-rgb, 127,29,29), 0.55) 0%, transparent 55%),
-        radial-gradient(ellipse at bottom right, rgba(var(--team-primary-rgb, 127,29,29), 0.25) 0%, transparent 55%),
-        rgba(0,0,0,0.72);
-      z-index: 0;
-      pointer-events: none;
+      background: transparent !important;
+      position: relative;
+      z-index: 1;
     }
 
     /* ===== DESKTOP SIDEBAR ===== */
