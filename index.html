@@ -661,8 +661,9 @@
     body:has(#screen-app.active) {
       background-image: url('https://pub-685520408d3f4bfe95c1b799f43f5106.r2.dev/pexels-kelly-28239821.jpg') !important;
       background-size: cover !important;
-      background-position: center !important;
-      background-attachment: fixed !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+      background-attachment: scroll !important;
     }
 
     body:has(#screen-app.active)::before {
@@ -1916,6 +1917,9 @@
     <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="signin-error"></div>
     <button class="btn-primary" id="signin-btn" onclick="signIn()">Sign in →</button>
     <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--fg-3)">Forgot your password? <span onclick="sendPasswordReset()" style="color:var(--team-primary);font-weight:600;cursor:pointer">Reset it</span></div>
+    <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+      <div onclick="devBypass()" style="font-size:11px;color:var(--fg-3);cursor:pointer;opacity:0.5">⚡ Dev bypass</div>
+    </div>
   </div>
 </div>
 <div id="screen-setup" class="screen" style="justify-content:flex-start;padding:0;overflow-y:auto">
@@ -7435,8 +7439,17 @@
     joinSelectedRole = null;
   }
 
+  function devBypass() {
+    localStorage.setItem('mesh_role', 'coach');
+    localStorage.setItem('mesh_current_program', 'DEV-PROGRAM');
+    localStorage.setItem('mesh_team_name', 'Dev Team');
+    localStorage.setItem('mesh_user', JSON.stringify({ name: 'Dev Coach', role: 'Head Coach' }));
+    obProgram.teamName = 'Dev Team';
+    obProgram.coachName = 'Dev Coach';
+    restoreSession();
+  }
+
   function showCoachOnboarding() {
-    showScreen('screen-setup');
     obGoToStep(1);
   }
 
