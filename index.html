@@ -7423,14 +7423,14 @@
 
       if (error) throw error;
 
-      // Create profile row for this user
+      // Create profile row using security definer function (bypasses RLS chicken-and-egg)
       if (uid) {
-        await db.from('profiles').upsert({
-          id: uid,
-          program_id: data.id,
-          role: 'head_coach',
-          name: obProgram.coachName || 'Head Coach',
-        }, { onConflict: 'id' });
+        await db.rpc('create_profile', {
+          user_id: uid,
+          user_program_id: data.id,
+          user_role: 'head_coach',
+          user_name: obProgram.coachName || 'Head Coach',
+        });
       }
 
       // Mark beta code as used (skip for dev bypass)
