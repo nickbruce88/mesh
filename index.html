@@ -2878,15 +2878,17 @@
 
       <!-- TAKE ROLL VIEW -->
       <div id="att-roll-view">
-        <!-- Session picker -->
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <!-- Date + Session picker -->
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap">
           <input type="date" id="att-date" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--fg);font-size:13px;flex:1;min-width:140px">
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center" id="att-session-tabs">
-            <div class="att-session-tab" data-type="Practice" onclick="setAttSession('Practice',this)">Practice</div>
-            <div class="att-session-tab" data-type="Game" onclick="setAttSession('Game',this)">Game</div>
-            <div class="att-session-tab" data-type="Film" onclick="setAttSession('Film',this)">Film</div>
-            <div class="att-session-tab" data-type="Lifting" onclick="setAttSession('Lifting',this)">Lifting</div>
-            <span id="att-session-required" style="font-size:11px;color:var(--red);display:none">← Required</span>
+          <div style="flex:2;min-width:180px">
+            <!-- Event dropdown — shown when calendar events exist for date -->
+            <select id="att-event-select" style="display:none;width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--fg);font-size:13px;font-family:var(--font)" onchange="onAttEventSelect(this)">
+              <option value="">Select event…</option>
+            </select>
+            <!-- Custom label input — shown when no events exist -->
+            <input id="att-session-label" placeholder="Label this session (e.g. Morning Practice)" style="display:none;width:100%;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--fg);font-size:13px;font-family:var(--font);box-sizing:border-box" oninput="attSessionType=this.value;renderSessionsIndicator()">
+            <span id="att-session-required" style="font-size:11px;color:var(--red);display:none">← Session label required</span>
           </div>
         </div>
 
@@ -4980,11 +4982,75 @@
       dateEl.value = attDate;
       dateEl.onchange = (e) => {
         attDate = e.target.value;
+        attSessionType = '';
+        populateAttSessionPicker();
         loadAttendanceForSession();
       };
     }
 
-    // Build position filter — offense first, then defense, then ST
+    populateAttSessionPicker();
+    buildAttPositionFilter();
+    renderAttPlayerList();
+    loadAttendanceForSession();
+    renderAttHistory();
+    loadAttHistory();
+  }
+
+  function populateAttSessionPicker() {
+    // Find calendar events for the selected date
+    const events = SCHEDULE_EVENTS.filter(e => e.date === attDate);
+    const dropdown = document.getElementById('att-event-select');
+    const labelInput = document.getElementById('att-session-label');
+    if (!dropdown || !labelInput) return;
+
+    if (events.length > 0) {
+      // Show dropdown with events
+      dropdown.style.display = 'block';
+      labelInput.style.display = 'none';
+      dropdown.innerHTML = '<option value="">Select event…</option>';
+      events.forEach(e => {
+        const opt = document.createElement('option');
+        const tag = EVENT_TAGS[e.tag]?.label || e.tag || 'Event';
+        opt.value = e.title || tag;
+        opt.textContent = `${e.title || tag}${e.time ? ' · ' + e.time : ''}`;
+        dropdown.appendChild(opt);
+      });
+      // Also add a "Custom label" option at the bottom
+      const custom = document.createElement('option');
+      custom.value = '__custom__';
+      custom.textContent = '+ Custom label…';
+      dropdown.appendChild(custom);
+    } else {
+      // No events — show text input
+      dropdown.style.display = 'none';
+      labelInput.style.display = 'block';
+      labelInput.value = attSessionType || '';
+    }
+  }
+
+  function onAttEventSelect(el) {
+    const val = el.value;
+    const labelInput = document.getElementById('att-session-label');
+    if (val === '__custom__') {
+      // Switch to custom label input
+      el.style.display = 'none';
+      if (labelInput) { labelInput.style.display = 'block'; labelInput.value = ''; labelInput.focus(); }
+      attSessionType = '';
+    } else {
+      attSessionType = val;
+      if (labelInput) labelInput.style.display = 'none';
+      loadAttendanceForSession();
+    }
+    renderSessionsIndicator();
+  }
+
+  function setAttSession(type, el) {
+    attSessionType = type;
+    loadAttendanceForSession();
+    renderSessionsIndicator();
+  }
+
+  function buildAttPositionFilter() {
     const OFF_ORDER = ['QB','RB','FB','WR','TE','H','X','Y','Z','OL','LT','LG','C','RG','RT','ATH'];
     const DEF_ORDER = ['DE','DT','NT','DL','OLB','ILB','MLB','LB','CB','S','FS','SS'];
     const ST_ORDER  = ['K','P','LS','KR','PR'];
@@ -5040,18 +5106,12 @@
         posSelect.appendChild(sg);
       }
     }
-
-    renderAttPlayerList();
-    loadAttendanceForSession();
-    renderAttHistory();
-    loadAttHistory();
   }
 
   function setAttSession(type, el) {
     attSessionType = type;
-    document.querySelectorAll('.att-session-tab').forEach(t => t.classList.remove('active'));
-    if (el) el.classList.add('active');
     loadAttendanceForSession();
+    renderSessionsIndicator();
   }
 
   function switchAttTab(tab) {
@@ -5371,29 +5431,36 @@
     if (!el || !attDate) return;
     el.innerHTML = '';
 
-    // Check which session types have saved data — handle both old lowercase and new capitalized keys
-    const savedSessions = SESSION_TYPES.filter(type => {
-      const keyNew = `att_${attDate}_${type}`;
-      const keyOld = `att_${attDate}_${type.toLowerCase()}`;
-      try { return !!localStorage.getItem(keyNew) || !!localStorage.getItem(keyOld); } catch(e) { return false; }
-    });
+    // Find all saved sessions for this date by scanning localStorage keys
+    const savedSessions = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`att_${attDate}_`)) {
+        const label = key.replace(`att_${attDate}_`, '');
+        if (label) savedSessions.push(label);
+      }
+    }
 
     if (savedSessions.length === 0) {
       el.innerHTML = `<span style="font-size:11px;color:var(--fg-3)">No sessions saved for this date</span>`;
       return;
     }
 
-    savedSessions.forEach(type => {
-      const isActive = type === attSessionType;
+    savedSessions.forEach(label => {
+      const isActive = label === attSessionType;
       const badge = document.createElement('div');
       badge.style.cssText = `font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;cursor:pointer;border:1px solid var(--green);color:${isActive ? '#fff' : 'var(--green)'};background:${isActive ? 'var(--green)' : 'rgba(57,255,20,0.1)'}`;
-      badge.innerHTML = `✓ ${type}`;
-      badge.title = `Click to view ${type} roll`;
+      badge.innerHTML = `✓ ${label}`;
+      badge.title = `Click to view ${label} roll`;
       badge.onclick = () => {
-        document.querySelectorAll('.att-session-tab').forEach(t => {
-          t.classList.toggle('active', t.dataset.type === type);
-        });
-        attSessionType = type;
+        attSessionType = label;
+        const dropdown = document.getElementById('att-event-select');
+        const labelInput = document.getElementById('att-session-label');
+        if (dropdown && dropdown.style.display !== 'none') {
+          dropdown.value = label;
+        } else if (labelInput) {
+          labelInput.value = label;
+        }
         loadAttendanceForSession();
       };
       el.appendChild(badge);
@@ -5463,12 +5530,11 @@
       return;
     }
 
+    // Validate session label
     if (!attSessionType) {
       const reqEl = document.getElementById('att-session-required');
       if (reqEl) { reqEl.style.display = 'inline'; setTimeout(() => reqEl.style.display = 'none', 3000); }
-      const tabsEl = document.getElementById('att-session-tabs');
-      if (tabsEl) { tabsEl.style.outline = '2px solid var(--red)'; tabsEl.style.borderRadius = '20px'; setTimeout(() => { tabsEl.style.outline = ''; tabsEl.style.borderRadius = ''; }, 3000); }
-      showToast('Please select a session type');
+      showToast('Please select or enter a session label');
       return;
     }
 
@@ -5511,14 +5577,14 @@
           program_id: programId,
           player_id: playerId,
           date: attDate,
-          session_type: attSessionType,
+          session_label: attSessionType,
           status
         }));
         // Filter out local_ IDs — only sync players with real DB UUIDs
         const syncRows = rows.filter(r => r.player_id && r.player_id.includes('-') && !r.player_id.startsWith('local_'));
         console.log('Attendance sync — total:', rows.length, 'valid:', syncRows.length, 'sample:', syncRows[0]);
         if (syncRows.length) {
-          const { error } = await db.from('attendance').upsert(syncRows, { onConflict: 'program_id,player_id,date,session_type' });
+          const { error } = await db.from('attendance').upsert(syncRows, { onConflict: 'program_id,player_id,date,session_label' });
           if (error) console.error('Attendance upsert error:', error);
           else console.log('Attendance saved to Supabase ✓');
         }
