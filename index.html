@@ -710,6 +710,18 @@
       position: relative;
     }
 
+    /* Light mode: sidebar becomes a light glass surface with dark text.
+       Variables are scoped here so only the desktop sidebar changes (mobile theme untouched). */
+    [data-theme="light"] .desktop-sidebar {
+      background: rgba(249,247,244,0.9);
+      border-right: 1px solid rgba(0,0,0,0.1);
+      --sidebar-fg: var(--fg);
+      --sidebar-fg-muted: var(--fg-3);
+      --sidebar-active-bg: var(--team-primary-glow-sm);
+      --sidebar-active-fg: var(--team-primary);
+      --sidebar-border: var(--border);
+    }
+
     .sidebar-header {
       padding: 20px 20px 16px;
       border-bottom: 1px solid var(--sidebar-border);
@@ -4712,7 +4724,7 @@
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.8</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.9</div>
   </div>
 </div>
 
@@ -4721,7 +4733,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v32.8';
+  const APP_VERSION = 'v32.9';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7930,7 +7942,7 @@
     const displayLogo = document.getElementById('login-mesh-logo-display');
     if (displayLogo) displayLogo.src = logoSrc;
     if (topbarLogo) topbarLogo.src = logoSrc;
-    if (sidebarLogo) sidebarLogo.src = MESH_LOGO_LIGHT;
+    if (sidebarLogo) sidebarLogo.src = logoSrc;
 
     // Set favicon to Mesh logo
     const favicon = document.getElementById('favicon');
