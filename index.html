@@ -1172,6 +1172,30 @@
     #screen-app .stat-number { color: rgba(255,255,255,0.95) !important; }
     #screen-app .stat-lbl { color: rgba(255,255,255,0.45) !important; }
     #screen-app .stat-number.green { color: #4ade80 !important; }
+
+    /* ===== LIGHT MODE — light glass over the photo so content is readable ===== */
+    [data-theme="light"] body:has(#screen-app.active)::before {
+      background: rgba(248,246,243,0.88);
+    }
+    [data-theme="light"] .top-bar {
+      background: rgba(255,255,255,0.62) !important;
+      border-bottom-color: rgba(0,0,0,0.08) !important;
+    }
+    [data-theme="light"] #screen-app .card,
+    [data-theme="light"] #screen-app .next-game,
+    [data-theme="light"] #screen-app .action-btn,
+    [data-theme="light"] #screen-app #today-schedule-card,
+    [data-theme="light"] #screen-app #invite-banner,
+    [data-theme="light"] #screen-app .quick-stats .stat-tile {
+      background: rgba(255,255,255,0.74) !important;
+      border-color: rgba(0,0,0,0.08) !important;
+    }
+    [data-theme="light"] #screen-app .greeting { color: var(--fg); }
+    [data-theme="light"] #screen-app .sub-greeting { color: var(--fg-2); }
+    [data-theme="light"] #screen-app .section-label { color: var(--fg-3); }
+    [data-theme="light"] #screen-app .stat-number { color: var(--fg) !important; }
+    [data-theme="light"] #screen-app .stat-lbl { color: var(--fg-2) !important; }
+    [data-theme="light"] #screen-app .stat-number.green { color: #16a34a !important; }
     body:has(#screen-login.active) .phone {
       max-width: 100% !important;
       width: 100vw !important;
@@ -4724,7 +4748,7 @@
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.9</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.10</div>
   </div>
 </div>
 
@@ -4733,7 +4757,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v32.9';
+  const APP_VERSION = 'v32.10';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
