@@ -3209,6 +3209,53 @@
       </div>
     </div>
 
+
+    <!-- PLAYBOOK SECTION -->
+    <div class="more-section" id="more-playbook">
+      <div class="more-section-header">
+        <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Playbook</div>
+        <button class="btn-sm" id="pb-select-toggle-inline" onclick="pbToggleSelectMode()" style="margin-left:auto;display:none">Select</button>
+      </div>
+
+      <div class="pb-unit-nav" style="margin:0 -20px 16px;padding:0 20px">
+        <button class="pb-unit-btn active" onclick="showPbUnit('offense',this)">Offense</button>
+        <button class="pb-unit-btn" onclick="showPbUnit('defense',this)">Defense</button>
+        <button class="pb-unit-btn" onclick="showPbUnit('special',this)">Special Teams</button>
+      </div>
+
+      <div id="pb-inline-body">
+        <div class="pb-unit-section active" id="pb-offense-inline">
+          <div class="pb-action-row" id="pb-offense-actions-inline">
+            <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'offense')"></div>
+            <button class="pb-folder-btn" onclick="openNewFolderModal('offense')">📁 New folder</button>
+          </div>
+          <div id="pb-offense-content"></div>
+        </div>
+        <div class="pb-unit-section" id="pb-defense-inline">
+          <div class="pb-action-row" id="pb-defense-actions-inline">
+            <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'defense')"></div>
+            <button class="pb-folder-btn" onclick="openNewFolderModal('defense')">📁 New folder</button>
+          </div>
+          <div id="pb-defense-content"></div>
+        </div>
+        <div class="pb-unit-section" id="pb-special-inline">
+          <div class="pb-action-row" id="pb-special-actions-inline">
+            <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'special')"></div>
+            <button class="pb-folder-btn" onclick="openNewFolderModal('special')">📁 New folder</button>
+          </div>
+          <div id="pb-special-content"></div>
+        </div>
+      </div>
+
+      <div class="pb-select-bar" id="pb-select-bar-inline">
+        <span class="pb-select-bar-label" id="pb-select-label">0 selected</span>
+        <button class="btn-sm" onclick="openMoveModal()">Move to folder</button>
+        <button class="btn-sm" style="background:var(--bg-3);color:var(--red)" onclick="pbDeleteSelected()">Delete</button>
+        <button class="btn-sm" style="background:var(--bg-3)" onclick="pbToggleSelectMode()">Cancel</button>
+      </div>
+    </div><!-- end more-playbook -->
+
   </div><!-- end tab-coach-more -->
 
   <!-- ROSTER IMPORT MODAL -->
@@ -10899,7 +10946,15 @@
       window.ROSTER_DATA = window.ROSTER_DATA || [];
       loadPerfData();
     }
-    if (section === 'playbook') { openPlaybook('coach'); return; }
+    if (section === 'playbook') {
+      pbMode = 'coach';
+      const isCoach = true;
+      document.querySelectorAll('.pb-action-row').forEach(el => el.style.display = 'flex');
+      const t = document.getElementById('pb-select-toggle-inline');
+      if (t) t.style.display = '';
+      pbLoadFromSupabase().then(() => showPbUnit(pbCurrentUnit));
+      showPbUnit('offense');
+    }
   }
 
   function backToMoreMenu() {
@@ -15648,9 +15703,18 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     pbMode = mode || 'coach';
     pbSelectMode = false;
     pbSelectedIds.clear();
+    const isCoach = pbMode === 'coach';
+    if (isDesktop()) {
+      // Desktop: navigate to more-playbook section like any other tab
+      hideAllTabs();
+      const moreTab = document.getElementById('tab-coach-more');
+      if (moreTab) moreTab.style.display = 'block';
+      setTimeout(() => showMoreSection('playbook'), 10);
+      return;
+    }
+    // Mobile: use overlay
     const teamName = localStorage.getItem('mesh_team_name') || (obProgram && obProgram.teamName) || 'Your Team';
     document.getElementById('pb-header-sub').textContent = teamName;
-    const isCoach = pbMode === 'coach';
     document.getElementById('playbook-overlay').querySelectorAll('.pb-action-row').forEach(el => el.style.display = isCoach ? 'flex' : 'none');
     const selToggle = document.getElementById('pb-select-toggle');
     if (selToggle) selToggle.style.display = isCoach ? '' : 'none';
@@ -15670,14 +15734,16 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     pbCurrentUnit = unit;
     document.querySelectorAll('.pb-unit-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.pb-unit-btn').forEach(b => b.classList.remove('active'));
+    // Activate the right section (overlay or inline)
     const sec = document.getElementById('pb-' + unit);
     if (sec) sec.classList.add('active');
+    const secInline = document.getElementById('pb-' + unit + '-inline');
+    if (secInline) secInline.classList.add('active');
     if (btnEl) btnEl.classList.add('active');
     else {
       const units = ['offense','defense','special'];
       const btns = document.querySelectorAll('.pb-unit-btn');
-      const idx = units.indexOf(unit);
-      if (btns[idx]) btns[idx].classList.add('active');
+      btns.forEach((b,i) => { if (units[i]===unit) b.classList.add('active'); });
     }
     renderPbUnit(unit);
   }
@@ -15736,12 +15802,18 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   function pbToggleSelectMode() {
     pbSelectMode = !pbSelectMode;
     pbSelectedIds.clear();
-    const t = document.getElementById('pb-select-toggle');
-    if (t) t.textContent = pbSelectMode ? 'Done' : 'Select';
-    const bar = document.getElementById('pb-select-bar');
-    if (bar) bar.classList.toggle('active', pbSelectMode);
-    const lbl = document.getElementById('pb-select-label');
-    if (lbl) lbl.textContent = '0 selected';
+    ['pb-select-toggle','pb-select-toggle-inline'].forEach(id => {
+      const t = document.getElementById(id);
+      if (t) t.textContent = pbSelectMode ? 'Done' : 'Select';
+    });
+    ['pb-select-bar','pb-select-bar-inline'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.classList.toggle('active', pbSelectMode);
+    });
+    ['pb-select-label'].forEach(id => {
+      const l = document.getElementById(id);
+      if (l) l.textContent = '0 selected';
+    });
     renderPbUnit(pbCurrentUnit);
   }
 
