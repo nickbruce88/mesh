@@ -4670,7 +4670,7 @@
   </div>
 
   <!-- ===== SHARE INVITE OVERLAY ===== -->
-  <div id="share-invite-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:92;display:none;align-items:flex-end">
+  <div id="share-invite-overlay" onclick="closeShareInvite()" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:92;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4)" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -4752,24 +4752,23 @@
 
 <!-- Profile modal outside screen-app to avoid backdrop-filter stacking context -->
 <div id="profile-modal-overlay" onclick="closeProfileModal()">
-  <div class="profile-modal" onclick="event.stopPropagation()">
+  <div class="profile-modal" id="profile-modal" onclick="event.stopPropagation()">
     <div class="action-sheet-handle"></div>
     <div class="profile-header">
-      <div class="profile-avatar-lg">CW</div>
+      <div class="profile-avatar-lg" id="profile-avatar-lg">CO</div>
       <div>
-        <div class="profile-name">Coach Waite</div>
-        <div class="profile-role">Head Coach · Nampa Bulldogs</div>
+        <div class="profile-name" id="profile-modal-name">Coach</div>
+        <div class="profile-role" id="profile-modal-role">Head Coach</div>
       </div>
     </div>
-    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">✏️</span> Edit profile</div>
-    <div class="profile-menu-item" onclick="closeProfileModal();openThemeColors()"><span class="pmi">🎨</span> Theme & colors</div>
-    <div class="profile-menu-item theme-toggle-btn" onclick="toggleTheme()"><span class="pmi">🌙</span> Dark mode</div>
-    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">🔔</span> Notification settings</div>
+    <div class="profile-menu-item" onclick="openEditProfile()"><span class="pmi">✏️</span> Edit profile</div>
+    <div class="profile-menu-item" onclick="closeProfileModal();openThemeColors()"><span class="pmi">🎨</span> Theme &amp; colors</div>
+    <div class="profile-menu-item" onclick="openNotifSettings()"><span class="pmi">🔔</span> Notification settings</div>
     <div class="profile-menu-item" onclick="closeProfileModal();openShareInvite()"><span class="pmi">🔗</span> Share invite link</div>
-    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
-    <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
+    <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
+    <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.4</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.5</div>
   </div>
 </div>
 
@@ -4778,7 +4777,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v33.4';
+  const APP_VERSION = 'v33.5';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -10039,6 +10038,7 @@
 
   // ===== PROFILE MODAL =====
   function openProfileModal() {
+    refreshProfileHeader();
     if (isDesktop()) {
       const footer = document.querySelector('.sidebar-footer');
       const modal = document.getElementById('profile-modal');
@@ -10064,6 +10064,201 @@
   }
   function closeProfileModal() {
     document.getElementById('profile-modal-overlay').classList.remove('open');
+  }
+
+  // ===== PROFILE HEADER =====
+  function refreshProfileHeader(){
+    let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
+    const name=user.name||'Coach';
+    const team=localStorage.getItem('mesh_team_name')||'Your team';
+    let roleLabel='Head Coach';
+    if(user.role){
+      if(/head/i.test(user.role)) roleLabel='Head Coach';
+      else if(user.role==='coach') roleLabel='Coach';
+      else if(user.role==='assistant') roleLabel='Assistant Coach';
+      else roleLabel=user.role.charAt(0).toUpperCase()+user.role.slice(1);
+    }
+    const initials=name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
+    const photo=localStorage.getItem('mesh_user_photo');
+    const nameEl=document.getElementById('profile-modal-name');
+    const roleEl=document.getElementById('profile-modal-role');
+    const avEl=document.getElementById('profile-avatar-lg');
+    if(nameEl) nameEl.textContent=name;
+    if(roleEl) roleEl.textContent=roleLabel+' · '+team;
+    if(avEl){ avEl.innerHTML = photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:initials; }
+  }
+
+  // ===== EDIT PROFILE =====
+  function openEditProfile(){
+    closeProfileModal();
+    let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
+    const photo=localStorage.getItem('mesh_user_photo');
+    const initials=(user.name||'Coach').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
+    let ov=document.getElementById('edit-profile-overlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='edit-profile-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    ov.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div style="font-size:18px;font-weight:700">Edit profile</div>
+          <div onclick="document.getElementById('edit-profile-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
+          <div id="edit-profile-avatar" style="width:84px;height:84px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;overflow:hidden">${photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover">`:initials}</div>
+          <label style="margin-top:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer">Change photo<input type="file" accept="image/*" style="display:none" onchange="handleProfilePhoto(event)"></label>
+          ${photo?`<div onclick="removeProfilePhoto()" style="font-size:12px;color:var(--fg-3);cursor:pointer;margin-top:2px">Remove photo</div>`:''}
+        </div>
+        <label style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:6px">Full name</label>
+        <input type="text" id="edit-profile-name" class="input-field" value="${(user.name||'').replace(/"/g,'&quot;')}" style="width:100%;margin-bottom:20px">
+        <button onclick="saveEditProfile()" class="btn-primary" style="width:100%;font-size:15px">Save changes</button>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function handleProfilePhoto(e){
+    const f=e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const size=256, s=Math.min(img.width,img.height);
+        const canvas=document.createElement('canvas'); canvas.width=size; canvas.height=size;
+        canvas.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);
+        const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+        try{ localStorage.setItem('mesh_user_photo',dataUrl); }catch(err){ showToast('Could not save photo'); return; }
+        const av=document.getElementById('edit-profile-avatar');
+        if(av) av.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+      };
+      img.src=ev.target.result;
+    };
+    rd.readAsDataURL(f);
+  }
+  function removeProfilePhoto(){
+    localStorage.removeItem('mesh_user_photo');
+    document.getElementById('edit-profile-overlay')?.remove();
+    openEditProfile();
+  }
+  async function saveEditProfile(){
+    const name=(document.getElementById('edit-profile-name')?.value||'').trim();
+    if(!name){ showToast('Please enter a name'); return; }
+    let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
+    user.name=name;
+    localStorage.setItem('mesh_user',JSON.stringify(user));
+    try{
+      const pid=localStorage.getItem('mesh_program_id');
+      if(pid && window.db){ await db.from('programs').update({coach_name:name}).eq('id',pid); }
+    }catch(e){ console.warn('coach name sync skipped',e); }
+    const initials=name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
+    const photo=localStorage.getItem('mesh_user_photo');
+    const sn=document.getElementById('sidebar-user-name'); if(sn) sn.textContent=name;
+    const sa=document.getElementById('sidebar-avatar'); if(sa){ sa.innerHTML = photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:initials; }
+    refreshProfileHeader();
+    document.getElementById('edit-profile-overlay')?.remove();
+    showToast('Profile updated ✓');
+  }
+
+  // ===== NOTIFICATION SETTINGS =====
+  const NOTIF_PREFS_KEY='mesh_notif_prefs';
+  const NOTIF_OPTIONS=[
+    {key:'practice',label:'Practice reminders',sub:'Schedule changes and upcoming practices'},
+    {key:'games',label:'Game reminders',sub:'Upcoming games and kickoff times'},
+    {key:'messages',label:'New messages',sub:'Staff, parent, and player messages'},
+    {key:'roster',label:'Roster & parent updates',sub:'New players and parent sign-ups'},
+  ];
+  function getNotifPrefs(){ try{ return JSON.parse(localStorage.getItem(NOTIF_PREFS_KEY)||'{}'); }catch(e){ return {}; } }
+  function openNotifSettings(){
+    closeProfileModal();
+    const prefs=getNotifPrefs();
+    let ov=document.getElementById('notif-settings-overlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='notif-settings-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    ov.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:18px;font-weight:700">Notification settings</div>
+          <div onclick="document.getElementById('notif-settings-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-3);margin-bottom:8px">Choose what you want to be notified about.</div>
+        ${NOTIF_OPTIONS.map(o=>{
+          const on = prefs[o.key]!==false;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+            <div style="flex:1;padding-right:12px">
+              <div style="font-size:14px;font-weight:600">${o.label}</div>
+              <div style="font-size:12px;color:var(--fg-3)">${o.sub}</div>
+            </div>
+            <div data-notif="${o.key}" onclick="toggleNotifPref('${o.key}',this)" style="width:44px;height:26px;border-radius:20px;background:${on?'var(--team-primary)':'var(--bg-3)'};border:1px solid var(--border);position:relative;cursor:pointer;flex-shrink:0;transition:background 0.15s">
+              <div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:${on?'20px':'2px'};transition:left 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>
+            </div>
+          </div>`;
+        }).join('')}
+        <div style="font-size:11px;color:var(--fg-3);margin-top:16px;line-height:1.5">Push notifications are rolling out soon — these preferences will apply automatically once they're live.</div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function toggleNotifPref(key,el){
+    const prefs=getNotifPrefs();
+    const newOn = !(prefs[key]!==false);
+    prefs[key]=newOn;
+    localStorage.setItem(NOTIF_PREFS_KEY,JSON.stringify(prefs));
+    el.style.background = newOn?'var(--team-primary)':'var(--bg-3)';
+    const knob=el.querySelector('div');
+    if(knob) knob.style.left = newOn?'20px':'2px';
+  }
+
+  // ===== MANAGE STAFF =====
+  function openManageStaff(){
+    closeProfileModal();
+    let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
+    const headName=user.name||'Head Coach';
+    const headInit=headName.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'HC';
+    let groups=[]; try{ groups=(PRACTICE_POSITION_GROUPS||[]).slice(); }catch(e){}
+    let ov=document.getElementById('manage-staff-overlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='manage-staff-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    ov.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:18px;font-weight:700">Manage staff</div>
+          <div onclick="document.getElementById('manage-staff-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Head coach</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0 16px;border-bottom:1px solid var(--border)">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">${headInit}</div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">${headName}</div><div style="font-size:12px;color:var(--fg-3)">You · full access</div></div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px">Position groups</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          ${groups.length?groups.map(g=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600"><span style="width:9px;height:9px;border-radius:50%;background:${g.color||'var(--team-primary)'}"></span>${g.label}</span>`).join(''):'<span style="font-size:12px;color:var(--fg-3)">None yet</span>'}
+        </div>
+        <button onclick="document.getElementById('manage-staff-overlay').remove();if(window.openEditPositionGroups)openEditPositionGroups()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font);margin-top:12px">Assign coaches to position groups</button>
+        <div style="font-size:11px;color:var(--fg-3);margin-top:12px;line-height:1.5">Inviting assistant coaches with their own logins and permissions is coming soon.</div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+
+  // ===== SUBSCRIPTION =====
+  function openSubscription(){
+    closeProfileModal();
+    let ov=document.getElementById('subscription-overlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='subscription-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    ov.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:18px;font-weight:700">Subscription</div>
+          <div onclick="document.getElementById('subscription-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="background:var(--team-primary-glow);border:1px solid var(--team-primary);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--team-primary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Current plan</div>
+          <div style="font-size:22px;font-weight:800">Beta — Free</div>
+          <div style="font-size:13px;color:var(--fg-2);margin-top:4px">You have full access during the beta at no cost.</div>
+        </div>
+        <div style="font-size:13px;color:var(--fg-2);line-height:1.6">Paid plans and billing are coming soon. Beta coaches will get advance notice — and a founding-coach discount — before anything is ever charged.</div>
+      </div>`;
+    document.body.appendChild(ov);
   }
 
   // ===== MESSAGE THREADS =====
