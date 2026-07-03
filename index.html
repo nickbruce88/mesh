@@ -3082,7 +3082,7 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
         <button class="btn-sm" onclick="openLogSession()" style="background:var(--team-primary);color:var(--team-primary-text);font-weight:700">+ Log session</button>
-        <button class="btn-sm" onclick="openBulkEntry()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">⊞ Bulk entry</button>
+        <button class="btn-sm" onclick="openPerfBulkEntry()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">⊞ Bulk entry</button>
         <button class="btn-sm" onclick="openPerfImport()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">📥 Import</button>
       </div>
 
@@ -4768,7 +4768,7 @@
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.2</div>
   </div>
 </div>
 
@@ -4777,7 +4777,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v33';
+  const APP_VERSION = 'v33.2';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -6131,7 +6131,7 @@
   }
 
   // ===== BULK ENTRY — one lift/test across the whole roster =====
-  function openBulkEntry(){
+  function openPerfBulkEntry(){
     let overlay=document.getElementById('bulk-entry-overlay');
     if(overlay) overlay.remove();
     overlay=document.createElement('div');
@@ -6257,41 +6257,90 @@
     rd.onload=ev=>{ const t=document.getElementById('perf-csv-paste'); if(t){ t.value=ev.target.result; parsePerfCSV(); } };
     rd.readAsText(f);
   }
+  // Map a free-text label to a category key (headers or section titles)
+  const PERF_CAT_ALIASES = {
+    'bench':'bench','bench press':'bench',
+    'squat':'squat','back squat':'squat',
+    'deadlift':'deadlift','dead lift':'deadlift','dead':'deadlift',
+    'clean':'clean','power clean':'clean','hang clean':'clean',
+    'forty':'forty','40':'forty','40 yard':'forty','40-yard':'forty','40yd':'forty','40 yard dash':'forty','40-yard dash':'forty',
+    'shuttle':'shuttle','5-10-5':'shuttle','5 10 5':'shuttle','pro agility':'shuttle','5-10-5 shuttle':'shuttle',
+    'three_cone':'three_cone','3 cone':'three_cone','3-cone':'three_cone','3-cone drill':'three_cone','3 cone drill':'three_cone','l-drill':'three_cone',
+    'vertical':'vertical','vert':'vertical','vertical jump':'vertical',
+    'broad_jump':'broad_jump','broad':'broad_jump','broad jump':'broad_jump','standing broad jump':'broad_jump'
+  };
+  function catFromLabel(s){ if(!s) return null; const k=String(s).trim().toLowerCase(); return PERF_CAT_ALIASES[k]||null; }
+  function numFromCell(s){ if(s==null) return null; const m=String(s).match(/-?\d+(\.\d+)?/); return m?parseFloat(m[0]):null; }
+
   function parsePerfCSV(){
     const raw=(document.getElementById('perf-csv-paste')?.value||'').trim();
     const preview=document.getElementById('perf-import-preview');
     perfImportRows=[];
     if(!raw){ if(preview) preview.style.display='none'; return; }
     const lines=raw.split(/\r?\n/).filter(l=>l.trim());
-    if(lines.length<2){ if(preview){ preview.style.display='block'; preview.innerHTML='<div style="font-size:12px;color:var(--red)">Need a header row plus at least one data row.</div>'; } return; }
+    if(!lines.length){ if(preview) preview.style.display='none'; return; }
     const delim=lines[0].includes('\t')?'\t':',';
-    const headers=lines[0].split(delim).map(h=>h.trim().toLowerCase());
     const allCats=[...PERF_CATEGORIES.lifting,...PERF_CATEGORIES.speed];
-    const catKeys=allCats.map(c=>c.key);
     const roster=(window.ROSTER_DATA||[]);
+    const headers=lines[0].split(delim).map(h=>h.trim().toLowerCase());
+    const today=new Date().toISOString().slice(0,10);
     const unmatched=[];
-    for(let i=1;i<lines.length;i++){
-      const cells=lines[i].split(delim).map(c=>c.trim());
-      const row={}; headers.forEach((h,idx)=>row[h]=cells[idx]);
-      let p=null;
-      if(row.name) p=roster.find(r=>(r.name||'').toLowerCase()===row.name.toLowerCase());
-      if(!p && row.number) p=roster.find(r=>String(r.num)===String(row.number));
-      if(!p){ unmatched.push(row.name||row.number||('row '+i)); continue; }
-      catKeys.forEach(k=>{
-        if(row[k]!==undefined && row[k]!==''){
-          const v=parseFloat(row[k]);
-          if(!isNaN(v)&&v>0){
-            const cd=allCats.find(c=>c.key===k);
-            perfImportRows.push({player_id:p.id,date:row.date||new Date().toISOString().slice(0,10),session_label:row.session_label||row.session||'Imported',category:k,value:v,unit:cd?.unit||''});
+
+    const isColumnar = headers.includes('name') || headers.includes('player') || headers.includes('number');
+
+    if (isColumnar) {
+      // one row per player; category columns matched by alias
+      const colCat = headers.map(h => catFromLabel(h));
+      for(let i=1;i<lines.length;i++){
+        const cells=lines[i].split(delim).map(c=>c.trim());
+        const row={}; headers.forEach((h,idx)=>row[h]=cells[idx]);
+        const nameVal=row.name||row.player;
+        let p=null;
+        if(nameVal) p=roster.find(r=>(r.name||'').toLowerCase()===nameVal.toLowerCase());
+        if(!p && row.number) p=roster.find(r=>String(r.num)===String(row.number));
+        if(!p){ unmatched.push(nameVal||row.number||('row '+i)); continue; }
+        headers.forEach((h,idx)=>{
+          const k=colCat[idx];
+          if(k && cells[idx]!==undefined && cells[idx]!==''){
+            const v=numFromCell(cells[idx]);
+            if(v!=null && v>0){
+              const cd=allCats.find(c=>c.key===k);
+              perfImportRows.push({player_id:p.id,date:row.date||today,session_label:row.session_label||row.session||'Imported',category:k,value:v,unit:cd?.unit||''});
+            }
           }
-        }
-      });
+        });
+      }
+    } else {
+      // sectioned "Top 10" format: a category header row, then rank,name,value rows
+      let currentCat=null;
+      for(const line of lines){
+        const cells=line.split(delim).map(c=>c.trim());
+        const letteredNonCat = cells.filter(c => /[a-z]/i.test(c) && isNaN(parseFloat(c)) && !catFromLabel(c));
+        let headerCat=null;
+        for(const c of cells){ const cc=catFromLabel(c); if(cc){ headerCat=cc; break; } }
+        // section header = a cell maps to a category AND there's no player name on the line
+        if(headerCat && letteredNonCat.length===0){ currentCat=headerCat; continue; }
+        if(!currentCat) continue;
+        const name=letteredNonCat[0];
+        if(!name) continue;
+        // value = last numeric cell that isn't the leading rank
+        let value=null;
+        for(let i=cells.length-1;i>=1;i--){ const v=numFromCell(cells[i]); if(v!=null){ value=v; break; } }
+        if(value==null){ const v0=numFromCell(cells[0]); if(cells.length<=2) value=v0; }
+        if(value==null || value<=0) continue;
+        const p=roster.find(r=>(r.name||'').toLowerCase()===name.toLowerCase());
+        if(!p){ unmatched.push(name); continue; }
+        const cd=allCats.find(c=>c.key===currentCat);
+        perfImportRows.push({player_id:p.id,date:today,session_label:'Imported',category:currentCat,value,unit:cd?.unit||''});
+      }
     }
+
     if(preview){
       preview.style.display='block';
       const nPlayers=new Set(perfImportRows.map(r=>r.player_id)).size;
+      const uniqUnmatched=[...new Set(unmatched)];
       preview.innerHTML=`<div style="font-size:13px;color:var(--fg)"><b>${perfImportRows.length}</b> values ready across <b>${nPlayers}</b> player(s).</div>`+
-        (unmatched.length?`<div style="font-size:12px;color:var(--red);margin-top:4px">${unmatched.length} row(s) didn't match a player: ${unmatched.slice(0,5).join(', ')}${unmatched.length>5?'…':''}</div>`:'');
+        (uniqUnmatched.length?`<div style="font-size:12px;color:var(--red);margin-top:4px">${uniqUnmatched.length} name(s) didn't match your roster: ${uniqUnmatched.slice(0,6).join(', ')}${uniqUnmatched.length>6?'…':''}</div><div style="font-size:11px;color:var(--fg-3);margin-top:2px">Add these players to your roster first, or check the spelling.</div>`:'');
     }
   }
   async function confirmPerfImport(){
