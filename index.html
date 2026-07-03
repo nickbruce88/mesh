@@ -1270,7 +1270,7 @@
   .perf-table tr:last-child td { border-bottom:none }
   .perf-table tr:hover td { background:var(--bg-3) }
   .perf-table td.sorted-col { color:var(--team-primary);font-weight:800 }
-  .perf-rank { font-weight:800;color:var(--fg-3);width:28px }
+  .perf-rank { font-weight:800;color:var(--fg);width:28px }
   .perf-rank-1 { color:var(--team-primary) }
   /* Filter chips */
   .perf-chip-row { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px }
@@ -4768,7 +4768,7 @@
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.2</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.3</div>
   </div>
 </div>
 
@@ -4777,7 +4777,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v33.2';
+  const APP_VERSION = 'v33.3';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5862,7 +5862,7 @@
       return `<tr>
         <td class="perf-rank ${i===0?'perf-rank-1':''}">${i+1}</td>
         <td style="font-weight:600">${getPlayerName(r.player_id)}</td>
-        <td style="color:var(--fg-3)">${p?.pos||'—'}</td>
+        <td style="color:var(--fg-2);font-weight:600">${p?.pos||'—'}</td>
         ${cells}
       </tr>`;
     }).join('');
