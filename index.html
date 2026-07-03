@@ -1585,7 +1585,13 @@
   /* Play detail modal */
   #pb-detail-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:92;display:none;align-items:center;justify-content:center;padding:20px; }
   #pb-detail-overlay.open { display:flex; }
-  .pb-detail-modal { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column; }
+  .pb-detail-modal { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:720px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column; }
+  /* Folder edit button */
+  .pb-folder-edit-btn { font-size:12px;font-weight:600;color:var(--fg-3);background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 10px;cursor:pointer;font-family:var(--font);flex-shrink:0; }
+  .pb-folder-edit-btn:hover { color:var(--fg); }
+  /* Folder-scoped select bar */
+  .pb-folder-select-bar { display:none;align-items:center;gap:8px;padding:10px 10px 6px;flex-wrap:wrap; }
+  .pb-folder-select-bar.active { display:flex; }
   .pb-detail-modal::-webkit-scrollbar { display:none; }
   .pb-detail-header { display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0; }
   .pb-detail-img-wrap { flex-shrink:0;background:var(--bg-3); }
@@ -3269,7 +3275,8 @@
         <span class="pb-select-bar-label" id="pb-select-label">0 selected</span>
         <button class="btn-sm" onclick="pbSelectAll()" style="background:var(--bg-3);color:var(--fg-2)">Select all</button>
         <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="openMoveModal()">Move to folder</button>
-        <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteSelected()">Delete</button>
+        <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteSelected()">Delete plays</button>
+        <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteFolder()">Delete folder</button>
         <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbToggleSelectMode()">Cancel</button>
       </div>
     </div><!-- end more-playbook -->
@@ -4873,7 +4880,8 @@
       <span class="pb-select-bar-label" id="pb-select-label">0 selected</span>
       <button class="btn-sm" onclick="pbSelectAll()" style="background:var(--bg-3);color:var(--fg-2)">Select all</button>
       <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="openMoveModal()">Move to folder</button>
-      <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteSelected()">Delete</button>
+      <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteSelected()">Delete plays</button>
+      <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteFolder()">Delete folder</button>
       <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbToggleSelectMode()">Cancel</button>
     </div>
   </div>
@@ -15717,6 +15725,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   let pbSelectedIds = new Set();
   let pbDetailPlayId = null;
   let pbNewFolderUnit = 'offense';
+  let pbFolderSelectMode = null; // folder.id of folder currently in edit mode, or null
+  let pbFolderSelected = new Set(); // selected play ids within folder edit mode
   let PB_DATA = { offense:{folders:[],plays:[]}, defense:{folders:[],plays:[]}, special:{folders:[],plays:[]} };
   const PB_BUCKET = 'playbook-images';
 
@@ -15819,15 +15829,23 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     let html = '';
     folders.forEach(folder => {
       const fp = plays.filter(p => p.folderId === folder.id);
-      html += `<div class="pb-folder" id="pbf-${folder.id}">
-        <div class="pb-folder-head" onclick="pbToggleFolder('${folder.id}')">
+      const fSelMode = pbFolderSelectMode === folder.id;
+      html += `<div class="pb-folder open" id="pbf-${folder.id}">
+        <div class="pb-folder-head" onclick="pbToggleFolderHead('${folder.id}',event)">
           <div class="pb-folder-icon">📁</div>
           <div class="pb-folder-name">${escHtml(folder.name)}</div>
           <div class="pb-folder-count">${fp.length} play${fp.length!==1?'s':''}</div>
-          <div class="pb-folder-chevron">›</div>
+          <button class="pb-folder-edit-btn" onclick="event.stopPropagation();pbToggleFolderEdit('${folder.id}')">${fSelMode?'Done':'Edit'}</button>
+          <div class="pb-folder-chevron" style="margin-left:6px">›</div>
+        </div>
+        <div class="pb-folder-select-bar${fSelMode?' active':''}" id="pbfsb-${folder.id}">
+          <span style="font-size:12px;font-weight:600;color:var(--fg);flex:1" id="pbfsl-${folder.id}">${pbFolderSelected.size} selected</span>
+          <button class="btn-sm" style="font-size:11px;background:var(--bg-3);color:var(--fg-2)" onclick="pbSelectAllInFolder('${folder.id}')">Select all</button>
+          <button class="btn-sm" style="font-size:11px;background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="openMoveModal()">Move</button>
+          <button class="btn-sm" style="font-size:11px;background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteSelected()">Delete</button>
         </div>
         <div class="pb-folder-body">
-          <div class="pb-play-grid${pbSelectMode?' pb-selecting':''}">${fp.map(p=>pbPlayCardHtml(p)).join('')}</div>
+          <div class="pb-play-grid${fSelMode?' pb-selecting':''}">${fp.map(p=>pbPlayCardHtml(p,fSelMode)).join('')}</div>
           ${fp.length===0?'<div style="font-size:12px;color:var(--fg-3);text-align:center;padding:12px 0">No plays yet</div>':''}
         </div>
       </div>`;
@@ -15835,7 +15853,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const uncat = plays.filter(p => !p.folderId);
     if (uncat.length > 0) {
       if (folders.length > 0) html += '<div class="pb-uncat-label">Uncategorized</div>';
-      html += `<div class="pb-play-grid${pbSelectMode?' pb-selecting':''}">${uncat.map(p=>pbPlayCardHtml(p)).join('')}</div>`;
+      html += `<div class="pb-play-grid${pbSelectMode?' pb-selecting':''}">${uncat.map(p=>pbPlayCardHtml(p,false)).join('')}</div>`;
     }
     if (plays.length === 0) {
       html = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3)">
@@ -15847,8 +15865,9 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     content.innerHTML = html;
   }
 
-  function pbPlayCardHtml(play) {
+  function pbPlayCardHtml(play, inFolderSelMode) {
     const sel = pbSelectedIds.has(play.id);
+    const showSel = pbSelectMode || inFolderSelMode;
     const img = play.imageUrl ? `<img class="pb-play-thumb" src="${play.imageUrl}" loading="lazy" onload="this.nextElementSibling.style.display='none'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
     const ph = `<div class="pb-play-thumb-placeholder" style="${play.imageUrl?'':''}">📋</div>`;
     return `<div class="pb-play-card${sel?' pb-selected':''}" id="pbc-${play.id}" onclick="pbCardClick('${play.id}',event)">
@@ -15857,23 +15876,58 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <div class="pb-play-name">${escHtml(play.title||'Untitled play')}</div>
         <div class="pb-play-sub">${play.responsibilities&&play.responsibilities.length?play.responsibilities.length+' assignment'+(play.responsibilities.length!==1?'s':''):'No assignments'}</div>
       </div>
-      <div class="pb-play-sel">${sel?'✓':''}</div>
+      <div class="pb-play-sel" style="${showSel?'display:flex':'display:none'}">${sel?'✓':''}</div>
     </div>`;
+  }
+
+  function pbToggleFolderHead(folderId, e) {
+    // Don't toggle if clicking edit button
+    if (e.target.classList.contains('pb-folder-edit-btn')) return;
+    const el = document.getElementById('pbf-' + folderId);
+    if (el) el.classList.toggle('open');
   }
 
   function pbToggleFolder(id) { const el=document.getElementById('pbf-'+id); if(el) el.classList.toggle('open'); }
 
+  function pbToggleFolderEdit(folderId) {
+    if (pbFolderSelectMode === folderId) {
+      // Exit folder edit mode
+      pbFolderSelectMode = null;
+      pbFolderSelected.clear();
+      pbSelectedIds.clear();
+    } else {
+      // Enter folder edit mode — exit any global select mode first
+      pbSelectMode = false;
+      pbSelectedIds.clear();
+      pbFolderSelectMode = folderId;
+      pbFolderSelected.clear();
+    }
+    renderPbUnit(pbCurrentUnit);
+  }
+
+  function pbSelectAllInFolder(folderId) {
+    const { plays } = PB_DATA[pbCurrentUnit];
+    plays.filter(p => p.folderId === folderId).forEach(p => {
+      pbSelectedIds.add(p.id);
+      pbFolderSelected.add(p.id);
+    });
+    const lbl = document.getElementById('pbfsl-' + folderId);
+    if (lbl) lbl.textContent = pbSelectedIds.size + ' selected';
+    renderPbUnit(pbCurrentUnit);
+  }
+
   function pbSelectAll() {
     const { plays } = PB_DATA[pbCurrentUnit];
-    // Select all uncategorized plays (not in any folder)
-    const uncatPlays = plays.filter(p => !p.folderId);
-    uncatPlays.forEach(p => pbSelectedIds.add(p.id));
+    // Top-level Edit: select all uncategorized plays only
+    plays.filter(p => !p.folderId).forEach(p => pbSelectedIds.add(p.id));
     const lbl = document.getElementById('pb-select-label');
     if (lbl) lbl.textContent = pbSelectedIds.size + ' selected';
     renderPbUnit(pbCurrentUnit);
   }
 
   function pbToggleSelectMode() {
+    pbFolderSelectMode = null;
+    pbFolderSelected.clear();
     pbSelectMode = !pbSelectMode;
     pbSelectedIds.clear();
     ['pb-select-toggle','pb-select-toggle-inline'].forEach(id => {
@@ -15884,21 +15938,35 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const b = document.getElementById(id);
       if (b) b.classList.toggle('active', pbSelectMode);
     });
-    ['pb-select-label'].forEach(id => {
-      const l = document.getElementById(id);
-      if (l) l.textContent = '0 selected';
-    });
+    const l = document.getElementById('pb-select-label');
+    if (l) l.textContent = '0 selected';
     renderPbUnit(pbCurrentUnit);
+    // Close all folders when entering top-level edit mode
+    if (pbSelectMode) {
+      PB_DATA[pbCurrentUnit].folders.forEach(f => {
+        const el = document.getElementById('pbf-' + f.id);
+        if (el) el.classList.remove('open');
+      });
+    }
   }
 
   function pbCardClick(playId, e) {
-    if (pbSelectMode) {
-      if (pbSelectedIds.has(playId)) pbSelectedIds.delete(playId);
-      else pbSelectedIds.add(playId);
+    if (pbSelectMode || pbFolderSelectMode) {
+      if (pbSelectedIds.has(playId)) {
+        pbSelectedIds.delete(playId);
+        pbFolderSelected.delete(playId);
+      } else {
+        pbSelectedIds.add(playId);
+        if (pbFolderSelectMode) pbFolderSelected.add(playId);
+      }
+      // Update label
       const lbl = document.getElementById('pb-select-label');
       if (lbl) lbl.textContent = pbSelectedIds.size + ' selected';
-      const play = PB_DATA[pbCurrentUnit].plays.find(p=>p.id===playId);
-      if (play) { const c=document.getElementById('pbc-'+playId); if(c) c.outerHTML=pbPlayCardHtml(play); }
+      if (pbFolderSelectMode) {
+        const flbl = document.getElementById('pbfsl-' + pbFolderSelectMode);
+        if (flbl) flbl.textContent = pbSelectedIds.size + ' selected';
+      }
+      renderPbUnit(pbCurrentUnit);
     } else {
       openPbDetail(playId);
     }
@@ -15961,7 +16029,17 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   async function pbMoveSelected(folderId, folderName) {
     PB_DATA[pbCurrentUnit].plays.forEach(p => { if (pbSelectedIds.has(p.id)) p.folderId = folderId||null; });
     closeMoveModal();
-    pbToggleSelectMode();
+    pbSelectMode = false;
+    pbFolderSelectMode = null;
+    pbFolderSelected.clear();
+    pbSelectedIds.clear();
+    ['pb-select-bar','pb-select-bar-inline'].forEach(id => {
+      const b = document.getElementById(id); if(b) b.classList.remove('active');
+    });
+    ['pb-select-toggle','pb-select-toggle-inline'].forEach(id => {
+      const t = document.getElementById(id); if(t) t.textContent = 'Edit';
+    });
+    renderPbUnit(pbCurrentUnit);
     await pbSaveToSupabase();
     showToast(`Moved to "${folderName}" ✓`);
   }
@@ -15972,7 +16050,18 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const toDelete = PB_DATA[pbCurrentUnit].plays.filter(p=>pbSelectedIds.has(p.id));
     PB_DATA[pbCurrentUnit].plays = PB_DATA[pbCurrentUnit].plays.filter(p=>!pbSelectedIds.has(p.id));
     toDelete.forEach(p => { if(p.imageUrl&&p.imageUrl.startsWith('http')) pbDeleteFromSupabase(p.imageUrl); });
-    pbToggleSelectMode();
+    // Exit whichever select mode is active
+    pbSelectMode = false;
+    pbFolderSelectMode = null;
+    pbFolderSelected.clear();
+    pbSelectedIds.clear();
+    ['pb-select-bar','pb-select-bar-inline'].forEach(id => {
+      const b = document.getElementById(id); if(b) b.classList.remove('active');
+    });
+    ['pb-select-toggle','pb-select-toggle-inline'].forEach(id => {
+      const t = document.getElementById(id); if(t) t.textContent = 'Edit';
+    });
+    renderPbUnit(pbCurrentUnit);
     await pbSaveToSupabase();
     showToast(`${count} play${count>1?'s':''} deleted`);
   }
@@ -16162,6 +16251,33 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   function pbImportMultiple() {
     closeAddPlaysModal();
     setTimeout(() => document.getElementById('pb-file-multiple').click(), 150);
+  }
+
+  async function pbDeleteFolder() {
+    // Delete the selected folder — prompt which one if multiple, else delete the one with selected plays
+    const { folders, plays } = PB_DATA[pbCurrentUnit];
+    // Find folders that have selected plays or prompt if no selection
+    const affectedFolderIds = new Set(
+      plays.filter(p => pbSelectedIds.has(p.id) && p.folderId).map(p => p.folderId)
+    );
+    if (affectedFolderIds.size === 0) {
+      showToast('Select plays inside a folder first, or use the folder Edit button');
+      return;
+    }
+    // Move plays in those folders to uncategorized, then delete the folders
+    plays.forEach(p => { if (affectedFolderIds.has(p.folderId)) p.folderId = null; });
+    PB_DATA[pbCurrentUnit].folders = folders.filter(f => !affectedFolderIds.has(f.id));
+    pbSelectMode = false;
+    pbSelectedIds.clear();
+    ['pb-select-bar','pb-select-bar-inline'].forEach(id => {
+      const b = document.getElementById(id); if(b) b.classList.remove('active');
+    });
+    ['pb-select-toggle','pb-select-toggle-inline'].forEach(id => {
+      const t = document.getElementById(id); if(t) t.textContent = 'Edit';
+    });
+    renderPbUnit(pbCurrentUnit);
+    await pbSaveToSupabase();
+    showToast(`Folder${affectedFolderIds.size>1?'s':''} deleted — plays moved to uncategorized`);
   }
 
   function openPbLinkModal(unit) { if(unit) pbCurrentUnit=unit; document.getElementById('pb-link-label').value=''; document.getElementById('pb-link-url').value=''; document.getElementById('pb-link-overlay').classList.add('open'); }
