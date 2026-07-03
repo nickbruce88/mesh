@@ -1610,9 +1610,17 @@
   #pb-link-overlay.open { display:flex; }
   /* Desktop: use fixed positioning so overlays cover full viewport */
   @media (min-width:768px) {
-    #playbook-overlay, #pb-detail-overlay, #pb-new-folder-overlay, #pb-move-overlay, #pb-link-overlay {
+    #playbook-overlay, #pb-detail-overlay {
       position:fixed;
+      top:0; left:185px; right:0; bottom:0;
+      width:auto; height:auto;
       z-index:300;
+    }
+    #pb-new-folder-overlay, #pb-move-overlay, #pb-link-overlay {
+      position:fixed;
+      top:0; left:185px; right:0; bottom:0;
+      width:auto; height:auto;
+      z-index:301;
     }
   }
 
