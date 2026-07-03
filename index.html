@@ -1580,15 +1580,9 @@
     .cal-day { min-height:96px; max-height:130px; }
     .cal-event-bar { font-size:11px; }
   }
-  /* Widen the calendar view past the standard 1200px column (keeps side margins) */
+  /* Calendar gets a wider content column than other sections (clean, centered) */
   @media (min-width:1280px) {
-    #more-schedule {
-      width: min(1520px, calc(100vw - 320px));
-      max-width: none;
-      position: relative;
-      left: 50%;
-      transform: translateX(-50%);
-    }
+    #tab-coach-more.wide-cal { max-width:1520px; }
   }
 
   /* ===== iOS SAFARI TAP FIX ===== */
@@ -4796,7 +4790,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.11</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.12</div>
   </div>
 </div>
 
@@ -4805,7 +4799,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v33.11';
+  const APP_VERSION = 'v33.12';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -10832,6 +10826,7 @@
     // Scroll tab to top
     const tab = document.getElementById('tab-coach-more');
     if (tab) tab.scrollTop = 0;
+    if (tab) tab.classList.toggle('wide-cal', section === 'schedule');
     // Trigger any section-specific init
     if (section === 'drills') renderDrillLibrary();
     if (section === 'roster') renderCoachRoster();
