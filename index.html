@@ -4685,13 +4685,15 @@
         <div style="font-size:12px;color:var(--gray-3)">Players and parents enter this at meshapp.co</div>
       </div>
 
-      <!-- Share options -->
-      <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">Share via</div>
+      <!-- Primary action: copy link (works everywhere) -->
+      <button onclick="copyInviteLink()" class="btn-primary" style="width:100%;font-size:15px;padding:14px;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:8px">📋 Copy invite link</button>
 
-      <div class="action-sheet-item" onclick="shareViaText()">💬 Send as text message</div>
+      <!-- Secondary share options -->
+      <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">Or share via</div>
+
+      <div class="action-sheet-item" id="share-sms-item" onclick="shareViaText()">💬 Send as text message</div>
       <div class="action-sheet-item" onclick="shareViaEmail()">✉️ Send as email</div>
-      <div class="action-sheet-item" onclick="copyInviteLink()">📋 Copy invite link</div>
-      <div class="action-sheet-item" onclick="shareNative()">↗️ More options (share sheet)</div>
+      <div class="action-sheet-item" id="share-native-item" onclick="shareNative()">↗️ More options (share sheet)</div>
     </div>
   </div>
 
@@ -4768,7 +4770,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.5</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.7</div>
   </div>
 </div>
 
@@ -4777,7 +4779,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v33.5';
+  const APP_VERSION = 'v33.7';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7387,9 +7389,22 @@
     const code = getActiveJoinCode();
     document.getElementById('share-join-code').textContent = code;
     document.getElementById('share-invite-overlay').style.display = 'flex';
+    // Desktop: SMS has no handler, so hide it. Native share only if supported.
+    const desktop = (typeof isDesktop === 'function') ? isDesktop() : window.innerWidth > 820;
+    const smsItem = document.getElementById('share-sms-item');
+    const nativeItem = document.getElementById('share-native-item');
+    if (smsItem) smsItem.style.display = desktop ? 'none' : '';
+    if (nativeItem) nativeItem.style.display = navigator.share ? '' : 'none';
     // Also update home card
     const homeCode = document.getElementById('home-join-code');
     if (homeCode) homeCode.textContent = code;
+  }
+
+  function launchProtocol(url){
+    const a=document.createElement('a');
+    a.href=url; a.style.display='none';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>a.remove(),200);
   }
 
   function closeShareInvite() {
@@ -7398,8 +7413,7 @@
 
   function shareViaText() {
     const code = getActiveJoinCode();
-    const text = encodeURIComponent(buildInviteText(code));
-    window.open('sms:?body=' + text, '_blank');
+    launchProtocol('sms:?body=' + encodeURIComponent(buildInviteText(code)));
     closeShareInvite();
   }
 
@@ -7407,7 +7421,7 @@
     const code = getActiveJoinCode();
     const subject = encodeURIComponent('Join our team on Mesh');
     const body = encodeURIComponent(buildInviteText(code));
-    window.open('mailto:?subject=' + subject + '&body=' + body, '_blank');
+    launchProtocol('mailto:?subject=' + subject + '&body=' + body);
     closeShareInvite();
   }
 
