@@ -16054,34 +16054,46 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const numPages = pdf.numPages;
       const programId = localStorage.getItem('mesh_program_id') || 'local';
 
-      showToast(`Found ${numPages} play${numPages !== 1 ? 's' : ''} — importing…`);
-
+      // Detect and skip title/cover pages — they only have "Printed:" text, no yard numbers
+      const playPages = [];
       for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const text = textContent.items.map(i => i.str.trim()).join(' ');
+        // Cover pages have no yard line numbers (10, 20, 30) — skip them
+        const hasYardLines = /\b(10|20|30)\b/.test(text);
+        if (hasYardLines) playPages.push(pageNum);
+      }
+
+      showToast(`Found ${playPages.length} play${playPages.length !== 1 ? 's' : ''} — importing…`);
+
+      let playNum = 1;
+      for (const pageNum of playPages) {
         const page = await pdf.getPage(pageNum);
         const scale = 2.0;
         const viewport = page.getViewport({ scale });
 
+        // Render full page to offscreen canvas
+        const fullCanvas = document.createElement('canvas');
+        fullCanvas.width = viewport.width;
+        fullCanvas.height = viewport.height;
+        const fullCtx = fullCanvas.getContext('2d');
+        await page.render({ canvasContext: fullCtx, viewport }).promise;
+
+        // Crop to just the play diagram — top 58% of page removes assignment table + blank space
+        const cropHeight = Math.floor(viewport.height * 0.58);
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        canvas.height = cropHeight;
         const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        ctx.drawImage(fullCanvas, 0, 0, viewport.width, cropHeight, 0, 0, viewport.width, cropHeight);
 
-        // Extract play title from text content (top-right area typically has play name)
-        let title = '';
-        try {
-          const textContent = await page.getTextContent();
-          // Hudl puts play name as first large text item — usually the first non-date, non-page-number item
-          const items = textContent.items.map(i => i.str.trim()).filter(s => s.length > 1);
-          // Skip "Printed:" lines and page numbers, grab first meaningful title
-          const skip = /^(Printed:|Install:|^\d+$)/i;
-          title = items.find(s => !skip.test(s)) || `Play ${pageNum}`;
-        } catch(e) {
-          title = `Play ${pageNum}`;
-        }
+        // Play names are rendered as vector graphics in Hudl exports — not in text layer
+        // Leave title blank for coach to fill in
+        const title = '';
 
         // Convert canvas to blob then upload
-        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.88));
         const playFile = new File([blob], `play_${pageNum}.jpg`, { type: 'image/jpeg' });
 
         const play = {
@@ -16101,11 +16113,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         } catch(e) {
           console.warn('Upload failed for page', pageNum, e);
         }
+        playNum++;
       }
 
       renderPbUnit(pbAddPlaysUnit);
       await pbSaveToSupabase();
-      showToast(`${numPages} play${numPages !== 1 ? 's' : ''} imported ✓`);
+      showToast(`${playPages.length} play${playPages.length !== 1 ? 's' : ''} imported ✓`);
 
     } catch(e) {
       console.error('PDF import error:', e);
