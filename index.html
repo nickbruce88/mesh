@@ -1098,6 +1098,22 @@
       max-height: 88vh;
     }
 
+    /* Add/Edit drill modal — center instead of bottom sheet */
+    #add-drill-overlay {
+      position: fixed !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 200 !important;
+      padding: 20px;
+    }
+    .add-drill-sheet {
+      width: 520px !important;
+      max-width: 90vw;
+      border-radius: 16px !important;
+      border-top: 1px solid var(--border) !important;
+      max-height: 88vh;
+    }
+
     /* Profile modal */
     #profile-modal {
       position: fixed;
@@ -2799,7 +2815,7 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Drill Library</div>
-        <button class="btn-sm" onclick="openAddDrill()" style="margin-left:auto">+ Add drill</button>
+        <button class="btn-sm" onclick="openDrillAddChooser()" style="margin-left:auto">+ Add drill</button>
       </div>
 
       <!-- Filter bar -->
@@ -2815,17 +2831,7 @@
         <div class="drill-tag-chip" onclick="filterDrills('pos','LB',this)">LB</div>
         <div class="drill-tag-chip" onclick="filterDrills('pos','DB',this)">DB</div>
       </div>
-      <div class="drill-filter-bar" id="drill-tag-filter">
-        <div class="drill-tag-chip active" onclick="filterDrills('tag','ALL',this)">All tags</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Footwork',this)">Footwork</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Releases',this)">Releases</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Ball Security',this)">Ball Security</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Tackling',this)">Tackling</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Pass Rush',this)">Pass Rush</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Coverage',this)">Coverage</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Routes',this)">Routes</div>
-        <div class="drill-tag-chip" onclick="filterDrills('tag','Blocking',this)">Blocking</div>
-      </div>
+      <div class="drill-filter-bar" id="drill-tag-filter"></div>
 
       <div id="drill-library-list"></div>
     </div><!-- end more-drills -->
@@ -4234,13 +4240,15 @@
         <div style="font-size:16px;font-weight:700" id="dd-header-title">Drill</div>
         <div style="font-size:12px;color:var(--gray-2)" id="dd-header-sub"></div>
       </div>
-      <button class="btn-sm" onclick="editCurrentDrill()">Edit</button>
     </div>
     <div class="drill-detail-body">
       <div class="drill-detail-title" id="dd-title"></div>
       <div class="drill-tags-row" id="dd-tags"></div>
-      <div class="section-label" style="margin-top:16px">Description</div>
-      <div style="font-size:14px;color:var(--gray-1);line-height:1.6" id="dd-desc"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+        <div class="section-label" style="margin:0">Description</div>
+        <button class="btn-sm" onclick="editCurrentDrill()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg)">✏️ Edit</button>
+      </div>
+      <div style="font-size:14px;color:var(--gray-1);line-height:1.6;margin-top:8px" id="dd-desc"></div>
       <div id="dd-video-block"></div>
       <div style="margin-top:24px">
         <button class="note-modal-save" onclick="insertDrillIntoPlan()">+ Add to practice plan</button>
@@ -4249,7 +4257,7 @@
   </div>
 
   <!-- ===== ADD DRILL MODAL ===== -->
-  <div id="add-drill-overlay">
+  <div id="add-drill-overlay" onclick="closeAddDrill()">
     <div class="add-drill-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -4273,6 +4281,10 @@
         <div class="pos-sel-chip" onclick="toggleDrillPos('LB',this)">LB</div>
         <div class="pos-sel-chip" onclick="toggleDrillPos('DB',this)">DB</div>
       </div>
+      <div class="add-tag-inline">
+        <input class="add-tag-input" id="new-pos-input" placeholder="+ Position group (e.g. Slot, Edge)…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomDrillPos()}">
+        <button class="add-tag-btn" onclick="addCustomDrillPos()">+ Add</button>
+      </div>
 
       <div class="add-drill-label">Description</div>
       <textarea class="add-drill-textarea" id="drill-desc-input" placeholder="What does this drill work on? What should coaches emphasize?"></textarea>
@@ -4281,18 +4293,9 @@
       <input class="add-drill-input" id="drill-video-input" placeholder="YouTube or Hudl URL" type="url">
 
       <div class="add-drill-label">Tags / categories</div>
-      <div class="tag-selector" id="drill-tag-selector">
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Footwork',this)">Footwork</div>
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Releases',this)">Releases</div>
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Ball Security',this)">Ball Security</div>
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Tackling',this)">Tackling</div>
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Pass Rush',this)">Pass Rush</div>
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Coverage',this)">Coverage</div>
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Routes',this)">Routes</div>
-        <div class="tag-sel-chip" onclick="toggleDrillTag('Blocking',this)">Blocking</div>
-      </div>
+      <div class="tag-selector" id="drill-tag-selector"></div>
       <div class="add-tag-inline">
-        <input class="add-tag-input" id="new-tag-input" placeholder="Add custom tag…" onkeydown="if(event.key==='Enter')addCustomDrillTag()">
+        <input class="add-tag-input" id="new-tag-input" placeholder="Add custom tag…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomDrillTag()}">
         <button class="add-tag-btn" onclick="addCustomDrillTag()">+ Add</button>
       </div>
 
@@ -4790,7 +4793,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.13</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v34</div>
   </div>
 </div>
 
@@ -4799,7 +4802,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v33.13';
+  const APP_VERSION = 'v34';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -15093,16 +15096,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   const OFFENSE_POS = ['QB','RB','WR','OL'];
   const DEFENSE_POS = ['DL','LB','DB'];
 
-  let DRILLS = [
-    { id:'d1', title:'Release vs Press', positions:['WR'], desc:'Receiver works release technique against a press corner. Focus on initial step direction and hand use at the line. Work both inside and outside release paths.', video:'', tags:['Releases','Footwork'] },
-    { id:'d2', title:'Route Polish — Slot Routes', positions:['WR'], desc:'Inside receivers run slant, dig, and crosser routes at full speed. Emphasize footwork at the break point and acceleration out of cuts.', video:'', tags:['Routes','Footwork'] },
-    { id:'d3', title:'Wash / Wall', positions:['OL'], desc:'Drive block technique drill against a sled. Focus on initial punch, pad level, and leg drive through the finish. Run 3 sets of 5.', video:'', tags:['Blocking'] },
-    { id:'d4', title:'Dart / Bolt Pull', positions:['OL','RB'], desc:'Guards and tackles pull to the play-side gap, hitting a kick-out or lead block target. Key on footwork and getting flat quickly.', video:'', tags:['Footwork','Blocking'] },
-    { id:'d5', title:'Drops & Breaks', positions:['DB'], desc:'DBs backpedal to depth, then break on a coach signal to an inside or outside target. Emphasize reading hips, not eyes.', video:'', tags:['Coverage','Footwork'] },
-    { id:'d6', title:'Strip & Secure', positions:['All O','All D'], desc:'Ball carrier runs through a gauntlet of defenders attempting strip punches. Carrier emphasizes two-hand tuck and high pad level protection.', video:'', tags:['Ball Security'] },
-    { id:'d7', title:'Pass Rush — Get-Off', positions:['DL'], desc:'First step quickness drill off the ball. DL fires out on a simulated snap count, driving through a bag or pad. Time the first step.', video:'', tags:['Pass Rush','Footwork'] },
-    { id:'d8', title:'Form Tackle Station', positions:['All D'], desc:'Defenders work shoulder-to-hip angle tackle in a 5-yard box. Emphasize eye up, wrap, and drive through the contact point.', video:'', tags:['Tackling'] },
-  ];
+  function loadDrillsFromStorage(){
+    try{ const s=localStorage.getItem('mesh_drills'); if(s) return JSON.parse(s); }catch(e){}
+    return [];
+  }
+  function saveDrillsToStorage(){
+    try{ localStorage.setItem('mesh_drills', JSON.stringify(DRILLS)); }catch(e){}
+  }
+  let DRILLS = loadDrillsFromStorage();
+  window.DRILLS = DRILLS;
 
   let drillPosFilter = 'ALL';
   let drillTagFilter = 'ALL';
@@ -15111,9 +15113,34 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   let drillSelectedTags = new Set();
   let currentDetailDrillId = null;
 
+  function getAllDrillTags(){
+    const s=new Set();
+    DRILLS.forEach(d=>(d.tags||[]).forEach(t=>{ if(t) s.add(t); }));
+    return [...s].sort((a,b)=>a.localeCompare(b));
+  }
+  function renderDrillTagFilter(){
+    const bar=document.getElementById('drill-tag-filter');
+    if(!bar) return;
+    const tags=getAllDrillTags();
+    bar.innerHTML = `<div class="drill-tag-chip ${drillTagFilter==='ALL'?'active':''}" onclick="filterDrills('tag','ALL',this)">All tags</div>` +
+      tags.map(t=>`<div class="drill-tag-chip ${drillTagFilter===t?'active':''}" onclick="filterDrills('tag',this.textContent,this)">${t}</div>`).join('');
+  }
+  function normalizeUrl(u){
+    if(!u) return '';
+    u=u.trim();
+    if(!u) return '';
+    if(!/^https?:\/\//i.test(u)) u='https://'+u;
+    return u;
+  }
+
   function renderDrillLibrary() {
+    renderDrillTagFilter();
     const container = document.getElementById('drill-library-list');
     if (!container) return;
+    if (DRILLS.length === 0) {
+      container.innerHTML = '<div class="drill-empty">No drills yet.<br>Tap <b>+ Add drill</b> to add one, enter several at once, or import a list.</div>';
+      return;
+    }
     let filtered = DRILLS.filter(d => {
       const posMatch = drillPosFilter === 'ALL' ||
         d.positions.includes(drillPosFilter) ||
@@ -15174,9 +15201,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Video
     const vBlock = document.getElementById('dd-video-block');
     if (d.video) {
-      vBlock.innerHTML = `<div class="drill-detail-video" onclick="window.open('${d.video}','_blank')">
+      const url = normalizeUrl(d.video);
+      vBlock.innerHTML = `<div class="drill-detail-video" onclick="window.open('${url}','_blank','noopener')">
         <div class="drill-detail-video-icon">🎬</div>
-        <div><div class="drill-detail-video-label">Watch video</div><div class="drill-detail-video-sub">${d.video.replace('https://','').split('/')[0]}</div></div>
+        <div><div class="drill-detail-video-label">Watch video</div><div class="drill-detail-video-sub">${url.replace(/^https?:\/\//,'').split('/')[0]}</div></div>
       </div>`;
     } else {
       vBlock.innerHTML = `<div style="margin-top:16px;padding:14px;background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius);font-size:13px;color:var(--gray-3)">No video link — tap Edit to add one</div>`;
@@ -15219,15 +15247,39 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       document.getElementById('drill-desc-input').value = '';
       document.getElementById('drill-video-input').value = '';
     }
-    // Sync chip states
-    document.querySelectorAll('#drill-pos-selector .pos-sel-chip').forEach(c => {
-      c.classList.toggle('selected', drillSelectedPos.has(c.textContent.trim()));
-    });
-    document.querySelectorAll('#drill-tag-selector .tag-sel-chip').forEach(c => {
-      c.classList.toggle('selected', drillSelectedTags.has(c.textContent.trim()));
-    });
+    // Render selectors (standard + any custom) with current selection
+    renderDrillPosSelector();
+    renderDrillTagSelector();
+    const posInput=document.getElementById('new-pos-input'); if(posInput) posInput.value='';
+    const tagInput=document.getElementById('new-tag-input'); if(tagInput) tagInput.value='';
 
     document.getElementById('add-drill-overlay').classList.add('open');
+  }
+
+  const STD_DRILL_POS = ['ALL','All O','All D','QB','RB','WR','OL','DL','LB','DB'];
+  function renderDrillPosSelector(){
+    const sel=document.getElementById('drill-pos-selector');
+    if(!sel) return;
+    const customs=[...drillSelectedPos].filter(p=>!STD_DRILL_POS.includes(p));
+    const all=[...STD_DRILL_POS, ...customs];
+    sel.innerHTML = all.map(p=>`<div class="pos-sel-chip ${drillSelectedPos.has(p)?'selected':''}" onclick="toggleDrillPos(this.textContent.trim(),this)">${p}</div>`).join('');
+  }
+  function renderDrillTagSelector(){
+    const sel=document.getElementById('drill-tag-selector');
+    if(!sel) return;
+    const tags=getAllDrillTags();
+    const extra=[...drillSelectedTags].filter(t=>!tags.includes(t));
+    const all=[...tags, ...extra];
+    if(!all.length){ sel.innerHTML='<div style="font-size:12px;color:var(--fg-3)">No tags yet — add one below.</div>'; return; }
+    sel.innerHTML = all.map(t=>`<div class="tag-sel-chip ${drillSelectedTags.has(t)?'selected':''}" onclick="toggleDrillTag(this.textContent.trim(),this)">${t}</div>`).join('');
+  }
+  function addCustomDrillPos(){
+    const input=document.getElementById('new-pos-input');
+    const pos=(input?.value||'').trim();
+    if(!pos) return;
+    drillSelectedPos.add(pos);
+    renderDrillPosSelector();
+    input.value='';
   }
 
   function closeAddDrill() {
@@ -15251,18 +15303,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const tag = input.value.trim();
     if (!tag) return;
     drillSelectedTags.add(tag);
-    // Add chip to selector
-    const chip = document.createElement('div');
-    chip.className = 'tag-sel-chip selected';
-    chip.textContent = tag;
-    chip.onclick = () => toggleDrillTag(tag, chip);
-    document.getElementById('drill-tag-selector').appendChild(chip);
-    // Add to filter bar
-    const filterChip = document.createElement('div');
-    filterChip.className = 'drill-tag-chip';
-    filterChip.textContent = tag;
-    filterChip.onclick = () => filterDrills('tag', tag, filterChip);
-    document.getElementById('drill-tag-filter').appendChild(filterChip);
+    renderDrillTagSelector();
     input.value = '';
   }
 
@@ -15286,10 +15327,174 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     } else {
       DRILLS.unshift(drillData);
     }
+    saveDrillsToStorage();
 
     closeAddDrill();
     renderDrillLibrary();
     showToast((editingDrillId ? 'Drill updated' : 'Drill added') + ' ✓');
+  }
+
+  // ===== ADD-DRILL CHOOSER =====
+  function openDrillAddChooser(){
+    let ov=document.getElementById('drill-add-chooser'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='drill-add-chooser';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    const opt=(icon,title,sub,fn)=>`<div onclick="document.getElementById('drill-add-chooser').remove();${fn}" style="display:flex;align-items:center;gap:14px;padding:15px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;cursor:pointer">
+      <div style="font-size:23px">${icon}</div>
+      <div><div style="font-size:15px;font-weight:700">${title}</div><div style="font-size:12px;color:var(--fg-3)">${sub}</div></div>
+    </div>`;
+    ov.innerHTML=`<div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:420px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:18px;font-weight:700">Add drills</div>
+        <div onclick="document.getElementById('drill-add-chooser').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+      </div>
+      ${opt('✏️','Add a drill','Create one drill with full details','openAddDrill()')}
+      ${opt('⊞','Add bulk','Enter several drills at once for a position','openDrillBulk()')}
+      ${opt('📥','Import','Paste or upload a list of drills','openDrillImport()')}
+    </div>`;
+    document.body.appendChild(ov);
+  }
+
+  // ===== BULK ADD =====
+  let bulkDrillPos = new Set();
+  function openDrillBulk(){
+    bulkDrillPos = new Set();
+    let ov=document.getElementById('drill-bulk-overlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='drill-bulk-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    const posChips = STD_DRILL_POS.map(p=>`<div class="pos-sel-chip" onclick="toggleBulkPos(this.textContent.trim(),this)">${p}</div>`).join('');
+    ov.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:18px;font-weight:700">Add drills in bulk</div>
+          <div onclick="document.getElementById('drill-bulk-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-3);margin-bottom:12px">Applies the same position group(s) to every drill. One drill per line — use <b>Title | Description</b> (description optional).</div>
+        <div class="add-drill-label">Position group(s)</div>
+        <div class="pos-selector">${posChips}</div>
+        <div class="add-drill-label">Drills — one per line</div>
+        <textarea class="add-drill-textarea" id="bulk-drill-text" style="min-height:170px" placeholder="Release vs Press | Work press-release footwork and hand use&#10;Route Polish | Full-speed routes, clean breaks&#10;Form Tackle Station"></textarea>
+        <button class="note-modal-save" style="margin-top:14px" onclick="saveDrillBulk()">Add all drills</button>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function toggleBulkPos(pos,el){
+    if(bulkDrillPos.has(pos)) bulkDrillPos.delete(pos); else bulkDrillPos.add(pos);
+    el.classList.toggle('selected', bulkDrillPos.has(pos));
+  }
+  function saveDrillBulk(){
+    const text=(document.getElementById('bulk-drill-text')?.value||'').trim();
+    if(!text){ showToast('Enter at least one drill'); return; }
+    const positions=[...bulkDrillPos];
+    if(!positions.length){ showToast('Select at least one position group'); return; }
+    const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    let added=0;
+    lines.forEach(line=>{
+      const parts=line.split('|');
+      const title=parts[0].trim();
+      const desc=(parts[1]||'').trim();
+      if(!title) return;
+      DRILLS.unshift({ id:'d'+Date.now()+'_'+added, title, positions:[...positions], desc, video:'', tags:[] });
+      added++;
+    });
+    if(!added){ showToast('No valid drills found'); return; }
+    saveDrillsToStorage();
+    document.getElementById('drill-bulk-overlay')?.remove();
+    renderDrillLibrary();
+    showToast(added+' drill'+(added===1?'':'s')+' added ✓');
+  }
+
+  // ===== IMPORT DRILLS =====
+  let drillImportRows=[];
+  function openDrillImport(){
+    drillImportRows=[];
+    let ov=document.getElementById('drill-import-overlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='drill-import-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    ov.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:17px;font-weight:700">Import drills</div>
+          <div onclick="document.getElementById('drill-import-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Each drill can be one line — <b>Title | Description</b> — or a CSV with columns: title, positions, tags, description, video.</div>
+        <button onclick="downloadDrillTemplate()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font);margin-bottom:14px">📥 Download CSV template</button>
+        <div style="border:2px dashed var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('drill-csv-input').click()">
+          <div style="font-size:20px;margin-bottom:4px">📄</div>
+          <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload a file</div>
+          <input type="file" id="drill-csv-input" accept=".csv,.tsv,.txt" style="display:none" onchange="handleDrillCSV(event)">
+        </div>
+        <div style="text-align:center;color:var(--fg-3);font-size:12px;margin-bottom:10px">— or paste —</div>
+        <textarea id="drill-import-text" placeholder="Release vs Press | Work press-release footwork&#10;Form Tackle Station | Shoulder-to-hip angle tackle" style="width:100%;height:120px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical" oninput="parseDrillImport()"></textarea>
+        <div id="drill-import-preview" style="display:none;margin-top:12px"></div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button onclick="document.getElementById('drill-import-overlay').remove()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Cancel</button>
+          <button onclick="confirmDrillImport()" class="btn-primary" style="flex:2;font-size:14px">Import drills</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function downloadDrillTemplate(){
+    const csv='title,positions,tags,description,video\nRelease vs Press,WR,Releases;Footwork,Work press-release footwork and hand use,\nForm Tackle Station,All D,Tackling,Shoulder-to-hip angle tackle in a 5-yard box,';
+    const blob=new Blob([csv],{type:'text/csv'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='drills_template.csv'; a.click();
+  }
+  function handleDrillCSV(e){
+    const f=e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=ev=>{ const t=document.getElementById('drill-import-text'); if(t){ t.value=ev.target.result; parseDrillImport(); } };
+    rd.readAsText(f);
+  }
+  function parseDrillImport(){
+    const raw=(document.getElementById('drill-import-text')?.value||'').trim();
+    const preview=document.getElementById('drill-import-preview');
+    drillImportRows=[];
+    if(!raw){ if(preview) preview.style.display='none'; return; }
+    const lines=raw.split(/\r?\n/).filter(l=>l.trim());
+    const first=lines[0].toLowerCase();
+    const hasDelim = first.includes(',')||first.includes('\t');
+    const isCsv = hasDelim && /(^|,|\t)\s*(title|name|drill)\s*(,|\t|$)/.test(first);
+    if(isCsv){
+      const delim=lines[0].includes('\t')?'\t':',';
+      const headers=lines[0].split(delim).map(h=>h.trim().toLowerCase());
+      for(let i=1;i<lines.length;i++){
+        const cells=lines[i].split(delim).map(c=>c.trim());
+        const row={}; headers.forEach((h,idx)=>row[h]=cells[idx]||'');
+        const title=row.title||row.name||row.drill;
+        if(!title) continue;
+        const positions=(row.positions||row.position||row.pos||'').split(/[;/,]/).map(s=>s.trim()).filter(Boolean);
+        const tags=(row.tags||row.tag||row.category||'').split(/[;/,]/).map(s=>s.trim()).filter(Boolean);
+        drillImportRows.push({ title, positions, desc:(row.description||row.desc||''), video:normalizeUrl(row.video||row.link||''), tags });
+      }
+    } else {
+      lines.forEach(line=>{
+        const parts=line.split('|');
+        const title=parts[0].trim();
+        const desc=(parts[1]||'').trim();
+        if(title) drillImportRows.push({ title, positions:[], desc, video:'', tags:[] });
+      });
+    }
+    if(preview){
+      preview.style.display='block';
+      const noPos=drillImportRows.some(r=>!r.positions.length);
+      preview.innerHTML=`<div style="font-size:13px;color:var(--fg)"><b>${drillImportRows.length}</b> drill(s) ready to import.</div>`+
+        (noPos?'<div style="font-size:12px;color:var(--fg-3);margin-top:3px">Drills without a position group will be marked “Unassigned” — you can edit them after importing.</div>':'');
+    }
+  }
+  function confirmDrillImport(){
+    if(!drillImportRows.length){ showToast('Nothing to import — check your data'); return; }
+    let added=0;
+    drillImportRows.forEach(r=>{
+      DRILLS.unshift({ id:'d'+Date.now()+'_'+added, title:r.title, positions:r.positions.length?r.positions:['Unassigned'], desc:r.desc||'', video:r.video||'', tags:r.tags||[] });
+      added++;
+    });
+    saveDrillsToStorage();
+    document.getElementById('drill-import-overlay')?.remove();
+    renderDrillLibrary();
+    showToast(added+' drill'+(added===1?'':'s')+' imported ✓');
   }
 
   // ===== PLAYBOOK =====
