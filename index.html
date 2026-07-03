@@ -1611,16 +1611,16 @@
   /* Desktop: use fixed positioning so overlays cover full viewport */
   @media (min-width:768px) {
     #playbook-overlay, #pb-detail-overlay {
-      position:fixed;
-      top:0; left:185px; right:0; bottom:0;
-      width:auto; height:auto;
-      z-index:300;
+      position:fixed !important;
+      top:0 !important; left:240px !important; right:0 !important; bottom:0 !important;
+      width:auto !important; height:100vh !important;
+      z-index:300 !important;
     }
     #pb-new-folder-overlay, #pb-move-overlay, #pb-link-overlay {
-      position:fixed;
-      top:0; left:185px; right:0; bottom:0;
-      width:auto; height:auto;
-      z-index:301;
+      position:fixed !important;
+      top:0 !important; left:240px !important; right:0 !important; bottom:0 !important;
+      width:auto !important; height:100vh !important;
+      z-index:301 !important;
     }
   }
 
@@ -4371,105 +4371,6 @@
     </div>
   </div>
 
-  <!-- ===== PLAYBOOK OVERLAY ===== -->
-  <!-- ===== PLAYBOOK OVERLAY ===== -->
-  <div id="playbook-overlay">
-    <div class="pb-header">
-      <div class="pp-back" onclick="closePlaybook()">‹</div>
-      <div style="flex:1">
-        <div style="font-size:17px;font-weight:700">Playbook</div>
-        <div style="font-size:12px;color:var(--fg-3)" id="pb-header-sub">Your Team</div>
-      </div>
-      <button class="btn-sm" id="pb-select-toggle" onclick="pbToggleSelectMode()" style="display:none">Select</button>
-    </div>
-    <div class="pb-unit-nav">
-      <button class="pb-unit-btn active" onclick="showPbUnit('offense',this)">Offense</button>
-      <button class="pb-unit-btn" onclick="showPbUnit('defense',this)">Defense</button>
-      <button class="pb-unit-btn" onclick="showPbUnit('special',this)">Special Teams</button>
-    </div>
-    <div class="pb-body">
-      <div class="pb-unit-section active" id="pb-offense">
-        <div class="pb-action-row" id="pb-offense-actions">
-          <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'offense')"></div>
-          <button class="pb-folder-btn" onclick="openNewFolderModal('offense')">📁 New folder</button>
-        </div>
-        <div id="pb-offense-content"></div>
-      </div>
-      <div class="pb-unit-section" id="pb-defense">
-        <div class="pb-action-row" id="pb-defense-actions">
-          <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'defense')"></div>
-          <button class="pb-folder-btn" onclick="openNewFolderModal('defense')">📁 New folder</button>
-        </div>
-        <div id="pb-defense-content"></div>
-      </div>
-      <div class="pb-unit-section" id="pb-special">
-        <div class="pb-action-row" id="pb-special-actions">
-          <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'special')"></div>
-          <button class="pb-folder-btn" onclick="openNewFolderModal('special')">📁 New folder</button>
-        </div>
-        <div id="pb-special-content"></div>
-      </div>
-    </div>
-    <div class="pb-select-bar" id="pb-select-bar">
-      <span class="pb-select-bar-label" id="pb-select-label">0 selected</span>
-      <button class="btn-sm" onclick="openMoveModal()">Move to folder</button>
-      <button class="btn-sm" style="background:var(--bg-3);color:var(--red)" onclick="pbDeleteSelected()">Delete</button>
-      <button class="btn-sm" style="background:var(--bg-3)" onclick="pbToggleSelectMode()">Cancel</button>
-    </div>
-  </div>
-
-  <!-- ===== PLAY DETAIL OVERLAY ===== -->
-  <div id="pb-detail-overlay">
-    <div class="pb-detail-header">
-      <div class="pp-back" onclick="closePbDetail()">‹</div>
-      <div style="flex:1">
-        <input id="pb-detail-title" class="pb-resp-input" style="font-size:16px;font-weight:700;background:transparent;border:none;padding:0;width:100%" placeholder="Play name…">
-      </div>
-      <button class="btn-sm" style="background:var(--red);color:white" onclick="pbDeleteCurrentPlay()">Delete</button>
-    </div>
-    <div class="pb-detail-img-wrap">
-      <img id="pb-detail-img" class="pb-detail-img" src="" alt="play diagram">
-    </div>
-    <div class="pb-detail-body">
-      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Player Responsibilities</div>
-      <div id="pb-resp-list"></div>
-      <button onclick="pbAddRespRow()" style="width:100%;margin-top:6px;background:var(--bg-3);border:1px dashed var(--border-2);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font)">+ Add position</button>
-      <button onclick="pbSaveDetail()" class="btn-primary" style="width:100%;margin-top:12px">Save</button>
-    </div>
-  </div>
-
-  <!-- ===== NEW FOLDER MODAL ===== -->
-  <div id="pb-new-folder-overlay">
-    <div class="ap-modal" onclick="event.stopPropagation()">
-      <div class="ap-head"><div class="ap-title">New folder</div><div class="ap-close" onclick="closeNewFolderModal()">✕</div></div>
-      <div class="ap-field">
-        <div class="ap-field-label">Folder name</div>
-        <input class="ap-input" id="pb-folder-name-input" placeholder="e.g. 2 Formation, Red Zone, 4th Down">
-      </div>
-      <button class="note-modal-save" onclick="createPbFolder()">Create folder</button>
-    </div>
-  </div>
-
-  <!-- ===== MOVE TO FOLDER MODAL ===== -->
-  <div id="pb-move-overlay" onclick="closeMoveModal()">
-    <div class="pb-move-sheet" onclick="event.stopPropagation()">
-      <div class="action-sheet-handle"></div>
-      <div style="font-size:16px;font-weight:700;margin-bottom:14px">Move to folder</div>
-      <div id="pb-move-folder-list"></div>
-    </div>
-  </div>
-
-  <!-- ===== PLAYBOOK LINK MODAL ===== -->
-  <div id="pb-link-overlay">
-    <div class="ap-modal" onclick="event.stopPropagation()">
-      <div class="ap-head"><div class="ap-title">Link external playbook</div><div class="ap-close" onclick="closePbLinkModal()">✕</div></div>
-      <div class="ap-sub">Paste a link to Google Drive, Hudl, Dropbox, or any external playbook tool.</div>
-      <div class="ap-field"><div class="ap-field-label">Label</div><input class="ap-input" id="pb-link-label" placeholder="e.g. Offensive Install — Google Drive"></div>
-      <div class="ap-field"><div class="ap-field-label">URL</div><input class="ap-input" id="pb-link-url" placeholder="https://…" type="url"></div>
-      <button class="note-modal-save" onclick="savePbLink()">Add link</button>
-    </div>
-  </div>
-
   <!-- ===== ADD / EDIT ITEM MODAL ===== -->
   <div id="add-item-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4);max-height:88vh;overflow-y:auto" onclick="event.stopPropagation()">
@@ -4819,6 +4720,107 @@
 
   </div><!-- end desktop-main -->
 </div><!-- end screen-app -->
+
+  <!-- ===== PLAYBOOK OVERLAY ===== -->
+  <!-- ===== PLAYBOOK OVERLAY ===== -->
+  <div id="playbook-overlay">
+    <div class="pb-header">
+      <div class="pp-back" onclick="closePlaybook()">‹</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">Playbook</div>
+        <div style="font-size:12px;color:var(--fg-3)" id="pb-header-sub">Your Team</div>
+      </div>
+      <button class="btn-sm" id="pb-select-toggle" onclick="pbToggleSelectMode()" style="display:none">Select</button>
+    </div>
+    <div class="pb-unit-nav">
+      <button class="pb-unit-btn active" onclick="showPbUnit('offense',this)">Offense</button>
+      <button class="pb-unit-btn" onclick="showPbUnit('defense',this)">Defense</button>
+      <button class="pb-unit-btn" onclick="showPbUnit('special',this)">Special Teams</button>
+    </div>
+    <div class="pb-body">
+      <div class="pb-unit-section active" id="pb-offense">
+        <div class="pb-action-row" id="pb-offense-actions">
+          <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'offense')"></div>
+          <button class="pb-folder-btn" onclick="openNewFolderModal('offense')">📁 New folder</button>
+        </div>
+        <div id="pb-offense-content"></div>
+      </div>
+      <div class="pb-unit-section" id="pb-defense">
+        <div class="pb-action-row" id="pb-defense-actions">
+          <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'defense')"></div>
+          <button class="pb-folder-btn" onclick="openNewFolderModal('defense')">📁 New folder</button>
+        </div>
+        <div id="pb-defense-content"></div>
+      </div>
+      <div class="pb-unit-section" id="pb-special">
+        <div class="pb-action-row" id="pb-special-actions">
+          <div class="pb-upload-btn">📷 Add plays<input type="file" accept="image/*" multiple onchange="handlePbImageUpload(event,'special')"></div>
+          <button class="pb-folder-btn" onclick="openNewFolderModal('special')">📁 New folder</button>
+        </div>
+        <div id="pb-special-content"></div>
+      </div>
+    </div>
+    <div class="pb-select-bar" id="pb-select-bar">
+      <span class="pb-select-bar-label" id="pb-select-label">0 selected</span>
+      <button class="btn-sm" onclick="openMoveModal()">Move to folder</button>
+      <button class="btn-sm" style="background:var(--bg-3);color:var(--red)" onclick="pbDeleteSelected()">Delete</button>
+      <button class="btn-sm" style="background:var(--bg-3)" onclick="pbToggleSelectMode()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===== PLAY DETAIL OVERLAY ===== -->
+  <div id="pb-detail-overlay">
+    <div class="pb-detail-header">
+      <div class="pp-back" onclick="closePbDetail()">‹</div>
+      <div style="flex:1">
+        <input id="pb-detail-title" class="pb-resp-input" style="font-size:16px;font-weight:700;background:transparent;border:none;padding:0;width:100%" placeholder="Play name…">
+      </div>
+      <button class="btn-sm" style="background:var(--red);color:white" onclick="pbDeleteCurrentPlay()">Delete</button>
+    </div>
+    <div class="pb-detail-img-wrap">
+      <img id="pb-detail-img" class="pb-detail-img" src="" alt="play diagram">
+    </div>
+    <div class="pb-detail-body">
+      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Player Responsibilities</div>
+      <div id="pb-resp-list"></div>
+      <button onclick="pbAddRespRow()" style="width:100%;margin-top:6px;background:var(--bg-3);border:1px dashed var(--border-2);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font)">+ Add position</button>
+      <button onclick="pbSaveDetail()" class="btn-primary" style="width:100%;margin-top:12px">Save</button>
+    </div>
+  </div>
+
+  <!-- ===== NEW FOLDER MODAL ===== -->
+  <div id="pb-new-folder-overlay">
+    <div class="ap-modal" onclick="event.stopPropagation()">
+      <div class="ap-head"><div class="ap-title">New folder</div><div class="ap-close" onclick="closeNewFolderModal()">✕</div></div>
+      <div class="ap-field">
+        <div class="ap-field-label">Folder name</div>
+        <input class="ap-input" id="pb-folder-name-input" placeholder="e.g. 2 Formation, Red Zone, 4th Down">
+      </div>
+      <button class="note-modal-save" onclick="createPbFolder()">Create folder</button>
+    </div>
+  </div>
+
+  <!-- ===== MOVE TO FOLDER MODAL ===== -->
+  <div id="pb-move-overlay" onclick="closeMoveModal()">
+    <div class="pb-move-sheet" onclick="event.stopPropagation()">
+      <div class="action-sheet-handle"></div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:14px">Move to folder</div>
+      <div id="pb-move-folder-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== PLAYBOOK LINK MODAL ===== -->
+  <div id="pb-link-overlay">
+    <div class="ap-modal" onclick="event.stopPropagation()">
+      <div class="ap-head"><div class="ap-title">Link external playbook</div><div class="ap-close" onclick="closePbLinkModal()">✕</div></div>
+      <div class="ap-sub">Paste a link to Google Drive, Hudl, Dropbox, or any external playbook tool.</div>
+      <div class="ap-field"><div class="ap-field-label">Label</div><input class="ap-input" id="pb-link-label" placeholder="e.g. Offensive Install — Google Drive"></div>
+      <div class="ap-field"><div class="ap-field-label">URL</div><input class="ap-input" id="pb-link-url" placeholder="https://…" type="url"></div>
+      <button class="note-modal-save" onclick="savePbLink()">Add link</button>
+    </div>
+  </div>
+
+
 </div><!-- end phone -->
 
 <!-- Profile modal outside screen-app to avoid backdrop-filter stacking context -->
