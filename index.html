@@ -1515,13 +1515,19 @@
   #drill-detail-overlay { position:absolute;inset:0;background:var(--bg);z-index:90;display:none;flex-direction:column; }
   #drill-detail-overlay.open { display:flex; }
   .drill-detail-header { display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0; }
-  .drill-detail-body { flex:1;overflow-y:auto;padding:20px; }
+  .drill-detail-header > div { min-width:0; }
+  .drill-detail-body { flex:1;overflow-y:auto;overflow-x:hidden;padding:20px; }
   .drill-detail-body::-webkit-scrollbar { display:none; }
   .drill-detail-title { font-size:22px;font-weight:800;letter-spacing:-0.3px;margin-bottom:6px; }
+  /* Long/garbled text must wrap instead of blowing out the layout */
+  .drill-detail-title, #dd-desc, #dd-header-title, .drill-name { overflow-wrap:anywhere; word-break:break-word; }
   .drill-detail-video { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:16px 0;display:flex;align-items:center;gap:12px;cursor:pointer; }
   .drill-detail-video-icon { font-size:28px;flex-shrink:0; }
   .drill-detail-video-label { font-size:14px;font-weight:600;color:var(--blue); }
-  .drill-detail-video-sub { font-size:12px;color:var(--fg-3);margin-top:2px; }
+  .drill-detail-video-sub { font-size:12px;color:var(--fg-3);margin-top:2px;overflow-wrap:anywhere; }
+  @media (min-width:768px) {
+    .drill-detail-body { max-width:760px; margin:0 auto; width:100%; box-sizing:border-box; }
+  }
 
   /* Drill picker dropdown (in cell note modal) */
   .drill-picker-row { display:flex;gap:6px;align-items:center;margin-bottom:10px; }
@@ -4300,6 +4306,7 @@
       </div>
 
       <button class="note-modal-save" style="margin-top:16px" onclick="saveDrill()">Save drill</button>
+      <button id="drill-delete-btn" style="width:100%;margin-top:8px;display:none;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)" onclick="deleteCurrentDrill()">Delete drill</button>
     </div>
   </div>
 
@@ -4793,16 +4800,17 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v34</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v34.2</div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v34';
+  const APP_VERSION = 'v34.2';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -15252,8 +15260,19 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     renderDrillTagSelector();
     const posInput=document.getElementById('new-pos-input'); if(posInput) posInput.value='';
     const tagInput=document.getElementById('new-tag-input'); if(tagInput) tagInput.value='';
+    const delBtn=document.getElementById('drill-delete-btn'); if(delBtn) delBtn.style.display = editId ? 'block' : 'none';
 
     document.getElementById('add-drill-overlay').classList.add('open');
+  }
+  function deleteCurrentDrill(){
+    if(!editingDrillId) return;
+    if(!confirm('Delete this drill? This cannot be undone.')) return;
+    const idx=DRILLS.findIndex(d=>d.id===editingDrillId);
+    if(idx>=0) DRILLS.splice(idx,1);
+    saveDrillsToStorage();
+    closeAddDrill();
+    renderDrillLibrary();
+    showToast('Drill deleted');
   }
 
   const STD_DRILL_POS = ['ALL','All O','All D','QB','RB','WR','OL','DL','LB','DB'];
@@ -15392,9 +15411,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
     let added=0;
     lines.forEach(line=>{
-      const parts=line.split('|');
-      const title=parts[0].trim();
-      const desc=(parts[1]||'').trim();
+      const {title,desc}=splitDrillLine(line);
       if(!title) return;
       DRILLS.unshift({ id:'d'+Date.now()+'_'+added, title, positions:[...positions], desc, video:'', tags:[] });
       added++;
@@ -15407,6 +15424,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   // ===== IMPORT DRILLS =====
+  function splitDrillLine(line){
+    if(line.includes('|')){ const p=line.split('|'); return {title:p[0].trim(), desc:p.slice(1).join('|').trim()}; }
+    if(line.includes('\t')){ const p=line.split('\t'); return {title:p[0].trim(), desc:p.slice(1).join(' ').trim()}; }
+    const m=line.match(/^(.{1,80}?)\s+[—–-]\s+(.+)$/); if(m) return {title:m[1].trim(), desc:m[2].trim()};
+    return {title:line.trim(), desc:''};
+  }
   let drillImportRows=[];
   function openDrillImport(){
     drillImportRows=[];
@@ -15420,12 +15443,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <div style="font-size:17px;font-weight:700">Import drills</div>
           <div onclick="document.getElementById('drill-import-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
         </div>
-        <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Each drill can be one line — <b>Title | Description</b> — or a CSV with columns: title, positions, tags, description, video.</div>
+        <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Upload a <b>CSV</b> or <b>Word (.docx)</b> file, or paste text. Each drill can be one line — <b>Title | Description</b> — or a CSV with columns: title, positions, tags, description, video.</div>
         <button onclick="downloadDrillTemplate()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font);margin-bottom:14px">📥 Download CSV template</button>
         <div style="border:2px dashed var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('drill-csv-input').click()">
           <div style="font-size:20px;margin-bottom:4px">📄</div>
-          <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload a file</div>
-          <input type="file" id="drill-csv-input" accept=".csv,.tsv,.txt" style="display:none" onchange="handleDrillCSV(event)">
+          <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload CSV or Word file</div>
+          <div style="font-size:11px;color:var(--fg-3);margin-top:2px">.csv, .txt, or .docx</div>
+          <input type="file" id="drill-csv-input" accept=".csv,.tsv,.txt,.docx" style="display:none" onchange="handleDrillCSV(event)">
         </div>
         <div style="text-align:center;color:var(--fg-3);font-size:12px;margin-bottom:10px">— or paste —</div>
         <textarea id="drill-import-text" placeholder="Release vs Press | Work press-release footwork&#10;Form Tackle Station | Shoulder-to-hip angle tackle" style="width:100%;height:120px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical" oninput="parseDrillImport()"></textarea>
@@ -15442,11 +15466,41 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const blob=new Blob([csv],{type:'text/csv'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='drills_template.csv'; a.click();
   }
+  async function extractDocxText(arrayBuffer){
+    if(typeof JSZip==='undefined') throw new Error('JSZip not loaded');
+    const zip=await JSZip.loadAsync(arrayBuffer);
+    const doc=zip.file('word/document.xml');
+    if(!doc) throw new Error('Not a valid .docx');
+    const xml=await doc.async('string');
+    const decode=s=>s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'");
+    const paras=xml.split(/<\/w:p>/);
+    const lines=paras.map(p=>{
+      const runs=[...p.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map(m=>decode(m[1]));
+      return runs.join('').trim();
+    }).filter(l=>l);
+    return lines.join('\n');
+  }
   function handleDrillCSV(e){
     const f=e.target.files[0]; if(!f) return;
-    const rd=new FileReader();
-    rd.onload=ev=>{ const t=document.getElementById('drill-import-text'); if(t){ t.value=ev.target.result; parseDrillImport(); } };
-    rd.readAsText(f);
+    const name=(f.name||'').toLowerCase();
+    const t=document.getElementById('drill-import-text');
+    if(name.endsWith('.docx')){
+      const rd=new FileReader();
+      rd.onload=async ev=>{
+        try{
+          const text=await extractDocxText(ev.target.result);
+          if(!text.trim()){ showToast('No text found in that document'); return; }
+          if(t){ t.value=text; parseDrillImport(); }
+        }catch(err){ console.error('docx read error',err); showToast("Couldn't read that Word file — try saving as .docx or paste the text"); }
+      };
+      rd.readAsArrayBuffer(f);
+    } else if(name.endsWith('.doc')){
+      showToast('Old .doc format isn\'t supported — save it as .docx or paste the text');
+    } else {
+      const rd=new FileReader();
+      rd.onload=ev=>{ if(t){ t.value=ev.target.result; parseDrillImport(); } };
+      rd.readAsText(f);
+    }
   }
   function parseDrillImport(){
     const raw=(document.getElementById('drill-import-text')?.value||'').trim();
@@ -15471,9 +15525,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       }
     } else {
       lines.forEach(line=>{
-        const parts=line.split('|');
-        const title=parts[0].trim();
-        const desc=(parts[1]||'').trim();
+        const {title,desc}=splitDrillLine(line);
         if(title) drillImportRows.push({ title, positions:[], desc, video:'', tags:[] });
       });
     }
