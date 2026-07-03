@@ -553,18 +553,61 @@
   .drill-add-btn { width:100%;background:var(--bg-3);border:1px dashed var(--border-2);border-radius:var(--radius);padding:14px;font-size:13px;color:var(--team-primary);cursor:pointer;font-family:var(--font);text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px; }
 
   /* ===== COACH DOC CENTER ===== */
-  .coach-doc-folder { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px; }
-  .coach-doc-folder:active { border-color:var(--team-primary); }
-  .cdoc-icon { font-size:22px;width:36px;text-align:center;flex-shrink:0; }
-  .cdoc-content { flex:1; }
-  .cdoc-name { font-size:14px;font-weight:600; }
-  .cdoc-meta { font-size:12px;color:var(--fg-2);margin-top:2px; }
-  .cdoc-arrow { font-size:20px;color:var(--fg-3); }
-  .cdoc-upload-btn { width:100%;background:var(--bg-3);border:1.5px dashed var(--border-2);border-radius:var(--radius);padding:18px;font-size:14px;color:var(--team-primary);cursor:pointer;font-family:var(--font);text-align:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:600; }
-  .cdoc-file-item { display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-3);border-radius:var(--radius-sm);margin-bottom:6px; }
+  /* Documents */
+  .cdoc-folder { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden; }
+  .cdoc-folder-head { display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;user-select:none; }
+  .cdoc-folder-icon { font-size:20px;flex-shrink:0; }
+  .cdoc-folder-name { font-size:14px;font-weight:700;color:var(--fg);flex:1; }
+  .cdoc-folder-meta { font-size:11px;color:var(--fg-3); }
+  .cdoc-folder-chevron { font-size:16px;color:var(--fg-3);transition:transform 0.2s;margin-left:6px; }
+  .cdoc-folder.open .cdoc-folder-chevron { transform:rotate(90deg); }
+  .cdoc-folder-body { display:none;padding:0 10px 10px; }
+  .cdoc-folder.open .cdoc-folder-body { display:block; }
+  .cdoc-file-item { display:flex;align-items:center;gap:10px;padding:10px 8px;background:var(--bg-3);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;transition:border-color 0.15s; }
+  .cdoc-file-item:active { opacity:0.7; }
   .cdoc-file-icon { font-size:20px;width:28px;text-align:center;flex-shrink:0; }
-  .cdoc-file-name { font-size:13px;font-weight:600;flex:1; }
-  .cdoc-file-meta { font-size:11px;color:var(--fg-3); }
+  .cdoc-file-name { font-size:13px;font-weight:600;flex:1;color:var(--fg);word-break:break-word; }
+  .cdoc-file-meta { font-size:11px;color:var(--fg-3);margin-top:2px; }
+  .cdoc-file-del { color:var(--fg-3);font-size:16px;cursor:pointer;padding:4px 6px;flex-shrink:0; }
+  .cdoc-file-del:active { color:var(--red); }
+  .cdoc-form-item { display:flex;align-items:center;gap:10px;padding:10px 8px;background:var(--bg-3);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer; }
+  .cdoc-form-badge { font-size:10px;font-weight:700;background:rgba(77,159,255,0.15);color:var(--blue);border-radius:4px;padding:2px 6px;flex-shrink:0; }
+  .cdoc-action-row { display:flex;gap:8px;margin-bottom:10px; }
+  .cdoc-upload-btn { flex:1;background:var(--bg-3);border:1.5px dashed var(--border-2);border-radius:var(--radius);padding:11px 10px;font-size:13px;color:var(--team-primary);cursor:pointer;font-family:var(--font);text-align:center;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;position:relative;overflow:hidden; }
+  .cdoc-upload-btn input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
+  .cdoc-link-btn { background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;font-size:13px;color:var(--fg-2);cursor:pointer;font-family:var(--font);font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap; }
+  /* Doc modals */
+  #doc-new-folder-overlay,#doc-add-form-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
+  #doc-new-folder-overlay.open,#doc-add-form-overlay.open { display:flex; }
+  @media (min-width:768px) {
+    #doc-new-folder-overlay,#doc-add-form-overlay { position:fixed;z-index:400; }
+  }
+  /* Doc sharing */
+  #doc-share-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:97;display:none;align-items:center;justify-content:center;padding:24px; }
+  #doc-share-overlay.open { display:flex; }
+  .doc-share-modal { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:460px;max-height:85vh;overflow-y:auto; }
+  .doc-share-modal::-webkit-scrollbar { display:none; }
+  .doc-share-section { padding:14px 16px;border-bottom:1px solid var(--border); }
+  .doc-share-section:last-child { border-bottom:none; }
+  .doc-share-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--fg-3);margin-bottom:10px; }
+  .doc-share-option { display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:background 0.15s; }
+  .doc-share-option:hover { background:var(--bg-3); }
+  .doc-share-radio { width:18px;height:18px;border-radius:50%;border:2px solid var(--border-2);flex-shrink:0;display:flex;align-items:center;justify-content:center; }
+  .doc-share-radio.active { border-color:var(--team-primary);background:var(--team-primary); }
+  .doc-share-radio.active::after { content:'';width:7px;height:7px;border-radius:50%;background:white; }
+  .doc-share-check { width:18px;height:18px;border-radius:4px;border:2px solid var(--border-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:white; }
+  .doc-share-check.active { border-color:var(--team-primary);background:var(--team-primary); }
+  .doc-share-file-list { max-height:180px;overflow-y:auto;margin-top:8px; }
+  .doc-share-file-list::-webkit-scrollbar { display:none; }
+  .doc-share-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:3px; }
+  .doc-share-badge-coaches { background:rgba(161,30,30,0.15);color:var(--team-primary); }
+  .doc-share-badge-players { background:rgba(77,159,255,0.15);color:var(--blue); }
+  .doc-share-badge-parents { background:rgba(80,200,120,0.15);color:#3d9e5f; }
+  @media (min-width:768px) {
+    #doc-share-overlay { position:fixed;z-index:400; }
+  }
+  /* Legacy compat */
+  .coach-doc-folder { display:none; }
 
   /* ===== NEW DAY MODAL ===== */
   #new-day-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:80;display:none;align-items:flex-end; }
@@ -2929,54 +2972,112 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Documents</div>
-      </div>
-      <div class="cdoc-upload-btn" onclick="showToast('File upload coming in next build 📎')">📎 Upload a file</div>
-
-      <div class="section-label">Staff documents</div>
-      <div class="coach-doc-folder" onclick="toggleCoachDocFolder('plays')">
-        <div class="cdoc-icon">📋</div>
-        <div class="cdoc-content"><div class="cdoc-name">Playbook</div><div class="cdoc-meta">4 files · Updated Oct 12</div></div>
-        <div class="cdoc-arrow">›</div>
-      </div>
-      <div id="cdoc-plays" style="display:none;margin:0 0 10px;padding:10px;background:var(--black-3);border-radius:var(--radius-sm)">
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Offensive Playbook 2024.pdf</div><div class="cdoc-file-meta">2.4 MB · Oct 12</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Defensive Playbook 2024.pdf</div><div class="cdoc-file-meta">1.8 MB · Oct 12</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Special Teams Schemes.pdf</div><div class="cdoc-file-meta">890 KB · Sep 28</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Red Zone Install — Week 7.pdf</div><div class="cdoc-file-meta">320 KB · Oct 14</div></div></div>
+        <button class="btn-sm" style="margin-left:auto" onclick="openDocNewFolderModal()">+ Folder</button>
       </div>
 
-      <div class="coach-doc-folder" onclick="toggleCoachDocFolder('scouting')">
-        <div class="cdoc-icon">🔍</div>
-        <div class="cdoc-content"><div class="cdoc-name">Scouting Reports</div><div class="cdoc-meta">2 files · Updated Oct 14</div></div>
-        <div class="cdoc-arrow">›</div>
-      </div>
-      <div id="cdoc-scouting" style="display:none;margin:0 0 10px;padding:10px;background:var(--black-3);border-radius:var(--radius-sm)">
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Emmett Huskies — Week 7 Scout.pdf</div><div class="cdoc-file-meta">540 KB · Oct 14</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Vallivue Falcons — Week 8 Advance.pdf</div><div class="cdoc-file-meta">480 KB · Oct 14</div></div></div>
-      </div>
+      <div id="doc-folder-list"></div>
 
-      <div class="coach-doc-folder" onclick="toggleCoachDocFolder('film')">
-        <div class="cdoc-icon">🎥</div>
-        <div class="cdoc-content"><div class="cdoc-name">Film & Cutups</div><div class="cdoc-meta">3 files · Updated today</div></div>
-        <div class="cdoc-arrow">›</div>
-      </div>
-      <div id="cdoc-film" style="display:none;margin:0 0 10px;padding:10px;background:var(--black-3);border-radius:var(--radius-sm)">
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">🎬</div><div><div class="cdoc-file-name">Ridgevue Game Film — Week 6.mp4</div><div class="cdoc-file-meta">1.2 GB · Today</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">🎬</div><div><div class="cdoc-file-name">WR Cutup — Slot Routes.mp4</div><div class="cdoc-file-meta">340 MB · Oct 13</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">🎬</div><div><div class="cdoc-file-name">OL Cutup — Wash Wall Drill.mp4</div><div class="cdoc-file-meta">290 MB · Oct 13</div></div></div>
-      </div>
-
-      <div class="coach-doc-folder" onclick="toggleCoachDocFolder('admin')">
-        <div class="cdoc-icon">📝</div>
-        <div class="cdoc-content"><div class="cdoc-name">Admin & Compliance</div><div class="cdoc-meta">3 files</div></div>
-        <div class="cdoc-arrow">›</div>
-      </div>
-      <div id="cdoc-admin" style="display:none;margin:0 0 10px;padding:10px;background:var(--black-3);border-radius:var(--radius-sm)">
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">IHSAA Eligibility Rules 2024.pdf</div><div class="cdoc-file-meta">210 KB</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Booster Budget — Fall 2024.xlsx</div><div class="cdoc-file-meta">88 KB</div></div></div>
-        <div class="cdoc-file-item"><div class="cdoc-file-icon">📄</div><div><div class="cdoc-file-name">Senior Night Run of Show.docx</div><div class="cdoc-file-meta">44 KB</div></div></div>
+      <div id="doc-empty-state" style="text-align:center;padding:40px 20px;color:var(--fg-3);display:none">
+        <div style="font-size:36px;margin-bottom:12px">📁</div>
+        <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No folders yet</div>
+        <div style="font-size:13px">Tap "+ Folder" to create your first document folder.</div>
       </div>
     </div><!-- end more-docs -->
+
+    <!-- DOC SHARE MODAL -->
+    <div id="doc-share-overlay" onclick="closeDocShareModal()">
+      <div class="doc-share-modal" onclick="event.stopPropagation()">
+        <div class="ap-head" style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div class="ap-title" id="doc-share-title">Share folder</div>
+          <div class="ap-close" onclick="closeDocShareModal()">✕</div>
+        </div>
+
+        <!-- Step 1: which files -->
+        <div class="doc-share-section" id="doc-share-step1">
+          <div class="doc-share-label">Which files to share</div>
+          <div class="doc-share-option" onclick="docShareSetMode('all')">
+            <div class="doc-share-radio" id="doc-share-radio-all"></div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--fg)">All files in this folder</div>
+              <div style="font-size:12px;color:var(--fg-3);margin-top:2px">Any file added later will also be shared</div>
+            </div>
+          </div>
+          <div class="doc-share-option" onclick="docShareSetMode('selective')">
+            <div class="doc-share-radio" id="doc-share-radio-selective"></div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--fg)">Only certain files</div>
+              <div style="font-size:12px;color:var(--fg-3);margin-top:2px">Pick and choose which files are visible</div>
+            </div>
+          </div>
+          <!-- File picker (selective mode only) -->
+          <div class="doc-share-file-list" id="doc-share-file-list" style="display:none"></div>
+        </div>
+
+        <!-- Step 2: which roles -->
+        <div class="doc-share-section">
+          <div class="doc-share-label">Share with</div>
+          <div class="doc-share-option" onclick="docShareToggleRole('coaches')">
+            <div class="doc-share-check" id="doc-share-chk-coaches"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--fg)">🎙️ Coaches</div>
+          </div>
+          <div class="doc-share-option" onclick="docShareToggleRole('players')">
+            <div class="doc-share-check" id="doc-share-chk-players"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--fg)">🏈 Players</div>
+          </div>
+          <div class="doc-share-option" onclick="docShareToggleRole('parents')">
+            <div class="doc-share-check" id="doc-share-chk-parents"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--fg)">👨‍👩‍👧 Parents</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 16px">
+          <button class="note-modal-save" onclick="saveDocSharing()">Save sharing settings</button>
+          <button onclick="docRemoveSharing()" style="width:100%;margin-top:8px;background:transparent;border:none;color:var(--fg-3);font-size:13px;cursor:pointer;padding:6px;font-family:var(--font)">Remove sharing</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW DOC FOLDER MODAL -->
+    <div id="doc-new-folder-overlay" onclick="closeDocNewFolderModal()">
+      <div class="ap-modal" onclick="event.stopPropagation()">
+        <div class="ap-head">
+          <div class="ap-title">New folder</div>
+          <div class="ap-close" onclick="closeDocNewFolderModal()">✕</div>
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">Folder name</div>
+          <input class="ap-input" id="doc-folder-name-input" placeholder="e.g. Scouting Reports, Film, Forms">
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">Type</div>
+          <select class="ap-input" id="doc-folder-type-input">
+            <option value="files">📁 Files — upload PDFs, docs, videos</option>
+            <option value="forms">📋 Forms — link to Google Forms, Jotform, etc.</option>
+          </select>
+        </div>
+        <button class="note-modal-save" onclick="createDocFolder()">Create folder</button>
+      </div>
+    </div>
+
+    <!-- ADD FORM LINK MODAL -->
+    <div id="doc-add-form-overlay" onclick="closeDocAddFormModal()">
+      <div class="ap-modal" onclick="event.stopPropagation()">
+        <div class="ap-head">
+          <div class="ap-title">Add form link</div>
+          <div class="ap-close" onclick="closeDocAddFormModal()">✕</div>
+        </div>
+        <div class="ap-sub">Paste a link to a Google Form, Jotform, Typeform, or any online form.</div>
+        <div class="ap-field">
+          <div class="ap-field-label">Form name</div>
+          <input class="ap-input" id="doc-form-name-input" placeholder="e.g. Physical / Liability Waiver">
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">Form URL</div>
+          <input class="ap-input" id="doc-form-url-input" type="url" placeholder="https://forms.google.com/…">
+        </div>
+        <button class="note-modal-save" onclick="saveDocFormLink()">Add form</button>
+      </div>
+    </div>
 
     <!-- ROSTER SECTION -->
     <div class="more-section" id="more-roster">
@@ -3816,32 +3917,13 @@
     <div class="more-section" id="parent-section-documents">
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToParentMenu()">‹</div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Document Center</div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Documents</div>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Nampa Bulldogs · Forms & resources</div>
-      <div class="folder-card" onclick="showFolder('camp')"><div class="folder-icon">🏕️</div><div class="folder-content"><div class="folder-title">Camp</div><div class="folder-sub">2 documents</div></div><div class="link-card-arrow">›</div></div>
-      <div id="folder-camp" class="folder-files" style="display:none">
-        <div class="folder-files-label">Camp</div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Summer Camp Schedule.pdf</div><div class="file-meta">Uploaded Jul 2 · 240 KB</div></div></div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Camp Packing List.pdf</div><div class="file-meta">Uploaded Jul 2 · 110 KB</div></div></div>
-      </div>
-      <div class="folder-card" onclick="showFolder('fundraising')"><div class="folder-icon">💵</div><div class="folder-content"><div class="folder-title">Fundraising</div><div class="folder-sub">1 document</div></div><div class="link-card-arrow">›</div></div>
-      <div id="folder-fundraising" class="folder-files" style="display:none">
-        <div class="folder-files-label">Fundraising</div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Fall Fundraiser Order Form.pdf</div><div class="file-meta">Uploaded Aug 20 · 180 KB</div></div></div>
-      </div>
-      <div class="folder-card" onclick="showFolder('season')"><div class="folder-icon">📅</div><div class="folder-content"><div class="folder-title">Season Info</div><div class="folder-sub">3 documents</div></div><div class="link-card-arrow">›</div></div>
-      <div id="folder-season" class="folder-files" style="display:none">
-        <div class="folder-files-label">Season Info</div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Full Season Schedule.pdf</div><div class="file-meta">Uploaded Aug 12 · 95 KB</div></div></div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Parent Meeting Slides.pdf</div><div class="file-meta">Uploaded Aug 14 · 1.2 MB</div></div></div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Senior Night Details.pdf</div><div class="file-meta">Uploaded Oct 10 · 75 KB</div></div></div>
-      </div>
-      <div class="folder-card" onclick="showFolder('forms')"><div class="folder-icon">📝</div><div class="folder-content"><div class="folder-title">Forms & Waivers</div><div class="folder-sub">2 documents</div></div><div class="link-card-arrow">›</div></div>
-      <div id="folder-forms" class="folder-files" style="display:none">
-        <div class="folder-files-label">Forms & Waivers</div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Concussion Waiver.pdf</div><div class="file-meta">Uploaded Jul 28 · 60 KB</div></div></div>
-        <div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Emergency Contact Form.pdf</div><div class="file-meta">Uploaded Jul 28 · 55 KB</div></div></div>
+      <div id="parent-doc-list"></div>
+      <div id="parent-doc-empty" style="text-align:center;padding:40px 20px;color:var(--fg-3);display:none">
+        <div style="font-size:36px;margin-bottom:12px">📁</div>
+        <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No shared documents yet</div>
+        <div style="font-size:13px">Your coaching staff hasn't shared any documents with parents yet.</div>
       </div>
     </div>
   </div>
@@ -4064,13 +4146,12 @@
         <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Documents</div>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Nampa Bulldogs · Forms & resources</div>
-      <div class="folder-card" onclick="showFolder('camp-p')"><div class="folder-icon">🏕️</div><div class="folder-content"><div class="folder-title">Camp</div><div class="folder-sub">2 documents</div></div><div class="link-card-arrow">›</div></div>
-      <div id="folder-camp-p" class="folder-files" style="display:none"><div class="folder-files-label">Camp</div><div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Summer Camp Schedule.pdf</div><div class="file-meta">240 KB</div></div></div><div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Camp Packing List.pdf</div><div class="file-meta">110 KB</div></div></div></div>
-      <div class="folder-card" onclick="showFolder('season-p')"><div class="folder-icon">📅</div><div class="folder-content"><div class="folder-title">Season Info</div><div class="folder-sub">3 documents</div></div><div class="link-card-arrow">›</div></div>
-      <div id="folder-season-p" class="folder-files" style="display:none"><div class="folder-files-label">Season Info</div><div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Full Season Schedule.pdf</div><div class="file-meta">95 KB</div></div></div><div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Senior Night Details.pdf</div><div class="file-meta">75 KB</div></div></div></div>
-      <div class="folder-card" onclick="showFolder('forms-p')"><div class="folder-icon">📝</div><div class="folder-content"><div class="folder-title">Forms & Waivers</div><div class="folder-sub">2 documents</div></div><div class="link-card-arrow">›</div></div>
-      <div id="folder-forms-p" class="folder-files" style="display:none"><div class="folder-files-label">Forms & Waivers</div><div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Concussion Waiver.pdf</div><div class="file-meta">60 KB</div></div></div><div class="file-item"><div class="file-icon">📄</div><div class="file-content"><div class="file-name">Emergency Contact Form.pdf</div><div class="file-meta">55 KB</div></div></div></div>
+      <div id="player-doc-list"></div>
+      <div id="player-doc-empty" style="text-align:center;padding:40px 20px;color:var(--fg-3);display:none">
+        <div style="font-size:36px;margin-bottom:12px">📁</div>
+        <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No shared documents yet</div>
+        <div style="font-size:13px">Your coaches haven't shared any documents with players yet.</div>
+      </div>
     </div>
   </div>
 
@@ -11018,6 +11099,13 @@
       window.ROSTER_DATA = window.ROSTER_DATA || [];
       loadPerfData();
     }
+    if (section === 'docs') { initDocs(); }
+    if (section === 'documents') {
+      // Determine role from which tab is active
+      const isPlayer = document.getElementById('tab-player-more') && document.getElementById('tab-player-more').style.display !== 'none';
+      const role = isPlayer ? 'players' : 'parents';
+      docLoadFromSupabase().then(() => renderSharedDocs(role));
+    }
     if (section === 'playbook') {
       pbMode = 'coach';
       const isCoach = true;
@@ -12472,9 +12560,433 @@ ${forPrint ? '' : '<button onclick="window.print()" style="margin-bottom:16px;pa
   // ===== COACH DOC CENTER FOLDERS =====
   function toggleCoachDocFolder(name) {
     const el = document.getElementById('cdoc-' + name);
+    if (!el) return;
     const isOpen = el.style.display === 'block';
     document.querySelectorAll('[id^="cdoc-"]').forEach(f => f.style.display = 'none');
     el.style.display = isOpen ? 'none' : 'block';
+  }
+
+  // ===== DOCUMENTS =====
+  const DOC_BUCKET = 'documents';
+  let DOC_DATA = { folders: [] };
+  // folder: { id, name, type('files'|'forms'), items: [{id, name, url, size, uploadedAt, type('file'|'form')}] }
+
+  function docId() { return 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+
+  function docFileIcon(name) {
+    const ext = (name||'').split('.').pop().toLowerCase();
+    if (['mp4','mov','avi','mkv'].includes(ext)) return '🎬';
+    if (['pdf'].includes(ext)) return '📄';
+    if (['xlsx','xls','csv'].includes(ext)) return '📊';
+    if (['docx','doc'].includes(ext)) return '📝';
+    if (['pptx','ppt'].includes(ext)) return '📊';
+    if (['jpg','jpeg','png','gif','webp'].includes(ext)) return '🖼️';
+    return '📎';
+  }
+
+  function docFormatSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+    if (bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+    return (bytes/1024/1024/1024).toFixed(1) + ' GB';
+  }
+
+  async function docSaveToSupabase() {
+    const programId = localStorage.getItem('mesh_program_id');
+    if (!programId) return;
+    try {
+      await db.from('programs').update({ documents_data: JSON.stringify(DOC_DATA) }).eq('id', programId);
+    } catch(e) { console.warn('Docs save error:', e); }
+  }
+
+  async function docLoadFromSupabase() {
+    const programId = localStorage.getItem('mesh_program_id');
+    if (!programId) return;
+    try {
+      const { data, error } = await db.from('programs').select('documents_data').eq('id', programId).single();
+      if (error || !data?.documents_data) return;
+      DOC_DATA = JSON.parse(data.documents_data);
+      if (!DOC_DATA.folders) DOC_DATA.folders = [];
+    } catch(e) { console.warn('Docs load error:', e); }
+  }
+
+  async function initDocs() {
+    await docLoadFromSupabase();
+    renderDocFolders();
+  }
+
+  function docSharingBadgesHtml(sharing) {
+    if (!sharing || !sharing.roles || sharing.roles.length === 0) return '';
+    const badges = sharing.roles.map(r => `<span class="doc-share-badge doc-share-badge-${r}">${r}</span>`).join('');
+    const modeLabel = sharing.mode === 'all' ? 'All files' : `${(sharing.files||[]).length} file${(sharing.files||[]).length!==1?'s':''}`;
+    return `<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:4px"><span style="font-size:10px;color:var(--fg-3)">${modeLabel} →</span>${badges}</div>`;
+  }
+
+  function renderDocFolders() {
+    const list = document.getElementById('doc-folder-list');
+    const empty = document.getElementById('doc-empty-state');
+    if (!list) return;
+    if (DOC_DATA.folders.length === 0) {
+      list.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    list.innerHTML = DOC_DATA.folders.map(folder => {
+      const isForm = folder.type === 'forms';
+      const items = folder.items || [];
+      const meta = items.length + ' ' + (isForm ? 'form' : 'file') + (items.length !== 1 ? 's' : '');
+      const sharing = folder.sharing || {};
+      const isShared = sharing.roles && sharing.roles.length > 0;
+      return `<div class="cdoc-folder open" id="docf-${folder.id}">
+        <div class="cdoc-folder-head" onclick="docToggleFolder('${folder.id}')">
+          <div class="cdoc-folder-icon">${isForm ? '📋' : '📁'}</div>
+          <div style="flex:1;min-width:0">
+            <div class="cdoc-folder-name">${escHtml(folder.name)}</div>
+            <div class="cdoc-folder-meta">${meta}</div>
+            ${docSharingBadgesHtml(sharing)}
+          </div>
+          <button class="pb-folder-edit-btn" onclick="event.stopPropagation();openDocShareModal('${folder.id}')" style="${isShared?'color:var(--team-primary);border-color:var(--team-primary)':''}">
+            ${isShared ? '🔗 Shared' : 'Share'}
+          </button>
+          <button class="pb-folder-edit-btn" onclick="event.stopPropagation();docDeleteFolder('${folder.id}')" style="color:var(--red);border-color:var(--red);margin-left:4px">Delete</button>
+          <div class="cdoc-folder-chevron">›</div>
+        </div>
+        <div class="cdoc-folder-body">
+          <div class="cdoc-action-row">
+            ${isForm
+              ? `<button class="cdoc-link-btn" onclick="openDocAddFormModal('${folder.id}')">+ Add form link</button>`
+              : `<div class="cdoc-upload-btn">📎 Upload file<input type="file" accept="*/*" multiple onchange="handleDocUpload(event,'${folder.id}')"></div>`
+            }
+          </div>
+          ${items.length === 0
+            ? `<div style="font-size:12px;color:var(--fg-3);text-align:center;padding:12px 0">${isForm ? 'No forms yet — add a form link above' : 'No files yet — upload one above'}</div>`
+            : items.map(item => {
+                const fileShared = isShared && (sharing.mode === 'all' || (sharing.files||[]).includes(item.id));
+                return isForm ? docFormItemHtml(item, folder.id, fileShared) : docFileItemHtml(item, folder.id, fileShared);
+              }).join('')
+          }
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function docFileItemHtml(item, folderId, isShared) {
+    return `<div class="cdoc-file-item">
+      <div class="cdoc-file-icon">${docFileIcon(item.name)}</div>
+      <div style="flex:1">
+        <div class="cdoc-file-name">${escHtml(item.name)}</div>
+        <div class="cdoc-file-meta">${item.size ? docFormatSize(item.size) + ' · ' : ''}${item.uploadedAt || ''}${isShared ? ' · <span style="color:var(--team-primary)">Shared</span>' : ''}</div>
+      </div>
+      <div class="cdoc-file-del" onclick="docDeleteFile('${folderId}','${item.id}')" title="Delete">✕</div>
+    </div>`;
+  }
+
+  function docFormItemHtml(item, folderId, isShared) {
+    return `<div class="cdoc-form-item" onclick="window.open('${item.url}','_blank')">
+      <div class="cdoc-file-icon">📋</div>
+      <div style="flex:1">
+        <div class="cdoc-file-name">${escHtml(item.name)}</div>
+        <div class="cdoc-file-meta">${item.uploadedAt || ''}${isShared ? ' · <span style="color:var(--team-primary)">Shared</span>' : ''}</div>
+      </div>
+      <span class="cdoc-form-badge">FORM</span>
+      <div class="cdoc-file-del" onclick="event.stopPropagation();docDeleteFile('${folderId}','${item.id}')" title="Delete">✕</div>
+    </div>`;
+  }
+
+  function docToggleFolder(id) {
+    const el = document.getElementById('docf-' + id);
+    if (el) el.classList.toggle('open');
+  }
+
+  // ── New folder modal ──
+  function openDocNewFolderModal() {
+    document.getElementById('doc-folder-name-input').value = '';
+    document.getElementById('doc-folder-type-input').value = 'files';
+    document.getElementById('doc-new-folder-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('doc-folder-name-input').focus(), 100);
+  }
+  function closeDocNewFolderModal() { document.getElementById('doc-new-folder-overlay').classList.remove('open'); }
+
+  async function createDocFolder() {
+    const name = document.getElementById('doc-folder-name-input').value.trim();
+    const type = document.getElementById('doc-folder-type-input').value;
+    if (!name) { showToast('Enter a folder name'); return; }
+    DOC_DATA.folders.push({ id: docId(), name, type, items: [] });
+    closeDocNewFolderModal();
+    renderDocFolders();
+    await docSaveToSupabase();
+    showToast(`"${name}" folder created ✓`);
+  }
+
+  async function docDeleteFolder(folderId) {
+    const folder = DOC_DATA.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    // Delete all files from storage
+    (folder.items || []).forEach(item => { if (item.storagePath) db.storage.from(DOC_BUCKET).remove([item.storagePath]); });
+    DOC_DATA.folders = DOC_DATA.folders.filter(f => f.id !== folderId);
+    renderDocFolders();
+    await docSaveToSupabase();
+    showToast(`"${folder.name}" deleted`);
+  }
+
+  // ── File upload ──
+  async function handleDocUpload(event, folderId) {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+    const programId = localStorage.getItem('mesh_program_id') || 'local';
+    showToast(`Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`);
+    const folder = DOC_DATA.folders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    for (const file of files) {
+      const storagePath = `${programId}/${folderId}/${docId()}_${file.name}`;
+      const item = {
+        id: docId(),
+        name: file.name,
+        size: file.size,
+        storagePath,
+        url: null,
+        uploadedAt: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
+      };
+      folder.items.push(item);
+
+      try {
+        const { error } = await db.storage.from(DOC_BUCKET).upload(storagePath, file, { upsert: false });
+        if (error) throw error;
+        const { data: urlData } = db.storage.from(DOC_BUCKET).getPublicUrl(storagePath);
+        item.url = urlData.publicUrl;
+      } catch(e) {
+        console.warn('Doc upload failed:', e);
+        showToast('Upload failed — check storage permissions');
+        folder.items = folder.items.filter(i => i.id !== item.id);
+      }
+      renderDocFolders();
+    }
+    await docSaveToSupabase();
+    showToast(`${files.length} file${files.length > 1 ? 's' : ''} uploaded ✓`);
+    event.target.value = '';
+  }
+
+  async function docDeleteFile(folderId, itemId) {
+    const folder = DOC_DATA.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const item = folder.items.find(i => i.id === itemId);
+    if (item && item.storagePath) {
+      try { await db.storage.from(DOC_BUCKET).remove([item.storagePath]); } catch(e) {}
+    }
+    folder.items = folder.items.filter(i => i.id !== itemId);
+    renderDocFolders();
+    await docSaveToSupabase();
+    showToast('Deleted');
+  }
+
+  // ── Sharing modal ──
+  let docShareFolderId = null;
+  let docShareMode = 'all';
+  let docShareSelectedFiles = new Set();
+  let docShareSelectedRoles = new Set();
+
+  function openDocShareModal(folderId) {
+    docShareFolderId = folderId;
+    const folder = DOC_DATA.folders.find(f => f.id === folderId);
+    if (!folder) return;
+    const sharing = folder.sharing || {};
+
+    // Init state from existing sharing
+    docShareMode = sharing.mode || 'all';
+    docShareSelectedFiles = new Set(sharing.files || []);
+    docShareSelectedRoles = new Set(sharing.roles || []);
+
+    // Update modal title
+    document.getElementById('doc-share-title').textContent = `Share "${folder.name}"`;
+
+    // Render file list for selective mode
+    const fileList = document.getElementById('doc-share-file-list');
+    const items = folder.items || [];
+    fileList.innerHTML = items.length === 0
+      ? '<div style="font-size:12px;color:var(--fg-3);padding:8px 4px">No files in this folder yet</div>'
+      : items.map(item => `
+          <div class="doc-share-option" onclick="docShareToggleFile('${item.id}')">
+            <div class="doc-share-check${docShareSelectedFiles.has(item.id)?' active':''}" id="doc-share-file-${item.id}"></div>
+            <div style="font-size:13px;color:var(--fg)">${escHtml(item.name)}</div>
+          </div>`).join('');
+
+    docShareUpdateUI();
+    document.getElementById('doc-share-overlay').classList.add('open');
+  }
+
+  function closeDocShareModal() {
+    document.getElementById('doc-share-overlay').classList.remove('open');
+  }
+
+  function docShareUpdateUI() {
+    // Mode radios
+    document.getElementById('doc-share-radio-all').className = 'doc-share-radio' + (docShareMode==='all'?' active':'');
+    document.getElementById('doc-share-radio-selective').className = 'doc-share-radio' + (docShareMode==='selective'?' active':'');
+    // File list visibility
+    document.getElementById('doc-share-file-list').style.display = docShareMode==='selective' ? 'block' : 'none';
+    // Role checkboxes
+    ['coaches','players','parents'].forEach(role => {
+      const el = document.getElementById('doc-share-chk-' + role);
+      if (el) el.className = 'doc-share-check' + (docShareSelectedRoles.has(role)?' active':'');
+      if (el) el.textContent = docShareSelectedRoles.has(role) ? '✓' : '';
+    });
+  }
+
+  function docShareSetMode(mode) {
+    docShareMode = mode;
+    docShareUpdateUI();
+  }
+
+  function docShareToggleRole(role) {
+    if (docShareSelectedRoles.has(role)) docShareSelectedRoles.delete(role);
+    else docShareSelectedRoles.add(role);
+    docShareUpdateUI();
+  }
+
+  function docShareToggleFile(itemId) {
+    if (docShareSelectedFiles.has(itemId)) docShareSelectedFiles.delete(itemId);
+    else docShareSelectedFiles.add(itemId);
+    const el = document.getElementById('doc-share-file-' + itemId);
+    if (el) {
+      el.className = 'doc-share-check' + (docShareSelectedFiles.has(itemId) ? ' active' : '');
+      el.textContent = docShareSelectedFiles.has(itemId) ? '✓' : '';
+    }
+  }
+
+  async function saveDocSharing() {
+    if (!docShareFolderId) return;
+    const folder = DOC_DATA.folders.find(f => f.id === docShareFolderId);
+    if (!folder) return;
+    if (docShareSelectedRoles.size === 0) {
+      showToast('Select at least one role to share with');
+      return;
+    }
+    folder.sharing = {
+      mode: docShareMode,
+      files: docShareMode === 'selective' ? [...docShareSelectedFiles] : [],
+      roles: [...docShareSelectedRoles]
+    };
+    closeDocShareModal();
+    renderDocFolders();
+    await docSaveToSupabase();
+    showToast('Sharing settings saved ✓');
+  }
+
+  function renderSharedDocs(role) {
+    // role: 'players' | 'parents' | 'coaches'
+    const listId = role === 'players' ? 'player-doc-list' : role === 'parents' ? 'parent-doc-list' : null;
+    const emptyId = role === 'players' ? 'player-doc-empty' : role === 'parents' ? 'parent-doc-empty' : null;
+    if (!listId) return;
+    const list = document.getElementById(listId);
+    const empty = document.getElementById(emptyId);
+    if (!list) return;
+
+    // Filter to folders shared with this role
+    const sharedFolders = DOC_DATA.folders.filter(f => {
+      const s = f.sharing || {};
+      return s.roles && s.roles.includes(role) && s.mode !== 'none';
+    });
+
+    if (sharedFolders.length === 0) {
+      list.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    list.innerHTML = sharedFolders.map(folder => {
+      const sharing = folder.sharing || {};
+      const allItems = folder.items || [];
+      // Filter items based on sharing mode
+      const visibleItems = sharing.mode === 'all'
+        ? allItems
+        : allItems.filter(i => (sharing.files || []).includes(i.id));
+
+      const isForm = folder.type === 'forms';
+      const meta = visibleItems.length + ' ' + (isForm ? 'form' : 'file') + (visibleItems.length !== 1 ? 's' : '');
+
+      return `<div class="cdoc-folder open" id="shared-docf-${folder.id}">
+        <div class="cdoc-folder-head" onclick="docToggleSharedFolder('${folder.id}')">
+          <div class="cdoc-folder-icon">${isForm ? '📋' : '📁'}</div>
+          <div style="flex:1">
+            <div class="cdoc-folder-name">${escHtml(folder.name)}</div>
+            <div class="cdoc-folder-meta">${meta}</div>
+          </div>
+          <div class="cdoc-folder-chevron">›</div>
+        </div>
+        <div class="cdoc-folder-body">
+          ${visibleItems.length === 0
+            ? '<div style="font-size:12px;color:var(--fg-3);text-align:center;padding:12px 0">No files available</div>'
+            : visibleItems.map(item => {
+                if (isForm || item.type === 'form') {
+                  return `<div class="cdoc-form-item" onclick="window.open('${item.url}','_blank')">
+                    <div class="cdoc-file-icon">📋</div>
+                    <div style="flex:1"><div class="cdoc-file-name">${escHtml(item.name)}</div></div>
+                    <span class="cdoc-form-badge">FORM</span>
+                  </div>`;
+                }
+                return `<div class="cdoc-file-item" onclick="${item.url?`window.open('${item.url}','_blank')`:''}">
+                  <div class="cdoc-file-icon">${docFileIcon(item.name)}</div>
+                  <div style="flex:1">
+                    <div class="cdoc-file-name">${escHtml(item.name)}</div>
+                    <div class="cdoc-file-meta">${item.size ? docFormatSize(item.size) + ' · ' : ''}${item.uploadedAt || ''}</div>
+                  </div>
+                  ${item.url ? '<div style="color:var(--fg-3);font-size:14px">›</div>' : ''}
+                </div>`;
+              }).join('')
+          }
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function docToggleSharedFolder(id) {
+    const el = document.getElementById('shared-docf-' + id);
+    if (el) el.classList.toggle('open');
+  }
+
+  async function docRemoveSharing() {
+    if (!docShareFolderId) return;
+    const folder = DOC_DATA.folders.find(f => f.id === docShareFolderId);
+    if (!folder) return;
+    folder.sharing = { mode: 'none', files: [], roles: [] };
+    closeDocShareModal();
+    renderDocFolders();
+    await docSaveToSupabase();
+    showToast('Sharing removed');
+  }
+
+  // ── Form link modal ──
+  let docAddFormFolderId = null;
+  function openDocAddFormModal(folderId) {
+    docAddFormFolderId = folderId;
+    document.getElementById('doc-form-name-input').value = '';
+    document.getElementById('doc-form-url-input').value = '';
+    document.getElementById('doc-add-form-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('doc-form-name-input').focus(), 100);
+  }
+  function closeDocAddFormModal() { document.getElementById('doc-add-form-overlay').classList.remove('open'); }
+
+  async function saveDocFormLink() {
+    const name = document.getElementById('doc-form-name-input').value.trim();
+    const url = document.getElementById('doc-form-url-input').value.trim();
+    if (!name || !url) { showToast('Enter both a name and URL'); return; }
+    const folder = DOC_DATA.folders.find(f => f.id === docAddFormFolderId);
+    if (!folder) return;
+    folder.items.push({
+      id: docId(),
+      name,
+      url,
+      type: 'form',
+      uploadedAt: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
+    });
+    closeDocAddFormModal();
+    renderDocFolders();
+    await docSaveToSupabase();
+    showToast(`Form added ✓`);
   }
 
   // ===== CLOSE ACTION SHEET (missing function) =====
@@ -14604,6 +15116,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.querySelectorAll('[id^="parent-section-"]').forEach(s => s.classList.remove('active'));
     const sec = document.getElementById('parent-section-' + section);
     if (sec) sec.classList.add('active');
+    if (section === 'documents') docLoadFromSupabase().then(() => renderSharedDocs('parents'));
     const tab = document.getElementById('tab-parent-more');
     if (tab) tab.scrollTop = 0;
   }
@@ -14623,6 +15136,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (sec) sec.classList.add('active');
     if (section === 'group') renderPlayerGroup();
     if (section === 'standing') renderPlayerStanding();
+    if (section === 'documents') docLoadFromSupabase().then(() => renderSharedDocs('players'));
     const tab = document.getElementById('tab-player-more');
     if (tab) tab.scrollTop = 0;
   }
