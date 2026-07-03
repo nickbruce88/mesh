@@ -1082,6 +1082,22 @@
       margin: 0 auto;
     }
 
+    /* New practice day modal — center it instead of bottom sheet */
+    #new-day-overlay {
+      position: fixed !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 200 !important;
+      padding: 20px;
+    }
+    .new-day-sheet {
+      width: 520px !important;
+      max-width: 90vw;
+      border-radius: 16px !important;
+      border-top: 1px solid var(--border) !important;
+      max-height: 88vh;
+    }
+
     /* Profile modal */
     #profile-modal {
       position: fixed;
@@ -1561,8 +1577,18 @@
   .today-event-tag { width:4px;border-radius:2px;align-self:stretch;flex-shrink:0 }
 
   @media (min-width:768px) {
-    .cal-day { min-height:110px; }
+    .cal-day { min-height:96px; max-height:130px; }
     .cal-event-bar { font-size:11px; }
+  }
+  /* Widen the calendar view past the standard 1200px column (keeps side margins) */
+  @media (min-width:1280px) {
+    #more-schedule {
+      width: min(1520px, calc(100vw - 320px));
+      max-width: none;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+    }
   }
 
   /* ===== iOS SAFARI TAP FIX ===== */
@@ -4101,7 +4127,7 @@
   </div>
 
   <!-- ===== NEW DAY MODAL ===== -->
-  <div id="new-day-overlay">
+  <div id="new-day-overlay" onclick="closeNewDay()">
     <div class="new-day-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
 
@@ -4770,7 +4796,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.7</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33.11</div>
   </div>
 </div>
 
@@ -4779,7 +4805,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v33.7';
+  const APP_VERSION = 'v33.11';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -4917,6 +4943,14 @@
     } catch(e) { return 'CO'; }
   }
 
+  // Apply the saved profile photo (or fall back to initials) to any avatar element
+  function applyUserAvatar(el){
+    if(!el) return;
+    const photo=localStorage.getItem('mesh_user_photo');
+    if(photo){ el.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; }
+    else { el.innerHTML=''; el.textContent=getInitialsFromSession(); }
+  }
+
   function switchRole(role, el) {
     currentRole = role;
     document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
@@ -4924,7 +4958,10 @@
     const avatar = document.getElementById('user-avatar');
     avatar.innerHTML = '';
     if (role === 'coach') {
-      if (schoolLogoDataUrl) {
+      const photo = localStorage.getItem('mesh_user_photo');
+      if (photo) {
+        avatar.innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      } else if (schoolLogoDataUrl) {
         avatar.innerHTML = `<img src="${schoolLogoDataUrl}" alt="School logo" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       } else {
         avatar.textContent = getInitialsFromSession();
@@ -7588,7 +7625,7 @@
     if (teamEl) teamEl.textContent = teamName;
     if (userEl) userEl.textContent = userName;
     if (roleEl) roleEl.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
-    if (avatarEl) avatarEl.textContent = getInitialsFromSession();
+    if (avatarEl) applyUserAvatar(avatarEl);
     document.title = teamName ? 'Mesh — ' + teamName : 'Mesh';
   }
 
@@ -10129,6 +10166,11 @@
       </div>`;
     document.body.appendChild(ov);
   }
+  function refreshAllUserAvatars(){
+    applyUserAvatar(document.getElementById('sidebar-avatar'));
+    const ua=document.getElementById('user-avatar'); if(ua && (localStorage.getItem('mesh_user_photo'))) applyUserAvatar(ua);
+    refreshProfileHeader();
+  }
   function handleProfilePhoto(e){
     const f=e.target.files[0]; if(!f) return;
     const rd=new FileReader();
@@ -10142,6 +10184,7 @@
         try{ localStorage.setItem('mesh_user_photo',dataUrl); }catch(err){ showToast('Could not save photo'); return; }
         const av=document.getElementById('edit-profile-avatar');
         if(av) av.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+        refreshAllUserAvatars();
       };
       img.src=ev.target.result;
     };
@@ -10149,6 +10192,7 @@
   }
   function removeProfilePhoto(){
     localStorage.removeItem('mesh_user_photo');
+    refreshAllUserAvatars();
     document.getElementById('edit-profile-overlay')?.remove();
     openEditProfile();
   }
@@ -10162,11 +10206,8 @@
       const pid=localStorage.getItem('mesh_program_id');
       if(pid && window.db){ await db.from('programs').update({coach_name:name}).eq('id',pid); }
     }catch(e){ console.warn('coach name sync skipped',e); }
-    const initials=name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
-    const photo=localStorage.getItem('mesh_user_photo');
     const sn=document.getElementById('sidebar-user-name'); if(sn) sn.textContent=name;
-    const sa=document.getElementById('sidebar-avatar'); if(sa){ sa.innerHTML = photo?`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:initials; }
-    refreshProfileHeader();
+    refreshAllUserAvatars();
     document.getElementById('edit-profile-overlay')?.remove();
     showToast('Profile updated ✓');
   }
