@@ -15849,8 +15849,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   function pbPlayCardHtml(play) {
     const sel = pbSelectedIds.has(play.id);
-    const img = play.imageUrl ? `<img class="pb-play-thumb" src="${play.imageUrl}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
-    const ph = `<div class="pb-play-thumb-placeholder" style="${play.imageUrl?'display:none':''}">📋</div>`;
+    const img = play.imageUrl ? `<img class="pb-play-thumb" src="${play.imageUrl}" loading="lazy" onload="this.nextElementSibling.style.display='none'" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+    const ph = `<div class="pb-play-thumb-placeholder" style="${play.imageUrl?'':''}">📋</div>`;
     return `<div class="pb-play-card${sel?' pb-selected':''}" id="pbc-${play.id}" onclick="pbCardClick('${play.id}',event)">
       ${img}${ph}
       <div class="pb-play-info">
@@ -15911,12 +15911,18 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     showToast(`Uploading ${files.length} play${files.length>1?'s':''}…`);
     for (const file of files) {
       const play = { id:pbId(), title:file.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' '), imageUrl:null, responsibilities:[], folderId:null, unit };
-      play.imageUrl = URL.createObjectURL(file);
       PB_DATA[unit].plays.push(play);
-      try { play.imageUrl = await pbUploadToSupabase(file, programId); }
-      catch(e) { console.warn('Upload failed, keeping local preview:', e); }
+      try {
+        // Upload first, then set URL — never save a blob: URL to Supabase DB
+        const publicUrl = await pbUploadToSupabase(file, programId);
+        play.imageUrl = publicUrl;
+      } catch(e) {
+        console.warn('Upload failed:', e);
+        // Fall back to object URL for this session only — won't persist
+        play.imageUrl = URL.createObjectURL(file);
+      }
+      renderPbUnit(unit);
     }
-    renderPbUnit(unit);
     await pbSaveToSupabase();
     showToast(`${files.length} play${files.length>1?'s':''} added ✓`);
     event.target.value = '';
@@ -15977,7 +15983,14 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     pbDetailPlayId = playId;
     document.getElementById('pb-detail-title').value = play.title || '';
     const img = document.getElementById('pb-detail-img');
-    if (play.imageUrl) { img.src=play.imageUrl; img.style.display='block'; } else { img.style.display='none'; }
+    if (play.imageUrl) {
+      img.src = play.imageUrl;
+      img.style.display = 'block';
+      img.onerror = () => { img.style.display='none'; };
+    } else {
+      img.src = '';
+      img.style.display = 'none';
+    }
     const list = document.getElementById('pb-resp-list');
     list.innerHTML = '';
     (play.responsibilities||[]).forEach(r => pbAddRespRow(r.pos, r.text));
@@ -16113,7 +16126,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         const play = {
           id: pbId(),
           title,
-          imageUrl: URL.createObjectURL(blob),
+          imageUrl: null,
           responsibilities: [],
           folderId: null,
           unit: pbAddPlaysUnit
@@ -16121,16 +16134,17 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
         PB_DATA[pbAddPlaysUnit].plays.push(play);
 
-        // Upload in background
+        // Upload, then set permanent URL before saving
         try {
           play.imageUrl = await pbUploadToSupabase(playFile, programId);
         } catch(e) {
           console.warn('Upload failed for page', pageNum, e);
+          play.imageUrl = URL.createObjectURL(blob); // session-only fallback
         }
+        renderPbUnit(pbAddPlaysUnit);
         playNum++;
       }
 
-      renderPbUnit(pbAddPlaysUnit);
       await pbSaveToSupabase();
       showToast(`${playPages.length} play${playPages.length !== 1 ? 's' : ''} imported ✓`);
 
