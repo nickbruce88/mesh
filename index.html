@@ -1262,11 +1262,27 @@
   .perf-stat-val { font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--fg) }
   .perf-stat-sub { font-size:11px;color:var(--fg-3);margin-top:2px }
   .perf-table { width:100%;border-collapse:collapse;margin-bottom:8px }
-  .perf-table th { font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;padding:6px 8px;border-bottom:1px solid var(--border);text-align:left }
-  .perf-table td { padding:10px 8px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle }
+  .perf-table th { font-size:10px;font-weight:800;color:var(--team-primary);text-transform:uppercase;letter-spacing:0.06em;padding:7px 8px;border-bottom:1.5px solid rgba(128,128,128,0.3);text-align:left }
+  .perf-table th.sortable { cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;transition:color 0.12s }
+  .perf-table th.sortable:hover { color:var(--fg) }
+  .perf-table th.sorted { color:var(--fg);position:relative }
+  .perf-table td { padding:10px 8px;font-size:13px;border-bottom:1px solid rgba(128,128,128,0.24);vertical-align:middle }
+  .perf-table tr:last-child td { border-bottom:none }
   .perf-table tr:hover td { background:var(--bg-3) }
+  .perf-table td.sorted-col { color:var(--team-primary);font-weight:800 }
   .perf-rank { font-weight:800;color:var(--fg-3);width:28px }
   .perf-rank-1 { color:var(--team-primary) }
+  /* Filter chips */
+  .perf-chip-row { display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px }
+  .perf-chip { padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;background:var(--bg-3);color:var(--fg-2);border:1.5px solid var(--border);transition:all 0.12s;-webkit-tap-highlight-color:transparent;white-space:nowrap }
+  .perf-chip.active { background:var(--team-primary-glow-sm);border-color:var(--team-primary);color:var(--team-primary) }
+  .perf-chip:active { opacity:0.8 }
+  /* Trend arrows */
+  .perf-trend-up { color:#16a34a;font-weight:800 }
+  .perf-trend-down { color:var(--red);font-weight:800 }
+  .perf-trend-flat { color:var(--fg-3) }
+  .perf-byplayer-card { cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color 0.12s }
+  .perf-byplayer-card:hover { border-color:var(--team-primary) }
 
   /* ===== INVENTORY ===== */
   .inv-stat-box { flex:1;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center; }
@@ -3063,7 +3079,11 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Performance</div>
-        <button class="btn-sm" onclick="openLogSession()" style="margin-left:auto;background:var(--team-primary);color:var(--black);font-weight:700">+ Log session</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="btn-sm" onclick="openLogSession()" style="background:var(--team-primary);color:var(--team-primary-text);font-weight:700">+ Log session</button>
+        <button class="btn-sm" onclick="openBulkEntry()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">⊞ Bulk entry</button>
+        <button class="btn-sm" onclick="openPerfImport()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">📥 Import</button>
       </div>
 
       <!-- Category tabs -->
@@ -3082,9 +3102,9 @@
 
       <!-- Leaderboard view -->
       <div id="perf-leaderboard-view">
-        <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:12px">Lifting leaderboard</div>
+        <div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:12px">Lifting leaderboard</div>
         <div id="perf-lift-table"></div>
-        <div style="font-size:13px;font-weight:700;color:var(--white);margin:20px 0 12px">Speed & agility leaderboard</div>
+        <div style="font-size:13px;font-weight:700;color:var(--fg);margin:20px 0 12px">Speed &amp; agility leaderboard</div>
         <div id="perf-speed-table"></div>
       </div>
 
@@ -4748,7 +4768,7 @@
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="closeProfileModal()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v32.11</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v33</div>
   </div>
 </div>
 
@@ -4757,7 +4777,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v32.11';
+  const APP_VERSION = 'v33';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5727,7 +5747,6 @@
       { key:'squat', label:'Squat', unit:'lbs' },
       { key:'deadlift', label:'Deadlift', unit:'lbs' },
       { key:'clean', label:'Power Clean', unit:'lbs' },
-      { key:'incline', label:'Incline', unit:'lbs' },
     ],
     speed: [
       { key:'forty', label:'40-Yard Dash', unit:'seconds', lower_is_better:true },
@@ -5761,6 +5780,7 @@
     // Demo perf data injection disabled for QA — tab now reflects real data only
     renderPerfLeaderboard();
     renderPerfStatCards();
+    if (perfView === 'byplayer') renderPerfByPlayer(document.getElementById('perf-player-search')?.value||'');
   }
 
   function getBest(category) {
@@ -5804,58 +5824,56 @@
     });
   }
 
+  let perfLiftCat = 'bench';
+  let perfSpeedCat = 'forty';
+  function setPerfLiftCat(k){ perfLiftCat = k; renderPerfLeaderboard(); }
+  function setPerfSpeedCat(k){ perfSpeedCat = k; renderPerfLeaderboard(); }
+
+  function fmtPerfVal(v, unit){
+    if (v == null) return '—';
+    if (unit === 'lbs') return v + ' lbs';
+    if (unit === 'inches') return v + '"';
+    if (unit === 'seconds') return v + 's';
+    return '' + v;
+  }
+
+  function buildLeaderboardTable(cats, selectedCat, setterName) {
+    const ranked = getBest(selectedCat) || [];
+    const chips = `<div class="perf-chip-row">${cats.map(c =>
+      `<div class="perf-chip ${c.key===selectedCat?'active':''}" onclick="${setterName}('${c.key}')">${c.label}</div>`
+    ).join('')}</div>`;
+    if (!ranked.length) {
+      return chips + '<div style="color:var(--fg-3);font-size:13px;padding:12px 0">No data yet — log a session to get started</div>';
+    }
+    const bestByCat = {};
+    cats.forEach(c => {
+      bestByCat[c.key] = {};
+      (getBest(c.key)||[]).forEach(r => { bestByCat[c.key][r.player_id] = r.value; });
+    });
+    const head = `<tr><th>Rank</th><th>Player</th><th>Pos</th>${cats.map(c =>
+      `<th class="sortable ${c.key===selectedCat?'sorted':''}" onclick="${setterName}('${c.key}')">${c.label}</th>`
+    ).join('')}</tr>`;
+    const body = ranked.slice(0,20).map((r,i) => {
+      const p = (window.ROSTER_DATA||[]).find(pl => pl.id === r.player_id);
+      const cells = cats.map(c => {
+        const isSel = c.key === selectedCat;
+        return `<td class="${isSel?'sorted-col':''}">${fmtPerfVal(bestByCat[c.key][r.player_id], c.unit)}</td>`;
+      }).join('');
+      return `<tr>
+        <td class="perf-rank ${i===0?'perf-rank-1':''}">${i+1}</td>
+        <td style="font-weight:600">${getPlayerName(r.player_id)}</td>
+        <td style="color:var(--fg-3)">${p?.pos||'—'}</td>
+        ${cells}
+      </tr>`;
+    }).join('');
+    return chips + `<table class="perf-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  }
+
   function renderPerfLeaderboard() {
     const liftEl = document.getElementById('perf-lift-table');
     const speedEl = document.getElementById('perf-speed-table');
-
-    // Lifting — show bench/squat/clean top 5
-    const liftCols = ['bench','squat','clean'];
-    const liftPlayers = getBest('bench') || [];
-    if (liftEl) {
-      if (!liftPlayers.length) { liftEl.innerHTML = '<div style="color:var(--gray-3);font-size:13px;padding:12px 0">No lifting data yet — log a session to get started</div>'; }
-      else {
-        liftEl.innerHTML = `<table class="perf-table">
-          <thead><tr><th>Rank</th><th>Player</th><th>Pos</th><th>Bench</th><th>Squat</th><th>Clean</th></tr></thead>
-          <tbody>${liftPlayers.slice(0,8).map((r,i) => {
-            const squat = getBest('squat')?.find(x => x.player_id === r.player_id);
-            const clean = getBest('clean')?.find(x => x.player_id === r.player_id);
-            const p = (window.ROSTER_DATA||[]).find(pl => pl.id === r.player_id);
-            return `<tr>
-              <td class="perf-rank ${i===0?'perf-rank-1':''}">${i+1}</td>
-              <td style="font-weight:600">${getPlayerName(r.player_id)}</td>
-              <td style="color:var(--gray-3)">${p?.pos||'—'}</td>
-              <td style="color:var(--team-primary);font-weight:700">${r.value} lbs</td>
-              <td>${squat ? squat.value+' lbs' : '—'}</td>
-              <td>${clean ? clean.value+' lbs' : '—'}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>`;
-      }
-    }
-
-    // Speed — 40 yard dash top 5
-    const fortyPlayers = getBest('forty') || [];
-    if (speedEl) {
-      if (!fortyPlayers.length) { speedEl.innerHTML = '<div style="color:var(--gray-3);font-size:13px;padding:12px 0">No speed data yet — log a session to get started</div>'; }
-      else {
-        speedEl.innerHTML = `<table class="perf-table">
-          <thead><tr><th>Rank</th><th>Player</th><th>Pos</th><th>40-Yard</th><th>Vertical</th><th>Broad Jump</th></tr></thead>
-          <tbody>${fortyPlayers.slice(0,8).map((r,i) => {
-            const vert = getBest('vertical')?.find(x => x.player_id === r.player_id);
-            const broad = getBest('broad_jump')?.find(x => x.player_id === r.player_id);
-            const p = (window.ROSTER_DATA||[]).find(pl => pl.id === r.player_id);
-            return `<tr>
-              <td class="perf-rank ${i===0?'perf-rank-1':''}">${i+1}</td>
-              <td style="font-weight:600">${getPlayerName(r.player_id)}</td>
-              <td style="color:var(--gray-3)">${p?.pos||'—'}</td>
-              <td style="color:var(--team-primary);font-weight:700">${r.value}s</td>
-              <td>${vert ? vert.value+'"' : '—'}</td>
-              <td>${broad ? broad.value+'"' : '—'}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>`;
-      }
-    }
+    if (liftEl) liftEl.innerHTML = buildLeaderboardTable(PERF_CATEGORIES.lifting, perfLiftCat, 'setPerfLiftCat');
+    if (speedEl) speedEl.innerHTML = buildLeaderboardTable(PERF_CATEGORIES.speed, perfSpeedCat, 'setPerfSpeedCat');
   }
 
   function renderPerfByPlayer(filter='') {
@@ -5864,7 +5882,7 @@
     const players = (window.ROSTER_DATA||[]).filter(p =>
       !filter || p.name?.toLowerCase().includes(filter.toLowerCase())
     );
-    if (!players.length) { el.innerHTML = '<div style="color:var(--gray-3);font-size:13px">No players found</div>'; return; }
+    if (!players.length) { el.innerHTML = '<div style="color:var(--fg-3);font-size:13px">No players found</div>'; return; }
     el.innerHTML = players.map(p => {
       const records = PERF_DATA.filter(r => r.player_id === p.id);
       const best = {};
@@ -5875,28 +5893,113 @@
         }
       });
       const hasData = Object.keys(best).length > 0;
-      return `<div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius);padding:14px;margin-bottom:10px">
+      return `<div class="perf-byplayer-card" onclick="openPlayerHistory('${p.id}')" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:${hasData?'12px':'0'}">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--team-primary);color:var(--black);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">
             ${(p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
           </div>
           <div>
             <div style="font-size:14px;font-weight:600">${p.name}</div>
-            <div style="font-size:12px;color:var(--gray-3)">${p.pos||'—'} · #${p.num||'—'}</div>
+            <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'}</div>
           </div>
-          <button onclick="openLogSessionForPlayer('${p.id}','${p.name}')" style="margin-left:auto;background:var(--black-3);border:1px solid var(--black-4);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;color:var(--white);cursor:pointer">+ Log</button>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+            ${hasData?'<span style="font-size:11px;color:var(--fg-3)">'+records.length+' records ›</span>':''}
+            <button onclick="event.stopPropagation();openLogSessionForPlayer('${p.id}','${(p.name||'').replace(/'/g,"\\'")}')" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;color:var(--fg);cursor:pointer">+ Log</button>
+          </div>
         </div>
         ${hasData ? `<div style="display:flex;flex-wrap:wrap;gap:8px">
           ${Object.entries(best).map(([cat,val]) => {
             const catDef = [...PERF_CATEGORIES.lifting, ...PERF_CATEGORIES.speed].find(c => c.key === cat);
-            return `<div style="background:var(--black-3);border-radius:var(--radius-sm);padding:4px 10px;font-size:12px">
-              <span style="color:var(--gray-3)">${catDef?.label||cat}: </span>
+            return `<div style="background:var(--bg-3);border-radius:var(--radius-sm);padding:4px 10px;font-size:12px">
+              <span style="color:var(--fg-3)">${catDef?.label||cat}: </span>
               <span style="font-weight:700;color:var(--team-primary)">${val} ${catDef?.unit||''}</span>
             </div>`;
           }).join('')}
-        </div>` : '<div style="font-size:12px;color:var(--gray-3)">No data logged yet</div>'}
+        </div>` : '<div style="font-size:12px;color:var(--fg-3)">No data logged yet — tap to view or log</div>'}
       </div>`;
     }).join('');
+  }
+
+  // ===== PLAYER HISTORY (sessions + trends) =====
+  function openPlayerHistory(playerId) {
+    const p = (window.ROSTER_DATA||[]).find(r => r.id === playerId);
+    if (!p) return;
+    const records = PERF_DATA.filter(r => r.player_id === playerId);
+    const allCats = [...PERF_CATEGORIES.lifting, ...PERF_CATEGORIES.speed];
+
+    // group records by session (date + label)
+    const sessionsMap = {};
+    records.forEach(r => {
+      const key = (r.date||'') + '|' + (r.session_label||'');
+      if (!sessionsMap[key]) sessionsMap[key] = { date:r.date, label:r.session_label, vals:{} };
+      sessionsMap[key].vals[r.category] = r.value;
+    });
+    // sort sessions oldest -> newest so we can compute trends, then display newest first
+    const sessions = Object.values(sessionsMap).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+    let bodyHtml;
+    if (!sessions.length) {
+      bodyHtml = '<div style="color:var(--fg-3);font-size:13px;padding:20px 0;text-align:center">No sessions logged yet for this player.</div>';
+    } else {
+      // previous value tracker per category as we walk oldest->newest
+      const prev = {};
+      const rendered = sessions.map(s => {
+        const rows = allCats.filter(c => s.vals[c.key] != null).map(c => {
+          const v = s.vals[c.key];
+          const pv = prev[c.key];
+          let trend = '<span class="perf-trend-flat">—</span>';
+          if (pv != null && v !== pv) {
+            const improved = c.lower_is_better ? v < pv : v > pv;
+            const diff = Math.abs(Math.round((v - pv)*100)/100);
+            trend = improved
+              ? `<span class="perf-trend-up">▲ ${diff}</span>`
+              : `<span class="perf-trend-down">▼ ${diff}</span>`;
+          }
+          prev[c.key] = v;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(128,128,128,0.18)">
+            <span style="color:var(--fg-2);font-size:13px">${c.label}</span>
+            <span style="display:flex;gap:10px;align-items:center">
+              <span style="font-weight:700;color:var(--fg)">${fmtPerfVal(v, c.unit)}</span>
+              <span style="font-size:12px;min-width:52px;text-align:right">${trend}</span>
+            </span>
+          </div>`;
+        }).join('');
+        const dateFmt = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : 'No date';
+        return `<div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
+            <span style="font-weight:700;font-size:14px">${dateFmt}</span>
+            <span style="font-size:12px;color:var(--fg-3)">${s.label||''}</span>
+          </div>
+          ${rows}
+        </div>`;
+      });
+      // display newest first
+      bodyHtml = rendered.reverse().join('');
+    }
+
+    let overlay = document.getElementById('perf-history-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'perf-history-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">
+            ${(p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
+          </div>
+          <div style="flex:1">
+            <div style="font-size:17px;font-weight:700">${p.name}</div>
+            <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'} · session history</div>
+          </div>
+          <div onclick="document.getElementById('perf-history-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:11px;color:var(--fg-3);margin:10px 0 14px">▲ improvement vs. previous session · ▼ regression</div>
+        ${bodyHtml}
+        <button onclick="event.stopPropagation();document.getElementById('perf-history-overlay').remove();openLogSessionForPlayer('${p.id}','${(p.name||'').replace(/'/g,"\\'")}')" class="btn-primary" style="width:100%;font-size:14px;margin-top:6px">+ Log new session</button>
+      </div>`;
+    document.body.appendChild(overlay);
   }
 
   function filterPerfPlayers(val) { renderPerfByPlayer(val); }
@@ -5928,12 +6031,11 @@
           <div style="font-size:18px;font-weight:700">${playerName ? 'Log · '+playerName : 'Log session'}</div>
           <div onclick="document.getElementById('log-session-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--gray-3)">✕</div>
         </div>
-        ${!playerName ? `<div style="margin-bottom:14px">
+        ${!playerName ? `<div style="margin-bottom:14px;position:relative">
           <label style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:6px">Player</label>
-          <select id="log-player-select" class="input-field" style="width:100%">
-            <option value="">Select player...</option>
-            ${(window.ROSTER_DATA||[]).map(p => `<option value="${p.id}">${p.name} — ${p.pos||'—'} #${p.num||'—'}</option>`).join('')}
-          </select>
+          <input type="hidden" id="log-player-select" value="">
+          <input type="text" id="log-player-search" class="input-field" placeholder="Search player by name or #..." style="width:100%" oninput="filterLogPlayers(this.value)" onfocus="filterLogPlayers(this.value)" autocomplete="off">
+          <div id="log-player-results" style="max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:4px;display:none;background:var(--bg-2);position:relative;z-index:2"></div>
         </div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           <div>
@@ -6004,6 +6106,205 @@
       console.error('Save perf error:', e);
       showToast('Error saving — try again');
     }
+  }
+
+  // ===== LOG SESSION — searchable player picker =====
+  function filterLogPlayers(q){
+    const results = document.getElementById('log-player-results');
+    if (!results) return;
+    const players = (window.ROSTER_DATA||[]).filter(p =>
+      !q || (p.name||'').toLowerCase().includes(q.toLowerCase()) || String(p.num||'').includes(q)
+    );
+    if (!players.length){ results.innerHTML='<div style="padding:8px 10px;font-size:13px;color:var(--fg-3)">No players found</div>'; results.style.display='block'; return; }
+    results.innerHTML = players.slice(0,50).map(p =>
+      `<div onclick="selectLogPlayer('${p.id}','${(p.name||'').replace(/'/g,"\\'")}','${p.pos||'—'}','${p.num||'—'}')" style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${p.name} <span style="color:var(--fg-3)">— ${p.pos||'—'} #${p.num||'—'}</span></div>`
+    ).join('');
+    results.style.display='block';
+  }
+  function selectLogPlayer(id,name,pos,num){
+    const hid=document.getElementById('log-player-select');
+    const search=document.getElementById('log-player-search');
+    const results=document.getElementById('log-player-results');
+    if (hid) hid.value=id;
+    if (search) search.value=name+' — '+pos+' #'+num;
+    if (results) results.style.display='none';
+  }
+
+  // ===== BULK ENTRY — one lift/test across the whole roster =====
+  function openBulkEntry(){
+    let overlay=document.getElementById('bulk-entry-overlay');
+    if(overlay) overlay.remove();
+    overlay=document.createElement('div');
+    overlay.id='bulk-entry-overlay';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.onclick=(e)=>{ if(e.target===overlay) overlay.remove(); };
+    const today=new Date();
+    const dateStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const lbl='font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px';
+    const players=(window.ROSTER_DATA||[]);
+    overlay.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:18px;font-weight:700">Bulk entry</div>
+          <div onclick="document.getElementById('bulk-entry-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-3);margin-bottom:14px">Pick a lift or test, then enter a value for each player at once.</div>
+        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="${lbl}">Lift / test</label>
+            <select id="bulk-cat" class="input-field" style="width:100%" onchange="updateBulkUnit()">
+              <optgroup label="Lifting">${PERF_CATEGORIES.lifting.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</optgroup>
+              <optgroup label="Speed &amp; agility">${PERF_CATEGORIES.speed.map(c=>`<option value="${c.key}">${c.label}</option>`).join('')}</optgroup>
+            </select>
+          </div>
+          <div><label style="${lbl}">Date</label><input type="date" id="bulk-date" class="input-field" value="${dateStr}" style="width:100%"></div>
+          <div><label style="${lbl}">Session</label><input type="text" id="bulk-label" class="input-field" placeholder="e.g. Max-out" style="width:100%"></div>
+        </div>
+        <div style="overflow-y:auto;max-height:46vh;margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius-sm)">
+          ${players.length ? players.map(p=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border)">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+                <div style="font-size:11px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'}</div>
+              </div>
+              <input type="number" data-bulk-player="${p.id}" class="input-field bulk-val" placeholder="—" style="width:88px" step="0.01">
+              <span class="bulk-unit" style="font-size:12px;color:var(--fg-3);width:38px">lbs</span>
+            </div>`).join('') : '<div style="padding:16px;color:var(--fg-3);font-size:13px">No players in roster yet.</div>'}
+        </div>
+        <button onclick="saveBulkEntry()" class="btn-primary" style="width:100%;font-size:15px">Save entries</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    updateBulkUnit();
+  }
+  function updateBulkUnit(){
+    const key=document.getElementById('bulk-cat')?.value;
+    const cat=[...PERF_CATEGORIES.lifting,...PERF_CATEGORIES.speed].find(c=>c.key===key);
+    const unit=cat?.unit||'';
+    const short=unit==='lbs'?'lbs':unit==='inches'?'in':unit==='seconds'?'sec':unit;
+    document.querySelectorAll('#bulk-entry-overlay .bulk-unit').forEach(s=>s.textContent=short);
+  }
+  async function saveBulkEntry(){
+    const programId=await getValidProgramId();
+    if(!programId) return;
+    const key=document.getElementById('bulk-cat')?.value;
+    const cat=[...PERF_CATEGORIES.lifting,...PERF_CATEGORIES.speed].find(c=>c.key===key);
+    const date=document.getElementById('bulk-date')?.value;
+    const label=document.getElementById('bulk-label')?.value||'';
+    const rows=[];
+    document.querySelectorAll('#bulk-entry-overlay .bulk-val').forEach(inp=>{
+      const v=parseFloat(inp.value);
+      if(!isNaN(v)&&v>0){
+        rows.push({program_id:programId,player_id:inp.getAttribute('data-bulk-player'),date,session_label:label,category:key,value:v,unit:cat?.unit||''});
+      }
+    });
+    if(!rows.length){ showToast('Enter at least one value'); return; }
+    try{
+      await db.from('performance').insert(rows);
+      showToast(rows.length+' entries saved ✓');
+      document.getElementById('bulk-entry-overlay')?.remove();
+      await loadPerfData();
+    }catch(e){ console.error('Bulk save error:',e); showToast('Error saving — try again'); }
+  }
+
+  // ===== PERFORMANCE IMPORT (CSV) =====
+  let perfImportRows=[];
+  function openPerfImport(){
+    let overlay=document.getElementById('perf-import-overlay');
+    if(overlay) overlay.remove();
+    overlay=document.createElement('div');
+    overlay.id='perf-import-overlay';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.onclick=(e)=>{ if(e.target===overlay) overlay.remove(); };
+    const catKeys=[...PERF_CATEGORIES.lifting,...PERF_CATEGORIES.speed].map(c=>c.key);
+    overlay.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:17px;font-weight:700">Import performance data</div>
+          <div onclick="document.getElementById('perf-import-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:13px;color:var(--fg-3);margin-bottom:16px">Upload a CSV or paste from Google Sheets / Excel. Players are matched by name or number.</div>
+        <button onclick="downloadPerfTemplate()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font);margin-bottom:16px">📥 Download blank template</button>
+        <div style="background:var(--bg-3);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:12px">
+          <div style="font-weight:700;color:var(--fg);margin-bottom:6px">Columns (any order):</div>
+          <div style="font-family:monospace;color:var(--team-primary);margin-bottom:4px;word-break:break-word">name, number, ${catKeys.join(', ')}, date, session_label</div>
+          <div style="color:var(--fg-3)">Only <b>name</b> (or number) plus at least one value is required. Blank cells are skipped.</div>
+        </div>
+        <div style="border:2px dashed var(--border);border-radius:var(--radius);padding:18px;text-align:center;margin-bottom:12px;cursor:pointer" onclick="document.getElementById('perf-csv-input').click()">
+          <div style="font-size:22px;margin-bottom:4px">📄</div>
+          <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload CSV</div>
+          <input type="file" id="perf-csv-input" accept=".csv,.tsv,.txt" style="display:none" onchange="handlePerfCSV(event)">
+        </div>
+        <div style="text-align:center;color:var(--fg-3);font-size:12px;margin-bottom:10px">— or paste data —</div>
+        <textarea id="perf-csv-paste" placeholder="Paste CSV/TSV data here..." style="width:100%;height:96px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical" oninput="parsePerfCSV()"></textarea>
+        <div id="perf-import-preview" style="display:none;margin-top:12px"></div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button onclick="document.getElementById('perf-import-overlay').remove()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Cancel</button>
+          <button onclick="confirmPerfImport()" class="btn-primary" style="flex:2;font-size:14px">Import</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  function downloadPerfTemplate(){
+    const catKeys=[...PERF_CATEGORIES.lifting,...PERF_CATEGORIES.speed].map(c=>c.key);
+    const header=['name','number',...catKeys,'date','session_label'].join(',');
+    const example='John Smith,7,225,315,405,185,4.72,4.31,7.1,32,102,2025-08-01,Summer max-out';
+    const blob=new Blob([header+'\n'+example],{type:'text/csv'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='performance_template.csv'; a.click();
+  }
+  function handlePerfCSV(e){
+    const f=e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=ev=>{ const t=document.getElementById('perf-csv-paste'); if(t){ t.value=ev.target.result; parsePerfCSV(); } };
+    rd.readAsText(f);
+  }
+  function parsePerfCSV(){
+    const raw=(document.getElementById('perf-csv-paste')?.value||'').trim();
+    const preview=document.getElementById('perf-import-preview');
+    perfImportRows=[];
+    if(!raw){ if(preview) preview.style.display='none'; return; }
+    const lines=raw.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){ if(preview){ preview.style.display='block'; preview.innerHTML='<div style="font-size:12px;color:var(--red)">Need a header row plus at least one data row.</div>'; } return; }
+    const delim=lines[0].includes('\t')?'\t':',';
+    const headers=lines[0].split(delim).map(h=>h.trim().toLowerCase());
+    const allCats=[...PERF_CATEGORIES.lifting,...PERF_CATEGORIES.speed];
+    const catKeys=allCats.map(c=>c.key);
+    const roster=(window.ROSTER_DATA||[]);
+    const unmatched=[];
+    for(let i=1;i<lines.length;i++){
+      const cells=lines[i].split(delim).map(c=>c.trim());
+      const row={}; headers.forEach((h,idx)=>row[h]=cells[idx]);
+      let p=null;
+      if(row.name) p=roster.find(r=>(r.name||'').toLowerCase()===row.name.toLowerCase());
+      if(!p && row.number) p=roster.find(r=>String(r.num)===String(row.number));
+      if(!p){ unmatched.push(row.name||row.number||('row '+i)); continue; }
+      catKeys.forEach(k=>{
+        if(row[k]!==undefined && row[k]!==''){
+          const v=parseFloat(row[k]);
+          if(!isNaN(v)&&v>0){
+            const cd=allCats.find(c=>c.key===k);
+            perfImportRows.push({player_id:p.id,date:row.date||new Date().toISOString().slice(0,10),session_label:row.session_label||row.session||'Imported',category:k,value:v,unit:cd?.unit||''});
+          }
+        }
+      });
+    }
+    if(preview){
+      preview.style.display='block';
+      const nPlayers=new Set(perfImportRows.map(r=>r.player_id)).size;
+      preview.innerHTML=`<div style="font-size:13px;color:var(--fg)"><b>${perfImportRows.length}</b> values ready across <b>${nPlayers}</b> player(s).</div>`+
+        (unmatched.length?`<div style="font-size:12px;color:var(--red);margin-top:4px">${unmatched.length} row(s) didn't match a player: ${unmatched.slice(0,5).join(', ')}${unmatched.length>5?'…':''}</div>`:'');
+    }
+  }
+  async function confirmPerfImport(){
+    const programId=await getValidProgramId();
+    if(!programId) return;
+    if(!perfImportRows.length){ showToast('Nothing to import — check your data'); return; }
+    const rows=perfImportRows.map(r=>({...r, program_id:programId}));
+    try{
+      await db.from('performance').insert(rows);
+      showToast(rows.length+' records imported ✓');
+      document.getElementById('perf-import-overlay')?.remove();
+      await loadPerfData();
+    }catch(e){ console.error('Perf import error:',e); showToast('Error importing — try again'); }
   }
 
   // ===== IMPORT MENU =====
