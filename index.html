@@ -8037,7 +8037,20 @@
       if (error) throw error;
 
       const uid = data.user.id;
+      console.log('Auth UID:', uid);
+
       const { data: prog, error: progErr } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
+      console.log('Programs query result:', { prog, progErr });
+
+      if (progErr) {
+        console.error('Programs query error:', progErr);
+        // RLS or DB error — still let them through to onboarding
+        localStorage.setItem('mesh_auth_uid', uid);
+        btn.textContent = 'Sign in →';
+        btn.disabled = false;
+        showCoachOnboarding();
+        return;
+      }
 
       if (prog) {
         localStorage.setItem('mesh_program_id', prog.id);
@@ -8053,7 +8066,6 @@
         restoreSession();
       } else {
         // No program yet — new user who just verified their email
-        // Send them to onboarding to set up their program
         localStorage.setItem('mesh_auth_uid', uid);
         btn.textContent = 'Sign in →';
         btn.disabled = false;
