@@ -145,6 +145,23 @@
 
   /* DASHBOARD */
   .greeting { font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.3px; }
+  /* Announcements */
+  .announcement-card { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px; }
+  .announcement-card-header { display:flex;align-items:flex-start;gap:10px;margin-bottom:6px; }
+  .announcement-avatar { width:32px;height:32px;border-radius:50%;background:var(--team-primary);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .announcement-meta { font-size:11px;color:var(--fg-3);margin-top:2px; }
+  .announcement-body { font-size:14px;color:var(--fg);line-height:1.5; }
+  .announcement-del { font-size:14px;color:var(--fg-3);cursor:pointer;padding:2px 4px;flex-shrink:0; }
+  .announcement-del:active { color:var(--red); }
+  /* Announcement compose */
+  #announcement-compose { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px; }
+  #announcement-input { width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--fg);font-family:var(--font);resize:none;min-height:72px;box-sizing:border-box; }
+  #announcement-input:focus { outline:none;border-color:var(--team-primary); }
+  #announcement-compose-footer { display:flex;align-items:center;justify-content:space-between;margin-top:8px; }
+  /* Overlay */
+  #announcement-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
+  #announcement-overlay.open { display:flex; }
+  @media (min-width:768px) { #announcement-overlay { position:fixed;z-index:400; } }
   .greeting span { color: var(--team-primary); }
   .sub-greeting { font-size: 14px; color: var(--fg-2); margin-bottom: 20px; }
   .quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
@@ -655,7 +672,12 @@
 
   /* ===== SIMPLE PRACTICE MODE ===== */
   #practice-simple { display:none;padding:0 20px 80px; }
-  .simple-block { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px; }
+  .simple-block { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;transition:border-color 0.15s; }
+  .simple-block:active { border-color:var(--team-primary); }
+  /* Simple block editor modal */
+  #simple-block-editor { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
+  #simple-block-editor.open { display:flex; }
+  @media (min-width:768px) { #simple-block-editor { position:fixed;z-index:400; } }
   .simple-block.editing { border-color:var(--team-primary); }
   .simple-time-col { min-width:48px;text-align:center;flex-shrink:0; }
   .simple-start { font-size:13px;font-weight:700; }
@@ -2381,8 +2403,7 @@
 
 <!-- APP -->
 <div id="screen-app" class="screen">
-  <div class="demo-label">Demo — switch roles to preview each view</div>
-  <div class="role-switcher">
+  <div class="role-switcher" id="role-switcher-bar" style="display:none">
     <div class="role-tab active" onclick="switchRole('coach',this)">🎙️ Coach</div>
     <div class="role-tab" onclick="switchRole('parent',this)">👨‍👩‍👧 Parent</div>
     <div class="role-tab" onclick="switchRole('player',this)">🏈 Player</div>
@@ -2434,7 +2455,7 @@
   <!-- ===== COACH TABS ===== -->
   <!-- Coach Home -->
   <div id="tab-coach-home" class="scroll-content">
-    <div class="greeting">Good morning, <span>Coach</span> 👋</div>
+    <div class="greeting" id="coach-home-greeting">Hey, <span>Coach</span> 👋</div>
     <div class="sub-greeting">Nampa Bulldogs · 2026 Season</div>
 
     <!-- Join code card — always visible for easy sharing -->
@@ -2449,7 +2470,7 @@
     </div>
     <div class="quick-stats">
       <div class="stat-tile green-tile" style="cursor:pointer" onclick="navigateTo('calendar')"><div class="stat-number green" id="home-record">0–0</div><div class="stat-lbl">Season record</div></div>
-      <div class="stat-tile" style="cursor:pointer" onclick="navigateTo('roster')"><div class="stat-number">62</div><div class="stat-lbl">Active players ›</div></div>
+      <div class="stat-tile" style="cursor:pointer" onclick="navigateTo('roster')"><div class="stat-number" id="home-active-players">—</div><div class="stat-lbl">Active players ›</div></div>
     </div>
     <div id="next-game-card" class="next-game" style="cursor:pointer" onclick="navigateTo('calendar')">
       <div class="game-date-block"><div class="game-month" id="next-game-month">—</div><div class="game-day" id="next-game-day">—</div></div>
@@ -2467,21 +2488,86 @@
 
     <div class="section-label">Quick actions</div>
     <div class="action-row">
-      <div class="action-btn" onclick="showTab('coach','practice')"><div class="ai">📋</div><div class="al">Practice plan</div><div class="as">Today · 9:30 AM</div></div>
-      <div class="action-btn" onclick="showTab('coach','more');setTimeout(()=>showMoreSection('depth'),50)"><div class="ai">📊</div><div class="al">Depth chart</div><div class="as">Varsity</div></div>
+      <div class="action-btn" onclick="showTab('coach','practice')"><div class="ai">📋</div><div class="al">Practice plan</div><div class="as">Tap to plan today</div></div>
+      <div class="action-btn" onclick="showTab('coach','more');setTimeout(()=>showMoreSection('depth'),50)"><div class="ai">📊</div><div class="al">Depth chart</div><div class="as">Manage positions</div></div>
     </div>
     <div class="action-row">
-      <div class="action-btn" onclick="showTab('coach','messages')"><div class="ai">💬</div><div class="al">Messages</div><div class="as">6 groups</div></div>
-
-      <div class="action-btn" onclick="showTab('coach','practice');setTimeout(()=>openScriptEdit(),300)"><div class="ai">📝</div><div class="al">Offensive script</div><div class="as">P7 · Red zone</div></div>
+      <div class="action-btn" onclick="showTab('coach','messages')"><div class="ai">💬</div><div class="al">Messages</div><div class="as" id="home-msg-sub">Send a message</div></div>
+      <div class="action-btn" onclick="showTab('coach','more');setTimeout(()=>showMoreSection('roster'),50)"><div class="ai">👥</div><div class="al">Roster</div><div class="as">Manage players</div></div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
-      <div class="section-label" style="margin:0">Recent activity</div>
-      <div style="font-size:11px;color:var(--gray-3)">Messages & updates</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:10px">
+      <div class="section-label" style="margin:0">Announcements</div>
+      <button class="btn-sm" onclick="openAnnouncementCompose()" id="announce-post-btn" style="display:none">+ Post</button>
     </div>
-    <div class="card" style="margin-top:10px"><div style="font-size:12px;color:var(--gray-2);margin-bottom:5px">📣 All parents · 2h ago</div><div style="font-size:14px;font-weight:600">Game Friday — kickoff at 7PM</div><div style="font-size:12px;color:var(--gray-3);margin-top:3px">Sent via Messages → All Parents</div></div>
-    <div class="card"><div style="font-size:12px;color:var(--gray-2);margin-bottom:5px">📋 Practice plan saved · Yesterday</div><div style="font-size:14px;font-weight:600">Tuesday Week 7 practice plan</div><div style="font-size:12px;color:var(--gray-3);margin-top:3px">Saved as template by Coach Waite</div></div>
+    <div id="announcements-list"></div>
+    <div id="announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">
+      No announcements yet
+    </div>
     
+  </div>
+
+  <!-- Announcement compose modal -->
+  <div id="announcement-overlay" onclick="closeAnnouncementCompose()">
+    <div class="ap-modal" onclick="event.stopPropagation()">
+      <div class="ap-head">
+        <div class="ap-title">Post announcement</div>
+        <div class="ap-close" onclick="closeAnnouncementCompose()">✕</div>
+      </div>
+      <div class="ap-sub">This will be visible to all coaches on the home screen.</div>
+      <div class="ap-field">
+        <textarea class="ap-input" id="announcement-text-input" placeholder="What do you want to share with your staff?" style="min-height:100px;resize:none"></textarea>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Visibility</div>
+        <select class="ap-input" id="announcement-visibility">
+          <option value="coaches">Coaches only</option>
+          <option value="players">Coaches + Players</option>
+          <option value="all">Coaches + Players + Parents</option>
+        </select>
+      </div>
+      <button class="note-modal-save" onclick="postAnnouncement()">Post announcement</button>
+    </div>
+  </div>
+
+  <!-- Simple block editor modal -->
+  <div id="simple-block-editor" onclick="closeSimpleBlockEditor()">
+    <div class="ap-modal" onclick="event.stopPropagation()">
+      <div class="ap-head">
+        <div class="ap-title">Edit period</div>
+        <div class="ap-close" onclick="closeSimpleBlockEditor()">✕</div>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Period name</div>
+        <input class="ap-input" id="sbe-name" placeholder="e.g. Team Period, O Indy, Water Break">
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="ap-field" style="flex:1">
+          <div class="ap-field-label">Start time</div>
+          <input class="ap-input" id="sbe-start" placeholder="e.g. 3:30">
+        </div>
+        <div class="ap-field" style="flex:1">
+          <div class="ap-field-label">Duration (min)</div>
+          <input class="ap-input" id="sbe-duration" type="number" min="1" max="120" placeholder="15">
+        </div>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Focus</div>
+        <select class="ap-input" id="sbe-tag">
+          <option value="team">Team</option>
+          <option value="offense">Offense</option>
+          <option value="defense">Defense</option>
+          <option value="special">Special Teams</option>
+          <option value="break">Break</option>
+          <option value="conditioning">Conditioning</option>
+        </select>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Notes / Focus points</div>
+        <input class="ap-input" id="sbe-focus" placeholder="e.g. Work on blitz pickup, install 2 formation">
+      </div>
+      <button class="note-modal-save" onclick="saveSimpleBlock()">Save period</button>
+      <button onclick="deleteSimpleBlockFromEditor()" style="width:100%;margin-top:8px;background:transparent;border:none;color:var(--red);font-size:13px;cursor:pointer;padding:6px;font-family:var(--font)">Delete this period</button>
+    </div>
   </div>
 
   <!-- Coach Practice — GRID PLANNER -->
@@ -3711,8 +3797,8 @@
   <!-- ===== PARENT TABS ===== -->
   <!-- Parent Home -->
   <div id="tab-parent-home" class="scroll-content" style="display:none">
-    <div class="greeting">Hi, <span>Marcus's</span> family 👋</div>
-    <div class="sub-greeting">Nampa Bulldogs · 2026 Season</div>
+    <div class="greeting">Hi, <span id="parent-home-name">Family</span> 👋</div>
+    <div class="sub-greeting" id="parent-home-sub">Your team · 2026 Season</div>
     <div style="background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
       <div style="font-size:24px">🏈</div>
       <div style="font-size:13px;color:var(--gray-1);line-height:1.4"><span style="color:var(--team-primary);font-weight:600">Next: Friday Oct 18 vs Emmett</span><br>Nampa High School · 7:00 PM kickoff</div>
@@ -3795,6 +3881,13 @@
         <div style="font-size:12px;color:var(--fg-3)">Your coach will send messages here.</div>
       </div>
     </div>
+  
+    <!-- Announcements -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px">
+      <div class="section-label" style="margin:0">Announcements</div>
+    </div>
+    <div id="parent-announcements-list"></div>
+    <div id="parent-announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">No announcements yet</div>
   </div>
 
   <!-- Parent More Tab -->
@@ -3945,7 +4038,8 @@
     <div class="section-label">Announcements</div>
     <div style="font-size:11px;color:var(--gray-3);margin:-6px 0 10px">Messages from your coaching staff</div>
     <div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:4px">Game Friday vs Emmett — 7PM</div><div style="font-size:13px;color:var(--gray-2)">Report to locker room by 5:30 PM in full pads. Bus leaves at 6:00 PM sharp.</div><div style="font-size:11px;color:var(--gray-3);margin-top:6px">Coach Williams · 2h ago</div></div>
-    <div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:4px">Away uniform reminder</div><div style="font-size:13px;color:var(--gray-2)">Full away kit: white jersey, white pants, black socks. Bring both helmets.</div><div style="font-size:11px;color:var(--gray-3);margin-top:6px">Coach Waite · Yesterday</div></div>
+    <div id="player-announcements-list"></div>
+    <div id="player-announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">No announcements yet</div>
   </div>
 
   <!-- Player Schedule -->
@@ -12571,6 +12665,104 @@ ${forPrint ? '' : '<button onclick="window.print()" style="margin-bottom:16px;pa
   }
 
   // ===== COACH DOC CENTER FOLDERS =====
+  // ===== ANNOUNCEMENTS =====
+  let ANNOUNCEMENTS = [];
+  const ANN_SUPABASE_COL = 'announcements_data';
+
+  function annId() { return 'ann_' + Date.now() + '_' + Math.random().toString(36).slice(2,5); }
+
+  async function annSave() {
+    const programId = localStorage.getItem('mesh_program_id');
+    if (!programId) return;
+    try {
+      await db.from('programs').update({ announcements_data: JSON.stringify(ANNOUNCEMENTS) }).eq('id', programId);
+    } catch(e) { console.warn('Ann save error:', e); }
+  }
+
+  async function annLoad() {
+    const programId = localStorage.getItem('mesh_program_id');
+    if (!programId) return;
+    try {
+      const { data } = await db.from('programs').select('announcements_data').eq('id', programId).single();
+      if (data?.announcements_data) ANNOUNCEMENTS = JSON.parse(data.announcements_data);
+    } catch(e) { console.warn('Ann load error:', e); }
+  }
+
+  function renderAnnouncements(role) {
+    // role: 'coach' | 'player' | 'parent'
+    const listId = role === 'coach' ? 'announcements-list' : role === 'player' ? 'player-announcements-list' : 'parent-announcements-list';
+    const emptyId = role === 'coach' ? 'announcements-empty' : role === 'player' ? 'player-announcements-empty' : 'parent-announcements-empty';
+    const list = document.getElementById(listId);
+    const empty = document.getElementById(emptyId);
+    if (!list) return;
+
+    const isCoach = role === 'coach';
+    const visMap = { coaches: ['coach'], players: ['coach','player'], all: ['coach','player','parent'] };
+    const visible = ANNOUNCEMENTS.filter(a => {
+      const allowed = visMap[a.visibility] || ['coach'];
+      return allowed.includes(role);
+    });
+
+    if (visible.length === 0) {
+      list.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    list.innerHTML = visible.map(a => {
+      const initials = (a.author || 'C').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const visLabel = a.visibility === 'coaches' ? '🔒 Coaches only' : a.visibility === 'players' ? '👥 Coaches + Players' : '🌐 Everyone';
+      return `<div class="announcement-card">
+        <div class="announcement-card-header">
+          <div class="announcement-avatar">${initials}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:var(--fg)">${a.author || 'Coach'}</div>
+            <div class="announcement-meta">${a.date || ''} · ${visLabel}</div>
+          </div>
+          ${isCoach ? `<div class="announcement-del" onclick="deleteAnnouncement('${a.id}')">✕</div>` : ''}
+        </div>
+        <div class="announcement-body">${escHtml(a.text)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function openAnnouncementCompose() {
+    document.getElementById('announcement-text-input').value = '';
+    document.getElementById('announcement-visibility').value = 'coaches';
+    document.getElementById('announcement-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('announcement-text-input').focus(), 100);
+  }
+
+  function closeAnnouncementCompose() {
+    document.getElementById('announcement-overlay').classList.remove('open');
+  }
+
+  async function postAnnouncement() {
+    const text = document.getElementById('announcement-text-input').value.trim();
+    if (!text) { showToast('Write something first'); return; }
+    const visibility = document.getElementById('announcement-visibility').value;
+    const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+    ANNOUNCEMENTS.unshift({
+      id: annId(),
+      text,
+      visibility,
+      author: user.name || 'Coach',
+      date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
+    });
+    closeAnnouncementCompose();
+    renderAnnouncements('coach');
+    await annSave();
+    showToast('Announcement posted ✓');
+  }
+
+  async function deleteAnnouncement(id) {
+    ANNOUNCEMENTS = ANNOUNCEMENTS.filter(a => a.id !== id);
+    renderAnnouncements('coach');
+    await annSave();
+    showToast('Deleted');
+  }
+
   function toggleCoachDocFolder(name) {
     const el = document.getElementById('cdoc-' + name);
     if (!el) return;
@@ -13227,21 +13419,63 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     simpleBlocks.forEach((block, i) => {
       const div = document.createElement('div');
       div.className = 'simple-block';
+      div.style.cursor = 'pointer';
+      div.onclick = () => openSimpleBlockEditor(i);
       div.innerHTML = `
         <div class="simple-time-col">
-          <div class="simple-start">${block.start || ''}</div>
+          <div class="simple-start">${block.start || '—'}</div>
           <div class="simple-dur">${block.duration} min</div>
         </div>
         <div class="simple-divider"></div>
         <div class="simple-info">
-          <input class="simple-name-input" value="${block.name}" onchange="simpleBlocks[${i}].name=this.value" placeholder="Period name">
+          <div style="font-size:14px;font-weight:600;color:var(--fg)">${block.name || 'Untitled'}</div>
           <span class="simple-tag ${block.tag}">${block.tag}</span>
         </div>
         <div class="simple-block-actions">
-          <span class="simple-del-btn" onclick="removeSimpleBlock(${i})">✕</span>
+          <span style="font-size:18px;color:var(--fg-3)">›</span>
         </div>`;
       container.appendChild(div);
     });
+  }
+
+  let editingSimpleBlockIdx = null;
+
+  function openSimpleBlockEditor(idx) {
+    editingSimpleBlockIdx = idx;
+    const block = simpleBlocks[idx];
+    document.getElementById('sbe-name').value = block.name || '';
+    document.getElementById('sbe-start').value = block.start || '';
+    document.getElementById('sbe-duration').value = block.duration || 15;
+    document.getElementById('sbe-tag').value = block.tag || 'team';
+    document.getElementById('sbe-focus').value = block.focus || '';
+    document.getElementById('simple-block-editor').classList.add('open');
+    setTimeout(() => document.getElementById('sbe-name').focus(), 100);
+  }
+
+  function closeSimpleBlockEditor() {
+    document.getElementById('simple-block-editor').classList.remove('open');
+    editingSimpleBlockIdx = null;
+  }
+
+  function saveSimpleBlock() {
+    if (editingSimpleBlockIdx === null) return;
+    const block = simpleBlocks[editingSimpleBlockIdx];
+    block.name = document.getElementById('sbe-name').value.trim() || 'Untitled';
+    block.start = document.getElementById('sbe-start').value.trim();
+    block.duration = parseInt(document.getElementById('sbe-duration').value) || 15;
+    block.tag = document.getElementById('sbe-tag').value;
+    block.focus = document.getElementById('sbe-focus').value.trim();
+    closeSimpleBlockEditor();
+    renderSimpleBlocks();
+    saveSimplePlan();
+  }
+
+  function deleteSimpleBlockFromEditor() {
+    if (editingSimpleBlockIdx === null) return;
+    simpleBlocks.splice(editingSimpleBlockIdx, 1);
+    closeSimpleBlockEditor();
+    renderSimpleBlocks();
+    saveSimplePlan();
   }
 
   function addSimpleBlock() {
@@ -16885,16 +17119,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
       // Update greeting if we have user info
       if (user?.name) {
-        const greetingSpan = document.querySelector('#tab-' + appRole + '-home .greeting span');
-        if (greetingSpan) greetingSpan.textContent = user.name || 'Coach';
-        // Fix greeting word based on time of day
+        const hour = new Date().getHours();
+        let word;
+        if (hour >= 5 && hour < 12) word = 'Good morning';
+        else if (hour >= 12 && hour < 17) word = 'Good afternoon';
+        else if (hour >= 17 && hour < 21) word = 'Good evening';
+        else word = 'Hey';
         const greetingEl = document.querySelector('#tab-' + appRole + '-home .greeting');
         if (greetingEl) {
-          const hour = new Date().getHours();
-          const word = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-          const span = greetingEl.querySelector('span');
-          greetingEl.childNodes[0].textContent = word + ', ';
-          if (!span) greetingEl.innerHTML = `${word}, <span>${user.name || 'Coach'}</span> 👋`;
+          greetingEl.innerHTML = `${word}, <span>${user.name || 'Coach'}</span> 👋`;
         }
       }
 
@@ -16911,11 +17144,27 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
       // Load real data from Supabase
       if (program?.id) {
+        // Load announcements
+        await annLoad();
+        renderAnnouncements('coach');
+        const postBtn = document.getElementById('announce-post-btn');
+        if (postBtn) postBtn.style.display = '';
         await loadRosterFromSupabase(program.id);
+        // Update active players count
+        const activePl = document.getElementById('home-active-players');
+        if (activePl) activePl.textContent = (window.ROSTER_DATA || []).filter(p => p.active !== false).length || 0;
         await loadInventoryFromSupabase(program.id);
         await loadDCFromSupabase(program.id);
         await loadScheduleFromSupabase(program.id);
         subscribeToPlayers(program.id);
+        // Render announcements for current role
+        setTimeout(async () => {
+          await annLoad();
+          const role = localStorage.getItem('mesh_role');
+          if (role === 'player') renderAnnouncements('player');
+          else if (role === 'parent') renderAnnouncements('parent');
+          else renderAnnouncements('coach');
+        }, 500);
       }
 
       // Populate role-specific home screen
