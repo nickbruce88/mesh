@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v36.0.3';
+  const APP_VERSION = 'v36.0.4';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -10814,6 +10814,8 @@
         const canvas=document.createElement('canvas'); canvas.width=size; canvas.height=size;
         canvas.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);
         const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+        console.log('[Avatar] canvas dataUrl length:', dataUrl.length, 'img size:', img.width, 'x', img.height);
+        if (dataUrl.length < 1000) { showToast('Could not process image — try another photo'); return; }
         // Save to localStorage immediately for instant display
         try{ localStorage.setItem('mesh_user_photo',dataUrl); }catch(err){}
         const av=document.getElementById('edit-profile-avatar');
