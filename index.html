@@ -276,7 +276,7 @@
   .add-period-btn { width: 100%; background: transparent; border: 1.5px dashed var(--border-2); border-radius: var(--radius); padding: 14px; color: var(--fg-3); font-size: 14px; font-family: var(--font); cursor: pointer; text-align: center; margin-top: 4px; }
 
   /* ===== GRID PRACTICE PLANNER (CSS Grid based — not <table>) ===== */
-  .grid-scroll-wrap { overflow: auto; -webkit-overflow-scrolling: touch; margin: 14px 0; border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 60vh; background: var(--bg); box-shadow: 0 10px 34px rgba(0,0,0,0.45); }
+  .grid-scroll-wrap { overflow: auto; -webkit-overflow-scrolling: touch; margin: 14px 0; border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 60vh; background: var(--bg); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
   .grid-scroll-wrap::-webkit-scrollbar { width: 5px; height: 5px; }
   .grid-scroll-wrap::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 10px; }
 
@@ -2706,16 +2706,16 @@
       </div><!-- end grid-scroll-wrap -->
 
       <!-- Add period + hint sit outside the scroll box but inside practice-grid-wrap -->
-      <div id="practice-below-grid" style="display:none">
+      <div id="practice-below-grid" style="display:none;margin-bottom:8px">
         <button class="add-period-btn" style="margin-top:10px" onclick="openAddPeriod()">+ Add period</button>
         <div class="tap-hint"><i>💡</i> Tap any period or cell to view or add notes</div>
       </div>
     </div><!-- end practice-grid-wrap -->
 
     <!-- Scripts & Reminders — in main page flow, scroll with full page -->
-    <div id="practice-scripts-reminders" style="display:none;padding:0 4px;margin-top:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:4px">
-        <div class="section-label" style="margin:0">Scripts</div>
+    <div id="practice-scripts-reminders" style="display:none;padding:0 4px 40px;margin-top:36px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--fg-3)">Scripts</div>
         <button class="btn-sm" onclick="openAddScriptModal()" style="font-size:11px">+ Script</button>
       </div>
       <div id="script-period-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;margin-top:8px"></div>
@@ -2723,8 +2723,8 @@
         <div style="font-size:13px;color:var(--gray-3);text-align:center;padding:20px 0" id="script-empty-msg">No scripts yet — tap "+ Script" to add one</div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;margin-bottom:8px">
-        <div class="section-label" style="margin:0">Coaching reminders</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--fg-3)">Coaching reminders</div>
         <button class="btn-sm" onclick="openAddReminderModal()" style="font-size:11px">+ Reminder</button>
       </div>
       <div id="reminders-list"></div>
@@ -5221,7 +5221,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.4</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.8</div>
   </div>
 </div>
 
@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v35.18.4';
+  const APP_VERSION = 'v35.18.8';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -12793,26 +12793,37 @@
       // Detect span rows by structure — cell-span means all-team, regardless of row class
       const spanCell = row.querySelector('.cell-span');
       const isSpanRow = !!spanCell;
+      console.log('Row', row.dataset.periodId, '| isSpanRow:', isSpanRow, '| spanCell:', spanCell, '| classList:', [...row.classList]);
 
       if (isSpanRow) {
         const activityEl = spanCell.querySelector('.cell-activity');
         const subEl = spanCell.querySelector('.cell-sub');
         const isWater = row.classList.contains('row-water');
         const isTransition = row.classList.contains('row-transition');
-        const rawText = activityEl ? activityEl.textContent.trim() : '';
-        // Strip leading emoji that's already in the text (💧)
-        const text = rawText.replace(/^💧\s*/,'');
+        // Get text — try cell-activity first, fall back to full span text minus sub
+        let rawText = activityEl ? activityEl.textContent.trim() : '';
+        if (!rawText) rawText = spanCell.textContent.trim(); // fallback: all text in span
+        // Strip leading emoji (💧)
+        const text = rawText.replace(/^💧\s*/,'').split('\n')[0].trim();
         const sub = subEl ? subEl.textContent.trim() : '';
         const icon = isWater ? '💧 ' : '';
 
-        // Row background
-        let atBg = '#f0f4f0'; // default light green for team periods
+        // Row background — color is on the cell, not the row
+        let atBg = 'transparent';
         if (isWater) atBg = '#e8f4fd';
         else if (isTransition) atBg = '#fffef0';
         else {
-          // Pull bg from the row itself via computed style
-          const rowBg = window.getComputedStyle(row).backgroundColor;
-          if (rowBg && rowBg !== 'rgba(0, 0, 0, 0)' && rowBg !== 'transparent') atBg = rowBg;
+          // Pull bg from the span cell itself (that's where CSS applies background)
+          const cellBg = window.getComputedStyle(spanCell).backgroundColor;
+          if (cellBg && cellBg !== 'rgba(0, 0, 0, 0)' && cellBg !== 'transparent') {
+            atBg = cellBg;
+          } else {
+            // Fallback: map common row classes to colors
+            if (row.classList.contains('row-team') || row.classList.contains('row-allteam')) atBg = 'rgba(57,255,20,0.07)';
+            else if (row.classList.contains('row-offense')) atBg = 'rgba(255,100,80,0.08)';
+            else if (row.classList.contains('row-defense')) atBg = 'rgba(77,159,255,0.08)';
+            else if (row.classList.contains('row-special') || row.classList.contains('row-cross') || row.classList.contains('row-install')) atBg = 'rgba(255,180,0,0.10)';
+          }
         }
 
         tableRows += `<tr>
@@ -12826,9 +12837,18 @@
           const cellEl = row.querySelector(`[data-col="${col}"]`);
           const activity = cellEl ? cellEl.querySelector('.cell-activity') : null;
           const sub = cellEl ? cellEl.querySelector('.cell-sub') : null;
-          const bg = cellEl ? (window.getComputedStyle(cellEl).backgroundColor || '') : '';
-          const bgStyle = bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent'
-            ? `background:${bg};-webkit-print-color-adjust:exact;print-color-adjust:exact;` : '';
+          let bg = '';
+          if (cellEl) {
+            const computed = window.getComputedStyle(cellEl).backgroundColor;
+            if (computed && computed !== 'rgba(0, 0, 0, 0)' && computed !== 'transparent') bg = computed;
+          }
+          // Fallback: use row class if cell has no background
+          if (!bg) {
+            if (row.classList.contains('row-offense')) bg = 'rgba(255,100,80,0.08)';
+            else if (row.classList.contains('row-defense')) bg = 'rgba(77,159,255,0.08)';
+            else if (row.classList.contains('row-special') || row.classList.contains('row-install')) bg = 'rgba(255,180,0,0.10)';
+          }
+          const bgStyle = bg ? `background:${bg};-webkit-print-color-adjust:exact;print-color-adjust:exact;` : '';
           const text = activity ? activity.textContent.trim() : '';
           const subText = sub ? sub.textContent.trim() : '';
           return `<td style="${bgStyle}font-size:11px">${text}${subText ? `<div style="font-size:9px;color:#555;margin-top:2px">${subText}</div>` : ''}</td>`;
