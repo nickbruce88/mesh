@@ -2588,7 +2588,7 @@
   </div>
 
   <!-- Add Reminder Modal -->
-  <div id="add-reminder-overlay" onclick="closeAddReminderModal()" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px">
+  <div id="add-reminder-overlay" onclick="closeAddReminderModal()" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px">
     <div class="ap-modal" onclick="event.stopPropagation()">
       <div class="ap-head">
         <div class="ap-title">Add coaching reminder</div>
@@ -2602,15 +2602,19 @@
   </div>
 
   <!-- Add Script Modal -->
-  <div id="add-script-overlay" onclick="closeAddScriptModal()" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px">
+  <div id="add-script-overlay" onclick="closeAddScriptModal()" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px">
     <div class="ap-modal" onclick="event.stopPropagation()">
       <div class="ap-head">
         <div class="ap-title">New script</div>
         <div class="ap-close" onclick="closeAddScriptModal()">✕</div>
       </div>
-      <div class="ap-sub">Scripts are linked to a period. Name it after the period it belongs to.</div>
+      <div class="ap-sub">Link a script to a period in today's practice plan.</div>
       <div class="ap-field">
-        <div class="ap-field-label">Period name</div>
+        <div class="ap-field-label">Period</div>
+        <select class="ap-input" id="add-script-period-select"></select>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Script name</div>
         <input class="ap-input" id="add-script-name-input" placeholder="e.g. Full Team, Red Zone, Indy">
       </div>
       <button class="note-modal-save" onclick="saveNewScript()">Create script</button>
@@ -5064,7 +5068,7 @@
     <div class="script-edit-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:16px;font-weight:700">Edit Script</div>
+        <div style="font-size:16px;font-weight:700" id="script-edit-title">Edit Script</div>
         <div style="color:var(--gray-3);cursor:pointer;font-size:14px" onclick="closeScriptEdit()">✕</div>
       </div>
       <div id="script-edit-rows"></div>
@@ -5221,7 +5225,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.11</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.12</div>
   </div>
 </div>
 
@@ -5232,7 +5236,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v35.18.11';
+  const APP_VERSION = 'v35.18.12';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -12483,6 +12487,32 @@
   // ===== ADD SCRIPT MODAL =====
   function openAddScriptModal() {
     document.getElementById('add-script-name-input').value = '';
+    // Populate period picker from current grid
+    const select = document.getElementById('add-script-period-select');
+    if (select) {
+      select.innerHTML = '';
+      const pgrid = document.getElementById('practice-grid-table');
+      const rows = pgrid ? pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)') : [];
+      let hasPeriods = false;
+      rows.forEach(row => {
+        const pid = row.dataset.periodId;
+        if (!pid || SCRIPTED_PERIODS.has(pid)) return; // skip already scripted
+        const actEl = row.querySelector('.cell-activity');
+        const label = actEl ? actEl.textContent.trim() : pid;
+        const opt = document.createElement('option');
+        opt.value = pid;
+        opt.textContent = pid + ' — ' + label.slice(0, 40);
+        select.appendChild(opt);
+        hasPeriods = true;
+      });
+      if (!hasPeriods) {
+        // No periods yet — let coach make a standalone script
+        const opt = document.createElement('option');
+        opt.value = '__standalone__';
+        opt.textContent = 'Standalone (not linked to a period)';
+        select.appendChild(opt);
+      }
+    }
     document.getElementById('add-script-overlay').classList.add('open');
     setTimeout(() => document.getElementById('add-script-name-input').focus(), 100);
   }
@@ -12491,19 +12521,26 @@
   function saveNewScript() {
     const name = document.getElementById('add-script-name-input').value.trim();
     if (!name) { showToast('Enter a script name'); return; }
-    // Auto-assign next period ID
-    const existingIds = [...SCRIPTED_PERIODS];
-    const nums = existingIds.map(id => parseInt(id.replace(/\D/g,''))).filter(n => !isNaN(n));
-    const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
-    const newId = 'P' + nextNum;
-    SCRIPTED_PERIODS.add(newId);
-    PERIOD_SCRIPTS[newId] = { name, plays: [], shared: true };
-    activeScriptPeriod = newId;
+    const select = document.getElementById('add-script-period-select');
+    const selectedPeriod = select ? select.value : '__standalone__';
+
+    let scriptId;
+    if (selectedPeriod === '__standalone__') {
+      // Generate a unique standalone key
+      const existing = [...SCRIPTED_PERIODS].filter(id => id.startsWith('S'));
+      scriptId = 'S' + (existing.length + 1);
+    } else {
+      scriptId = selectedPeriod;
+    }
+
+    SCRIPTED_PERIODS.add(scriptId);
+    PERIOD_SCRIPTS[scriptId] = { name, plays: [], shared: true };
+    activeScriptPeriod = scriptId;
     closeAddScriptModal();
     renderScriptSection();
     showToast(`"${name}" script created ✓`);
     // Open editor immediately
-    setTimeout(() => openScriptEdit(newId), 200);
+    setTimeout(() => openScriptEdit(scriptId), 200);
   }
 
   function toggleAPScript() {
@@ -12618,8 +12655,8 @@
     editingScriptPeriod = periodId || activeScriptPeriod;
     if (!editingScriptPeriod || !PERIOD_SCRIPTS[editingScriptPeriod]) return;
     const data = PERIOD_SCRIPTS[editingScriptPeriod];
-    document.querySelector('#script-edit-overlay .action-sheet-handle + div div:first-child').textContent =
-      'Edit Script — ' + editingScriptPeriod + (data.name ? ' · ' + data.name : '');
+    const titleEl = document.getElementById('script-edit-title');
+    if (titleEl) titleEl.textContent = 'Edit Script — ' + editingScriptPeriod + (data.name ? ' · ' + data.name : '');
     renderScriptEditRows();
     document.getElementById('script-edit-overlay').classList.add('open');
   }
