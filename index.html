@@ -5226,7 +5226,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.27</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v36.0</div>
   </div>
 </div>
 
@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v35.18.27';
+  const APP_VERSION = 'v36.0';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5381,6 +5381,30 @@
   }
 
   // Apply the saved profile photo (or fall back to initials) to any avatar element
+  async function refreshAvatarSignedUrl() {
+    try {
+      const uid = localStorage.getItem('mesh_auth_uid');
+      if (!uid) return;
+      // Check if user has a photo stored
+      const { data: profile } = await db.from('profiles').select('photo_url').eq('id', uid).single();
+      if (!profile?.photo_url) return;
+      // Generate fresh signed URL (valid 1 hour, refreshed every 50 min)
+      const path = `${uid}/avatar.jpg`;
+      const { data: signed, error } = await db.storage.from('avatars').createSignedUrl(path, 3600);
+      if (error || !signed?.signedUrl) return;
+      localStorage.setItem('mesh_user_photo', signed.signedUrl);
+      refreshAllUserAvatars();
+    } catch(e) { console.warn('Avatar URL refresh error:', e); }
+  }
+
+  async function loadPhotoFromSupabase() {
+    await refreshAvatarSignedUrl();
+    // Start refresh timer — every 50 min while app is open
+    if (!window._avatarRefreshTimer) {
+      window._avatarRefreshTimer = setInterval(refreshAvatarSignedUrl, 50 * 60 * 1000);
+    }
+  }
+
   function applyUserAvatar(el){
     if(!el) return;
     const photo=localStorage.getItem('mesh_user_photo');
@@ -9037,6 +9061,12 @@
           existing.db_id = p.id;
           existing.disciplinaryStatus = p.disciplinary_status || 'green';
           existing.group = p.group_name || existing.group || '';
+          // Merge notes from Supabase if available
+          try {
+            if (p.notes_data) existing.notes = JSON.parse(p.notes_data) || existing.notes;
+            if (p.discipline_data) existing.discipline = JSON.parse(p.discipline_data) || existing.discipline;
+            if (p.academic_data) existing.academic = JSON.parse(p.academic_data) || existing.academic;
+          } catch(e) {}
         } else {
           const newPlayer = {
             id: p.id, db_id: p.id,
@@ -9049,15 +9079,23 @@
             parent: p.parent_name || '', parentPhone: p.parent_phone || '', parentEmail: p.parent_email || '',
             role: 'player'
           };
-          // Restore notes from localStorage
+          // Restore notes from Supabase columns, fall back to localStorage cache
           try {
-            const saved = JSON.parse(localStorage.getItem('mesh_notes_' + p.id) || 'null');
-            if (saved) {
-              newPlayer.notes = saved.notes || [];
-              newPlayer.discipline = saved.discipline || [];
-              newPlayer.academic = saved.academic || [];
-            }
+            if (p.notes_data) newPlayer.notes = JSON.parse(p.notes_data) || [];
+            if (p.discipline_data) newPlayer.discipline = JSON.parse(p.discipline_data) || [];
+            if (p.academic_data) newPlayer.academic = JSON.parse(p.academic_data) || [];
           } catch(e) {}
+          // localStorage fallback for any player not yet migrated
+          if (!newPlayer.notes.length && !newPlayer.discipline.length && !newPlayer.academic.length) {
+            try {
+              const saved = JSON.parse(localStorage.getItem('mesh_notes_' + p.id) || 'null');
+              if (saved) {
+                newPlayer.notes = saved.notes || [];
+                newPlayer.discipline = saved.discipline || [];
+                newPlayer.academic = saved.academic || [];
+              }
+            } catch(e) {}
+          }
           PLAYERS.push(newPlayer);
         }
       });
@@ -10766,30 +10804,66 @@
     const ua=document.getElementById('user-avatar'); if(ua && (localStorage.getItem('mesh_user_photo'))) applyUserAvatar(ua);
     refreshProfileHeader();
   }
-  function handleProfilePhoto(e){
+  async function handleProfilePhoto(e){
     const f=e.target.files[0]; if(!f) return;
     const rd=new FileReader();
-    rd.onload=ev=>{
+    rd.onload=async ev=>{
       const img=new Image();
-      img.onload=()=>{
+      img.onload=async ()=>{
         const size=256, s=Math.min(img.width,img.height);
         const canvas=document.createElement('canvas'); canvas.width=size; canvas.height=size;
         canvas.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);
         const dataUrl=canvas.toDataURL('image/jpeg',0.85);
-        try{ localStorage.setItem('mesh_user_photo',dataUrl); }catch(err){ showToast('Could not save photo'); return; }
+        // Save to localStorage immediately for instant display
+        try{ localStorage.setItem('mesh_user_photo',dataUrl); }catch(err){}
         const av=document.getElementById('edit-profile-avatar');
         if(av) av.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
         refreshAllUserAvatars();
+        showToast('Saving photo…');
+        // Upload to Supabase Storage (private bucket)
+        try {
+          const uid = localStorage.getItem('mesh_auth_uid');
+          if (!uid) return;
+          // Convert base64 to blob
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          const path = `${uid}/avatar.jpg`;
+          const { error: upErr } = await db.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+          if (upErr) { console.warn('Avatar upload error:', upErr); showToast('Photo saved locally only'); return; }
+          // Store a marker in profiles (not the URL — we use signed URLs)
+          await db.from('profiles').update({ photo_url: path }).eq('id', uid);
+          // Get a fresh signed URL for immediate display
+          const { data: signed } = await db.storage.from('avatars').createSignedUrl(path, 3600);
+          if (signed?.signedUrl) {
+            localStorage.setItem('mesh_user_photo', signed.signedUrl);
+            const av2=document.getElementById('edit-profile-avatar');
+            if(av2) av2.innerHTML=`<img src="${signed.signedUrl}" style="width:100%;height:100%;object-fit:cover">`;
+            refreshAllUserAvatars();
+          }
+          showToast('Photo saved ✓');
+        } catch(err) { console.warn('Avatar sync error:', err); showToast('Photo saved locally'); }
       };
       img.src=ev.target.result;
     };
     rd.readAsDataURL(f);
   }
-  function removeProfilePhoto(){
+  async function removeProfilePhoto(){
     localStorage.removeItem('mesh_user_photo');
     refreshAllUserAvatars();
     document.getElementById('edit-profile-overlay')?.remove();
     openEditProfile();
+    // Remove from Supabase private bucket
+    try {
+      const uid = localStorage.getItem('mesh_auth_uid');
+      if (!uid) return;
+      await db.storage.from('avatars').remove([`${uid}/avatar.jpg`]);
+      await db.from('profiles').update({ photo_url: null }).eq('id', uid);
+      // Clear refresh timer since no photo anymore
+      if (window._avatarRefreshTimer) {
+        clearInterval(window._avatarRefreshTimer);
+        window._avatarRefreshTimer = null;
+      }
+    } catch(err) { console.warn('Avatar remove error:', err); }
   }
   async function saveEditProfile(){
     const name=(document.getElementById('edit-profile-name')?.value||'').trim();
@@ -11429,7 +11503,7 @@
     if (tab) tab.scrollTop = 0;
     if (tab) tab.classList.toggle('wide-cal', section === 'schedule');
     // Trigger any section-specific init
-    if (section === 'drills') renderDrillLibrary();
+    if (section === 'drills') { loadDrillsFromSupabase(); renderDrillLibrary(); }
     if (section === 'roster') renderCoachRoster();
     if (section === 'inventory') {
       getValidProgramId().then(id => {
@@ -14560,22 +14634,22 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       player.notes.push(note);
     }
 
-    // Save to Supabase — store notes as JSON
+    // Save to Supabase — notes arrays + disciplinary status
     if (player.db_id) {
       try {
         await db.from('players').update({
-          disciplinary_status: player.disciplinaryStatus || 'green'
+          disciplinary_status: player.disciplinaryStatus || 'green',
+          notes_data: JSON.stringify(player.notes || []),
+          discipline_data: JSON.stringify(player.discipline || []),
+          academic_data: JSON.stringify(player.academic || [])
         }).eq('id', player.db_id);
       } catch(e) { console.error('Note save error:', e); }
     }
-
-    // Save notes to localStorage keyed by db_id for persistence
+    // Also cache locally as fallback
     try {
       const notesKey = 'mesh_notes_' + (player.db_id || player.id);
       localStorage.setItem(notesKey, JSON.stringify({
-        notes: player.notes,
-        discipline: player.discipline,
-        academic: player.academic
+        notes: player.notes, discipline: player.discipline, academic: player.academic
       }));
     } catch(e) {}
 
@@ -14685,7 +14759,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     if (player.db_id) {
       try {
-        await db.from('players').update({ disciplinary_status: newKey }).eq('id', player.db_id);
+        await db.from('players').update({
+          disciplinary_status: newKey,
+          discipline_data: JSON.stringify(player.discipline || [])
+        }).eq('id', player.db_id);
+        // Clear localStorage fallback since we have Supabase
+        localStorage.removeItem('mesh_disc_' + player.id);
       } catch(e) { console.error('Disc status save error:', e); }
     } else {
       try { localStorage.setItem('mesh_disc_' + player.id, newKey); } catch(e) {}
@@ -16544,12 +16623,38 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   const OFFENSE_POS = ['QB','RB','WR','OL'];
   const DEFENSE_POS = ['DL','LB','DB'];
 
+  async function loadDrillsFromSupabase() {
+    const programId = localStorage.getItem('mesh_program_id');
+    if (!programId) return;
+    try {
+      const { data } = await db.from('programs').select('drills_data').eq('id', programId).single();
+      if (data?.drills_data) {
+        const parsed = JSON.parse(data.drills_data);
+        if (Array.isArray(parsed)) {
+          DRILLS.length = 0;
+          parsed.forEach(d => DRILLS.push(d));
+          window.DRILLS = DRILLS;
+          renderDrillLibrary();
+        }
+      }
+    } catch(e) { console.warn('Drill load error:', e); }
+  }
+
+  async function saveDrillsToStorage() {
+    // Save to localStorage immediately (local-first)
+    try { localStorage.setItem('mesh_drills', JSON.stringify(DRILLS)); } catch(e) {}
+    // Sync to Supabase in background
+    const programId = localStorage.getItem('mesh_program_id');
+    if (!programId) return;
+    try {
+      await db.from('programs').update({ drills_data: JSON.stringify(DRILLS) }).eq('id', programId);
+    } catch(e) { console.warn('Drill save error:', e); }
+  }
+
+  // Bootstrap from localStorage immediately, then sync from Supabase
   function loadDrillsFromStorage(){
     try{ const s=localStorage.getItem('mesh_drills'); if(s) return JSON.parse(s); }catch(e){}
     return [];
-  }
-  function saveDrillsToStorage(){
-    try{ localStorage.setItem('mesh_drills', JSON.stringify(DRILLS)); }catch(e){}
   }
   let DRILLS = loadDrillsFromStorage();
   window.DRILLS = DRILLS;
@@ -17663,6 +17768,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       if (program?.id) {
         // Load announcements
         await annLoad();
+        await loadDrillsFromSupabase();
+        await loadPhotoFromSupabase();
         renderAnnouncements('coach');
         const postBtn = document.getElementById('announce-post-btn');
         if (postBtn) postBtn.style.display = '';
@@ -17677,6 +17784,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         // Render announcements for current role
         setTimeout(async () => {
           await annLoad();
+        await loadDrillsFromSupabase();
+        await loadPhotoFromSupabase();
           const role = localStorage.getItem('mesh_role');
           if (role === 'player') renderAnnouncements('player');
           else if (role === 'parent') renderAnnouncements('parent');
