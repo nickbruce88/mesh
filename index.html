@@ -2587,40 +2587,6 @@
     </div>
   </div>
 
-  <!-- Add Reminder Modal -->
-  <div id="add-reminder-overlay" onclick="closeAddReminderModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px">
-    <div class="ap-modal" onclick="event.stopPropagation()">
-      <div class="ap-head">
-        <div class="ap-title">Add coaching reminder</div>
-        <div class="ap-close" onclick="closeAddReminderModal()">✕</div>
-      </div>
-      <div class="ap-field">
-        <textarea class="ap-input" id="reminder-text-input" placeholder="e.g. Coach EVERY rep, Have stations set up early…" style="min-height:80px;resize:none"></textarea>
-      </div>
-      <button class="note-modal-save" onclick="saveReminder()">Add reminder</button>
-    </div>
-  </div>
-
-  <!-- Add Script Modal -->
-  <div id="add-script-overlay" onclick="closeAddScriptModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px">
-    <div class="ap-modal" onclick="event.stopPropagation()">
-      <div class="ap-head">
-        <div class="ap-title">New script</div>
-        <div class="ap-close" onclick="closeAddScriptModal()">✕</div>
-      </div>
-      <div class="ap-sub">Link a script to a period in today's practice plan.</div>
-      <div class="ap-field">
-        <div class="ap-field-label">Period</div>
-        <select class="ap-input" id="add-script-period-select"></select>
-      </div>
-      <div class="ap-field">
-        <div class="ap-field-label">Script name</div>
-        <input class="ap-input" id="add-script-name-input" placeholder="e.g. Full Team, Red Zone, Indy">
-      </div>
-      <button class="note-modal-save" onclick="saveNewScript()">Create script</button>
-    </div>
-  </div>
-
   <!-- Simple block editor modal -->
   <div id="simple-block-editor" onclick="closeSimpleBlockEditor()">
     <div class="ap-modal" onclick="event.stopPropagation()">
@@ -5103,6 +5069,41 @@
   </div><!-- end desktop-main -->
 </div><!-- end screen-app -->
 
+
+  <!-- Add Reminder Modal -->
+  <div id="add-reminder-overlay" onclick="closeAddReminderModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px">
+    <div class="ap-modal" onclick="event.stopPropagation()">
+      <div class="ap-head">
+        <div class="ap-title">Add coaching reminder</div>
+        <div class="ap-close" onclick="closeAddReminderModal()">✕</div>
+      </div>
+      <div class="ap-field">
+        <textarea class="ap-input" id="reminder-text-input" placeholder="e.g. Coach EVERY rep, Have stations set up early…" style="min-height:80px;resize:none"></textarea>
+      </div>
+      <button class="note-modal-save" onclick="saveReminder()">Add reminder</button>
+    </div>
+  </div>
+
+  <!-- Add Script Modal -->
+  <div id="add-script-overlay" onclick="closeAddScriptModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px">
+    <div class="ap-modal" onclick="event.stopPropagation()">
+      <div class="ap-head">
+        <div class="ap-title">New script</div>
+        <div class="ap-close" onclick="closeAddScriptModal()">✕</div>
+      </div>
+      <div class="ap-sub">Link a script to a period in today's practice plan.</div>
+      <div class="ap-field">
+        <div class="ap-field-label">Period</div>
+        <select class="ap-input" id="add-script-period-select"></select>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Script name</div>
+        <input class="ap-input" id="add-script-name-input" placeholder="e.g. Full Team, Red Zone, Indy">
+      </div>
+      <button class="note-modal-save" onclick="saveNewScript()">Create script</button>
+    </div>
+  </div>
+
   <!-- ===== PLAYBOOK OVERLAY ===== -->
   <!-- ===== PLAYBOOK OVERLAY ===== -->
   <div id="playbook-overlay">
@@ -5225,7 +5226,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.16</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.17</div>
   </div>
 </div>
 
@@ -5236,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v35.18.16';
+  const APP_VERSION = 'v35.18.17';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
