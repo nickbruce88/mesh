@@ -523,9 +523,9 @@
   .dc-edit-banner { display:flex;align-items:center;justify-content:space-between;background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--team-primary); }
 
   /* ===== OFFENSIVE SCRIPT EDIT ===== */
-  #script-edit-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:60;display:none;align-items:flex-end; }
-  #script-edit-overlay.open { display:flex; }
-  .script-edit-sheet { background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:12px 16px 24px;border-top:1px solid var(--border);max-height:85vh;overflow-y:auto; }
+  #script-edit-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px; }
+  .script-edit-sheet { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:18px; }
+  .script-edit-sheet::-webkit-scrollbar { display:none; }
   .script-edit-row { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border); }
   .script-edit-num { font-size:12px;color:var(--team-primary);font-weight:700;min-width:22px; }
   .script-edit-input { flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-xs);padding:7px 10px;font-size:13px;color:var(--fg);font-family:var(--font);outline:none; }
@@ -2500,11 +2500,11 @@
   </div>
 
   <!-- Player Edit Modal -->
-  <div id="player-edit-overlay" onclick="if(event.target===this)this.classList.remove('open')" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:198;display:none;align-items:center;justify-content:center;padding:24px">
+  <div id="player-edit-overlay" onclick="if(event.target===this)document.getElementById('player-edit-overlay').style.display='none'" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px">
     <div class="ap-modal" style="max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
       <div class="ap-head">
         <div class="ap-title">Edit player</div>
-        <div class="ap-close" onclick="document.getElementById('player-edit-overlay').classList.remove('open')">✕</div>
+        <div class="ap-close" onclick="document.getElementById('player-edit-overlay').style.display='none'">✕</div>
       </div>
       <div style="display:flex;gap:10px">
         <div class="ap-field" style="flex:2">
@@ -5030,15 +5030,15 @@
 
   <!-- ===== PROFILE MODAL ===== -->
   <!-- ===== SCRIPT EDIT OVERLAY ===== -->
-  <div id="script-edit-overlay">
+  <div id="script-edit-overlay" onclick="closeScriptEdit()">
     <div class="script-edit-sheet" onclick="event.stopPropagation()">
-      <div class="action-sheet-handle"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="font-size:16px;font-weight:700" id="script-edit-title">Edit Script</div>
-        <div style="color:var(--gray-3);cursor:pointer;font-size:14px" onclick="closeScriptEdit()">✕</div>
+      <div class="ap-head">
+        <div class="ap-title" id="script-edit-title">Edit Script</div>
+        <button onclick="deleteCurrentScript()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--fg-3);padding:4px;margin-left:auto;margin-right:8px" title="Delete script">🗑️</button>
+        <div class="ap-close" onclick="closeScriptEdit()">✕</div>
       </div>
-      <div id="script-edit-rows"></div>
-      <div class="script-add-play-btn" onclick="addScriptPlay()">+ Add play</div>
+      <div id="script-edit-rows" style="margin-top:12px"></div>
+      <div class="script-add-play-btn" onclick="addScriptPlay()" style="margin-top:8px">+ Add play</div>
       <button class="note-modal-save" style="margin-top:10px" onclick="saveScript()">Save script</button>
     </div>
   </div>
@@ -5226,7 +5226,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.17</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.24</div>
   </div>
 </div>
 
@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v35.18.17';
+  const APP_VERSION = 'v35.18.24';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5305,6 +5305,11 @@
 
   function showTab(role, tab) {
     currentTab = tab;
+    // Close player profile if open
+    const ppOverlay = document.getElementById('player-profile-overlay');
+    if (ppOverlay && ppOverlay.classList.contains('open')) {
+      ppOverlay.classList.remove('open');
+    }
     hideAllTabs();
     const tabEl = document.getElementById('tab-' + role + '-' + tab);
     if (tabEl) {
@@ -7601,7 +7606,7 @@
       const get = (idx) => idx !== -1 ? cols[idx] || '' : '';
       return {
         name: get(colMap.name),
-        num: get(colMap.num),
+        num: (get(colMap.num)||'').trim().replace(/^#+/,''), // strip # on import, formatNum adds it on display
         pos: (get(colMap.posOff) || get(colMap.posDef) || get(colMap.pos)).split('/')[0].trim().toUpperCase(),
         posOff: get(colMap.posOff).toUpperCase(),
         posDef: get(colMap.posDef).toUpperCase(),
@@ -7807,6 +7812,9 @@
   // ===== NAVIGATION HELPER =====
   // Maps shorthand destination names to sidebar items and more-sections
   function navigateTo(dest) {
+    // Close player profile if open
+    const ppOverlay = document.getElementById('player-profile-overlay');
+    if (ppOverlay && ppOverlay.classList.contains('open')) ppOverlay.classList.remove('open');
     const map = {
       'roster':      { sidebarId: 'roster',      moreSection: 'roster' },
       'calendar':    { sidebarId: 'calendar',     moreSection: 'schedule' },
@@ -8038,6 +8046,9 @@
         desktopActiveItem = item.id;
         nav.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
+        // Always close player profile when navigating
+        const ppOverlay = document.getElementById('player-profile-overlay');
+        if (ppOverlay && ppOverlay.classList.contains('open')) ppOverlay.classList.remove('open');
         if (item.more) {
           // More section items — show the more tab then the specific section
           hideAllTabs();
@@ -11720,13 +11731,16 @@
         playersList.className = 'pos-players';
         playersList.id = 'dc-' + posGroup.pos;
 
-        posGroup.players.forEach((p, idx) => {
-          // Filter by current level — find player in PLAYERS array and check their teams
+        // Filter to only players on the current level first, then number them correctly
+        const levelPlayers = posGroup.players.filter(p => {
           const playerData = PLAYERS.find(pl => pl.name === p.name);
           if (playerData && playerData.teams && playerData.teams.length > 0) {
-            if (!playerData.teams.includes(currentDCLevel)) return; // skip if not on this level
+            return playerData.teams.includes(currentDCLevel);
           }
-          playersList.appendChild(buildDCPlayerRow(p, idx, posGroup.pos, unit.key, posGroup.players.length));
+          return true; // no team filter set — show on all levels
+        });
+        levelPlayers.forEach((p, idx) => {
+          playersList.appendChild(buildDCPlayerRow(p, idx, posGroup.pos, unit.key, levelPlayers.length));
         });
 
         posRow.appendChild(playersList);
@@ -12471,10 +12485,11 @@
 
   function openAddReminderModal() {
     document.getElementById('reminder-text-input').value = '';
-    document.getElementById('add-reminder-overlay').classList.add('open');
+    const el = document.getElementById('add-reminder-overlay');
+    el.style.display = 'flex';
     setTimeout(() => document.getElementById('reminder-text-input').focus(), 100);
   }
-  function closeAddReminderModal() { document.getElementById('add-reminder-overlay').classList.remove('open'); }
+  function closeAddReminderModal() { document.getElementById('add-reminder-overlay').style.display = 'none'; }
 
   function saveReminder() {
     const text = document.getElementById('reminder-text-input').value.trim();
@@ -12514,10 +12529,10 @@
         select.appendChild(opt);
       }
     }
-    document.getElementById('add-script-overlay').classList.add('open');
+    document.getElementById('add-script-overlay').style.display = 'flex';
     setTimeout(() => document.getElementById('add-script-name-input').focus(), 100);
   }
-  function closeAddScriptModal() { document.getElementById('add-script-overlay').classList.remove('open'); }
+  function closeAddScriptModal() { document.getElementById('add-script-overlay').style.display = 'none'; }
 
   function saveNewScript() {
     const name = document.getElementById('add-script-name-input').value.trim();
@@ -12659,11 +12674,23 @@
     const titleEl = document.getElementById('script-edit-title');
     if (titleEl) titleEl.textContent = 'Edit Script — ' + editingScriptPeriod + (data.name ? ' · ' + data.name : '');
     renderScriptEditRows();
-    document.getElementById('script-edit-overlay').classList.add('open');
+    document.getElementById('script-edit-overlay').style.display = 'flex';
   }
 
   function closeScriptEdit() {
-    document.getElementById('script-edit-overlay').classList.remove('open');
+    document.getElementById('script-edit-overlay').style.display = 'none';
+  }
+
+  function deleteCurrentScript() {
+    if (!editingScriptPeriod) return;
+    SCRIPTED_PERIODS.delete(editingScriptPeriod);
+    delete PERIOD_SCRIPTS[editingScriptPeriod];
+    if (activeScriptPeriod === editingScriptPeriod) {
+      activeScriptPeriod = [...SCRIPTED_PERIODS][0] || null;
+    }
+    closeScriptEdit();
+    renderScriptSection();
+    showToast('Script deleted');
   }
 
   function renderScriptEditRows() {
@@ -14089,7 +14116,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       div.className = 'roster-item';
       div.onclick = () => openPlayerProfile(p.name);
       div.innerHTML = `
-        <div class="roster-num">${p.num}</div>
+        <div class="roster-num">${formatNum(p.num)}</div>
         <div class="roster-info">
           <div class="roster-name">${p.name}</div>
           <div class="roster-sub">${p.pos} · ${p.year} · ${p.unit}${noteCount > 0 ? ` · <span style="color:var(--team-primary)">${noteCount} note${noteCount>1?'s':''}</span>` : ''}</div>
@@ -14118,8 +14145,9 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.getElementById('pe-height').value = player.height || '';
     document.getElementById('pe-weight').value = player.weight || '';
     document.getElementById('pe-gpa').value = player.gpa || '';
-    document.getElementById('player-edit-overlay').classList.add('open');
-    document.getElementById('player-edit-overlay').dataset.playerId = playerId;
+    const playerEditEl = document.getElementById('player-edit-overlay');
+    playerEditEl.style.display = 'flex';
+    playerEditEl.dataset.playerId = playerId;
   }
 
   async function savePlayerEdit() {
@@ -14130,7 +14158,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     player.name = document.getElementById('pe-name').value.trim() || player.name;
     player.nickname = document.getElementById('pe-nickname').value.trim();
-    player.num = document.getElementById('pe-num').value.trim();
+    player.num = document.getElementById('pe-num').value.trim().replace(/^#+/,''); // store without #, formatNum adds it
     player.pos = document.getElementById('pe-pos').value.trim().toUpperCase();
     player.posOff = document.getElementById('pe-pos-off').value.trim().toUpperCase();
     player.posDef = document.getElementById('pe-pos-def').value.trim().toUpperCase();
@@ -14140,7 +14168,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     player.weight = document.getElementById('pe-weight').value.trim();
     player.gpa = document.getElementById('pe-gpa').value.trim();
 
-    overlay.classList.remove('open');
+    overlay.style.display = 'none';
     renderCoachRoster();
     openPlayerProfile(player.name); // refresh the card
 
@@ -14171,8 +14199,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const ppEditBtn = document.getElementById('pp-edit-btn');
     if (ppEditBtn) ppEditBtn.onclick = () => openPlayerEdit(player.id);
     const posDisplay = [player.posOff, player.posDef].filter(Boolean).join('/') || player.pos || '—';
-    document.getElementById('pp-header-sub').textContent = `${posDisplay} · ${player.num}`;
-    document.getElementById('pp-jersey').textContent = player.num;
+    document.getElementById('pp-header-sub').textContent = `${posDisplay} · ${formatNum(player.num)}`;
+    document.getElementById('pp-jersey').textContent = formatNum(player.num);
     document.getElementById('pp-hero-name').textContent = player.name;
     document.getElementById('pp-hero-pos').textContent = `${posDisplay} · ${player.unit || '—'} · ${player.year}`;
 
@@ -16874,6 +16902,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   const PB_BUCKET = 'playbook-images';
 
   function pbId() { return 'pb_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+  // Normalize jersey number — always display as #7, never 7 or ##7
+  function formatNum(num) {
+    if (!num && num !== 0) return '—';
+    const s = String(num).trim().replace(/^#+/, ''); // strip existing #
+    return s ? '#' + s : '—';
+  }
   function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   async function pbUploadToSupabase(file, programId) {
