@@ -5220,13 +5220,13 @@
       </div>
     </div>
     <div class="profile-menu-item" onclick="openEditProfile()"><span class="pmi">✏️</span> Edit profile</div>
-    <div class="profile-menu-item" onclick="closeProfileModal();openThemeColors()"><span class="pmi">🎨</span> Theme &amp; colors</div>
+    <div class="profile-menu-item" onclick="closeProfileModal();openThemeColors()"><span class="pmi">🎨</span> Appearance</div>
     <div class="profile-menu-item" onclick="openNotifSettings()"><span class="pmi">🔔</span> Notification settings</div>
     <div class="profile-menu-item" onclick="closeProfileModal();openShareInvite()"><span class="pmi">🔗</span> Share invite link</div>
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.24</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.27</div>
   </div>
 </div>
 
@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v35.18.24';
+  const APP_VERSION = 'v35.18.27';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7438,24 +7438,31 @@
           </div>
         </div>
 
-        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Team colors</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em">Team colors</div>
+          <button onclick="swapTeamColors()" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--fg-2);cursor:pointer;font-weight:600">↔ Swap primary &amp; accent</button>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
           <div>
             <label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:6px">Primary (sidebar)</label>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:40px;height:40px;border-radius:8px;background:${teamColors.primary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden">
-                <input type="color" value="${teamColors.primary}" onchange="teamColors.primary=this.value;applyTheme();this.parentElement.style.background=this.value">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.primary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0">
+                <input type="color" value="${teamColors.primary}" oninput="applyColorInput('primary',this)" onchange="applyColorInput('primary',this)">
               </div>
-              <span style="font-size:12px;color:var(--fg-3);font-family:monospace">${teamColors.primary}</span>
+              <input type="text" value="${teamColors.primary}" maxlength="7" placeholder="#a11e1e"
+                style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:monospace;color:var(--fg);width:0"
+                oninput="applyHexInput('primary',this)" onchange="applyHexInput('primary',this)">
             </div>
           </div>
           <div>
             <label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:6px">Secondary (accents)</label>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:40px;height:40px;border-radius:8px;background:${teamColors.secondary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden">
-                <input type="color" value="${teamColors.secondary}" onchange="teamColors.secondary=this.value;applyTheme();this.parentElement.style.background=this.value">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.secondary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0">
+                <input type="color" value="${teamColors.secondary}" oninput="applyColorInput('secondary',this)" onchange="applyColorInput('secondary',this)">
               </div>
-              <span style="font-size:12px;color:var(--fg-3);font-family:monospace">${teamColors.secondary}</span>
+              <input type="text" value="${teamColors.secondary}" maxlength="7" placeholder="#ef4444"
+                style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:monospace;color:var(--fg);width:0"
+                oninput="applyHexInput('secondary',this)" onchange="applyHexInput('secondary',this)">
             </div>
           </div>
         </div>
@@ -7478,9 +7485,98 @@
             </div>`).join('')}
         </div>
 
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">School logo</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+          <div id="appearance-logo-preview" style="width:64px;height:64px;border-radius:10px;border:2px solid var(--border);background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0">
+            ${schoolLogoDataUrl ? '<img src="'+schoolLogoDataUrl+'" style="width:100%;height:100%;object-fit:contain">' : '🏈'}
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--fg-2);margin-bottom:8px">${schoolLogoDataUrl ? 'Logo uploaded' : 'Upload your school or team logo'}</div>
+            <label style="cursor:pointer;display:inline-block;padding:7px 16px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--fg)">
+              ${schoolLogoDataUrl ? '🔄 Change logo' : '📁 Upload logo'}
+              <input type="file" accept="image/*" style="display:none" onchange="handleAppearanceLogoUpload(this)">
+            </label>
+            ${schoolLogoDataUrl ? '<button onclick="removeSchoolLogo()" style="margin-left:8px;background:none;border:none;color:var(--fg-3);font-size:12px;cursor:pointer;padding:7px 0">Remove</button>' : ''}
+          </div>
+        </div>
+
         <button onclick="document.getElementById('theme-colors-overlay').remove()" class="btn-primary" style="width:100%">Done</button>
       </div>`;
     document.body.appendChild(overlay);
+  }
+
+  function applyColorInput(slot, input) {
+    teamColors[slot] = input.value;
+    // Sync the swatch bg
+    input.parentElement.style.background = input.value;
+    applyTheme();
+    // Refresh modal hex text inputs
+    const modal = document.getElementById('theme-colors-overlay');
+    if (modal) {
+      const textInputs = modal.querySelectorAll('input[type="text"]');
+      if (slot === 'primary' && textInputs[0]) textInputs[0].value = input.value;
+      if (slot === 'secondary' && textInputs[1]) textInputs[1].value = input.value;
+    }
+  }
+
+  function applyHexInput(slot, input) {
+    let val = input.value.trim();
+    if (!val.startsWith('#')) val = '#' + val;
+    // Only apply if valid 6-digit hex
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+      teamColors[slot] = val;
+      applyTheme();
+      // Sync swatch color
+      const swatch = input.previousElementSibling;
+      if (swatch) {
+        swatch.style.background = val;
+        const colorPicker = swatch.querySelector('input[type="color"]');
+        if (colorPicker) colorPicker.value = val;
+      }
+    }
+  }
+
+  function swapTeamColors() {
+    const tmp = teamColors.primary;
+    teamColors.primary = teamColors.secondary;
+    teamColors.secondary = tmp;
+    applyTheme();
+    // Refresh modal
+    document.getElementById('theme-colors-overlay').remove();
+    openThemeColors();
+  }
+
+  function resetSidebarFont() {
+    teamColors.sidebarFont = null;
+    try { localStorage.removeItem('mesh_sidebar_font'); } catch(e) {}
+    applyTheme();
+    document.getElementById('theme-colors-overlay').remove();
+    openThemeColors();
+  }
+
+  function handleAppearanceLogoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      schoolLogoDataUrl = e.target.result;
+      localStorage.setItem('mesh_school_logo', schoolLogoDataUrl);
+      applySchoolLogo();
+      // Refresh modal
+      document.getElementById('theme-colors-overlay').remove();
+      openThemeColors();
+      showToast('Logo updated ✓');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeSchoolLogo() {
+    schoolLogoDataUrl = '';
+    localStorage.removeItem('mesh_school_logo');
+    applySchoolLogo();
+    document.getElementById('theme-colors-overlay').remove();
+    openThemeColors();
+    showToast('Logo removed');
   }
 
   function updateThemeUI() {
@@ -8785,7 +8881,9 @@
     applyTheme();
   }
 
-  let teamColors = { primary: '#a11e1e', secondary: '#ef4444', tertiary: '#6b7280' };
+  let teamColors = { primary: '#a11e1e', secondary: '#ef4444', tertiary: '#6b7280', sidebarFont: null };
+  // Restore saved sidebarFont
+  try { const sf = localStorage.getItem('mesh_sidebar_font'); if (sf) teamColors.sidebarFont = sf; } catch(e) {}
   let themeMode = (() => { try { return localStorage.getItem('mesh_theme') || 'light'; } catch(e) { return 'light'; } })();
 
   function hexToRgb(hex) {
@@ -8849,7 +8947,9 @@
     rootStyle.setProperty('--team-primary-rgb', rgbStr(primary));
     rootStyle.setProperty('--team-primary-glow', `rgba(${rgbStr(primary)},0.2)`);
     rootStyle.setProperty('--team-primary-glow-sm', `rgba(${rgbStr(primary)},0.08)`);
-    rootStyle.setProperty('--team-primary-text', contrastText(primary));
+    // team-primary-text: use coach-chosen font color if set, otherwise auto-calculate
+    const primaryText = teamColors.sidebarFont || contrastText(primary);
+    rootStyle.setProperty('--team-primary-text', primaryText);
     rootStyle.setProperty('--team-secondary', secondary);
     rootStyle.setProperty('--team-secondary-text', contrastText(secondary));
     rootStyle.setProperty('--team-tertiary', tertiary);
