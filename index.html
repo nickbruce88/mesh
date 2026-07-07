@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v36.0.5';
+  const APP_VERSION = 'v36.0.7';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5381,9 +5381,16 @@
   }
 
   // Apply the saved profile photo (or fall back to initials) to any avatar element
+  let _currentAvatarUrl = null; // in-memory only, no localStorage
+
   async function refreshAvatarSignedUrl() {
     try {
-      const uid = localStorage.getItem('mesh_auth_uid');
+      // Get uid from Supabase session directly — don't rely on localStorage timing
+      let uid = localStorage.getItem('mesh_auth_uid');
+      if (!uid) {
+        const { data: { session } } = await db.auth.getSession();
+        uid = session?.user?.id || null;
+      }
       console.log('[AvatarLoad] uid:', uid);
       if (!uid) return;
       const { data: profile, error: profErr } = await db.from('profiles').select('photo_url').eq('id', uid).single();
@@ -5394,7 +5401,7 @@
       const { data: signed, error } = await db.storage.from('avatars').createSignedUrl(path, 3600);
       console.log('[AvatarLoad] signed URL:', signed?.signedUrl, 'error:', error);
       if (error || !signed?.signedUrl) return;
-      localStorage.setItem('mesh_user_photo', signed.signedUrl);
+      _currentAvatarUrl = signed.signedUrl;
       refreshAllUserAvatars();
       console.log('[AvatarLoad] avatar applied ✓');
     } catch(e) { console.warn('[AvatarLoad] error:', e); }
@@ -5410,7 +5417,7 @@
 
   function applyUserAvatar(el){
     if(!el) return;
-    const photo=localStorage.getItem('mesh_user_photo');
+    const photo=_currentAvatarUrl;
     if(photo){ el.innerHTML=`<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`; }
     else { el.innerHTML=''; el.textContent=getInitialsFromSession(); }
   }
@@ -5422,7 +5429,7 @@
     const avatar = document.getElementById('user-avatar');
     avatar.innerHTML = '';
     if (role === 'coach') {
-      const photo = localStorage.getItem('mesh_user_photo');
+      const photo = _currentAvatarUrl;
       if (photo) {
         avatar.innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       } else if (schoolLogoDataUrl) {
@@ -10766,7 +10773,7 @@
       else roleLabel=user.role.charAt(0).toUpperCase()+user.role.slice(1);
     }
     const initials=name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
-    const photo=localStorage.getItem('mesh_user_photo');
+    const photo=_currentAvatarUrl;
     const nameEl=document.getElementById('profile-modal-name');
     const roleEl=document.getElementById('profile-modal-role');
     const avEl=document.getElementById('profile-avatar-lg');
@@ -10779,7 +10786,7 @@
   function openEditProfile(){
     closeProfileModal();
     let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
-    const photo=localStorage.getItem('mesh_user_photo');
+    const photo=_currentAvatarUrl;
     const initials=(user.name||'Coach').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
     let ov=document.getElementById('edit-profile-overlay'); if(ov) ov.remove();
     ov=document.createElement('div'); ov.id='edit-profile-overlay';
@@ -10804,7 +10811,7 @@
   }
   function refreshAllUserAvatars(){
     applyUserAvatar(document.getElementById('sidebar-avatar'));
-    const ua=document.getElementById('user-avatar'); if(ua && (localStorage.getItem('mesh_user_photo'))) applyUserAvatar(ua);
+    const ua=document.getElementById('user-avatar'); if(ua && (_currentAvatarUrl)) applyUserAvatar(ua);
     refreshProfileHeader();
   }
   async function handleProfilePhoto(e){
@@ -10820,7 +10827,7 @@
         console.log('[Avatar] canvas dataUrl length:', dataUrl.length, 'img size:', img.width, 'x', img.height);
         if (dataUrl.length < 1000) { showToast('Could not process image — try another photo'); return; }
         // Save to localStorage immediately for instant display
-        try{ localStorage.setItem('mesh_user_photo',dataUrl); }catch(err){}
+        _currentAvatarUrl = dataUrl; // temp local preview while uploading
         const av=document.getElementById('edit-profile-avatar');
         if(av) av.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
         refreshAllUserAvatars();
@@ -10845,7 +10852,7 @@
           const { data: signed, error: signErr } = await db.storage.from('avatars').createSignedUrl(path, 3600);
           console.log('[Avatar] signed URL:', signed?.signedUrl, 'error:', signErr);
           if (signed?.signedUrl) {
-            localStorage.setItem('mesh_user_photo', signed.signedUrl);
+            _currentAvatarUrl = signed.signedUrl;
             const av2=document.getElementById('edit-profile-avatar');
             if(av2) av2.innerHTML=`<img src="${signed.signedUrl}" style="width:100%;height:100%;object-fit:cover">`;
             refreshAllUserAvatars();
@@ -10858,7 +10865,7 @@
     rd.readAsDataURL(f);
   }
   async function removeProfilePhoto(){
-    localStorage.removeItem('mesh_user_photo');
+    _currentAvatarUrl = null;
     refreshAllUserAvatars();
     document.getElementById('edit-profile-overlay')?.remove();
     openEditProfile();
