@@ -310,9 +310,9 @@
   .gt-num { font-size: 8px; color: var(--team-primary); font-weight: 700; margin-top: 3px; letter-spacing: 0.05em; }
 
   /* Content area — fills 100% of remaining width always */
-  .pgrid-cols { display: flex; flex: 1 1 0; min-width: 0; }
+  .pgrid-cols { display: flex; flex: 1 1 0; min-width: 0; overflow: hidden; }
   .grid-col-head, .grid-cell {
-    flex: 1 1 0; min-width: 80px; max-width: 200px; width: 0;
+    flex: 1 1 0; min-width: 80px; width: 0;
     border-right: 1px solid var(--border);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 8px 8px; text-align: center; box-sizing: border-box;
@@ -950,7 +950,7 @@
 
     /* Fix grid alignment on desktop — use fixed min/max-width per cell */
     .pgrid-cols { min-width: 560px; }
-    .grid-col-head, .grid-cell { min-width: 80px; max-width: 160px; }
+    .grid-col-head, .grid-cell { min-width: 80px; }
     .grid-cell.cell-span { min-width: 0; max-width: none; }
 
     /* ===== DESKTOP DEPTH CHART ===== */
@@ -5221,7 +5221,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.8</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v35.18.11</div>
   </div>
 </div>
 
@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v35.18.8';
+  const APP_VERSION = 'v35.18.11';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -12793,7 +12793,6 @@
       // Detect span rows by structure — cell-span means all-team, regardless of row class
       const spanCell = row.querySelector('.cell-span');
       const isSpanRow = !!spanCell;
-      console.log('Row', row.dataset.periodId, '| isSpanRow:', isSpanRow, '| spanCell:', spanCell, '| classList:', [...row.classList]);
 
       if (isSpanRow) {
         const activityEl = spanCell.querySelector('.cell-activity');
@@ -14044,7 +14043,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           container.appendChild(divider);
         }
       }
-      const group = TEAM_GROUPS.find(g => g.name === p.group) || TEAM_GROUPS[0];
+      const group = TEAM_GROUPS.find(g => g.name === p.group) || null;
       const noteCount = p.notes.length + p.discipline.length + p.academic.length;
       const discStatus = p.disciplinaryStatus || 'green';
       const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
@@ -14059,7 +14058,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${discStatus !== 'green' ? `<span style="font-size:14px;font-weight:700;color:${discColors[discStatus]};line-height:1" title="${discStatusLabel(discStatus)}">⚠</span>` : ''}
-          <div class="roster-group-dot" style="background:${group.color}" title="${group.name}"></div>
+          ${group ? `<div class="roster-group-dot" style="background:${group.color}" title="${group.name}"></div>` : ''}
         </div>
         <div class="roster-arrow">›</div>`;
       container.appendChild(div);
