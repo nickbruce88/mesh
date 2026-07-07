@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v36.0.7';
+  const APP_VERSION = 'v36.0.10';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7583,6 +7583,8 @@
   function resetSidebarFont() {
     teamColors.sidebarFont = null;
     try { localStorage.removeItem('mesh_sidebar_font'); } catch(e) {}
+    const _pid3 = localStorage.getItem('mesh_program_id');
+    if (_pid3) db.from('programs').update({ sidebar_font: null }).eq('id', _pid3).then(() => {});
     applyTheme();
     document.getElementById('theme-colors-overlay').remove();
     openThemeColors();
@@ -7593,8 +7595,7 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e => {
-      schoolLogoDataUrl = e.target.result;
-      localStorage.setItem('mesh_school_logo', schoolLogoDataUrl);
+      schoolLogoDataUrl = e.target.result; // temp preview while uploading
       applySchoolLogo();
       // Refresh modal
       document.getElementById('theme-colors-overlay').remove();
@@ -7606,7 +7607,7 @@
 
   function removeSchoolLogo() {
     schoolLogoDataUrl = '';
-    localStorage.removeItem('mesh_school_logo');
+    // logo removed from Supabase Storage
     applySchoolLogo();
     document.getElementById('theme-colors-overlay').remove();
     openThemeColors();
@@ -8917,8 +8918,8 @@
 
   let teamColors = { primary: '#a11e1e', secondary: '#ef4444', tertiary: '#6b7280', sidebarFont: null };
   // Restore saved sidebarFont
-  try { const sf = localStorage.getItem('mesh_sidebar_font'); if (sf) teamColors.sidebarFont = sf; } catch(e) {}
-  let themeMode = (() => { try { return localStorage.getItem('mesh_theme') || 'light'; } catch(e) { return 'light'; } })();
+  // sidebar_font loaded from Supabase on session restore
+  let themeMode = (() => { try { return localStorage.getItem('mesh_theme') || 'light'; } catch(e) { return 'light'; } })(); // bootstrapped from localStorage, overridden by Supabase on restore
 
   function hexToRgb(hex) {
     const r = parseInt(hex.slice(1,3), 16);
@@ -9006,8 +9007,18 @@
     const favicon = document.getElementById('favicon');
     if (favicon) favicon.href = MESH_MARK;
 
-    // Persist preference
+    // Persist to localStorage (fast bootstrap on next load)
     try { localStorage.setItem('mesh_theme', themeMode); } catch(e) {}
+    // Persist all appearance to Supabase
+    const _pid = localStorage.getItem('mesh_program_id');
+    if (_pid) {
+      db.from('programs').update({
+        theme_mode: themeMode,
+        team_primary: teamColors.primary,
+        team_secondary: teamColors.secondary,
+        sidebar_font: teamColors.sidebarFont || null
+      }).eq('id', _pid).then(() => {});
+    }
   }
 
   // Update browser tab title dynamically
@@ -9095,17 +9106,7 @@
             if (p.discipline_data) newPlayer.discipline = JSON.parse(p.discipline_data) || [];
             if (p.academic_data) newPlayer.academic = JSON.parse(p.academic_data) || [];
           } catch(e) {}
-          // localStorage fallback for any player not yet migrated
-          if (!newPlayer.notes.length && !newPlayer.discipline.length && !newPlayer.academic.length) {
-            try {
-              const saved = JSON.parse(localStorage.getItem('mesh_notes_' + p.id) || 'null');
-              if (saved) {
-                newPlayer.notes = saved.notes || [];
-                newPlayer.discipline = saved.discipline || [];
-                newPlayer.academic = saved.academic || [];
-              }
-            } catch(e) {}
-          }
+          // Notes loaded from Supabase columns only
           PLAYERS.push(newPlayer);
         }
       });
@@ -14662,13 +14663,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         }).eq('id', player.db_id);
       } catch(e) { console.error('Note save error:', e); }
     }
-    // Also cache locally as fallback
-    try {
-      const notesKey = 'mesh_notes_' + (player.db_id || player.id);
-      localStorage.setItem(notesKey, JSON.stringify({
-        notes: player.notes, discipline: player.discipline, academic: player.academic
-      }));
-    } catch(e) {}
+
 
     closeAddNote();
     renderPPNotes(player);
@@ -14781,10 +14776,9 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           discipline_data: JSON.stringify(player.discipline || [])
         }).eq('id', player.db_id);
         // Clear localStorage fallback since we have Supabase
-        localStorage.removeItem('mesh_disc_' + player.id);
       } catch(e) { console.error('Disc status save error:', e); }
     } else {
-      try { localStorage.setItem('mesh_disc_' + player.id, newKey); } catch(e) {}
+      // disc status saved to Supabase only
     }
 
     showToast('Status updated — note logged ✓');
@@ -16659,7 +16653,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   async function saveDrillsToStorage() {
     // Save to localStorage immediately (local-first)
-    try { localStorage.setItem('mesh_drills', JSON.stringify(DRILLS)); } catch(e) {}
+    // drills saved to Supabase only
     // Sync to Supabase in background
     const programId = localStorage.getItem('mesh_program_id');
     if (!programId) return;
@@ -16668,12 +16662,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     } catch(e) { console.warn('Drill save error:', e); }
   }
 
-  // Bootstrap from localStorage immediately, then sync from Supabase
-  function loadDrillsFromStorage(){
-    try{ const s=localStorage.getItem('mesh_drills'); if(s) return JSON.parse(s); }catch(e){}
-    return [];
-  }
-  let DRILLS = loadDrillsFromStorage();
+  // DRILLS loaded from Supabase on session restore
+  let DRILLS = [];
   window.DRILLS = DRILLS;
 
   let drillPosFilter = 'ALL';
@@ -17756,6 +17746,19 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const appRole = role === 'head coach' || role === 'assistant coach' || role === 'coach' ? 'coach' : role;
       buildNav(appRole);
       showTab(appRole, 'home');
+      // Load appearance from Supabase program record
+      try {
+        const pid = localStorage.getItem('mesh_program_id');
+        if (pid) {
+          const { data: ap } = await db.from('programs').select('theme_mode,team_primary,team_secondary,sidebar_font').eq('id', pid).single();
+          if (ap) {
+            if (ap.theme_mode) { themeMode = ap.theme_mode; try { localStorage.setItem('mesh_theme', themeMode); } catch(e) {} }
+            if (ap.team_primary) teamColors.primary = ap.team_primary;
+            if (ap.team_secondary) teamColors.secondary = ap.team_secondary;
+            teamColors.sidebarFont = ap.sidebar_font || null;
+          }
+        }
+      } catch(e) { console.warn('Appearance load error:', e); }
       applyTheme();
 
       // Update greeting if we have user info
