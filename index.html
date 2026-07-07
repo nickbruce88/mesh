@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v36.0.2';
+  const APP_VERSION = 'v36.0.3';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -10823,17 +10823,22 @@
         // Upload to Supabase Storage (private bucket)
         try {
           const uid = localStorage.getItem('mesh_auth_uid');
-          if (!uid) return;
+          console.log('[Avatar] uid:', uid);
+          if (!uid) { showToast('Not logged in'); return; }
           // Convert base64 to blob
           const res = await fetch(dataUrl);
           const blob = await res.blob();
           const path = `${uid}/avatar.jpg`;
+          console.log('[Avatar] uploading to path:', path, 'size:', blob.size);
           const { error: upErr } = await db.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-          if (upErr) { console.warn('Avatar upload error:', upErr); showToast('Photo saved locally only'); return; }
-          // Store a marker in profiles (not the URL — we use signed URLs)
-          await db.from('profiles').update({ photo_url: path }).eq('id', uid);
-          // Get a fresh signed URL for immediate display
-          const { data: signed } = await db.storage.from('avatars').createSignedUrl(path, 3600);
+          console.log('[Avatar] upload error:', upErr);
+          if (upErr) { console.warn('Avatar upload error:', upErr); showToast('Upload failed: ' + (upErr.message||upErr)); return; }
+          // Store path in profiles
+          const { error: profErr } = await db.from('profiles').update({ photo_url: path }).eq('id', uid);
+          console.log('[Avatar] profile update error:', profErr);
+          // Get signed URL
+          const { data: signed, error: signErr } = await db.storage.from('avatars').createSignedUrl(path, 3600);
+          console.log('[Avatar] signed URL:', signed?.signedUrl, 'error:', signErr);
           if (signed?.signedUrl) {
             localStorage.setItem('mesh_user_photo', signed.signedUrl);
             const av2=document.getElementById('edit-profile-avatar');
@@ -10841,7 +10846,7 @@
             refreshAllUserAvatars();
           }
           showToast('Photo saved ✓');
-        } catch(err) { console.warn('Avatar sync error:', err); showToast('Photo saved locally'); }
+        } catch(err) { console.error('[Avatar] sync error:', err); showToast('Photo saved locally'); }
       };
       img.src=ev.target.result;
     };
