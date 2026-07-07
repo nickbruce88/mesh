@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v36.0.4';
+  const APP_VERSION = 'v36.0.5';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5384,17 +5384,20 @@
   async function refreshAvatarSignedUrl() {
     try {
       const uid = localStorage.getItem('mesh_auth_uid');
+      console.log('[AvatarLoad] uid:', uid);
       if (!uid) return;
-      // Get stored path from profiles
-      const { data: profile } = await db.from('profiles').select('photo_url').eq('id', uid).single();
+      const { data: profile, error: profErr } = await db.from('profiles').select('photo_url').eq('id', uid).single();
+      console.log('[AvatarLoad] profile.photo_url:', profile?.photo_url, 'error:', profErr);
       if (!profile?.photo_url) return;
-      // Use stored path (not a hardcoded one)
       const path = profile.photo_url.startsWith('http') ? `${uid}/avatar.jpg` : profile.photo_url;
+      console.log('[AvatarLoad] generating signed URL for path:', path);
       const { data: signed, error } = await db.storage.from('avatars').createSignedUrl(path, 3600);
-      if (error || !signed?.signedUrl) { console.warn('Signed URL error:', error); return; }
+      console.log('[AvatarLoad] signed URL:', signed?.signedUrl, 'error:', error);
+      if (error || !signed?.signedUrl) return;
       localStorage.setItem('mesh_user_photo', signed.signedUrl);
       refreshAllUserAvatars();
-    } catch(e) { console.warn('Avatar URL refresh error:', e); }
+      console.log('[AvatarLoad] avatar applied ✓');
+    } catch(e) { console.warn('[AvatarLoad] error:', e); }
   }
 
   async function loadPhotoFromSupabase() {
