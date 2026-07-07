@@ -159,7 +159,7 @@
   #announcement-input:focus { outline:none;border-color:var(--team-primary); }
   #announcement-compose-footer { display:flex;align-items:center;justify-content:space-between;margin-top:8px; }
   /* Overlay */
-  #announcement-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
+  #announcement-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px; }
   #announcement-overlay.open { display:flex; }
   @media (min-width:768px) { #announcement-overlay { position:fixed;z-index:400; } }
   .greeting span { color: var(--team-primary); }
@@ -534,7 +534,7 @@
   .script-add-play-btn { width:100%;background:var(--bg-3);border:1px dashed var(--border-2);border-radius:var(--radius-sm);padding:10px;font-size:13px;color:var(--team-primary);cursor:pointer;font-family:var(--font);margin-top:10px;text-align:center; }
 
   /* ===== SAVE TEMPLATE MODAL ===== */
-  #save-template-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:60;display:none;align-items:center;justify-content:center;padding:24px; }
+  #save-template-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:none;align-items:center;justify-content:center;padding:24px; }
   #save-template-overlay.open { display:flex; }
 
   /* ===== MORE TAB ===== */
@@ -594,13 +594,13 @@
   .cdoc-upload-btn input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
   .cdoc-link-btn { background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;font-size:13px;color:var(--fg-2);cursor:pointer;font-family:var(--font);font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap; }
   /* Doc modals */
-  #doc-new-folder-overlay,#doc-add-form-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
+  #doc-new-folder-overlay,#doc-add-form-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
   #doc-new-folder-overlay.open,#doc-add-form-overlay.open { display:flex; }
   @media (min-width:768px) {
     #doc-new-folder-overlay,#doc-add-form-overlay { position:fixed;z-index:400; }
   }
   /* Doc sharing */
-  #doc-share-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:97;display:none;align-items:center;justify-content:center;padding:24px; }
+  #doc-share-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px; }
   #doc-share-overlay.open { display:flex; }
   .doc-share-modal { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:460px;max-height:85vh;overflow-y:auto; }
   .doc-share-modal::-webkit-scrollbar { display:none; }
@@ -1683,7 +1683,7 @@
   #pb-link-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:95;display:none;align-items:center;justify-content:center;padding:24px; }
   #pb-link-overlay.open { display:flex; }
   /* Add Plays modal */
-  #pb-add-plays-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:97;display:none;align-items:center;justify-content:center;padding:24px; }
+  #pb-add-plays-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px; }
   #pb-add-plays-overlay.open { display:flex; }
   .pb-add-plays-sheet { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:420px;padding:18px;max-height:80vh;overflow-y:auto; }
   .pb-import-option { display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity 0.15s; }
@@ -4720,7 +4720,7 @@
 
 
   <!-- ===== ADD / EDIT ITEM MODAL ===== -->
-  <div id="add-item-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:flex-end">
+  <div id="add-item-overlay" onclick="if(event.target===this)closeAddItemSheet()" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4);max-height:88vh;overflow-y:auto" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -4922,7 +4922,7 @@
   </div>
 
   <!-- ===== DEPTH CHART SWAP SHEET ===== -->
-  <div id="dc-swap-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:flex-end">
+  <div id="dc-swap-overlay" onclick="if(event.target===this)closeDCSwap()" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4);max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -5237,7 +5237,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v36.0.11';
+  const APP_VERSION = 'v36.0.12';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
