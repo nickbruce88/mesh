@@ -5248,7 +5248,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v36.0.1</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v37.3</div>
   </div>
 </div>
 
@@ -5259,7 +5259,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v36.0.12';
+  const APP_VERSION = 'v37.3';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8755,11 +8755,11 @@
 
     let program = null;
 
-    // Check Supabase first
+    // Check Supabase — search coach_code, player_code, and parent_code
     try {
       const { data, error } = await db.from('programs')
         .select('*')
-        .eq('join_code', code)
+        .or(`coach_code.eq.${code},player_code.eq.${code},parent_code.eq.${code}`)
         .maybeSingle();
       if (error) {
         console.error('Supabase lookup error:', error);
@@ -8836,12 +8836,30 @@
       select.appendChild(opt);
     });
 
-    joinSelectedRole = null;
+    // Auto-detect role from which code was entered
+    if (program.player_code && program.player_code === code) {
+      joinSelectedRole = 'player';
+    } else if (program.parent_code && program.parent_code === code) {
+      joinSelectedRole = 'parent';
+    } else if (program.coach_code && program.coach_code === code) {
+      joinSelectedRole = 'coach';
+    } else {
+      joinSelectedRole = null;
+    }
+
     document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
-    document.getElementById('join-step-2').classList.add('active');
-    document.getElementById('join-role-player').classList.remove('selected');
-    document.getElementById('join-role-parent').classList.remove('selected');
-    document.getElementById('join-role-next').disabled = true;
+
+    // If role was auto-detected, skip role selection step
+    if (joinSelectedRole === 'player' || joinSelectedRole === 'parent') {
+      // Jump straight to profile step
+      document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
+    } else {
+      // Show role selection (for coach code or unknown)
+      document.getElementById('join-step-2').classList.add('active');
+      document.getElementById('join-role-player').classList.remove('selected');
+      document.getElementById('join-role-parent').classList.remove('selected');
+      document.getElementById('join-role-next').disabled = true;
+    }
   }
 
   function selectJoinRole(role, el) {
