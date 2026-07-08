@@ -5259,7 +5259,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v37.3.2';
+  const APP_VERSION = 'v37.3.3';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7846,6 +7846,7 @@
     if (window.ROSTER_DATA) newPlayers.forEach(p => window.ROSTER_DATA.push(p));
     syncRosterData?.();
     buildDCFromPlayers();
+    saveDCToSupabase();
     renderCoachRoster();
     closeRosterImport();
     showToast(`Added ${newPlayers.length} player${newPlayers.length !== 1 ? 's' : ''} ✓`);
@@ -7958,6 +7959,7 @@
     if (window.ROSTER_DATA) window.ROSTER_DATA.push({ id: localId, ...row });
     syncRosterData?.();
     buildDCFromPlayers();
+    saveDCToSupabase();
     renderCoachRoster();
     closeAddPlayerManual();
     showToast(`${name} added to roster ✓`);
@@ -12549,11 +12551,20 @@
         .select('depth_chart')
         .eq('id', programId)
         .single();
-      if (error || !data?.depth_chart) return;
+      if (error || !data?.depth_chart) {
+        // No saved depth chart — build from current roster and save it
+        buildDCFromPlayers();
+        renderDepthChart();
+        saveDCToSupabase();
+        console.log('No saved depth chart — built from roster and saved');
+        return;
+      }
       // Merge saved data into DC_DATA
       Object.keys(data.depth_chart).forEach(unit => {
         if (DC_DATA[unit]) DC_DATA[unit] = data.depth_chart[unit];
       });
+      // Also fill in any players not yet in the saved chart
+      buildDCFromPlayers();
       renderDepthChart();
       console.log('Depth chart loaded from Supabase');
     } catch(e) { console.error('DC load error:', e); }
