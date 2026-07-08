@@ -4988,30 +4988,52 @@
   </div>
 
   <!-- ===== SHARE INVITE OVERLAY ===== -->
-  <div id="share-invite-overlay" onclick="closeShareInvite()" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:92;display:none;align-items:flex-end">
-    <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4)" onclick="event.stopPropagation()">
+  <div id="share-invite-overlay" onclick="closeShareInvite()" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end">
+    <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:600px;margin:0 auto;padding:12px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
         <div style="font-size:16px;font-weight:700">Invite to your program</div>
         <div style="color:var(--gray-3);cursor:pointer;font-size:16px" onclick="closeShareInvite()">✕</div>
       </div>
 
-      <!-- Join code display -->
-      <div style="background:var(--black-3);border:1px solid var(--black-4);border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Program join code</div>
-        <div style="font-size:36px;font-weight:800;letter-spacing:0.15em;color:var(--team-primary);font-family:monospace;margin-bottom:4px" id="share-join-code">NMPA-24</div>
-        <div style="font-size:12px;color:var(--gray-3)">Players and parents enter this at meshapp.co</div>
+      <!-- Three role codes -->
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+
+        <!-- Assistant Coach -->
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Assistant Coach Code</div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:0.12em;color:var(--team-primary);font-family:monospace" id="share-coach-code">—</div>
+          </div>
+          <button onclick="copyCode('share-coach-code')" style="background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Copy</button>
+        </div>
+
+        <!-- Player -->
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Player Code</div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:0.12em;color:var(--blue);font-family:monospace" id="share-player-code">—</div>
+          </div>
+          <button onclick="copyCode('share-player-code')" style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Copy</button>
+        </div>
+
+        <!-- Parent -->
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Parent Code</div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:0.12em;color:#10b981;font-family:monospace" id="share-parent-code">—</div>
+          </div>
+          <button onclick="copyCode('share-parent-code')" style="background:#10b981;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Copy</button>
+        </div>
+
       </div>
 
-      <!-- Primary action: copy link (works everywhere) -->
-      <button onclick="copyInviteLink()" class="btn-primary" style="width:100%;font-size:15px;padding:14px;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:8px">📋 Copy invite link</button>
+      <div style="font-size:12px;color:var(--fg-3);text-align:center;margin-bottom:16px">Enter code at <strong>app.meshsports.co</strong> when joining</div>
 
-      <!-- Secondary share options -->
-      <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">Or share via</div>
-
-      <div class="action-sheet-item" id="share-sms-item" onclick="shareViaText()">💬 Send as text message</div>
-      <div class="action-sheet-item" onclick="shareViaEmail()">✉️ Send as email</div>
-      <div class="action-sheet-item" id="share-native-item" onclick="shareNative()">↗️ More options (share sheet)</div>
+      <!-- Share options -->
+      <div class="action-sheet-item" id="share-sms-item" onclick="shareViaText()">💬 Share via text message</div>
+      <div class="action-sheet-item" onclick="shareViaEmail()">✉️ Share via email</div>
+      <div class="action-sheet-item" id="share-native-item" onclick="shareNative()">↗️ More share options</div>
     </div>
   </div>
 
@@ -8005,18 +8027,38 @@
   }
 
   function openShareInvite() {
-    const code = getActiveJoinCode();
-    document.getElementById('share-join-code').textContent = code;
+    // Populate all three role codes
+    const coachCode = obProgram.coachCode || '—';
+    const playerCode = obProgram.playerCode || '—';
+    const parentCode = obProgram.parentCode || '—';
+    const el = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+    el('share-coach-code', coachCode);
+    el('share-player-code', playerCode);
+    el('share-parent-code', parentCode);
+    // Keep share-join-code in sync for share text functions
+    const activeCode = getActiveJoinCode();
     document.getElementById('share-invite-overlay').style.display = 'flex';
-    // Desktop: SMS has no handler, so hide it. Native share only if supported.
     const desktop = (typeof isDesktop === 'function') ? isDesktop() : window.innerWidth > 820;
     const smsItem = document.getElementById('share-sms-item');
     const nativeItem = document.getElementById('share-native-item');
     if (smsItem) smsItem.style.display = desktop ? 'none' : '';
     if (nativeItem) nativeItem.style.display = navigator.share ? '' : 'none';
-    // Also update home card
     const homeCode = document.getElementById('home-join-code');
-    if (homeCode) homeCode.textContent = code;
+    if (homeCode) homeCode.textContent = activeCode;
+  }
+
+  function copyCode(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const code = el.textContent.trim();
+    if (!code || code === '—') return;
+    navigator.clipboard.writeText(code).then(() => showToast('Code copied ✓')).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = code; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      ta.remove(); showToast('Code copied ✓');
+    });
   }
 
   function launchProtocol(url){
