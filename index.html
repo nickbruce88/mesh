@@ -9013,7 +9013,9 @@
 
   // Debounced appearance save — fires 800ms after last change
   let _appearanceSaveTimer = null;
+  let _suppressAppearanceSave = false;
   function saveAppearanceToSupabase() {
+    if (_suppressAppearanceSave) return;
     clearTimeout(_appearanceSaveTimer);
     _appearanceSaveTimer = setTimeout(async () => {
       const pid = localStorage.getItem('mesh_program_id');
@@ -17811,7 +17813,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           }
         }
       } catch(e) { console.warn('Appearance load error:', e); }
+      // Apply theme without triggering a save back to Supabase
+      _suppressAppearanceSave = true;
       applyTheme();
+      _suppressAppearanceSave = false;
 
       // Update greeting if we have user info
       if (user?.name) {
