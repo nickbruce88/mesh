@@ -5259,7 +5259,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v37.3';
+  const APP_VERSION = 'v37.3.2';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7850,24 +7850,46 @@
     closeRosterImport();
     showToast(`Added ${newPlayers.length} player${newPlayers.length !== 1 ? 's' : ''} ✓`);
 
-    // Sync to Supabase in background
+    // Sync to Supabase in background — merge with existing rows by name to avoid duplicates
     try {
       const programId = await getValidProgramId();
       if (programId) {
-        const rows = newPlayers.map(p => ({
-          program_id: programId,
-          name: p.name, num: p.num, pos: p.pos, year: p.year,
-          height: p.height, weight: p.weight, gpa: p.gpa,
-          parent_name: p.parent, parent_phone: p.parentPhone, parent_email: p.parentEmail,
-          role: 'player', status: 'Active',
-        }));
-        const { data, error } = await db.from('players').insert(rows).select();
-        if (!error && data) {
-          // Update local IDs with real DB IDs
-          data.forEach((dbRow, i) => {
-            const local = PLAYERS.find(p => p.id === newPlayers[i]?.id);
-            if (local && dbRow.id) { local.id = dbRow.id; local.db_id = dbRow.id; }
-          });
+        for (let i = 0; i < newPlayers.length; i++) {
+          const p = newPlayers[i];
+          const row = {
+            program_id: programId,
+            name: p.name, num: p.num, pos: p.pos, year: p.year,
+            height: p.height, weight: p.weight, gpa: p.gpa,
+            parent_name: p.parent, parent_phone: p.parentPhone, parent_email: p.parentEmail,
+            role: 'player', status: 'Active',
+          };
+          // Check if player already exists in this program
+          const { data: existing } = await db.from('players')
+            .select('id')
+            .eq('program_id', programId)
+            .eq('name', p.name)
+            .maybeSingle();
+
+          if (existing) {
+            // Player already self-registered — update their coach-managed fields only
+            const { data: updated } = await db.from('players')
+              .update({
+                num: row.num, pos: row.pos, year: row.year,
+                height: row.height, weight: row.weight, gpa: row.gpa,
+                parent_name: row.parent_name, parent_phone: row.parent_phone, parent_email: row.parent_email,
+              })
+              .eq('id', existing.id)
+              .select()
+              .single();
+            const local = PLAYERS.find(lp => lp.name === p.name);
+            if (local && updated?.id) { local.id = updated.id; local.db_id = updated.id; }
+            console.log('Merged imported player with existing:', p.name);
+          } else {
+            // New player — insert
+            const { data: inserted } = await db.from('players').insert(row).select().single();
+            const local = PLAYERS.find(lp => lp.id === p.id);
+            if (local && inserted?.id) { local.id = inserted.id; local.db_id = inserted.id; }
+          }
         }
       }
     } catch(e) {
@@ -8755,12 +8777,27 @@
 
     let program = null;
 
-    // Check Supabase — search coach_code, player_code, and parent_code
+    // Check Supabase — try each code column separately
     try {
-      const { data, error } = await db.from('programs')
-        .select('*')
-        .or(`coach_code.eq.${code},player_code.eq.${code},parent_code.eq.${code}`)
-        .maybeSingle();
+      console.log('[Join] Searching for code:', code);
+      // Try coach_code first
+      let { data, error } = await db.from('programs').select('*').eq('coach_code', code).maybeSingle();
+      console.log('[Join] coach_code search:', { data, error });
+      if (!data) {
+        // Try player_code
+        ({ data, error } = await db.from('programs').select('*').eq('player_code', code).maybeSingle());
+        console.log('[Join] player_code search:', { data, error });
+      }
+      if (!data) {
+        // Try parent_code
+        ({ data, error } = await db.from('programs').select('*').eq('parent_code', code).maybeSingle());
+        console.log('[Join] parent_code search:', { data, error });
+      }
+      if (!data) {
+        // Try legacy join_code
+        ({ data, error } = await db.from('programs').select('*').eq('join_code', code).maybeSingle());
+        console.log('[Join] join_code search:', { data, error });
+      }
       if (error) {
         console.error('Supabase lookup error:', error);
       } else if (data) {
@@ -8906,11 +8943,44 @@
       role: 'player'
     };
 
-    // Save to Supabase
+    // Save to Supabase — upsert by name to avoid duplicates with coach-uploaded roster
     try {
-      const { data, error } = await db.from('players').insert(playerData).select().single();
-      if (error) throw error;
-      console.log('Player saved to Supabase:', data);
+      if (validProgramId) {
+        // Check if player with this name already exists in the program
+        const { data: existing } = await db.from('players')
+          .select('id')
+          .eq('program_id', validProgramId)
+          .eq('name', name)
+          .maybeSingle();
+
+        if (existing) {
+          // Player already exists (coach uploaded roster) — update with self-reported info
+          const { data, error } = await db.from('players')
+            .update({
+              num:    playerData.num,
+              pos:    playerData.pos,
+              unit:   playerData.unit,
+              year:   playerData.year,
+              height: playerData.height,
+              weight: playerData.weight,
+            })
+            .eq('id', existing.id)
+            .select()
+            .single();
+          if (error) throw error;
+          console.log('Player profile merged with existing roster entry:', data);
+        } else {
+          // No existing row — insert as new
+          const { data, error } = await db.from('players').insert(playerData).select().single();
+          if (error) throw error;
+          console.log('New player saved to Supabase:', data);
+        }
+      } else {
+        // No programId — just insert
+        const { data, error } = await db.from('players').insert(playerData).select().single();
+        if (error) throw error;
+        console.log('Player saved to Supabase:', data);
+      }
     } catch(e) {
       console.error('Supabase player save error:', e);
     }
