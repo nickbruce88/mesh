@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.4';
+  const APP_VERSION = 'v38.7';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8490,18 +8490,40 @@
       const uid = data.user.id;
       console.log('Auth UID:', uid);
 
+      localStorage.setItem('mesh_auth_uid', uid);
+
+      // Step 1: Check if user is a player or parent
+      let playerRow = null;
+      try {
+        const { data } = await db.from('players')
+          .select('id, name, program_id, role')
+          .eq('auth_uid', uid)
+          .maybeSingle();
+        playerRow = data;
+      } catch(e) { console.warn('Player lookup error:', e); }
+
+      if (playerRow?.program_id) {
+        const { data: playerProg } = await db.from('programs').select('*').eq('id', playerRow.program_id).maybeSingle();
+        if (playerProg) {
+          const joinedRole = playerRow.role || 'player';
+          localStorage.setItem('mesh_program_id', playerProg.id);
+          localStorage.setItem('mesh_team_name', playerProg.team_name);
+          localStorage.setItem('mesh_role', joinedRole);
+          localStorage.setItem('mesh_user', JSON.stringify({ name: playerRow.name, role: joinedRole }));
+          obProgram.teamName = playerProg.team_name;
+          obProgram.coachCode = playerProg.coach_code;
+          obProgram.playerCode = playerProg.player_code;
+          obProgram.parentCode = playerProg.parent_code;
+          btn.textContent = 'Sign in →';
+          btn.disabled = false;
+          restoreSession();
+          return;
+        }
+      }
+
+      // Step 2: Check if user owns a program (coach)
       const { data: prog, error: progErr } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
       console.log('Programs query result:', { prog, progErr });
-
-      if (progErr) {
-        console.error('Programs query error:', progErr);
-        // RLS or DB error — still let them through to onboarding
-        localStorage.setItem('mesh_auth_uid', uid);
-        btn.textContent = 'Sign in →';
-        btn.disabled = false;
-        showCoachOnboarding();
-        return;
-      }
 
       if (prog) {
         localStorage.setItem('mesh_program_id', prog.id);
@@ -8515,13 +8537,13 @@
         btn.textContent = 'Sign in →';
         btn.disabled = false;
         restoreSession();
-      } else {
-        // No program yet — new user who just verified their email
-        localStorage.setItem('mesh_auth_uid', uid);
-        btn.textContent = 'Sign in →';
-        btn.disabled = false;
-        showCoachOnboarding();
+        return;
       }
+
+      // Step 3: Account exists but no program or player row found
+      btn.textContent = 'Sign in →';
+      btn.disabled = false;
+      errEl.textContent = 'Account not found. Please check your credentials or join a program using a code.';
     } catch(e) {
       console.error('Sign in error:', e);
       errEl.textContent = e.message || 'Invalid email or password';
@@ -18038,11 +18060,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById('screen-app').classList.add('active');
 
-      // Build nav for correct role
-      const appRole = role === 'head coach' || role === 'assistant coach' || role === 'coach' ? 'coach' : role;
-      buildNav(appRole);
-      showTab(appRole, 'home');
-      // Load appearance from Supabase program record
+      // Load appearance from Supabase BEFORE building nav so colors are correct
       try {
         const pid = localStorage.getItem('mesh_program_id');
         if (pid) {
@@ -18059,6 +18077,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       _suppressAppearanceSave = true;
       applyTheme();
       _suppressAppearanceSave = false;
+
+      // Build nav for correct role
+      const appRole = role === 'head coach' || role === 'assistant coach' || role === 'coach' ? 'coach' : role;
+      buildNav(appRole);
+      showTab(appRole, 'home');
 
       // Update greeting if we have user info
       if (user?.name) {
@@ -18253,15 +18276,19 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     });
   }
 
-  // Init roster on load
+  // Init roster on load — suppress Supabase save on initial render
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(renderCoachRoster, 100);
+    _suppressAppearanceSave = true;
     applyTheme();
+    _suppressAppearanceSave = false;
     if (isDesktop()) applyDesktopMessagesLayout();
   });
   if (document.readyState !== 'loading') {
     renderCoachRoster();
+    _suppressAppearanceSave = true;
     applyTheme();
+    _suppressAppearanceSave = false;
     if (isDesktop()) applyDesktopMessagesLayout();
   }
 
