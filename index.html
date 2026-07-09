@@ -4116,9 +4116,9 @@
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn-sm" onclick="exportCalendar('player')">📅 Export</button>
-        <div class="sched-view-toggle">
-          <button class="sched-view-btn active" onclick="setSchedView('player','list',this)">List</button>
-          <button class="sched-view-btn" onclick="setSchedView('player','cal',this)">Calendar</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm active-btn" id="player-view-list" onclick="setPlayerSchedView('list',this)" style="background:var(--team-primary);color:var(--team-primary-text)">List</button>
+          <button class="btn-sm" id="player-view-cal" onclick="setPlayerSchedView('cal',this)">Calendar</button>
         </div>
       </div>
     </div>
@@ -4143,8 +4143,8 @@
       <div class="msg-group-item" onclick="openThread('player-allcoaches')">
         <div class="msg-group-avatar group-staff">🎙️</div>
         <div class="msg-group-content">
-          <div class="msg-group-header"><div class="msg-group-name">All Coaches</div><div class="inbox-time">2h ago</div></div>
-          <div class="msg-group-preview" id="mgp-player-allcoaches">Coach Williams: Check the app for updates</div>
+          <div class="msg-group-header"><div class="msg-group-name">All Coaches</div><div class="inbox-time" id="mgt-player-allcoaches"></div></div>
+          <div class="msg-group-preview" id="mgp-player-allcoaches">Tap to view messages from your coaching staff</div>
           <div class="msg-group-meta">Group channel · Coaching staff</div>
         </div>
         <div class="unread-dot" id="mgu-player-allcoaches"></div>
@@ -4160,7 +4160,7 @@
 
       <div class="more-menu-item" onclick="showPlayerSection('stats')">
         <div class="more-menu-icon" style="background:var(--team-primary-glow-sm)">📊</div>
-        <div><div class="more-menu-label">My Stats</div><div class="more-menu-sub">34 rec · 487 yds · 5 TDs</div></div>
+        <div><div class="more-menu-label">My Stats</div><div class="more-menu-sub">Performance notes from coaches</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
       <div class="more-menu-item" onclick="showPlayerSection('standing')">
@@ -4170,12 +4170,12 @@
       </div>
       <div class="more-menu-item" onclick="showPlayerSection('group')">
         <div class="more-menu-icon" style="background:rgba(255,68,68,0.12)">🔴</div>
-        <div><div class="more-menu-label">My Group</div><div class="more-menu-sub">Red group · Assigned by coaches</div></div>
+        <div><div class="more-menu-label">My Group</div><div class="more-menu-sub">Practice group assigned by coaches</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
       <div class="more-menu-item" onclick="showPlayerSection('depth')">
         <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">📋</div>
-        <div><div class="more-menu-label">Depth Chart</div><div class="more-menu-sub">WR1 · 1st string</div></div>
+        <div><div class="more-menu-label">Depth Chart</div><div class="more-menu-sub">View your position on the depth chart</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
       <div class="more-menu-item" onclick="openPlaybook('player')">
@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.1';
+  const APP_VERSION = 'v38.4';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5298,35 +5298,63 @@
     document.querySelectorAll('.scroll-content').forEach(t => t.style.display = 'none');
   }
 
+  function setPlayerSchedView(view, btn) {
+    const listEl = document.getElementById('player-sched-list');
+    const calEl = document.getElementById('player-sched-cal');
+    const listBtn = document.getElementById('player-view-list');
+    const calBtn = document.getElementById('player-view-cal');
+    if (view === 'list') {
+      if (listEl) listEl.style.display = 'block';
+      if (calEl) calEl.style.display = 'none';
+      if (listBtn) { listBtn.style.background = 'var(--team-primary)'; listBtn.style.color = 'var(--team-primary-text)'; }
+      if (calBtn) { calBtn.style.background = ''; calBtn.style.color = ''; }
+    } else {
+      if (listEl) listEl.style.display = 'none';
+      if (calEl) { calEl.style.display = 'block'; renderCalendar(calEl); }
+      if (calBtn) { calBtn.style.background = 'var(--team-primary)'; calBtn.style.color = 'var(--team-primary-text)'; }
+      if (listBtn) { listBtn.style.background = ''; listBtn.style.color = ''; }
+    }
+  }
+
   function renderPlayerSchedule() {
     const titleEl = document.getElementById('player-sched-title');
     const subEl = document.getElementById('player-sched-sub');
     const listEl = document.getElementById('player-sched-list');
+    const calEl = document.getElementById('player-sched-cal');
     if (!listEl) return;
     const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
     if (titleEl) titleEl.textContent = (new Date().getFullYear()) + ' Schedule';
     if (subEl) subEl.textContent = teamName;
     if (!SCHEDULE || SCHEDULE.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">No games scheduled yet.</div>';
+      listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px"><div style="font-size:32px;margin-bottom:10px">📅</div>No games scheduled yet.</div>';
       return;
     }
-    // Re-use coach schedule render if available
-    if (typeof renderScheduleList === 'function') {
-      listEl.innerHTML = renderScheduleList(SCHEDULE);
-    } else {
-      // Fallback simple render
-      listEl.innerHTML = SCHEDULE.map(g => {
-        const d = new Date(g.date);
-        const mon = d.toLocaleString('en',{month:'short'}).toUpperCase();
-        const day = d.getDate();
-        const time = d.toLocaleTimeString('en',{hour:'numeric',minute:'2-digit'});
-        const loc = g.home ? 'Home' : 'Away';
-        return `<div class="sched-item upcoming">
-          <div class="sched-date-col"><div class="sched-day-label">${mon}</div><div class="sched-day-num">${day}</div></div>
-          <div class="sched-info"><div class="sched-name">${g.opponent||g.title||'Game'}</div><div class="sched-meta">${loc} · ${time}</div></div>
-        </div>`;
-      }).join('');
-    }
+    // Render list view using same format as coach schedule
+    const today = new Date(); today.setHours(0,0,0,0);
+    listEl.innerHTML = SCHEDULE.map(g => {
+      const gDate = new Date(g.date + 'T00:00:00');
+      const mon = gDate.toLocaleString('en',{month:'short'}).toUpperCase();
+      const day = gDate.getDate();
+      const isPast = gDate < today;
+      const isToday = gDate.toDateString() === today.toDateString();
+      const hasScore = g.scoreUs !== undefined && g.scoreThem !== undefined;
+      const isWin = hasScore && g.scoreUs > g.scoreThem;
+      const cls = hasScore ? (isWin ? 'game-win' : 'game-loss') : 'upcoming';
+      const loc = g.home ? 'Home' : 'Away';
+      const time = g.time ? ` · ${g.time}` : '';
+      return `<div class="sched-item ${cls}${isToday?' sched-today':''}">
+        <div class="sched-date-col">
+          <div class="sched-day-label">${mon}</div>
+          <div class="sched-day-num${hasScore?' game-num':''}">${day}</div>
+        </div>
+        <div class="sched-info">
+          <div class="sched-name">${isToday?'🏈 ':''}${g.opponent||g.title||'Game'}</div>
+          <div class="sched-meta">${loc}${time}${g.location?' · '+g.location:''}</div>
+        </div>
+        ${hasScore ? `<div class="sched-score"><div class="score-result ${isWin?'win':'loss'}">${isWin?'W':'L'}</div><div class="score-nums">${g.scoreUs}–${g.scoreThem}</div></div>` :
+          `<span class="pill ${g.home?'pill-green':'pill-gray'}">${isToday?'TONIGHT':loc.toUpperCase()}</span>`}
+      </div>`;
+    }).join('');
   }
 
   function showTab(role, tab) {
@@ -7467,10 +7495,95 @@
     let existing = document.getElementById('theme-colors-overlay');
     if (existing) existing.remove();
 
+    // Only head coaches can change team colors and logo
+    const _meshUser = (() => { try { return JSON.parse(localStorage.getItem('mesh_user') || '{}'); } catch(e) { return {}; } })();
+    const _userRole = (_meshUser.role || '').toLowerCase();
+    const isCoach = _userRole === 'head coach' || _userRole === 'head_coach';
     const overlay = document.createElement('div');
     overlay.id = 'theme-colors-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+    // Mode toggle — shared between all roles
+    const modeSection = `
+      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Mode</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+        <div onclick="themeMode='light';applyTheme();updateThemeUI()" id="theme-light-btn"
+          style="padding:12px;border-radius:10px;border:2px solid ${themeMode==='light'?'var(--team-primary)':'var(--border)'};background:${themeMode==='light'?'var(--team-primary-glow-sm)':'var(--bg-3)'};cursor:pointer;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">☀️</div>
+          <div style="font-size:13px;font-weight:600;color:${themeMode==='light'?'var(--team-primary)':'var(--fg)'}">Light</div>
+        </div>
+        <div onclick="themeMode='dark';applyTheme();updateThemeUI()" id="theme-dark-btn"
+          style="padding:12px;border-radius:10px;border:2px solid ${themeMode==='dark'?'var(--team-primary)':'var(--border)'};background:${themeMode==='dark'?'var(--team-primary-glow-sm)':'var(--bg-3)'};cursor:pointer;text-align:center">
+          <div style="font-size:20px;margin-bottom:4px">🌙</div>
+          <div style="font-size:13px;font-weight:600;color:${themeMode==='dark'?'var(--team-primary)':'var(--fg)'}">Dark</div>
+        </div>
+      </div>`;
+
+    // Swap colors — available to all roles
+    const swapSection = `
+      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Colors</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.primary};border:2px solid var(--border);flex-shrink:0"></div>
+        <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.secondary};border:2px solid var(--border);flex-shrink:0"></div>
+        <button onclick="swapTeamColors()" style="font-size:12px;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 12px;color:var(--fg-2);cursor:pointer;font-weight:600;margin-left:4px">↔ Swap primary &amp; accent</button>
+      </div>`;
+
+    // Coach-only sections
+    const coachColorSection = isCoach ? `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em">Team colors</div>
+        <button onclick="swapTeamColors()" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--fg-2);cursor:pointer;font-weight:600">↔ Swap primary &amp; accent</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div>
+          <label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:6px">Primary (sidebar)</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.primary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0">
+              <input type="color" value="${teamColors.primary}" oninput="applyColorInput('primary',this)" onchange="applyColorInput('primary',this)">
+            </div>
+            <input type="text" value="${teamColors.primary}" maxlength="7" placeholder="#a11e1e"
+              style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:monospace;color:var(--fg);width:0"
+              oninput="applyHexInput('primary',this)" onchange="applyHexInput('primary',this)">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:6px">Secondary (accents)</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.secondary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0">
+              <input type="color" value="${teamColors.secondary}" oninput="applyColorInput('secondary',this)" onchange="applyColorInput('secondary',this)">
+            </div>
+            <input type="text" value="${teamColors.secondary}" maxlength="7" placeholder="#ef4444"
+              style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:monospace;color:var(--fg);width:0"
+              oninput="applyHexInput('secondary',this)" onchange="applyHexInput('secondary',this)">
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Quick presets</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+        ${[
+          {name:'Crimson',p:'#a11e1e',s:'#ef4444'},
+          {name:'Navy',p:'#1e3a5f',s:'#3b82f6'},
+          {name:'Forest',p:'#14532d',s:'#22c55e'},
+          {name:'Purple',p:'#4c1d95',s:'#8b5cf6'},
+          {name:'Steel',p:'#1c2b3a',s:'#64748b'},
+          {name:'Midnight',p:'#0f0022',s:'#c084fc'},
+        ].map(preset => '<div onclick="teamColors.primary=\''+preset.p+'\';teamColors.secondary=\''+preset.s+'\';applyTheme();document.getElementById(\'theme-colors-overlay\').remove()" style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;color:var(--fg)"><div style="width:12px;height:12px;border-radius:50%;background:'+preset.p+'"></div><div style="width:12px;height:12px;border-radius:50%;background:'+preset.s+'"></div>'+preset.name+'</div>').join('')}
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">School logo</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div id="appearance-logo-preview" style="width:64px;height:64px;border-radius:10px;border:2px solid var(--border);background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0">
+          ${schoolLogoDataUrl ? '<img src="'+schoolLogoDataUrl+'" style="width:100%;height:100%;object-fit:contain">' : '🏈'}
+        </div>
+        <div>
+          <div style="font-size:13px;color:var(--fg-2);margin-bottom:8px">${schoolLogoDataUrl ? 'Logo uploaded' : 'Upload your school or team logo'}</div>
+          <label style="cursor:pointer;display:inline-block;padding:7px 16px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--fg)">
+            ${schoolLogoDataUrl ? '🔄 Change logo' : '📁 Upload logo'}
+            <input type="file" accept="image/*" style="display:none" onchange="handleAppearanceLogoUpload(this)">
+          </label>
+          ${schoolLogoDataUrl ? '<button onclick="removeSchoolLogo()" style="margin-left:8px;background:none;border:none;color:var(--fg-3);font-size:12px;cursor:pointer;padding:7px 0">Remove</button>' : ''}
+        </div>
+      </div>` : '';
 
     overlay.innerHTML = `
       <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:400px" onclick="event.stopPropagation()">
@@ -7478,83 +7591,8 @@
           <div style="font-size:17px;font-weight:700;color:var(--fg)">Appearance</div>
           <div onclick="document.getElementById('theme-colors-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
         </div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Mode</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
-          <div onclick="themeMode='light';applyTheme();updateThemeUI()" id="theme-light-btn"
-            style="padding:12px;border-radius:10px;border:2px solid ${themeMode==='light'?'var(--team-primary)':'var(--border)'};background:${themeMode==='light'?'var(--team-primary-glow-sm)':'var(--bg-3)'};cursor:pointer;text-align:center">
-            <div style="font-size:20px;margin-bottom:4px">☀️</div>
-            <div style="font-size:13px;font-weight:600;color:${themeMode==='light'?'var(--team-primary)':'var(--fg)'}">Light</div>
-          </div>
-          <div onclick="themeMode='dark';applyTheme();updateThemeUI()" id="theme-dark-btn"
-            style="padding:12px;border-radius:10px;border:2px solid ${themeMode==='dark'?'var(--team-primary)':'var(--border)'};background:${themeMode==='dark'?'var(--team-primary-glow-sm)':'var(--bg-3)'};cursor:pointer;text-align:center">
-            <div style="font-size:20px;margin-bottom:4px">🌙</div>
-            <div style="font-size:13px;font-weight:600;color:${themeMode==='dark'?'var(--team-primary)':'var(--fg)'}">Dark</div>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em">Team colors</div>
-          <button onclick="swapTeamColors()" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--fg-2);cursor:pointer;font-weight:600">↔ Swap primary &amp; accent</button>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-          <div>
-            <label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:6px">Primary (sidebar)</label>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.primary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0">
-                <input type="color" value="${teamColors.primary}" oninput="applyColorInput('primary',this)" onchange="applyColorInput('primary',this)">
-              </div>
-              <input type="text" value="${teamColors.primary}" maxlength="7" placeholder="#a11e1e"
-                style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:monospace;color:var(--fg);width:0"
-                oninput="applyHexInput('primary',this)" onchange="applyHexInput('primary',this)">
-            </div>
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--fg-2);display:block;margin-bottom:6px">Secondary (accents)</label>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:36px;height:36px;border-radius:8px;background:${teamColors.secondary};border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden;flex-shrink:0">
-                <input type="color" value="${teamColors.secondary}" oninput="applyColorInput('secondary',this)" onchange="applyColorInput('secondary',this)">
-              </div>
-              <input type="text" value="${teamColors.secondary}" maxlength="7" placeholder="#ef4444"
-                style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;font-family:monospace;color:var(--fg);width:0"
-                oninput="applyHexInput('secondary',this)" onchange="applyHexInput('secondary',this)">
-            </div>
-          </div>
-        </div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Quick presets</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-          ${[
-            {name:'Crimson',p:'#a11e1e',s:'#ef4444'},
-            {name:'Navy',p:'#1e3a5f',s:'#3b82f6'},
-            {name:'Forest',p:'#14532d',s:'#22c55e'},
-            {name:'Purple',p:'#4c1d95',s:'#8b5cf6'},
-            {name:'Steel',p:'#1c2b3a',s:'#64748b'},
-            {name:'Midnight',p:'#0f0022',s:'#c084fc'},
-          ].map(preset => `
-            <div onclick="teamColors.primary='${preset.p}';teamColors.secondary='${preset.s}';applyTheme();document.getElementById('theme-colors-overlay').remove()"
-              style="display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;color:var(--fg)">
-              <div style="width:12px;height:12px;border-radius:50%;background:${preset.p}"></div>
-              <div style="width:12px;height:12px;border-radius:50%;background:${preset.s}"></div>
-              ${preset.name}
-            </div>`).join('')}
-        </div>
-
-        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">School logo</div>
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-          <div id="appearance-logo-preview" style="width:64px;height:64px;border-radius:10px;border:2px solid var(--border);background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0">
-            ${schoolLogoDataUrl ? '<img src="'+schoolLogoDataUrl+'" style="width:100%;height:100%;object-fit:contain">' : '🏈'}
-          </div>
-          <div>
-            <div style="font-size:13px;color:var(--fg-2);margin-bottom:8px">${schoolLogoDataUrl ? 'Logo uploaded' : 'Upload your school or team logo'}</div>
-            <label style="cursor:pointer;display:inline-block;padding:7px 16px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--fg)">
-              ${schoolLogoDataUrl ? '🔄 Change logo' : '📁 Upload logo'}
-              <input type="file" accept="image/*" style="display:none" onchange="handleAppearanceLogoUpload(this)">
-            </label>
-            ${schoolLogoDataUrl ? '<button onclick="removeSchoolLogo()" style="margin-left:8px;background:none;border:none;color:var(--fg-3);font-size:12px;cursor:pointer;padding:7px 0">Remove</button>' : ''}
-          </div>
-        </div>
-
+        ${modeSection}
+        ${isCoach ? coachColorSection : swapSection}
         <button onclick="document.getElementById('theme-colors-overlay').remove()" class="btn-primary" style="width:100%">Done</button>
       </div>`;
     document.body.appendChild(overlay);
@@ -7595,7 +7633,16 @@
     const tmp = teamColors.primary;
     teamColors.primary = teamColors.secondary;
     teamColors.secondary = tmp;
-    applyTheme();
+    const _swapUser = (() => { try { return JSON.parse(localStorage.getItem('mesh_user') || '{}'); } catch(e) { return {}; } })();
+    const _swapRole = (_swapUser.role || '').toLowerCase();
+    if (_swapRole === 'head coach' || _swapRole === 'head_coach') {
+      applyTheme(); // saves to Supabase via debounce
+    } else {
+      // Player/parent — apply visually only, don't save to Supabase
+      _suppressAppearanceSave = true;
+      applyTheme();
+      _suppressAppearanceSave = false;
+    }
     // Refresh modal
     document.getElementById('theme-colors-overlay').remove();
     openThemeColors();
@@ -16164,8 +16211,77 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (section === 'group') renderPlayerGroup();
     if (section === 'standing') renderPlayerStanding();
     if (section === 'documents') docLoadFromSupabase().then(() => renderSharedDocs('players'));
+    if (section === 'depth') renderPlayerDepthChart();
+    if (section === 'stats') renderPlayerStats();
     const tab = document.getElementById('tab-player-more');
     if (tab) tab.scrollTop = 0;
+  }
+
+  function renderPlayerDepthChart() {
+    const body = document.getElementById('player-dc-body');
+    if (!body) return;
+    const totalPositions = DC_DATA.offense.length + DC_DATA.defense.length + DC_DATA.special.length;
+    if (totalPositions === 0) {
+      body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3)"><div style="font-size:32px;margin-bottom:10px">📋</div><div style="font-size:13px">Depth chart hasn't been set up yet.</div></div>`;
+      return;
+    }
+    // Render read-only depth chart from DC_DATA
+    const units = [
+      { key:'offense', label:'Offense', data: DC_DATA.offense },
+      { key:'defense', label:'Defense', data: DC_DATA.defense },
+      { key:'special', label:'Special Teams', data: DC_DATA.special },
+    ];
+    body.innerHTML = units.map(unit => {
+      if (!unit.data || !unit.data.length) return '';
+      return `<div style="margin-bottom:20px">
+        <div class="section-label">${unit.label}</div>
+        ${unit.data.map(pos => `
+          <div class="card" style="margin-bottom:8px;padding:12px 14px">
+            <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${pos.pos}</div>
+            ${(pos.players || []).map((pid, i) => {
+              const p = PLAYERS.find(pl => pl.id === pid || pl.db_id === pid);
+              if (!p) return '';
+              return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+                <div style="font-size:11px;font-weight:700;color:var(--fg-3);width:18px">${i+1}</div>
+                <div style="font-size:13px;font-weight:600;flex:1">${p.name}</div>
+                <div style="font-size:11px;color:var(--fg-3)">${p.num||''}</div>
+              </div>`;
+            }).filter(Boolean).join('')}
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  function renderPlayerStats() {
+    const body = document.getElementById('player-stats-body');
+    if (!body) return;
+    // Find this player in PLAYERS by name from session
+    const sessionUser = (() => { try { return JSON.parse(localStorage.getItem('mesh_user')||'{}'); } catch(e) { return {}; } })();
+    const playerName = sessionUser.name;
+    const player = playerName ? PLAYERS.find(p => p.name === playerName) : null;
+    if (!player || (!player.notes?.length && !player.discipline?.length && !player.academic?.length)) {
+      body.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+        <div style="font-size:36px;margin-bottom:12px">📈</div>
+        <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">No stats yet</div>
+        <div style="font-size:13px;line-height:1.6">Your coaching staff will log performance data here throughout the season.</div>
+      </div>`;
+      return;
+    }
+    // Show performance notes from coach
+    const notes = (player.notes || []).filter(n => n.type === 'performance' || !n.type);
+    if (!notes.length) {
+      body.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+        <div style="font-size:36px;margin-bottom:12px">📈</div>
+        <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">No performance notes yet</div>
+        <div style="font-size:13px">Your coaching staff will log performance data here.</div>
+      </div>`;
+      return;
+    }
+    body.innerHTML = `<div class="section-label">Coach notes</div>` +
+      notes.map(n => `<div class="card" style="margin-bottom:8px">
+        <div style="font-size:13px;color:var(--fg);margin-bottom:4px">${n.text||n.note||''}</div>
+        <div style="font-size:11px;color:var(--fg-3)">${n.date||''} · ${n.coach||'Coach'}</div>
+      </div>`).join('');
   }
 
   function renderPlayerStanding() {
