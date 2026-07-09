@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.10.1';
+  const APP_VERSION = 'v38.12';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8484,89 +8484,18 @@
 
     try {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
-      console.log('Sign in result:', { data, error });
       if (error) throw error;
-
       const uid = data.user.id;
       console.log('Auth UID:', uid);
-
-      localStorage.setItem('mesh_auth_uid', uid);
-
-      // Step 1: Check if user is a player or parent (by auth_uid or email)
-      let playerRow = null;
-      try {
-        // Try auth_uid first
-        const { data: byUid } = await db.from('players')
-          .select('id, name, program_id, role')
-          .eq('auth_uid', uid)
-          .maybeSingle();
-        playerRow = byUid;
-        // Fallback: try by email if auth_uid not found
-        if (!playerRow && email) {
-          const { data: byEmail } = await db.from('players')
-            .select('id, name, program_id, role')
-            .eq('parent_email', email)
-            .maybeSingle();
-          if (!byEmail) {
-            // Try profiles join via email
-            const { data: byProfile } = await db.from('players')
-              .select('id, name, program_id, role')
-              .eq('auth_uid', uid)
-              .maybeSingle();
-            playerRow = byProfile;
-          } else {
-            playerRow = byEmail;
-            // Update auth_uid for future logins
-            await db.from('players').update({ auth_uid: uid }).eq('id', byEmail.id);
-          }
-        }
-      } catch(e) { console.warn('Player lookup error:', e); }
-
-      if (playerRow?.program_id) {
-        const { data: playerProg } = await db.from('programs').select('*').eq('id', playerRow.program_id).maybeSingle();
-        if (playerProg) {
-          const joinedRole = playerRow.role || 'player';
-          localStorage.setItem('mesh_program_id', playerProg.id);
-          localStorage.setItem('mesh_team_name', playerProg.team_name);
-          localStorage.setItem('mesh_role', joinedRole);
-          localStorage.setItem('mesh_user', JSON.stringify({ name: playerRow.name, role: joinedRole }));
-          obProgram.teamName = playerProg.team_name;
-          obProgram.coachCode = playerProg.coach_code;
-          obProgram.playerCode = playerProg.player_code;
-          obProgram.parentCode = playerProg.parent_code;
-          btn.textContent = 'Sign in →';
-          btn.disabled = false;
-          restoreSession();
-          return;
-        }
+      // Let resolveUserSession handle everything from here
+      const resolved = await resolveUserSession(uid);
+      if (!resolved) {
+        errEl.textContent = 'Account not found. Please check your credentials or join a program using a code.';
       }
-
-      // Step 2: Check if user owns a program (coach)
-      const { data: prog, error: progErr } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
-      console.log('Programs query result:', { prog, progErr });
-
-      if (prog) {
-        localStorage.setItem('mesh_program_id', prog.id);
-        localStorage.setItem('mesh_team_name', prog.team_name);
-        localStorage.setItem('mesh_current_program', prog.coach_code);
-        localStorage.setItem('mesh_role', 'coach');
-        localStorage.setItem('mesh_user', JSON.stringify({ name: prog.coach_name, role: prog.coach_role }));
-        obProgram.teamName = prog.team_name;
-        obProgram.schoolName = prog.school_name;
-        obProgram.coachName = prog.coach_name;
-        btn.textContent = 'Sign in →';
-        btn.disabled = false;
-        restoreSession();
-        return;
-      }
-
-      // Step 3: Account exists but no program or player row found
-      btn.textContent = 'Sign in →';
-      btn.disabled = false;
-      errEl.textContent = 'Account not found. Please check your credentials or join a program using a code.';
     } catch(e) {
       console.error('Sign in error:', e);
       errEl.textContent = e.message || 'Invalid email or password';
+    } finally {
       btn.textContent = 'Sign in →';
       btn.disabled = false;
     }
@@ -8583,44 +8512,69 @@
     }
   }
 
-  // ===== AUTO SESSION RESTORE =====
-  async function checkExistingSession() {
-    // Don't auto-restore if user explicitly logged out
-    const role = localStorage.getItem('mesh_role');
-    if (!role) {
-      console.log('No local role — skipping session restore');
+  // ===== CENTRAL SESSION RESOLVER =====
+  // Single source of truth — asks Supabase who this user is, routes accordingly
+  async function resolveUserSession(uid) {
+    try {
+      console.log('[Session] Resolving uid:', uid);
+
+      // 1. Check players table first
+      const { data: playerRow } = await db.from('players')
+        .select('id, name, program_id, role')
+        .eq('auth_uid', uid)
+        .maybeSingle();
+
+      if (playerRow?.program_id) {
+        const { data: prog } = await db.from('programs').select('*').eq('id', playerRow.program_id).maybeSingle();
+        if (prog) {
+          const role = playerRow.role || 'player';
+          console.log('[Session] Resolved as', role, '— program:', prog.team_name);
+          obProgram.teamName   = prog.team_name;
+          obProgram.schoolName = prog.school_name;
+          obProgram.coachCode  = prog.coach_code;
+          obProgram.playerCode = prog.player_code;
+          obProgram.parentCode = prog.parent_code;
+          await launchApp(role, { name: playerRow.name, role }, prog.id);
+          return true;
+        }
+      }
+
+      // 2. Check programs table (coach)
+      const { data: prog } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
+      if (prog) {
+        const role = 'coach';
+        console.log('[Session] Resolved as coach — program:', prog.team_name);
+        obProgram.teamName   = prog.team_name;
+        obProgram.schoolName = prog.school_name;
+        obProgram.coachName  = prog.coach_name;
+        obProgram.coachCode  = prog.coach_code;
+        obProgram.playerCode = prog.player_code;
+        obProgram.parentCode = prog.parent_code;
+        await launchApp(role, { name: prog.coach_name, role: prog.coach_role }, prog.id);
+        return true;
+      }
+
+      console.log('[Session] No program or player row found for uid:', uid);
+      return false;
+    } catch(e) {
+      console.error('[Session] Resolve error:', e);
       return false;
     }
+  }
 
+  // ===== AUTO SESSION CHECK ON LOAD =====
+  async function checkExistingSession() {
     try {
       const { data } = await db.auth.getSession();
       if (!data?.session?.user) {
-        console.log('No active Supabase session');
-        localStorage.removeItem('mesh_role'); // clear stale role
+        console.log('No active Supabase session — showing landing screen');
         return false;
       }
-
       const uid = data.session.user.id;
-      console.log('Restoring session — uid:', uid);
-
-      const { data: prog } = await db.from('programs').select('*').eq('owner_id', uid).maybeSingle();
-      if (prog) {
-        localStorage.setItem('mesh_program_id', prog.id);
-        localStorage.setItem('mesh_team_name', prog.team_name);
-        localStorage.setItem('mesh_current_program', prog.coach_code);
-        localStorage.setItem('mesh_role', 'coach');
-        localStorage.setItem('mesh_user', JSON.stringify({ name: prog.coach_name, role: prog.coach_role }));
-        obProgram.teamName = prog.team_name;
-        obProgram.coachName = prog.coach_name;
-        console.log('Session restored successfully');
-        restoreSession();
-        return true;
-      } else {
-        console.warn('Session exists but no program found');
-        return false;
-      }
+      console.log('[Session] Active session found, uid:', uid);
+      return await resolveUserSession(uid);
     } catch(e) {
-      console.warn('Session restore error:', e);
+      console.warn('[Session] Check error:', e);
       return false;
     }
   }
@@ -18052,195 +18006,99 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     showToast('Signed out ✓');
   }
 
-  // ===== SESSION RESTORE ON LOAD =====
-  async function restoreSession() {
+  // ===== LAUNCH APP =====
+  // Called by resolveUserSession — takes role, user object, and programId from Supabase
+  async function launchApp(role, user, programId) {
+    const appRole = (role === 'head coach' || role === 'assistant coach' || role === 'coach') ? 'coach' : role;
+
+    // Load appearance first so colors are right before UI renders
     try {
-      const role = localStorage.getItem('mesh_role');
-      const userJson = localStorage.getItem('mesh_user');
-      const joinCode = localStorage.getItem('mesh_current_program');
-      const programId = localStorage.getItem('mesh_program_id');
-
-      console.log('[Restore] role:', role, 'programId:', programId, 'joinCode:', joinCode, 'user:', userJson);
-
-      if (!role) {
-        console.log('No session found — showing landing screen');
-        return;
+      const { data: ap } = await db.from('programs').select('theme_mode,team_primary,team_secondary,sidebar_font').eq('id', programId).single();
+      if (ap) {
+        if (ap.theme_mode) { themeMode = ap.theme_mode; try { localStorage.setItem('mesh_theme', themeMode); } catch(e) {} }
+        if (ap.team_primary) teamColors.primary = ap.team_primary;
+        if (ap.team_secondary) teamColors.secondary = ap.team_secondary;
+        teamColors.sidebarFont = ap.sidebar_font || null;
       }
+    } catch(e) { console.warn('Appearance load error:', e); }
+    _suppressAppearanceSave = true;
+    applyTheme();
+    _suppressAppearanceSave = false;
 
-      // If player/parent — look up by program_id directly
-      if ((role === 'player' || role === 'parent') && programId) {
-        console.log('Restoring session — role:', role, 'program_id:', programId);
-        let program = null;
-        try {
-          const { data } = await db.from('programs').select('*').eq('id', programId).maybeSingle();
-          program = data;
-        } catch(e) { console.warn('Program lookup error:', e); }
-        if (!program) { console.log('Program not found'); return; }
-        obProgram.teamName = program.team_name;
-        obProgram.coachCode = program.coach_code;
-        obProgram.playerCode = program.player_code;
-        obProgram.parentCode = program.parent_code;
-        // Continue to app
-        const user = (() => { try { return JSON.parse(localStorage.getItem('mesh_user')||'{}'); } catch(e) { return {}; } })();
-        showScreen('screen-app');
-        buildNav(role);
-        showTab(role, 'home');
-        const nameEl = document.getElementById('player-home-name');
-        if (nameEl && user.name) nameEl.textContent = user.name.split(' ')[0];
-        await loadRosterFromSupabase(programId);
-        await loadPhotoFromSupabase();
-        await loadDrillsFromSupabase();
-        await annLoad();
-        console.log('Session restored successfully');
-        return;
-      }
+    // Show app
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-app').classList.add('active');
+    buildNav(appRole);
+    showTab(appRole, 'home');
 
-      if (!joinCode) {
-        console.log('No session found — showing landing screen');
-        return;
-      }
-
-      console.log('Restoring session — role:', role, 'code:', joinCode);
-
-      // Look up program from Supabase — try coach_code first, fall back to join_code
-      let program = null;
-      try {
-        const { data } = await db.from('programs')
-          .select('*')
-          .or(`coach_code.eq.${joinCode},join_code.eq.${joinCode}`)
-          .maybeSingle();
-        if (data) {
-          program = data;
-          localStorage.setItem('mesh_program_id', data.id);
-          if (data.primary_color) updateTeamColor('primary', data.primary_color);
-          if (data.secondary_color) updateTeamColor('secondary', data.secondary_color);
-          obProgram.joinCode   = data.coach_code || data.join_code;
-          obProgram.coachCode  = data.coach_code;
-          obProgram.playerCode = data.player_code;
-          obProgram.parentCode = data.parent_code;
-          obProgram.teamName   = data.team_name;
-          obProgram.schoolName = data.school_name;
-          obProgram.coachName  = data.coach_name;
-        }
-      } catch(e) {
-        console.error('Session restore Supabase error:', e);
-      }
-
-      // Even if Supabase lookup failed, restore from localStorage if we have enough
-      const user = userJson ? JSON.parse(userJson) : null;
-
-      // Skip to app
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById('screen-app').classList.add('active');
-
-      // Load appearance from Supabase BEFORE building nav so colors are correct
-      try {
-        const pid = localStorage.getItem('mesh_program_id');
-        if (pid) {
-          const { data: ap } = await db.from('programs').select('theme_mode,team_primary,team_secondary,sidebar_font').eq('id', pid).single();
-          if (ap) {
-            if (ap.theme_mode) { themeMode = ap.theme_mode; try { localStorage.setItem('mesh_theme', themeMode); } catch(e) {} }
-            if (ap.team_primary) teamColors.primary = ap.team_primary;
-            if (ap.team_secondary) teamColors.secondary = ap.team_secondary;
-            teamColors.sidebarFont = ap.sidebar_font || null;
-          }
-        }
-      } catch(e) { console.warn('Appearance load error:', e); }
-      // Apply theme without triggering a save back to Supabase
-      _suppressAppearanceSave = true;
-      applyTheme();
-      _suppressAppearanceSave = false;
-
-      // Build nav for correct role
-      const appRole = role === 'head coach' || role === 'assistant coach' || role === 'coach' ? 'coach' : role;
-      buildNav(appRole);
-      showTab(appRole, 'home');
-
-      // Update greeting if we have user info
-      if (user?.name) {
-        const hour = new Date().getHours();
-        let word;
-        if (hour >= 5 && hour < 12) word = 'Good morning';
-        else if (hour >= 12 && hour < 17) word = 'Good afternoon';
-        else if (hour >= 17 && hour < 21) word = 'Good evening';
-        else word = 'Hey';
-        const greetingEl = document.querySelector('#tab-' + appRole + '-home .greeting');
-        if (greetingEl) {
-          greetingEl.innerHTML = `${word}, <span>${user.name || 'Coach'}</span> 👋`;
-        }
-      }
-
-      // Update team name displays
-      if (program) {
-        document.querySelectorAll('.sub-greeting').forEach(el => {
-          if (el.textContent.includes('Nampa Bulldogs')) {
-            el.textContent = program.team_name + ' · ' + new Date().getFullYear() + ' Season';
-          }
-        });
-        const homeCode = document.getElementById('home-join-code');
-        if (homeCode) homeCode.textContent = program.join_code;
-      }
-
-      // Load real data from Supabase
-      if (program?.id) {
-        // Load announcements
-        await annLoad();
-        await loadDrillsFromSupabase();
-        await loadPhotoFromSupabase();
-        renderAnnouncements('coach');
-        const postBtn = document.getElementById('announce-post-btn');
-        if (postBtn) postBtn.style.display = '';
-        await loadRosterFromSupabase(program.id);
-        // Update active players count
-        const activePl = document.getElementById('home-active-players');
-        if (activePl) activePl.textContent = (window.ROSTER_DATA || []).filter(p => p.active !== false).length || 0;
-        await loadInventoryFromSupabase(program.id);
-        await loadDCFromSupabase(program.id);
-        await loadScheduleFromSupabase(program.id);
-        subscribeToPlayers(program.id);
-        // Render announcements for current role
-        setTimeout(async () => {
-          await annLoad();
-        await loadDrillsFromSupabase();
-        await loadPhotoFromSupabase();
-          const role = localStorage.getItem('mesh_role');
-          if (role === 'player') renderAnnouncements('player');
-          else if (role === 'parent') renderAnnouncements('parent');
-          else renderAnnouncements('coach');
-        }, 500);
-      }
-
-      // Populate role-specific home screen
-      if (appRole === 'player') {
-        setTimeout(populatePlayerHome, 300);
-        if (program?.id) subscribeToPlayerMessages(program.id);
-      }
-      if (appRole === 'coach') {
-        const teamName = program?.team_name || localStorage.getItem('mesh_team_name') || 'Your Team';
-        const coachSub = document.getElementById('coach-home-sub');
-        if (coachSub) coachSub.textContent = teamName + ' · ' + (SCHEDULE.filter(g=>g.scoreUs!==undefined).length === 0 ? '0–0 overall' : '');
-        updateInviteBanner();
-        updateNextGame();
-        updateTodaySchedule();
-      }
-
-      console.log('Session restored successfully');
-    } catch(e) {
-      console.error('Session restore failed:', e);
-      // Fall through to landing screen
+    // Greeting
+    if (user?.name) {
+      const hour = new Date().getHours();
+      const word = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 21 ? 'Good evening' : 'Hey';
+      const greetingEl = document.querySelector('#tab-' + appRole + '-home .greeting');
+      if (greetingEl) greetingEl.innerHTML = `${word}, <span>${user.name}</span> 👋`;
     }
+
+    // Team name displays
+    document.querySelectorAll('.sub-greeting').forEach(el => {
+      el.textContent = obProgram.teamName + ' · ' + new Date().getFullYear() + ' Season';
+    });
+    const coachSub = document.getElementById('coach-home-sub');
+    if (coachSub) coachSub.textContent = obProgram.teamName + ' · ' + new Date().getFullYear() + ' Season';
+
+    // Load all data
+    await annLoad();
+    await loadDrillsFromSupabase();
+    await loadPhotoFromSupabase();
+    await loadRosterFromSupabase(programId);
+    await loadInventoryFromSupabase(programId);
+    await loadDCFromSupabase(programId);
+    await loadScheduleFromSupabase(programId);
+    subscribeToPlayers(programId);
+
+    // Render announcements for correct role
+    if (appRole === 'player') {
+      renderAnnouncements('player');
+      setTimeout(populatePlayerHome, 300);
+      subscribeToPlayerMessages(programId);
+    } else if (appRole === 'parent') {
+      renderAnnouncements('parent');
+    } else {
+      renderAnnouncements('coach');
+      const activePl = document.getElementById('home-active-players');
+      if (activePl) activePl.textContent = (window.ROSTER_DATA || []).filter(p => p.active !== false).length || 0;
+      updateInviteBanner();
+      updateNextGame();
+      updateTodaySchedule();
+      const homeCode = document.getElementById('home-join-code');
+      if (homeCode) homeCode.textContent = obProgram.coachCode || '';
+    }
+
+    console.log('[Session] App launched — role:', appRole, 'program:', obProgram.teamName);
   }
+
+  // Thin wrapper for backward compatibility (called from joinGoToApp etc.)
+  async function restoreSession() {
+    const { data } = await db.auth.getSession();
+    if (!data?.session?.user) {
+      console.log('No active session — showing landing screen');
+      return;
+    }
+    await resolveUserSession(data.session.user.id);
+  }
+
+  // ===== LAUNCH ON PAGE LOAD =====
 
   // Rebuild desktop sidebar on resize
   window.addEventListener('resize', () => {
     if (isDesktop() && currentRole) buildDesktopSidebar(currentRole);
   });
 
-  // Run session restore when page loads
+  // Run session check on page load
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', restoreSession);
+    document.addEventListener('DOMContentLoaded', checkExistingSession);
   } else {
-    restoreSession();
+    checkExistingSession();
   }
 
   // Clean up any invalid program IDs from localStorage
