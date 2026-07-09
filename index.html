@@ -2347,6 +2347,18 @@
       <button class="btn-primary" id="join-role-next" onclick="joinGoToStep(3)" disabled>Next →</button>
     </div>
 
+    <!-- Step 2b: Create account (player/parent) -->
+    <div class="ob-step" id="join-step-account">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px">Create your account</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:20px">You'll use this to sign back in on any device.</div>
+      <div class="ob-field-label">Email address *</div>
+      <input class="input-field" id="join-account-email" placeholder="you@example.com" type="email" style="margin-bottom:12px">
+      <div class="ob-field-label">Password *</div>
+      <input class="input-field" id="join-account-password" placeholder="At least 6 characters" type="password" style="margin-bottom:8px">
+      <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="join-account-error"></div>
+      <button class="btn-primary" onclick="submitJoinAccount()">Next →</button>
+    </div>
+
     <!-- Step 3a: Player profile -->
     <div class="ob-step" id="join-step-3-player">
       <div style="font-size:18px;font-weight:700;margin-bottom:4px">Your player profile</div>
@@ -3696,8 +3708,7 @@
       <div style="font-size:13px;color:var(--gray-3);margin-bottom:6px">One event per line. Format:</div>
       <div style="background:var(--black-3);border-radius:var(--radius-sm);padding:10px 12px;font-family:monospace;font-size:12px;color:var(--gray-2);margin-bottom:16px;line-height:1.7">
         8/29 vs Kuna 7:00 PM Home<br>
-        9/5 at Caldwell 7:00 PM Away<br>
-        9/12 vs Middleton 7:00 PM Nampa High<br>
+
         10/3 Scrimmage vs Borah 10:00 AM
       </div>
       <div style="font-size:12px;color:var(--gray-3);margin-bottom:14px">
@@ -3881,8 +3892,8 @@
   <div id="tab-parent-schedule" class="scroll-content" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">2024 Schedule</div>
-        <div style="font-size:13px;color:var(--gray-2);margin-top:2px">Nampa Bulldogs · 3-5 overall</div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px" id="player-sched-title">Schedule</div>
+        <div style="font-size:13px;color:var(--gray-2);margin-top:2px" id="player-sched-sub"></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn-sm" onclick="exportCalendar('parent')">📅 Export</button>
@@ -4091,7 +4102,7 @@
     </div>
     <div class="section-label">Announcements</div>
     <div style="font-size:11px;color:var(--gray-3);margin:-6px 0 10px">Messages from your coaching staff</div>
-    <div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:4px">Game Friday vs Emmett — 7PM</div><div style="font-size:13px;color:var(--gray-2)">Report to locker room by 5:30 PM in full pads. Bus leaves at 6:00 PM sharp.</div><div style="font-size:11px;color:var(--gray-3);margin-top:6px">Coach Williams · 2h ago</div></div>
+
     <div id="player-announcements-list"></div>
     <div id="player-announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">No announcements yet</div>
   </div>
@@ -4100,8 +4111,8 @@
   <div id="tab-player-schedule" class="scroll-content" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">2024 Schedule</div>
-        <div style="font-size:13px;color:var(--gray-2);margin-top:2px">Nampa Bulldogs · 3-5 overall</div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px" id="player-sched-title">Schedule</div>
+        <div style="font-size:13px;color:var(--gray-2);margin-top:2px" id="player-sched-sub"></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn-sm" onclick="exportCalendar('player')">📅 Export</button>
@@ -4111,25 +4122,7 @@
         </div>
       </div>
     </div>
-    <div id="player-sched-list" style="margin-top:14px">
-      <div class="sched-week-label">Week 1</div>
-      <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">6</div></div><div class="sched-info"><div class="sched-name">vs. Caldwell Cougars</div><div class="sched-meta">Home · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">28–14</div></div></div>
-      <div class="sched-week-label">Week 2</div>
-      <div class="sched-item game-loss"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">13</div></div><div class="sched-info"><div class="sched-name">at Mountain View</div><div class="sched-meta">Away · 7:00 PM</div></div><div class="sched-score"><div class="score-result loss">L</div><div class="score-nums">14–35</div></div></div>
-      <div class="sched-week-label">Week 3</div>
-      <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">20</div></div><div class="sched-info"><div class="sched-name">vs. Twin Falls Bruins</div><div class="sched-meta">Home · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">21–17</div></div></div>
-      <div class="sched-week-label">Week 4</div>
-      <div class="sched-item game-loss"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">27</div></div><div class="sched-info"><div class="sched-name">at Skyview Hawks</div><div class="sched-meta">Away · 7:00 PM</div></div><div class="sched-score"><div class="score-result loss">L</div><div class="score-nums">7–42</div></div></div>
-      <div class="sched-week-label">Week 5 — Bye</div>
-      <div class="sched-week-label">Week 6</div>
-      <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">OCT</div><div class="sched-day-num game-num">11</div></div><div class="sched-info"><div class="sched-name">vs. Ridgevue Warhawks</div><div class="sched-meta">Home · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">35–21</div></div></div>
-      <div class="sched-week-label">Week 7 — Tonight!</div>
-      <div class="sched-item upcoming" style="border-color:var(--team-primary);border-left-width:3px"><div class="sched-date-col"><div class="sched-day-label">FRI</div><div class="sched-day-num game-num">18</div></div><div class="sched-info"><div class="sched-name" style="color:var(--team-primary)">🏈 vs. Emmett Huskies</div><div class="sched-meta">Home · 7:00 PM</div></div><span class="pill pill-green">TONIGHT</span></div>
-      <div class="sched-week-label">Week 8</div>
-      <div class="sched-item upcoming"><div class="sched-date-col"><div class="sched-day-label">OCT</div><div class="sched-day-num">25</div></div><div class="sched-info"><div class="sched-name">at Vallivue Falcons</div><div class="sched-meta">Away · 7:00 PM</div></div><span class="pill pill-gray">AWAY</span></div>
-      <div class="sched-week-label">Week 9</div>
-      <div class="sched-item upcoming"><div class="sched-date-col"><div class="sched-day-label">NOV</div><div class="sched-day-num">1</div></div><div class="sched-info"><div class="sched-name">vs. Middleton Vikings</div><div class="sched-meta">Home · 7:00 PM</div></div><span class="pill pill-green">HOME</span></div>
-    </div>
+    <div id="player-sched-list" style="margin-top:14px"></div>
     <div id="player-sched-cal" style="display:none" id="player-sched-cal"></div>
   </div>
 
@@ -4225,32 +4218,12 @@
         <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">My Stats</div>
       </div>
-      <div class="player-hero">
-        <div class="player-jersey">#22</div>
-        <div>
-          <div class="player-name" id="player-name-display2">—</div>
-          <div class="player-pos">Wide Receiver · <span>1st String</span></div>
-          <div style="margin-top:6px"><span class="pill pill-green">4.52 40-yard dash</span></div>
+      <div id="player-stats-body">
+        <div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+          <div style="font-size:36px;margin-bottom:12px">📈</div>
+          <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">No stats yet</div>
+          <div style="font-size:13px;line-height:1.6">Your coaching staff will log performance data here throughout the season.</div>
         </div>
-      </div>
-      <div class="section-label">2026 Season stats</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-box-num green">34</div><div class="stat-box-label">Receptions</div></div>
-        <div class="stat-box"><div class="stat-box-num">487</div><div class="stat-box-label">Rec Yards</div></div>
-        <div class="stat-box"><div class="stat-box-num green">5</div><div class="stat-box-label">TDs</div></div>
-        <div class="stat-box"><div class="stat-box-num">14.3</div><div class="stat-box-label">Avg/Catch</div></div>
-        <div class="stat-box"><div class="stat-box-num">61</div><div class="stat-box-label">Long</div></div>
-        <div class="stat-box"><div class="stat-box-num">8</div><div class="stat-box-label">Games</div></div>
-      </div>
-      <div class="section-label">Game by game</div>
-      <div class="card">
-        <div style="display:flex;font-size:11px;color:var(--gray-3);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;padding-bottom:8px;border-bottom:1px solid var(--black-4);margin-bottom:8px"><div style="flex:1">Opponent</div><div style="width:30px;text-align:center">Rec</div><div style="width:40px;text-align:center">Yds</div><div style="width:30px;text-align:center">TD</div></div>
-        <div style="display:flex;font-size:13px;padding:6px 0;border-bottom:1px solid var(--black-4)"><div style="flex:1;color:var(--gray-2)">vs. Caldwell</div><div style="width:30px;text-align:center">6</div><div style="width:40px;text-align:center">82</div><div style="width:30px;text-align:center;color:var(--team-primary)">1</div></div>
-        <div style="display:flex;font-size:13px;padding:6px 0;border-bottom:1px solid var(--black-4)"><div style="flex:1;color:var(--gray-2)">at Mtn View</div><div style="width:30px;text-align:center">3</div><div style="width:40px;text-align:center">41</div><div style="width:30px;text-align:center">0</div></div>
-        <div style="display:flex;font-size:13px;padding:6px 0;border-bottom:1px solid var(--black-4)"><div style="flex:1;color:var(--gray-2)">vs. Twin Falls</div><div style="width:30px;text-align:center">5</div><div style="width:40px;text-align:center">63</div><div style="width:30px;text-align:center;color:var(--team-primary)">1</div></div>
-        <div style="display:flex;font-size:13px;padding:6px 0;border-bottom:1px solid var(--black-4)"><div style="flex:1;color:var(--gray-2)">at Skyview</div><div style="width:30px;text-align:center">2</div><div style="width:40px;text-align:center">18</div><div style="width:30px;text-align:center">0</div></div>
-        <div style="display:flex;font-size:13px;padding:6px 0;border-bottom:1px solid var(--black-4)"><div style="flex:1;color:var(--gray-2)">BYE</div><div style="width:30px;text-align:center">—</div><div style="width:40px;text-align:center">—</div><div style="width:30px;text-align:center">—</div></div>
-        <div style="display:flex;font-size:13px;padding:6px 0"><div style="flex:1;color:var(--gray-2)">vs. Ridgevue</div><div style="width:30px;text-align:center;color:var(--team-primary);font-weight:700">8</div><div style="width:40px;text-align:center;color:var(--team-primary);font-weight:700">112</div><div style="width:30px;text-align:center;color:var(--team-primary)">1</div></div>
       </div>
     </div>
 
@@ -5259,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v37.3.3';
+  const APP_VERSION = 'v37.3.8';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5325,6 +5298,37 @@
     document.querySelectorAll('.scroll-content').forEach(t => t.style.display = 'none');
   }
 
+  function renderPlayerSchedule() {
+    const titleEl = document.getElementById('player-sched-title');
+    const subEl = document.getElementById('player-sched-sub');
+    const listEl = document.getElementById('player-sched-list');
+    if (!listEl) return;
+    const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
+    if (titleEl) titleEl.textContent = (new Date().getFullYear()) + ' Schedule';
+    if (subEl) subEl.textContent = teamName;
+    if (!SCHEDULE || SCHEDULE.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">No games scheduled yet.</div>';
+      return;
+    }
+    // Re-use coach schedule render if available
+    if (typeof renderScheduleList === 'function') {
+      listEl.innerHTML = renderScheduleList(SCHEDULE);
+    } else {
+      // Fallback simple render
+      listEl.innerHTML = SCHEDULE.map(g => {
+        const d = new Date(g.date);
+        const mon = d.toLocaleString('en',{month:'short'}).toUpperCase();
+        const day = d.getDate();
+        const time = d.toLocaleTimeString('en',{hour:'numeric',minute:'2-digit'});
+        const loc = g.home ? 'Home' : 'Away';
+        return `<div class="sched-item upcoming">
+          <div class="sched-date-col"><div class="sched-day-label">${mon}</div><div class="sched-day-num">${day}</div></div>
+          <div class="sched-info"><div class="sched-name">${g.opponent||g.title||'Game'}</div><div class="sched-meta">${loc} · ${time}</div></div>
+        </div>`;
+      }).join('');
+    }
+  }
+
   function showTab(role, tab) {
     currentTab = tab;
     // Close player profile if open
@@ -5356,6 +5360,8 @@
     } else {
       if (tab === 'practice') setTimeout(initPracticeToToday, 50);
     }
+    // Player schedule — render from real SCHEDULE data
+    if (role === 'player' && tab === 'schedule') renderPlayerSchedule();
   }
 
   function applyDesktopPracticeLayout() {
@@ -5481,14 +5487,7 @@
 
   // ===== CALENDAR EXPORT =====
   const SEASON_EVENTS = [
-    { date:'20240906T190000', end:'20240906T210000', title:'vs. Caldwell Cougars', location:'Nampa High School Stadium, Nampa, ID', home:true },
-    { date:'20240913T190000', end:'20240913T210000', title:'at Mountain View Mavericks', location:'Mountain View High School, Meridian, ID', home:false },
-    { date:'20240920T190000', end:'20240920T210000', title:'vs. Twin Falls Bruins', location:'Nampa High School Stadium, Nampa, ID', home:true },
-    { date:'20240927T190000', end:'20240927T210000', title:'at Skyview Hawks', location:'Skyview High School, Nampa, ID', home:false },
-    { date:'20241011T190000', end:'20241011T210000', title:'vs. Ridgevue Warhawks', location:'Nampa High School Stadium, Nampa, ID', home:true },
-    { date:'20241018T190000', end:'20241018T210000', title:'vs. Emmett Huskies', location:'Nampa High School Stadium, Nampa, ID', home:true },
-    { date:'20241025T190000', end:'20241025T210000', title:'at Vallivue Falcons', location:'Vallivue High School, Caldwell, ID', home:false },
-    { date:'20241101T190000', end:'20241101T210000', title:'vs. Middleton Vikings', location:'Nampa High School Stadium, Nampa, ID', home:true },
+
   ];
 
   let calExportRole = 'coach';
@@ -8824,9 +8823,7 @@
     }
 
     // Demo code fallback
-    if (!program && code === 'NMPA-24') {
-      program = { team_name: 'Nampa Bulldogs', school_name: 'Nampa High School', join_code: 'NMPA-24', id: 'demo' };
-    }
+    // No demo program fallback — real codes only
 
     if (!program) {
       errEl.textContent = 'Code not found. Check with your coach.';
@@ -8888,10 +8885,9 @@
 
     document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
 
-    // If role was auto-detected, skip role selection step
+    // If role was auto-detected, go to account creation step
     if (joinSelectedRole === 'player' || joinSelectedRole === 'parent') {
-      // Jump straight to profile step
-      document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
+      document.getElementById('join-step-account').classList.add('active');
     } else {
       // Show role selection (for coach code or unknown)
       document.getElementById('join-step-2').classList.add('active');
@@ -8912,9 +8908,42 @@
   function joinGoToStep(n) {
     document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
     if (n === 3) {
-      document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
+      // Go to account creation before profile
+      document.getElementById('join-step-account').classList.add('active');
     } else {
       document.getElementById('join-step-' + n).classList.add('active');
+    }
+  }
+
+  async function submitJoinAccount() {
+    const email = document.getElementById('join-account-email').value.trim();
+    const password = document.getElementById('join-account-password').value;
+    const errEl = document.getElementById('join-account-error');
+    errEl.textContent = '';
+
+    if (!email) { errEl.textContent = 'Please enter your email address.'; return; }
+    if (!password || password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+    const btn = event.target;
+    btn.textContent = 'Creating account…';
+    btn.disabled = true;
+
+    try {
+      const { data, error } = await db.auth.signUp({ email, password });
+      if (error) throw error;
+
+      // Store auth info
+      localStorage.setItem('mesh_auth_email', email);
+      localStorage.setItem('mesh_auth_uid', data.user?.id || '');
+
+      // Move to profile step
+      document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
+      document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
+    } catch(e) {
+      errEl.textContent = e.message || 'Could not create account. Try again.';
+    } finally {
+      btn.textContent = 'Next →';
+      btn.disabled = false;
     }
   }
 
@@ -8929,8 +8958,10 @@
     // Only use programId if it looks like a real UUID
     const validProgramId = programId && programId.includes('-') ? programId : null;
 
+    const authUid = localStorage.getItem('mesh_auth_uid') || null;
     const playerData = {
       ...(validProgramId ? { program_id: validProgramId } : {}),
+      ...(authUid ? { auth_uid: authUid } : {}),
       name,
       num: numVal ? '#' + numVal : '#—',
       pos,
@@ -8993,6 +9024,7 @@
 
     try {
       localStorage.setItem('mesh_role', 'player');
+      localStorage.setItem('mesh_auth_email', document.getElementById('join-account-email')?.value?.trim() || '');
       localStorage.setItem('mesh_user', JSON.stringify({ name, role: 'player' }));
       localStorage.setItem('mesh_team_name', document.getElementById('join-program-name').textContent);
     } catch(e) {}
@@ -10017,7 +10049,7 @@
 
   let PRACTICE_COACHES = [
     { name:'Coach Waite', pos:'QB' },
-    { name:'Coach Bruce', pos:'RB' },
+
     { name:'Coach Estrada', pos:'WR' },
     { name:'Coach Dunn', pos:'OL' },
   ];
@@ -11616,9 +11648,9 @@
     const body = document.getElementById('thread-body');
     body.innerHTML = '';
     const msgs = [
-      { mine: false, from: 'Coach Williams', text: 'Away game bus departs from the field house at 4:30 PM sharp next Friday.', time: 'Mon' },
+
       { mine: true,  from: 'You', text: 'Hi Coach, will Marcus need his away jersey for Friday\'s game?', time: 'Sun' },
-      { mine: false, from: 'Coach Williams', text: 'Yes — full away uniform. White jersey, white pants, black socks. Send him with both helmets if possible.', time: 'Sun' },
+
     ];
     msgs.forEach(m => {
       const div = document.createElement('div');
