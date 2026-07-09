@@ -9013,35 +9013,34 @@
     btn.disabled = true;
 
     try {
-      const { data, error } = await db.auth.signUp({ email, password });
-      if (error) throw error;
+      // Try signing up first
+      const { data: signUpData, error: signUpError } = await db.auth.signUp({ email, password });
+      
+      let uid = '';
+      if (signUpError && (signUpError.message?.includes('already registered') || signUpError.message?.includes('already been registered'))) {
+        // Account exists — sign in instead
+        const { data: signInData, error: signInError } = await db.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
+        uid = signInData.user?.id || '';
+      } else if (signUpError) {
+        throw signUpError;
+      } else {
+        uid = signUpData.user?.id || '';
+        // Sign in immediately after signup to establish authenticated session
+        // This ensures the session is active before we insert the player row
+        const { error: signInError } = await db.auth.signInWithPassword({ email, password });
+        if (signInError) console.warn('[Join] Auto sign-in after signup failed:', signInError);
+      }
 
-      // Store auth info
-      const uid = data.user?.id || '';
       localStorage.setItem('mesh_auth_email', email);
       localStorage.setItem('mesh_auth_uid', uid);
-      console.log('[Join] Account created, uid:', uid);
+      console.log('[Join] Account ready, uid:', uid);
 
       // Move to profile step
       document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
       document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
     } catch(e) {
-      // If account already exists, try signing in instead
-      if (e.message?.includes('already registered') || e.message?.includes('already been registered')) {
-        try {
-          const { data: signInData, error: signInError } = await db.auth.signInWithPassword({ email, password });
-          if (signInError) throw signInError;
-          const uid = signInData.user?.id || '';
-          localStorage.setItem('mesh_auth_email', email);
-          localStorage.setItem('mesh_auth_uid', uid);
-          document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
-          document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
-        } catch(signInErr) {
-          errEl.textContent = signInErr.message || 'Could not sign in. Try again.';
-        }
-      } else {
-        errEl.textContent = e.message || 'Could not create account. Try again.';
-      }
+      errEl.textContent = e.message || 'Could not create account. Try again.';
     } finally {
       btn.textContent = 'Next →';
       btn.disabled = false;
