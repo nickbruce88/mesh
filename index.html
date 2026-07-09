@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.7';
+  const APP_VERSION = 'v38.8';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8492,14 +8492,34 @@
 
       localStorage.setItem('mesh_auth_uid', uid);
 
-      // Step 1: Check if user is a player or parent
+      // Step 1: Check if user is a player or parent (by auth_uid or email)
       let playerRow = null;
       try {
-        const { data } = await db.from('players')
+        // Try auth_uid first
+        const { data: byUid } = await db.from('players')
           .select('id, name, program_id, role')
           .eq('auth_uid', uid)
           .maybeSingle();
-        playerRow = data;
+        playerRow = byUid;
+        // Fallback: try by email if auth_uid not found
+        if (!playerRow && email) {
+          const { data: byEmail } = await db.from('players')
+            .select('id, name, program_id, role')
+            .eq('parent_email', email)
+            .maybeSingle();
+          if (!byEmail) {
+            // Try profiles join via email
+            const { data: byProfile } = await db.from('players')
+              .select('id, name, program_id, role')
+              .eq('auth_uid', uid)
+              .maybeSingle();
+            playerRow = byProfile;
+          } else {
+            playerRow = byEmail;
+            // Update auth_uid for future logins
+            await db.from('players').update({ auth_uid: uid }).eq('id', byEmail.id);
+          }
+        }
       } catch(e) { console.warn('Player lookup error:', e); }
 
       if (playerRow?.program_id) {
@@ -8997,14 +9017,31 @@
       if (error) throw error;
 
       // Store auth info
+      const uid = data.user?.id || '';
       localStorage.setItem('mesh_auth_email', email);
-      localStorage.setItem('mesh_auth_uid', data.user?.id || '');
+      localStorage.setItem('mesh_auth_uid', uid);
+      console.log('[Join] Account created, uid:', uid);
 
       // Move to profile step
       document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
       document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
     } catch(e) {
-      errEl.textContent = e.message || 'Could not create account. Try again.';
+      // If account already exists, try signing in instead
+      if (e.message?.includes('already registered') || e.message?.includes('already been registered')) {
+        try {
+          const { data: signInData, error: signInError } = await db.auth.signInWithPassword({ email, password });
+          if (signInError) throw signInError;
+          const uid = signInData.user?.id || '';
+          localStorage.setItem('mesh_auth_email', email);
+          localStorage.setItem('mesh_auth_uid', uid);
+          document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
+          document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
+        } catch(signInErr) {
+          errEl.textContent = signInErr.message || 'Could not sign in. Try again.';
+        }
+      } else {
+        errEl.textContent = e.message || 'Could not create account. Try again.';
+      }
     } finally {
       btn.textContent = 'Next →';
       btn.disabled = false;
@@ -9051,15 +9088,16 @@
           .maybeSingle();
 
         if (existing) {
-          // Player already exists (coach uploaded roster) — update with self-reported info
+          // Player already exists (coach uploaded roster) — update with self-reported info + auth_uid
           const { data, error } = await db.from('players')
             .update({
-              num:    playerData.num,
-              pos:    playerData.pos,
-              unit:   playerData.unit,
-              year:   playerData.year,
-              height: playerData.height,
-              weight: playerData.weight,
+              num:      playerData.num,
+              pos:      playerData.pos,
+              unit:     playerData.unit,
+              year:     playerData.year,
+              height:   playerData.height,
+              weight:   playerData.weight,
+              auth_uid: authUid,
             })
             .eq('id', existing.id)
             .select()
