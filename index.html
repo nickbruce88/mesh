@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.14';
+  const APP_VERSION = 'v38.16';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5265,6 +5265,7 @@
   };
 
   let currentRole = 'coach';
+  let _sessionUser = { name: '', role: 'coach' }; // set by launchApp, used by sidebar
   let currentTab = 'home';
   let homeIconLogoStyle = 'circle'; // 'circle' or 'natural' — toggled for comparison
 
@@ -8315,7 +8316,7 @@
     const avatarEl = document.getElementById('sidebar-avatar');
 
     const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Program';
-    const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+    const user = _sessionUser || {};
     const userName = user.name || (role === 'coach' ? 'Coach' : role === 'player' ? 'Player' : 'Parent');
     const userRole = user.role || role;
 
@@ -12316,11 +12317,8 @@
   // ===== POPULATE PLAYER HOME FROM SESSION =====
   function populatePlayerHome() {
     try {
-      const userJson = localStorage.getItem('mesh_user');
-      const user = userJson ? JSON.parse(userJson) : null;
-      if (!user || user.role !== 'player') return;
-
-      const name = user.name || 'Player';
+      const name = _sessionUser?.name || '';
+      if (!name) return;
       const firstName = name.split(' ')[0];
 
       // Find player in PLAYERS array
@@ -18011,6 +18009,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   async function launchApp(role, user, programId) {
     const appRole = (role === 'head coach' || role === 'assistant coach' || role === 'coach') ? 'coach' : role;
     currentRole = appRole; // critical — must be set before buildNav
+    _sessionUser = user || { name: '', role: appRole }; // store for sidebar
 
     // Load appearance first so colors are right before UI renders
     try {
@@ -18060,7 +18059,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Render announcements for correct role
     if (appRole === 'player') {
       renderAnnouncements('player');
-      setTimeout(populatePlayerHome, 300);
+      populatePlayerHome(); // roster is already loaded by this point
       subscribeToPlayerMessages(programId);
     } else if (appRole === 'parent') {
       renderAnnouncements('parent');
