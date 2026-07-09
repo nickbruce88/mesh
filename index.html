@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.12';
+  const APP_VERSION = 'v38.14';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5449,7 +5449,7 @@
       }
       console.log('[AvatarLoad] uid:', uid);
       if (!uid) return;
-      const { data: profile, error: profErr } = await db.from('profiles').select('photo_url').eq('id', uid).single();
+      const { data: profile, error: profErr } = await db.from('profiles').select('photo_url').eq('id', uid).maybeSingle();
       console.log('[AvatarLoad] profile.photo_url:', profile?.photo_url, 'error:', profErr);
       if (!profile?.photo_url) return;
       const path = profile.photo_url.startsWith('http') ? `${uid}/avatar.jpg` : profile.photo_url;
@@ -18010,6 +18010,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   // Called by resolveUserSession — takes role, user object, and programId from Supabase
   async function launchApp(role, user, programId) {
     const appRole = (role === 'head coach' || role === 'assistant coach' || role === 'coach') ? 'coach' : role;
+    currentRole = appRole; // critical — must be set before buildNav
 
     // Load appearance first so colors are right before UI renders
     try {
