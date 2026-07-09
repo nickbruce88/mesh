@@ -4163,121 +4163,8 @@
 
   <!-- Player More Tab -->
   <div id="tab-player-more" class="scroll-content" style="display:none;padding:0 20px 80px">
-    <div class="more-menu" id="player-more-menu">
-      <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px;padding-top:4px">More</div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Player profile</div>
-
-      <div class="more-menu-item" onclick="showPlayerSection('stats')">
-        <div class="more-menu-icon" style="background:var(--team-primary-glow-sm)">📊</div>
-        <div><div class="more-menu-label">My Info</div><div class="more-menu-sub">Stats, group, standing & more</div></div>
-        <div class="more-menu-arrow">›</div>
-      </div>
-      <div class="more-menu-item" onclick="showPlayerSection('standing')">
-        <div class="more-menu-icon" style="background:rgba(57,255,20,0.1)">✅</div>
-        <div><div class="more-menu-label">My Standing</div><div class="more-menu-sub">Disciplinary & academic status</div></div>
-        <div class="more-menu-arrow">›</div>
-      </div>
-      <div class="more-menu-item" onclick="showPlayerSection('group')">
-        <div class="more-menu-icon" style="background:rgba(255,68,68,0.12)">🔴</div>
-        <div><div class="more-menu-label">My Group</div><div class="more-menu-sub">Practice group assigned by coaches</div></div>
-        <div class="more-menu-arrow">›</div>
-      </div>
-
-      <div class="more-menu-item" onclick="openPlaybook('player')">
-        <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">📖</div>
-        <div><div class="more-menu-label">Playbook</div><div class="more-menu-sub">Offense, Defense, Special Teams</div></div>
-        <div class="more-menu-arrow">›</div>
-      </div>
-      <div class="more-menu-item" onclick="showPlayerSection('documents')">
-        <div class="more-menu-icon" style="background:rgba(160,100,255,0.1)">📁</div>
-        <div><div class="more-menu-label">Documents</div><div class="more-menu-sub">Forms, schedules & resources</div></div>
-        <div class="more-menu-arrow">›</div>
-      </div>
-    </div>
-
-    <!-- MY STANDING SECTION -->
-    <div class="more-section" id="player-section-standing">
-      <div class="more-section-header">
-        <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">My Standing</div>
-      </div>
-
-      <div class="section-label">Disciplinary status</div>
-      <div id="player-standing-disc-card"></div>
-
-      <div class="section-label" style="margin-top:16px">Academic standing</div>
-      <div class="card" style="padding:0">
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Eligibility</span><span class="pp-info-value" style="color:var(--team-primary)">✅ Eligible</span></div>
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Current GPA</span><span class="pp-info-value">3.8</span></div>
-        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Minimum required</span><span class="pp-info-value" style="color:var(--gray-3)">2.0 GPA</span></div>
-      </div>
-
-      <div class="section-label" style="margin-top:16px">Notes from coaches</div>
-      <div style="font-size:11px;color:var(--gray-3);margin:-6px 0 10px">Positive notes and disciplinary records shared with you by coaching staff</div>
-      <div id="player-standing-notes"></div>
-    </div>
-
-    <!-- MY STATS SECTION -->
-    <div class="more-section" id="player-section-stats">
-      <div class="more-section-header">
-        <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">My Info</div>
-      </div>
-      <div id="player-stats-body">
-        <div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
-          <div style="font-size:36px;margin-bottom:12px">📈</div>
-          <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">No stats yet</div>
-          <div style="font-size:13px;line-height:1.6">Your coaching staff will log performance data here throughout the season.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MY GROUP SECTION -->
-    <div class="more-section" id="player-section-group">
-      <div class="more-section-header">
-        <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">My Group</div>
-      </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Practice groups are assigned by coaches and may change throughout the season.</div>
-      <div id="player-group-display"></div>
-      <div class="section-label">What groups are used for</div>
-      <div class="card">
-        <div style="font-size:13px;color:var(--gray-1);line-height:1.6">Groups let coaches organize players for specific practice reps — Red, Blue, White, etc. Your group determines which periods you'll be called for certain drills. Groups are not a ranking, they're an organizational tool.</div>
-      </div>
-    </div>
-
-    <!-- DEPTH CHART (read-only) -->
-    <div class="more-section" id="player-section-depth">
-      <div class="more-section-header">
-        <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Depth Chart</div>
-      </div>
-      <div class="unit-filter" style="margin-bottom:14px">
-        <div class="unit-chip active" onclick="filterUnit('all',this)">All</div>
-        <div class="unit-chip" onclick="filterUnit('offense',this)">Offense</div>
-        <div class="unit-chip" onclick="filterUnit('defense',this)">Defense</div>
-        <div class="unit-chip" onclick="filterUnit('special',this)">Special Teams</div>
-      </div>
-      <div id="player-dc-body">
-        <div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">
-          <div style="font-size:32px;margin-bottom:10px">📋</div>
-          Depth chart not set up yet
-        </div>
-      </div>
-    </div>
-
-    <!-- PLAYER DOCUMENTS -->
-    <div class="more-section" id="player-section-documents">
-      <div class="more-section-header">
-        <div class="more-back-btn" onclick="backToPlayerMenu()">‹</div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Documents</div>
-      </div>
-      <div id="player-doc-list"></div>
-      <div id="player-doc-empty" style="text-align:center;padding:40px 20px;color:var(--fg-3);display:none">
-        <div style="font-size:36px;margin-bottom:12px">📁</div>
-        <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No shared documents yet</div>
-        <div style="font-size:13px">Your coaches haven't shared any documents with players yet.</div>
-      </div>
+    <div id="player-myinfo-page">
+      <!-- Rendered by renderMyInfoPage() -->
     </div>
   </div>
 
@@ -5237,7 +5124,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.20';
+  const APP_VERSION = 'v38.21';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5402,6 +5289,8 @@
     if (role === 'player' && tab === 'schedule') renderPlayerSchedule();
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
+    // Player My Info — always render as single page
+    if (role === 'player' && tab === 'stats') setTimeout(() => renderMyInfoPage(), 50);
   }
 
   function applyDesktopPracticeLayout() {
@@ -16241,7 +16130,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (section === 'standing') renderPlayerStanding();
     if (section === 'documents') docLoadFromSupabase().then(() => renderSharedDocs('players'));
     if (section === 'depth') renderPlayerDepthChart();
-    if (section === 'stats') renderPlayerStats();
+    if (section === 'stats') renderMyInfoPage();
     const tab = document.getElementById('tab-player-more');
     if (tab) tab.scrollTop = 0;
   }
@@ -16311,6 +16200,111 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <div style="font-size:13px;color:var(--fg);margin-bottom:4px">${n.text||n.note||''}</div>
         <div style="font-size:11px;color:var(--fg-3)">${n.date||''} · ${n.coach||'Coach'}</div>
       </div>`).join('');
+  }
+
+  function renderMyInfoPage() {
+    const page = document.getElementById('player-myinfo-page');
+    if (!page) return;
+
+    const name = _sessionUser?.name || '';
+    const player = name ? PLAYERS.find(p => p.name === name) : null;
+    const ds = player?.disciplinaryStatus || 'green';
+    const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
+    const discBg = { green: 'rgba(57,255,20,0.08)', yellow: 'rgba(255,184,0,0.08)', red: 'rgba(255,68,68,0.08)' };
+    const discLabels = { green: 'Good Standing', yellow: 'On Watch', red: 'Disciplinary Contract' };
+    const discIcons = { green: '✅', yellow: '⚠️', red: '🚨' };
+
+    // Group info
+    const playerGroup = player?.group ? TEAM_GROUPS.find(g => g.name === player.group) : null;
+    const groupColor = playerGroup?.color || 'var(--gray-3)';
+    const groupBg = playerGroup?.bg || 'var(--bg-3)';
+
+    // Performance notes
+    const perfNotes = (player?.notes || []);
+
+    page.innerHTML = `
+      <!-- Hero card -->
+      <div class="card" style="padding:20px;margin-bottom:16px;margin-top:16px">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+          <div style="width:56px;height:56px;border-radius:50%;background:var(--team-primary);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--team-primary-text);flex-shrink:0">
+            ${name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+          </div>
+          <div>
+            <div style="font-size:18px;font-weight:700;color:var(--fg)">${name}</div>
+            <div style="font-size:13px;color:var(--gray-2)">${player ? `${player.pos} · ${player.num} · ${player.unit || 'Offense'}` : 'Player'}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:var(--bg-3);border-radius:var(--radius);padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:var(--team-primary)">${player?.num || '—'}</div>
+            <div style="font-size:11px;color:var(--gray-3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Jersey</div>
+          </div>
+          <div style="background:var(--bg-3);border-radius:var(--radius);padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:var(--fg)">${player?.year || '—'}</div>
+            <div style="font-size:11px;color:var(--gray-3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Year</div>
+          </div>
+          <div style="background:var(--bg-3);border-radius:var(--radius);padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:var(--fg)">${player?.height || '—'}</div>
+            <div style="font-size:11px;color:var(--gray-3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Height</div>
+          </div>
+          <div style="background:var(--bg-3);border-radius:var(--radius);padding:12px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:var(--fg)">${player?.weight || '—'}</div>
+            <div style="font-size:11px;color:var(--gray-3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Weight</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group -->
+      <div class="section-label">My Group</div>
+      <div class="card" style="margin-bottom:16px">
+        ${playerGroup ? `
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:50%;background:${groupColor};flex-shrink:0"></div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:${groupColor}">${playerGroup.name} Group</div>
+              <div style="font-size:12px;color:var(--gray-3);margin-top:2px">Assigned by coaching staff</div>
+            </div>
+          </div>` :
+          `<div style="font-size:13px;color:var(--gray-3)">No group assigned yet — your coach will assign you to a practice group.</div>`
+        }
+      </div>
+
+      <!-- Standing -->
+      <div class="section-label">My Standing</div>
+      <div style="background:${discBg[ds]};border:1.5px solid ${discColors[ds]}33;border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:10px">
+        <div style="font-size:28px;line-height:1">${discIcons[ds]}</div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:${discColors[ds]}">${discLabels[ds]}</div>
+          <div style="font-size:12px;color:var(--gray-2);margin-top:3px">Disciplinary status</div>
+        </div>
+      </div>
+      <div class="card" style="padding:0;margin-bottom:16px">
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Eligibility</span><span class="pp-info-value" style="color:var(--team-primary)">✅ Eligible</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">GPA</span><span class="pp-info-value">${player?.gpa || '—'}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Minimum required</span><span class="pp-info-value" style="color:var(--gray-3)">2.0</span></div>
+      </div>
+
+      <!-- Performance notes -->
+      <div class="section-label">Coach Notes</div>
+      ${perfNotes.length ? perfNotes.map(n => `
+        <div class="card" style="margin-bottom:8px">
+          <div style="font-size:13px;color:var(--fg);margin-bottom:4px">${n.text||n.note||''}</div>
+          <div style="font-size:11px;color:var(--fg-3)">${n.date||''} · ${n.coach||'Coach'}</div>
+        </div>`).join('') :
+        `<div class="card" style="margin-bottom:16px">
+          <div style="font-size:13px;color:var(--gray-3)">No notes yet — your coaching staff will add performance notes here throughout the season.</div>
+        </div>`
+      }
+
+      <!-- Physical stats -->
+      <div class="section-label" style="margin-top:8px">Physical Info</div>
+      <div class="card" style="padding:0;margin-bottom:16px">
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Position</span><span class="pp-info-value">${player?.pos || '—'}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Unit</span><span class="pp-info-value">${player?.unit || '—'}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Height</span><span class="pp-info-value">${player?.height || '—'}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Weight</span><span class="pp-info-value">${player?.weight || '—'}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Year</span><span class="pp-info-value">${player?.year || '—'}</span></div>
+      </div>`;
   }
 
   function renderPlayerStanding() {
