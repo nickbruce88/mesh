@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.8';
+  const APP_VERSION = 'v38.9';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8870,24 +8870,24 @@
     // Check Supabase — try each code column separately, track which matched
     let _detectedRole = null;
     try {
-      console.log('[Join] Searching for code:', code);
-      let { data, error } = await db.from('programs').select('*').eq('coach_code', code).maybeSingle();
-      console.log('[Join] coach_code search:', { data: !!data, error });
+      console.log('[Join] Searching for code:', JSON.stringify(code), 'length:', code.length);
+      let { data, error } = await db.from('programs').select('id,player_code,coach_code,parent_code').eq('coach_code', code).maybeSingle();
+      console.log('[Join] coach_code search:', JSON.stringify({ data, error }));
       if (data) { _detectedRole = 'coach'; }
 
       if (!data) {
-        ({ data, error } = await db.from('programs').select('*').eq('player_code', code).maybeSingle());
-        console.log('[Join] player_code search:', { data: !!data, error });
+        ({ data, error } = await db.from('programs').select('id,player_code,coach_code,parent_code').eq('player_code', code).maybeSingle());
+        console.log('[Join] player_code search:', JSON.stringify({ data, error }));
         if (data) { _detectedRole = 'player'; }
       }
       if (!data) {
-        ({ data, error } = await db.from('programs').select('*').eq('parent_code', code).maybeSingle());
-        console.log('[Join] parent_code search:', { data: !!data, error });
+        ({ data, error } = await db.from('programs').select('id,player_code,coach_code,parent_code').eq('parent_code', code).maybeSingle());
+        console.log('[Join] parent_code search:', JSON.stringify({ data, error }));
         if (data) { _detectedRole = 'parent'; }
       }
       if (!data) {
-        ({ data, error } = await db.from('programs').select('*').eq('join_code', code).maybeSingle());
-        console.log('[Join] join_code search:', { data: !!data, error });
+        ({ data, error } = await db.from('programs').select('id,player_code,coach_code,parent_code').eq('join_code', code).maybeSingle());
+        console.log('[Join] join_code search:', JSON.stringify({ data, error }));
         if (data) { _detectedRole = 'coach'; }
       }
       if (error) {
