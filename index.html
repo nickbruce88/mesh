@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v37.3.8';
+  const APP_VERSION = 'v38.1';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8778,34 +8778,36 @@
 
     let program = null;
 
-    // Check Supabase — try each code column separately
+    // Check Supabase — try each code column separately, track which matched
+    let _detectedRole = null;
     try {
       console.log('[Join] Searching for code:', code);
-      // Try coach_code first
       let { data, error } = await db.from('programs').select('*').eq('coach_code', code).maybeSingle();
-      console.log('[Join] coach_code search:', { data, error });
+      console.log('[Join] coach_code search:', { data: !!data, error });
+      if (data) { _detectedRole = 'coach'; }
+
       if (!data) {
-        // Try player_code
         ({ data, error } = await db.from('programs').select('*').eq('player_code', code).maybeSingle());
-        console.log('[Join] player_code search:', { data, error });
+        console.log('[Join] player_code search:', { data: !!data, error });
+        if (data) { _detectedRole = 'player'; }
       }
       if (!data) {
-        // Try parent_code
         ({ data, error } = await db.from('programs').select('*').eq('parent_code', code).maybeSingle());
-        console.log('[Join] parent_code search:', { data, error });
+        console.log('[Join] parent_code search:', { data: !!data, error });
+        if (data) { _detectedRole = 'parent'; }
       }
       if (!data) {
-        // Try legacy join_code
         ({ data, error } = await db.from('programs').select('*').eq('join_code', code).maybeSingle());
-        console.log('[Join] join_code search:', { data, error });
+        console.log('[Join] join_code search:', { data: !!data, error });
+        if (data) { _detectedRole = 'coach'; }
       }
       if (error) {
         console.error('Supabase lookup error:', error);
       } else if (data) {
         program = data;
-        console.log('Program found in Supabase:', data);
+        console.log('[Join] Program found, detected role:', _detectedRole);
       } else {
-        console.log('No program found in Supabase for code:', code);
+        console.log('[Join] No program found for code:', code);
       }
     } catch(e) {
       console.error('Supabase exception:', e);
@@ -8872,16 +8874,9 @@
       select.appendChild(opt);
     });
 
-    // Auto-detect role from which code was entered
-    if (program.player_code && program.player_code === code) {
-      joinSelectedRole = 'player';
-    } else if (program.parent_code && program.parent_code === code) {
-      joinSelectedRole = 'parent';
-    } else if (program.coach_code && program.coach_code === code) {
-      joinSelectedRole = 'coach';
-    } else {
-      joinSelectedRole = null;
-    }
+    // Role detected from which Supabase column matched
+    joinSelectedRole = _detectedRole;
+    console.log('[Join] joinSelectedRole set to:', joinSelectedRole);
 
     document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
 
