@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.9';
+  const APP_VERSION = 'v38.10';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -18059,9 +18059,45 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const userJson = localStorage.getItem('mesh_user');
       const joinCode = localStorage.getItem('mesh_current_program');
 
-      if (!role || !joinCode) {
+      // Players/parents use mesh_program_id directly, coaches use mesh_current_program
+      const programId = localStorage.getItem('mesh_program_id');
+
+      if (!role) {
         console.log('No session found — showing landing screen');
-        return; // Show landing screen as normal
+        return;
+      }
+
+      // If player/parent — look up by program_id directly
+      if ((role === 'player' || role === 'parent') && programId) {
+        console.log('Restoring session — role:', role, 'program_id:', programId);
+        let program = null;
+        try {
+          const { data } = await db.from('programs').select('*').eq('id', programId).maybeSingle();
+          program = data;
+        } catch(e) { console.warn('Program lookup error:', e); }
+        if (!program) { console.log('Program not found'); return; }
+        obProgram.teamName = program.team_name;
+        obProgram.coachCode = program.coach_code;
+        obProgram.playerCode = program.player_code;
+        obProgram.parentCode = program.parent_code;
+        // Continue to app
+        const user = (() => { try { return JSON.parse(localStorage.getItem('mesh_user')||'{}'); } catch(e) { return {}; } })();
+        showScreen('screen-app');
+        buildNav(role);
+        showTab(role, 'home');
+        const nameEl = document.getElementById('player-home-name');
+        if (nameEl && user.name) nameEl.textContent = user.name.split(' ')[0];
+        await loadRosterFromSupabase(programId);
+        await loadPhotoFromSupabase();
+        await loadDrillsFromSupabase();
+        await annLoad();
+        console.log('Session restored successfully');
+        return;
+      }
+
+      if (!joinCode) {
+        console.log('No session found — showing landing screen');
+        return;
       }
 
       console.log('Restoring session — role:', role, 'code:', joinCode);
