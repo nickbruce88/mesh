@@ -5232,7 +5232,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.16';
+  const APP_VERSION = 'v38.17';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5430,11 +5430,10 @@
 
   function getInitialsFromSession() {
     try {
-      const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
-      const name = user.name || '';
-      if (!name) return 'CO';
-      return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-    } catch(e) { return 'CO'; }
+      const name = _sessionUser?.name || JSON.parse(localStorage.getItem('mesh_user') || '{}').name || '';
+      if (!name) return '?';
+      return name.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0,2).toUpperCase();
+    } catch(e) { return '?'; }
   }
 
   // Apply the saved profile photo (or fall back to initials) to any avatar element
