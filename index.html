@@ -3332,6 +3332,7 @@
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Calendar</div>
         <div style="display:flex;gap:6px;margin-left:auto">
+          <button class="btn-sm" onclick="openMaxPrepsImport()">📊 Stats</button>
           <button class="btn-sm" onclick="openImportMenu()">📥 Import</button>
           <button class="btn-sm" onclick="exportCalendar('coach')">📤 Export</button>
         </div>
@@ -5148,7 +5149,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.23';
+  const APP_VERSION = 'v38.26';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -12304,6 +12305,55 @@
 
   // ===== SCHEDULE MANAGEMENT =====
   let SCHEDULE = []; // Array of game objects
+  let GAME_STATS = []; // Array of game stat records
+  let STAT_CATEGORIES = []; // Program-defined stat categories
+
+  // Default stat categories per sport
+  const DEFAULT_STAT_CATEGORIES = {
+    Football: [
+      { key:'rush_yards', label:'Rush Yards', unit:'yds', position_group:['RB','QB','WR'] },
+      { key:'rush_att', label:'Rush Attempts', unit:'', position_group:['RB','QB'] },
+      { key:'rush_td', label:'Rush TDs', unit:'', position_group:['RB','QB','WR'] },
+      { key:'rec_yards', label:'Rec Yards', unit:'yds', position_group:['WR','TE','RB'] },
+      { key:'receptions', label:'Receptions', unit:'', position_group:['WR','TE','RB'] },
+      { key:'rec_td', label:'Rec TDs', unit:'', position_group:['WR','TE','RB'] },
+      { key:'pass_yards', label:'Pass Yards', unit:'yds', position_group:['QB'] },
+      { key:'pass_td', label:'Pass TDs', unit:'', position_group:['QB'] },
+      { key:'pass_att', label:'Pass Att', unit:'', position_group:['QB'] },
+      { key:'pass_comp', label:'Completions', unit:'', position_group:['QB'] },
+      { key:'tackles', label:'Tackles', unit:'', position_group:['DL','LB','DB'] },
+      { key:'sacks', label:'Sacks', unit:'', position_group:['DL','LB'] },
+      { key:'ints', label:'Interceptions', unit:'', position_group:['DB','LB'] },
+      { key:'tfl', label:'TFL', unit:'', position_group:['DL','LB'] },
+    ],
+    Baseball: [
+      { key:'hits', label:'Hits', unit:'' },
+      { key:'rbi', label:'RBIs', unit:'' },
+      { key:'runs', label:'Runs', unit:'' },
+      { key:'hr', label:'Home Runs', unit:'' },
+      { key:'bb', label:'Walks', unit:'' },
+      { key:'so_bat', label:'Strikeouts (Bat)', unit:'' },
+      { key:'innings', label:'Innings Pitched', unit:'IP' },
+      { key:'er', label:'Earned Runs', unit:'' },
+      { key:'so_pitch', label:'Strikeouts (Pitch)', unit:'' },
+      { key:'walks', label:'Walks Allowed', unit:'' },
+    ],
+    Soccer: [
+      { key:'goals', label:'Goals', unit:'' },
+      { key:'assists', label:'Assists', unit:'' },
+      { key:'shots', label:'Shots', unit:'' },
+      { key:'shots_on', label:'Shots on Goal', unit:'' },
+      { key:'saves', label:'Saves', unit:'' },
+    ],
+    Basketball: [
+      { key:'points', label:'Points', unit:'pts' },
+      { key:'rebounds', label:'Rebounds', unit:'reb' },
+      { key:'assists', label:'Assists', unit:'ast' },
+      { key:'steals', label:'Steals', unit:'stl' },
+      { key:'blocks', label:'Blocks', unit:'blk' },
+      { key:'turnovers', label:'Turnovers', unit:'to' },
+    ],
+  };
   let gameLocation = 'home';
   let editingGameId = null;
 
@@ -12438,6 +12488,58 @@
       await db.from('programs').update({ schedule: SCHEDULE }).eq('id', programId);
       console.log('Schedule saved to Supabase');
     } catch(e) { console.error('Schedule save error:', e); }
+  }
+
+  async function loadGameStats(programId) {
+    try {
+      const { data } = await db.from('game_stats').select('*').eq('program_id', programId).order('game_date', { ascending: false });
+      GAME_STATS = data || [];
+    } catch(e) { console.warn('Game stats load error:', e); }
+  }
+
+  async function loadStatCategories(programId) {
+    try {
+      const { data } = await db.from('stat_categories').select('*').eq('program_id', programId);
+      if (data && data.length) {
+        STAT_CATEGORIES = data;
+      } else {
+        // Seed default categories for this sport
+        const sport = obProgram.sport || 'Football';
+        const defaults = DEFAULT_STAT_CATEGORIES[sport] || DEFAULT_STAT_CATEGORIES.Football;
+        const rows = defaults.map(c => ({ ...c, program_id: programId, sport }));
+        const { data: inserted } = await db.from('stat_categories').insert(rows).select();
+        STAT_CATEGORIES = inserted || rows;
+      }
+    } catch(e) { console.warn('Stat categories load error:', e); }
+  }
+
+  async function saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, submittedBy = 'coach') {
+    const status = submittedBy === 'coach' ? 'approved' : 'pending';
+    const rows = Object.entries(stats)
+      .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+      .map(([category, value]) => ({
+        program_id: programId, player_id: playerId,
+        game_id: gameId, game_date: gameDate, opponent,
+        category, value: parseFloat(value), status, submitted_by: submittedBy
+      }));
+    if (!rows.length) return;
+    // Delete existing stats for this player+game first (upsert by replacing)
+    await db.from('game_stats').delete().eq('program_id', programId).eq('player_id', playerId).eq('game_id', gameId).eq('submitted_by', submittedBy);
+    const { error } = await db.from('game_stats').insert(rows);
+    if (error) throw error;
+    await loadGameStats(programId);
+  }
+
+  async function approveGameStat(statId) {
+    await db.from('game_stats').update({ status: 'approved' }).eq('id', statId);
+    const pid = obProgram?.id || localStorage.getItem('mesh_program_id');
+    if (pid) await loadGameStats(pid);
+  }
+
+  async function rejectGameStat(statId) {
+    await db.from('game_stats').update({ status: 'rejected' }).eq('id', statId);
+    const pid = obProgram?.id || localStorage.getItem('mesh_program_id');
+    if (pid) await loadGameStats(pid);
   }
 
   async function loadScheduleFromSupabase(programId) {
@@ -16466,15 +16568,65 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Minimum required</span><span class="pp-info-value" style="color:var(--gray-3)">2.0</span></div>
       </div>
 
-      <!-- Performance notes -->
-      <div class="section-label">Coach Notes</div>
+      <!-- Season Stats -->
+      <div class="section-label">Season Stats</div>
+      ${(() => {
+        const myStats = player ? GAME_STATS.filter(s => (s.player_id === player.id || s.player_id === player.db_id) && s.status === 'approved') : [];
+        if (!myStats.length) return `<div class="card" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:13px;color:var(--gray-3)">No stats logged yet.</div>
+            <button onclick="openSubmitStats()" style="font-size:12px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);padding:5px 12px;cursor:pointer">+ Submit stats</button>
+          </div>
+        </div>`;
+
+        // Season totals per category
+        const totals = {};
+        myStats.forEach(s => { totals[s.category] = (totals[s.category]||0) + s.value; });
+        const cats = STAT_CATEGORIES.filter(c => totals[c.key] !== undefined);
+
+        // Per game breakdown
+        const byGame = {};
+        myStats.forEach(s => {
+          const key = s.game_id || s.game_date;
+          if (!byGame[key]) byGame[key] = { date: s.game_date, opponent: s.opponent, stats: {} };
+          byGame[key].stats[s.category] = (byGame[key].stats[s.category]||0) + s.value;
+        });
+        const games = Object.values(byGame).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div></div>
+            <button onclick="openSubmitStats()" style="font-size:12px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);padding:5px 12px;cursor:pointer">+ Submit stats</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
+            ${cats.map(c => `<div class="card" style="text-align:center;padding:12px">
+              <div style="font-size:22px;font-weight:800;color:var(--team-primary)">${totals[c.key]}</div>
+              <div style="font-size:10px;color:var(--fg-3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">${c.label}</div>
+            </div>`).join('')}
+          </div>
+          <div class="section-label">Per Game</div>
+          ${games.map(g => `<div class="card" style="margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <div style="font-size:13px;font-weight:700">${g.opponent||'Game'}</div>
+              <div style="font-size:11px;color:var(--fg-3)">${g.date||''}</div>
+            </div>
+            ${cats.filter(c => g.stats[c.key]!=null).map(c => `
+              <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)">
+                <span style="color:var(--fg-2)">${c.label}</span>
+                <span style="font-weight:600">${g.stats[c.key]}</span>
+              </div>`).join('')}
+          </div>`).join('')}`;
+      })()}
+
+      <!-- Coach Notes -->
+      <div class="section-label" style="margin-top:8px">Coach Notes</div>
       ${perfNotes.length ? perfNotes.map(n => `
         <div class="card" style="margin-bottom:8px">
           <div style="font-size:13px;color:var(--fg);margin-bottom:4px">${n.text||n.note||''}</div>
           <div style="font-size:11px;color:var(--fg-3)">${n.date||''} · ${n.coach||'Coach'}</div>
         </div>`).join('') :
         `<div class="card" style="margin-bottom:16px">
-          <div style="font-size:13px;color:var(--gray-3)">No notes yet — your coaching staff will add performance notes here throughout the season.</div>
+          <div style="font-size:13px;color:var(--gray-3)">No notes yet.</div>
         </div>`
       }
 
@@ -16487,6 +16639,73 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Weight</span><span class="pp-info-value">${player?.weight || '—'}</span></div>
         <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Year</span><span class="pp-info-value">${player?.year || '—'}</span></div>
       </div>`;
+  }
+
+  function openSubmitStats() {
+    const overlay = document.createElement('div');
+    overlay.id = 'submit-stats-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+
+    const games = [...SCHEDULE].filter(g => new Date(g.date) < new Date() && (g.tag === 'game' || g.tag === 'scrimmage')).slice(0, 10);
+    const cats = STAT_CATEGORIES;
+    const player = PLAYERS.find(p => p.name === _sessionUser?.name);
+
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:16px;font-weight:700">Submit My Stats</div>
+            <div style="font-size:12px;color:var(--fg-3)">Your coach will review and approve</div>
+          </div>
+          <div onclick="document.getElementById('submit-stats-overlay').remove()" style="cursor:pointer;font-size:20px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">GAME</div>
+          <select id="submit-stats-game" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
+            <option value="">Select a game...</option>
+            ${games.map(g => `<option value="${g.id}" data-date="${g.date}" data-opp="${g.opponent||g.title||''}">${g.opponent||g.title||'Game'} · ${g.date}</option>`).join('')}
+          </select>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            ${cats.map(c => `
+              <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px">
+                <div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${c.label}${c.unit?' ('+c.unit+')':''}</div>
+                <input type="number" step="0.5" min="0" data-cat="${c.key}" placeholder="0"
+                  style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:16px;font-weight:700;padding:2px 0;outline:none">
+              </div>`).join('')}
+          </div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid var(--border)">
+          <button onclick="submitPlayerStats()" class="btn-primary" style="width:100%;font-size:15px;padding:13px">Submit for approval</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+  }
+
+  async function submitPlayerStats() {
+    const sel = document.getElementById('submit-stats-game');
+    const gameId = sel?.value;
+    const opt = sel?.options[sel.selectedIndex];
+    if (!gameId) { showToast('Please select a game'); return; }
+    const gameDate = opt?.dataset.date || '';
+    const opponent = opt?.dataset.opp || '';
+    const inputs = document.querySelectorAll('#submit-stats-overlay input[data-cat]');
+    const stats = {};
+    inputs.forEach(inp => { if (inp.value !== '') stats[inp.dataset.cat] = inp.value; });
+    if (!Object.keys(stats).length) { showToast('Enter at least one stat'); return; }
+    const player = PLAYERS.find(p => p.name === _sessionUser?.name);
+    if (!player) { showToast('Could not find your player profile'); return; }
+    const programId = obProgram?.id || localStorage.getItem('mesh_program_id');
+    const playerId = player.db_id || player.id;
+    try {
+      await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'player');
+      showToast('Stats submitted — awaiting coach approval');
+      document.getElementById('submit-stats-overlay')?.remove();
+      renderMyInfoPage(); // refresh
+    } catch(e) { showToast('Error submitting stats'); console.error(e); }
   }
 
   function renderPlayerStanding() {
@@ -16667,6 +16886,369 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     container.innerHTML = html;
   }
 
+  function openMaxPrepsImport() {
+    const existing = document.getElementById('maxpreps-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'maxpreps-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:580px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:16px;font-weight:700">Import Stats from MaxPreps</div>
+            <div style="font-size:12px;color:var(--fg-3)">Paste a MaxPreps stat export or any CSV with player stats</div>
+          </div>
+          <div onclick="document.getElementById('maxpreps-overlay').remove()" style="cursor:pointer;font-size:20px;color:var(--fg-3)">✕</div>
+        </div>
+
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:6px">GAME</div>
+          <select id="mp-game-select" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
+            <option value="">Select game these stats are from...</option>
+            ${[...SCHEDULE].filter(g => g.tag === 'game' || g.tag === 'scrimmage').map(g =>
+              `<option value="${g.id}" data-date="${g.date}" data-opp="${g.opponent||g.title||''}">${g.opponent||g.title||'Game'} · ${g.date||''}</option>`
+            ).join('')}
+          </select>
+        </div>
+
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:12px;font-weight:600;color:var(--fg-2)">PASTE CSV DATA</div>
+            <a href="https://www.maxpreps.com" target="_blank" style="font-size:11px;color:var(--team-primary)">How to export from MaxPreps ↗</a>
+          </div>
+          <textarea id="mp-csv-input" rows="6" placeholder="Paste CSV data here...
+Example:
+Player,#,Pos,Rush Att,Rush Yards,Rush TD,Rec,Rec Yards,Rec TD
+Dan Smith,15,RB,12,87,1,3,24,0
+Jake Jones,8,QB,5,22,0,0,0,0"
+            style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:12px;font-family:monospace;padding:10px;resize:vertical;line-height:1.5"></textarea>
+        </div>
+
+        <div id="mp-preview" style="flex:1;overflow-y:auto;padding:0 20px;display:none"></div>
+
+        <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px">
+          <button onclick="previewMaxPreps()" class="btn-sm" style="flex:1;padding:10px;font-size:13px">Preview →</button>
+          <button onclick="importMaxPreps()" id="mp-import-btn" class="btn-primary" style="flex:2;font-size:14px;padding:12px;display:none">Import stats</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+  }
+
+  // Known MaxPreps column mappings → our stat category keys
+  const MAXPREPS_COL_MAP = {
+    // Rushing
+    'rush att': 'rush_att', 'rush attempts': 'rush_att', 'car': 'rush_att', 'carries': 'rush_att',
+    'rush yds': 'rush_yards', 'rush yards': 'rush_yards', 'rushing yards': 'rush_yards', 'yds': 'rush_yards',
+    'rush td': 'rush_td', 'rush tds': 'rush_td', 'rushing td': 'rush_td', 'rushing tds': 'rush_td',
+    // Receiving
+    'rec': 'receptions', 'receptions': 'receptions', 'catches': 'receptions',
+    'rec yds': 'rec_yards', 'rec yards': 'rec_yards', 'receiving yards': 'rec_yards',
+    'rec td': 'rec_td', 'rec tds': 'rec_td', 'receiving td': 'rec_td',
+    // Passing
+    'pass att': 'pass_att', 'att': 'pass_att', 'pass attempts': 'pass_att',
+    'comp': 'pass_comp', 'completions': 'pass_comp', 'pass comp': 'pass_comp',
+    'pass yds': 'pass_yards', 'pass yards': 'pass_yards', 'passing yards': 'pass_yards',
+    'pass td': 'pass_td', 'pass tds': 'pass_td', 'passing tds': 'pass_td', 'td': 'pass_td',
+    'int': 'ints',
+    // Defense
+    'tackles': 'tackles', 'tkl': 'tackles', 'total tackles': 'tackles',
+    'sacks': 'sacks', 'sck': 'sacks',
+    'tfl': 'tfl', 'tackles for loss': 'tfl',
+    // Baseball
+    'hits': 'hits', 'h': 'hits',
+    'rbi': 'rbi', 'rbis': 'rbi',
+    'runs': 'runs', 'r': 'runs',
+    'hr': 'hr', 'home runs': 'hr',
+    'bb': 'bb', 'walks': 'bb',
+    'k': 'so_bat', 'so': 'so_bat', 'strikeouts': 'so_bat',
+    'ip': 'innings', 'innings pitched': 'innings',
+    'er': 'er', 'earned runs': 'er',
+    // Soccer
+    'goals': 'goals', 'g': 'goals',
+    'assists': 'assists', 'a': 'assists',
+    'shots': 'shots', 'sh': 'shots',
+    'shots on goal': 'shots_on', 'sog': 'shots_on',
+    'saves': 'saves', 'sv': 'saves',
+    // Basketball
+    'points': 'points', 'pts': 'points',
+    'rebounds': 'rebounds', 'reb': 'rebounds',
+    'ast': 'assists',
+    'stl': 'steals', 'steals': 'steals',
+    'blk': 'blocks', 'blocks': 'blocks',
+    'to': 'turnovers', 'turnovers': 'turnovers',
+  };
+
+  let _mpParsed = null; // store parsed preview data
+
+  function parseMaxPrepsCSV(text) {
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return null;
+
+    // Parse headers
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+    const statCols = []; // { colIdx, statKey, label }
+
+    // Find player name column
+    const nameIdx = headers.findIndex(h => ['player','name','athlete'].includes(h.toLowerCase()));
+    if (nameIdx < 0) return { error: 'Could not find a "Player" or "Name" column.' };
+
+    // Map remaining columns to stat keys
+    headers.forEach((h, i) => {
+      if (i === nameIdx) return;
+      const mapped = MAXPREPS_COL_MAP[h.toLowerCase()];
+      if (mapped) statCols.push({ colIdx: i, statKey: mapped, label: h });
+    });
+
+    if (!statCols.length) return { error: 'No recognizable stat columns found. Make sure you copied the header row.' };
+
+    // Parse rows
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cells = lines[i].split(',').map(c => c.trim().replace(/"/g,''));
+      const playerName = cells[nameIdx];
+      if (!playerName) continue;
+
+      // Try to match to roster
+      const matched = PLAYERS.find(p => p.name?.toLowerCase() === playerName.toLowerCase()) ||
+                      PLAYERS.find(p => p.name?.toLowerCase().includes(playerName.toLowerCase().split(' ')[0]));
+
+      const stats = {};
+      statCols.forEach(sc => {
+        const val = parseFloat(cells[sc.colIdx]);
+        if (!isNaN(val)) stats[sc.statKey] = val;
+      });
+
+      rows.push({ csvName: playerName, matched, stats });
+    }
+
+    return { headers, statCols, rows };
+  }
+
+  function previewMaxPreps() {
+    const text = document.getElementById('mp-csv-input')?.value?.trim();
+    if (!text) { showToast('Paste CSV data first'); return; }
+
+    const result = parseMaxPrepsCSV(text);
+    const preview = document.getElementById('mp-preview');
+    const importBtn = document.getElementById('mp-import-btn');
+
+    if (!result) { showToast('Could not parse CSV — check format'); return; }
+    if (result.error) { showToast(result.error); return; }
+
+    _mpParsed = result;
+    preview.style.display = 'block';
+    importBtn.style.display = 'block';
+
+    const matched = result.rows.filter(r => r.matched);
+    const unmatched = result.rows.filter(r => !r.matched);
+
+    preview.innerHTML = `
+      <div style="padding:14px 0 8px">
+        <div style="font-size:12px;font-weight:700;color:var(--fg-2);margin-bottom:6px">
+          STAT COLUMNS DETECTED (${result.statCols.length})
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+          ${result.statCols.map(sc => {
+            const cat = STAT_CATEGORIES.find(c => c.key === sc.statKey);
+            return `<span style="font-size:11px;padding:3px 8px;border-radius:10px;background:var(--team-primary-glow-sm);color:var(--team-primary);font-weight:600">
+              ${sc.label} → ${cat?.label||sc.statKey}
+            </span>`;
+          }).join('')}
+        </div>
+
+        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">
+          ✓ MATCHED TO ROSTER (${matched.length})
+        </div>
+        ${matched.map(r => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
+            <span style="color:var(--fg)">${r.matched.name} <span style="color:var(--fg-3)">(${r.matched.pos||''} ${r.matched.num||''})</span></span>
+            <span style="color:var(--fg-3)">${Object.entries(r.stats).map(([k,v])=>{
+              const cat=STAT_CATEGORIES.find(c=>c.key===k); return (cat?.label||k)+': '+v;
+            }).join(' · ')}</span>
+          </div>`).join('')}
+
+        ${unmatched.length ? `
+          <div style="font-size:12px;font-weight:700;color:var(--amber);margin-top:10px;margin-bottom:6px">
+            ⚠ NOT MATCHED (${unmatched.length}) — will be skipped
+          </div>
+          ${unmatched.map(r => `<div style="font-size:12px;color:var(--fg-3);padding:4px 0">${r.csvName}</div>`).join('')}
+        ` : ''}
+      </div>`;
+  }
+
+  async function importMaxPreps() {
+    if (!_mpParsed) { showToast('Preview first'); return; }
+    const sel = document.getElementById('mp-game-select');
+    const gameId = sel?.value;
+    const opt = sel?.options[sel.selectedIndex];
+    if (!gameId) { showToast('Please select a game'); return; }
+    const gameDate = opt?.dataset.date || '';
+    const opponent = opt?.dataset.opp || '';
+    const programId = obProgram?.id || localStorage.getItem('mesh_program_id');
+    if (!programId) { showToast('No program found'); return; }
+
+    const btn = document.getElementById('mp-import-btn');
+    btn.textContent = 'Importing…'; btn.disabled = true;
+
+    let imported = 0;
+    const matched = _mpParsed.rows.filter(r => r.matched && Object.keys(r.stats).length);
+
+    for (const row of matched) {
+      const playerId = row.matched.db_id || row.matched.id;
+      try {
+        await saveGameStat(programId, playerId, gameId, gameDate, opponent, row.stats, 'coach');
+        imported++;
+      } catch(e) { console.warn('Import error for', row.matched.name, e); }
+    }
+
+    showToast(`${imported} player${imported !== 1 ? 's' : ''} imported ✓`);
+    document.getElementById('maxpreps-overlay')?.remove();
+    _mpParsed = null;
+  }
+
+  function openLogStats(gameId, gameDate, encodedOpponent) {
+    const opponent = decodeURIComponent(encodedOpponent);
+    const overlay = document.createElement('div');
+    overlay.id = 'log-stats-overlay';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+
+    // Build player selector + stat inputs
+    const players = [...PLAYERS].sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:16px;font-weight:700">Log Game Stats</div>
+            <div style="font-size:12px;color:var(--fg-3)">${opponent} · ${gameDate}</div>
+          </div>
+          <div onclick="document.getElementById('log-stats-overlay').remove()" style="cursor:pointer;font-size:20px;color:var(--fg-3)">✕</div>
+        </div>
+
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">PLAYER</div>
+          <select id="log-stats-player" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
+            <option value="">Select a player...</option>
+            ${players.map(p => `<option value="${p.id||p.db_id}">${p.name} — ${p.pos||''} ${p.num||''}</option>`).join('')}
+          </select>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:16px 20px" id="log-stats-cats">
+          <div style="color:var(--fg-3);font-size:13px;text-align:center;padding:20px">Select a player to see stat categories</div>
+        </div>
+
+        <div style="padding:14px 20px;border-top:1px solid var(--border)">
+          <button onclick="submitLogStats('${gameId}','${gameDate}','${encodedOpponent}')" class="btn-primary" style="width:100%;font-size:15px;padding:13px">Save stats</button>
+          <div id="log-stats-pending-section" style="margin-top:12px"></div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    // Show pending submissions for this game
+    renderPendingStats(gameId, document.getElementById('log-stats-pending-section'));
+
+    // On player change, show relevant stat categories
+    document.getElementById('log-stats-player').addEventListener('change', function() {
+      const pid = this.value;
+      const player = PLAYERS.find(p => (p.id||p.db_id) === pid);
+      const cats = STAT_CATEGORIES;
+      const catsDiv = document.getElementById('log-stats-cats');
+      if (!pid || !cats.length) { catsDiv.innerHTML = '<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:20px">No stat categories set up yet.</div>'; return; }
+
+      // Filter to player's position if available
+      const pos = player?.pos || '';
+      const relevant = cats.filter(c => !c.position_group?.length || c.position_group.includes(pos));
+      const rest = cats.filter(c => c.position_group?.length && !c.position_group.includes(pos));
+
+      // Get existing stats for this player+game
+      const existing = {};
+      GAME_STATS.filter(s => s.player_id === pid && s.game_id === '${gameId}' && s.submitted_by === 'coach')
+        .forEach(s => existing[s.category] = s.value);
+
+      const renderCatGroup = (cats, label) => cats.length ? `
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin:12px 0 8px">${label}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${cats.map(c => `
+            <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px">
+              <div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${c.label}${c.unit?' ('+c.unit+')':''}</div>
+              <input type="number" step="0.5" min="0" data-cat="${c.key}" value="${existing[c.key]??''}" placeholder="0"
+                style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:16px;font-weight:700;padding:2px 0;outline:none">
+            </div>`).join('')}
+        </div>` : '';
+
+      catsDiv.innerHTML = renderCatGroup(relevant, 'Relevant to position') + renderCatGroup(rest, 'Other categories');
+    });
+  }
+
+  function renderPendingStats(gameId, container) {
+    if (!container) return;
+    const pending = GAME_STATS.filter(s => s.game_id === gameId && s.status === 'pending');
+    if (!pending.length) { container.innerHTML = ''; return; }
+
+    // Group by player
+    const byPlayer = {};
+    pending.forEach(s => {
+      if (!byPlayer[s.player_id]) byPlayer[s.player_id] = [];
+      byPlayer[s.player_id].push(s);
+    });
+
+    container.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px">⏳ Pending player submissions</div>
+      ${Object.entries(byPlayer).map(([pid, stats]) => {
+        const player = PLAYERS.find(p => (p.id||p.db_id) === pid);
+        return `<div style="background:rgba(255,184,0,0.08);border:1px solid rgba(255,184,0,0.2);border-radius:var(--radius);padding:10px;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px">${player?.name||'Player'}</div>
+          <div style="font-size:12px;color:var(--fg-2);margin-bottom:8px">${stats.map(s => {
+            const cat = STAT_CATEGORIES.find(c => c.key === s.category);
+            return `${cat?.label||s.category}: ${s.value}`;
+          }).join(' · ')}</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="approveAllPlayerStats('${pid}','${gameId}')" style="flex:1;padding:6px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer">✓ Approve</button>
+            <button onclick="rejectAllPlayerStats('${pid}','${gameId}')" style="flex:1;padding:6px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--fg-3);cursor:pointer">✗ Reject</button>
+          </div>
+        </div>`;
+      }).join('')}`;
+  }
+
+  async function approveAllPlayerStats(playerId, gameId) {
+    const pending = GAME_STATS.filter(s => s.player_id === playerId && s.game_id === gameId && s.status === 'pending');
+    for (const s of pending) await approveGameStat(s.id);
+    showToast('Stats approved ✓');
+    const el = document.getElementById('log-stats-overlay');
+    if (el) el.remove();
+  }
+
+  async function rejectAllPlayerStats(playerId, gameId) {
+    const pending = GAME_STATS.filter(s => s.player_id === playerId && s.game_id === gameId && s.status === 'pending');
+    for (const s of pending) await rejectGameStat(s.id);
+    showToast('Stats rejected');
+    const el = document.getElementById('log-stats-overlay');
+    if (el) el.remove();
+  }
+
+  async function submitLogStats(gameId, gameDate, encodedOpponent) {
+    const opponent = decodeURIComponent(encodedOpponent);
+    const playerId = document.getElementById('log-stats-player')?.value;
+    if (!playerId) { showToast('Please select a player'); return; }
+    const inputs = document.querySelectorAll('#log-stats-cats input[data-cat]');
+    const stats = {};
+    inputs.forEach(inp => { if (inp.value !== '') stats[inp.dataset.cat] = inp.value; });
+    if (!Object.keys(stats).length) { showToast('Enter at least one stat'); return; }
+    const programId = obProgram?.id || localStorage.getItem('mesh_program_id');
+    try {
+      await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'coach');
+      showToast('Stats saved ✓');
+      document.getElementById('log-stats-overlay')?.remove();
+    } catch(e) { showToast('Error saving stats'); console.error(e); }
+  }
+
   function showCalDayDetail(dateStr) {
     const dayEvents = SCHEDULE.filter(e => e.date === dateStr)
       .sort((a,b) => (a.time||'').localeCompare(b.time||''));
@@ -16691,7 +17273,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
           <div style="font-size:10px;padding:2px 7px;border-radius:10px;background:${tagColor(e.tag||'other')}22;color:${tagColor(e.tag||'other')};font-weight:600">${tagLabel(e.tag||'other')}</div>
-          <div style="display:flex;gap:4px">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            ${new Date(dateStr) < new Date() && (e.tag === 'game' || e.tag === 'scrimmage') ? `<div onclick="document.getElementById('cal-day-detail-overlay').remove();openLogStats('${e.id}','${dateStr}',encodeURIComponent(e.opponent||e.title||''))" style="font-size:10px;color:var(--green);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--green)">📊 Log stats</div>` : ''}
             <div onclick="document.getElementById('cal-day-detail-overlay').remove();openEditCalEvent('${e.id}')" style="font-size:10px;color:var(--team-primary);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--team-primary)">Edit</div>
             <div onclick="deleteCalEvent('${e.id}');document.getElementById('cal-day-detail-overlay').remove()" style="font-size:10px;color:var(--fg-3);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">Remove</div>
           </div>
@@ -18259,6 +18842,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     await loadInventoryFromSupabase(programId);
     await loadDCFromSupabase(programId);
     await loadScheduleFromSupabase(programId);
+    await loadGameStats(programId);
+    await loadStatCategories(programId);
     subscribeToPlayers(programId);
 
     // Render announcements for correct role
