@@ -5163,7 +5163,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.30';
+  const APP_VERSION = 'v38.31';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -9289,9 +9289,9 @@
           const newPlayer = {
             id: p.id, db_id: p.id,
             name: p.name, num: p.num, pos: p.pos,
-            unit: p.unit, year: p.year, height: p.height, weight: p.weight,
+            unit: p.unit || '', year: p.year || '', height: p.height || '', weight: p.weight || '',
             gpa: p.gpa || '—', status: p.status || 'Active',
-            group: p.group_name || '',
+            group: (p.group_name && p.group_name !== 'null') ? p.group_name : '',
             disciplinaryStatus: p.disciplinary_status || 'green',
             notes: [], discipline: [], academic: [],
             parent: p.parent_name || '', parentPhone: p.parent_phone || '', parentEmail: p.parent_email || '',
@@ -14623,7 +14623,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <div class="roster-num">${formatNum(p.num)}</div>
         <div class="roster-info">
           <div class="roster-name">${p.name}</div>
-          <div class="roster-sub">${p.pos} · ${p.year} · ${p.unit}${noteCount > 0 ? ` · <span style="color:var(--team-primary)">${noteCount} note${noteCount>1?'s':''}</span>` : ''}</div>
+          <div class="roster-sub">${p.pos} · ${p.year}${p.unit && p.unit !== 'null' ? ' · ' + p.unit : ''}${noteCount > 0 ? ' · ' + noteCount + ' note' + (noteCount>1?'s':'') : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${discStatus !== 'green' ? `<span style="font-size:14px;font-weight:700;color:${discColors[discStatus]};line-height:1" title="${discStatusLabel(discStatus)}">⚠</span>` : ''}
@@ -14785,7 +14785,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       <div class="pp-info-row"><span class="pp-info-label">GPA</span><span class="pp-info-value" style="color:${player.gpa && parseFloat(player.gpa) < 2.7 ? 'var(--red)' : 'var(--fg)'}">${player.gpa || '—'}</span></div>`;
 
     document.getElementById('pp-status-rows').innerHTML = `
-      <div class="pp-info-row"><span class="pp-info-label">Eligibility status</span><span class="pp-info-value">${(!player.gpa || parseFloat(player.gpa) >= 2.0) ? '✅ Eligible' : '❌ Ineligible'}</span></div>
+      <div class="pp-info-row"><span class="pp-info-label">Eligibility status</span><span class="pp-info-value">${(!player.gpa || player.gpa === '—' || player.gpa === '' || isNaN(parseFloat(player.gpa)) || parseFloat(player.gpa) >= 2.0) ? '✅ Eligible' : '❌ Ineligible'}</span></div>
       <div class="pp-info-row"><span class="pp-info-label">Practice status</span><span class="pp-info-value">${player.status}</span></div>
       <div class="pp-info-row"><span class="pp-info-label">Disciplinary status</span><span class="disc-status-badge ${player.disciplinaryStatus || 'green'}">${discStatusLabel(player.disciplinaryStatus || 'green')}</span></div>
       <div class="pp-info-row"><span class="pp-info-label">Discipline incidents</span><span class="pp-info-value" style="color:${player.discipline.length > 0 ? 'var(--amber)' : 'var(--gray-2)'}">${player.discipline.length > 0 ? player.discipline.length + ' on record' : 'None'}</span></div>`;
