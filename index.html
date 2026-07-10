@@ -5163,7 +5163,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.33';
+  const APP_VERSION = 'v38.34';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -16331,12 +16331,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function renderPlayerDepthChart() {
-    console.log('[PlayerDC] DC_DATA:', JSON.stringify({
-      offense: (DC_DATA.offense||[]).length,
-      defense: (DC_DATA.defense||[]).length,
-      special: (DC_DATA.special||[]).length
-    }));
-    console.log('[PlayerDC] PLAYERS:', PLAYERS.length);
+
     const moreTab = document.getElementById('tab-player-more');
     if (!moreTab) return;
 
@@ -16378,70 +16373,66 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         { key: 'defense', label: 'Defense', data: DC_DATA.defense || [] },
         { key: 'special', label: 'Special Teams', data: DC_DATA.special || [] },
       ];
-
       const filtered = unitFilter === 'all' ? units : units.filter(u => u.key === unitFilter);
 
-      body.innerHTML = `
-        <div style="padding:16px 0 8px">
-          <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px">Depth Chart</div>
-          <div style="font-size:13px;color:var(--fg-2);margin-bottom:10px">${obProgram.teamName||''}</div>
+      // Build HTML using string concatenation to avoid nested backtick issues
+      let html = '<div style="padding:16px 0 8px">';
+      html += '<div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px">Depth Chart</div>';
+      html += '<div style="font-size:13px;color:var(--fg-2);margin-bottom:10px">' + (obProgram.teamName||'') + '</div>';
 
-          <!-- Level selector -->
-          <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-            ${['Varsity','JV','Freshman'].map(l => `
-              <button onclick="window._playerDCLevel='${l}';renderPlayerDepthChart()"
-                style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid ${l===levelFilter?'var(--team-primary)':'var(--border)'};background:${l===levelFilter?'var(--team-primary-glow-sm)':'transparent'};color:${l===levelFilter?'var(--team-primary)':'var(--fg-2)'};cursor:pointer">
-                ${l}
-              </button>`).join('')}
-          </div>
+      // Level selector
+      html += '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">';
+      ['Varsity','JV','Freshman'].forEach(l => {
+        const active = l === levelFilter;
+        html += '<button onclick="window._playerDCLevel=\'' + l + '\';renderPlayerDepthChart()"'
+          + ' style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid '
+          + (active ? 'var(--team-primary)' : 'var(--border)') + ';background:'
+          + (active ? 'var(--team-primary-glow-sm)' : 'transparent') + ';color:'
+          + (active ? 'var(--team-primary)' : 'var(--fg-2)') + '">' + l + '</button>';
+      });
+      html += '</div>';
 
-          <!-- Unit filter -->
-          <div class="unit-filter" style="margin-bottom:14px">
-            ${[['all','All'],['offense','Offense'],['defense','Defense'],['special','Special Teams']].map(([k,l]) => `
-              <div class="unit-chip${k===unitFilter?' active':''}" onclick="window._playerDCUnit='${k}';renderPlayerDepthChart()">${l}</div>`).join('')}
-          </div>
-        </div>
+      // Unit filter
+      html += '<div class="unit-filter" style="margin-bottom:14px">';
+      [['all','All'],['offense','Offense'],['defense','Defense'],['special','Special Teams']].forEach(([k,l]) => {
+        html += '<div class="unit-chip' + (k===unitFilter?' active':'') + '"'
+          + ' onclick="window._playerDCUnit=\'' + k + '\';renderPlayerDepthChart()">' + l + '</div>';
+      });
+      html += '</div></div>';
 
-        ${filtered.map(unit => {
-          if (!unit.data.length) return '';
-          return `<div style="margin-bottom:20px">
-            <div class="section-label">${unit.label}</div>
-            <div class="dc-grid">
-              ${unit.data.map(pos => {
-                const players = (pos.players||[]).map(pid => {
-                  return PLAYERS.find(p => p.id===pid || p.db_id===pid);
-                }).filter(Boolean);
-                return `<div class="dc-pos-card">
-                  <div class="dc-pos-label">${pos.pos}</div>
-                  ${players.length ? players.map((p,i) => `
-                    <div class="dc-player-row" style="cursor:default">
-                      <div class="dc-rank">${i+1}</div>
-                      <div class="dc-player-info">
-                        <div class="dc-player-name">${p.name}</div>
-                        <div class="dc-player-sub">${p.num||''} · ${p.year||''}</div>
-                      </div>
-                    </div>`).join('') :
-                    `<div style="font-size:11px;color:var(--fg-3);padding:8px 0;text-align:center">Empty</div>`}
-                </div>`;
-              }).join('')}
-            </div>
-          </div>`;
-        }).join('')}`;
+      // Positions
+      filtered.forEach(unit => {
+        if (!unit.data.length) return;
+        html += '<div style="margin-bottom:20px">';
+        html += '<div class="section-label">' + unit.label + '</div>';
+        html += '<div class="dc-grid">';
+        unit.data.forEach(pos => {
+          const players = (pos.players||[]).map(pid => PLAYERS.find(p => p.id===pid || p.db_id===pid)).filter(Boolean);
+          html += '<div class="dc-pos-card">';
+          html += '<div class="dc-pos-label">' + pos.pos + '</div>';
+          if (players.length) {
+            players.forEach((p, i) => {
+              html += '<div class="dc-player-row" style="cursor:default">'
+                + '<div class="dc-rank">' + (i+1) + '</div>'
+                + '<div class="dc-player-info">'
+                + '<div class="dc-player-name">' + p.name + '</div>'
+                + '<div class="dc-player-sub">' + (p.num||'') + (p.year ? ' · ' + p.year : '') + '</div>'
+                + '</div></div>';
+            });
+          } else {
+            html += '<div style="font-size:11px;color:var(--fg-3);padding:8px 0;text-align:center">Empty</div>';
+          }
+          html += '</div>';
+        });
+        html += '</div></div>';
+      });
+
+      body.innerHTML = html;
     };
 
     // Use persisted unit/level filters
     unitFilter = window._playerDCUnit || 'all';
     levelFilter = window._playerDCLevel || 'Varsity';
-
-    // Debug: check if player IDs match
-    const samplePos = (DC_DATA.offense||[])[0];
-    if (samplePos && samplePos.players?.length) {
-      const samplePid = samplePos.players[0];
-      const found = PLAYERS.find(p => p.id === samplePid || p.db_id === samplePid);
-      console.log('[PlayerDC] Sample pos:', samplePos.pos, 'players:', samplePos.players.slice(0,2));
-      console.log('[PlayerDC] Sample player ID:', samplePid, 'found in PLAYERS:', !!found);
-      if (PLAYERS.length) console.log('[PlayerDC] PLAYERS[0] id:', PLAYERS[0].id, 'db_id:', PLAYERS[0].db_id);
-    }
 
     renderDC();
   }
