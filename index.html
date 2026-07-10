@@ -16331,6 +16331,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function renderPlayerDepthChart() {
+    console.log('[PlayerDC] DC_DATA:', JSON.stringify({
+      offense: (DC_DATA.offense||[]).length,
+      defense: (DC_DATA.defense||[]).length,
+      special: (DC_DATA.special||[]).length
+    }));
+    console.log('[PlayerDC] PLAYERS:', PLAYERS.length);
     const moreTab = document.getElementById('tab-player-more');
     if (!moreTab) return;
 
