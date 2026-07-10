@@ -5163,7 +5163,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.34';
+  const APP_VERSION = 'v38.35';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -16407,16 +16407,23 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         html += '<div class="section-label">' + unit.label + '</div>';
         html += '<div class="dc-grid">';
         unit.data.forEach(pos => {
-          const players = (pos.players||[]).map(pid => PLAYERS.find(p => p.id===pid || p.db_id===pid)).filter(Boolean);
+          // DC_DATA stores player objects {num, name} directly
+          const players = (pos.players||[]).map(pid => {
+            if (pid && typeof pid === 'object') return pid; // already an object
+            return PLAYERS.find(p => p.id===pid || p.db_id===pid); // fallback for ID format
+          }).filter(Boolean);
           html += '<div class="dc-pos-card">';
           html += '<div class="dc-pos-label">' + pos.pos + '</div>';
           if (players.length) {
             players.forEach((p, i) => {
+              const name = p.name || '';
+              const num = p.num || '';
+              const year = p.year || '';
               html += '<div class="dc-player-row" style="cursor:default">'
                 + '<div class="dc-rank">' + (i+1) + '</div>'
                 + '<div class="dc-player-info">'
-                + '<div class="dc-player-name">' + p.name + '</div>'
-                + '<div class="dc-player-sub">' + (p.num||'') + (p.year ? ' · ' + p.year : '') + '</div>'
+                + '<div class="dc-player-name">' + name + '</div>'
+                + '<div class="dc-player-sub">' + num + (year ? ' · ' + year : '') + '</div>'
                 + '</div></div>';
             });
           } else {
@@ -16434,8 +16441,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     unitFilter = window._playerDCUnit || 'all';
     levelFilter = window._playerDCLevel || 'Varsity';
 
-    console.log('[PlayerDC] Sample offense pos:', JSON.stringify((DC_DATA.offense||[])[0]));
-    console.log('[PlayerDC] Sample player from PLAYERS:', JSON.stringify(PLAYERS[0] ? {id:PLAYERS[0].id, db_id:PLAYERS[0].db_id, name:PLAYERS[0].name} : null));
     renderDC();
   }
 
