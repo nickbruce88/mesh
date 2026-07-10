@@ -2573,6 +2573,7 @@
         </div>
       </div>
       <button class="note-modal-save" onclick="savePlayerEdit()">Save changes</button>
+      <button onclick="confirmDeletePlayer(PLAYERS.find(p=>p.id===currentPlayerId||p.db_id===currentPlayerId));document.getElementById('player-edit-overlay').style.display='none'" style="width:100%;margin-top:8px;padding:10px;background:none;border:1px solid var(--red);border-radius:var(--radius);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Remove player from roster</button>
     </div>
   </div>
 
@@ -5162,7 +5163,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.27';
+  const APP_VERSION = 'v38.30';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -9269,8 +9270,10 @@
         .eq('program_id', programId)
         .eq('role', 'player');
       if (error || !data) return;
+      // Clear existing players to prevent duplicates on re-load
+      PLAYERS.length = 0;
       data.forEach(p => {
-        const existing = PLAYERS.find(ep => ep.name === p.name);
+        const existing = PLAYERS.find(ep => ep.db_id === p.id);
         if (existing) {
           // Update db_id and latest values from Supabase
           existing.db_id = p.id;
@@ -14688,6 +14691,41 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     showToast('Player updated ✓');
   }
 
+  function confirmDeletePlayer(player) {
+    const confirmed = confirm(`Remove ${player.name} from the roster?\n\nThis will permanently delete their profile, notes, and attendance records. This cannot be undone.`);
+    if (!confirmed) return;
+    deletePlayer(player);
+  }
+
+  async function deletePlayer(player) {
+    const name = player.name;
+    const dbId = player.db_id || player.id;
+
+    // Remove from local array
+    const idx = PLAYERS.findIndex(p => p.id === player.id || p.db_id === dbId);
+    if (idx >= 0) PLAYERS.splice(idx, 1);
+
+    // Close profile overlay
+    closePlayerProfile();
+    renderCoachRoster();
+    showToast(`${name} removed`);
+
+    // Delete from Supabase in background
+    if (dbId && !dbId.startsWith('p')) {
+      try {
+        await db.from('players').delete().eq('id', dbId);
+        console.log('Player deleted from Supabase:', name);
+      } catch(e) {
+        console.error('Error deleting player:', e);
+        showToast('Could not delete from database');
+      }
+    }
+
+    // Rebuild depth chart
+    buildDCFromPlayers();
+    saveDCToSupabase();
+  }
+
   function openPlayerProfile(name) {
     if (dcEditMode) return; // don't open profile in edit mode
     const player = PLAYERS.find(p => p.name === name);
@@ -14699,6 +14737,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Edit button
     const ppEditBtn = document.getElementById('pp-edit-btn');
     if (ppEditBtn) ppEditBtn.onclick = () => openPlayerEdit(player.id);
+
     const posDisplay = [player.posOff, player.posDef].filter(Boolean).join('/') || player.pos || '—';
     document.getElementById('pp-header-sub').textContent = `${posDisplay} · ${formatNum(player.num)}`;
     document.getElementById('pp-jersey').textContent = formatNum(player.num);
@@ -16551,7 +16590,95 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     }).join('');
   }
 
+  function renderPlayerPlaybook() {
+    const moreTab = document.getElementById('tab-player-more');
+    if (!moreTab) return;
+
+    // Hide My Info page and DC body
+    const myInfoPage = document.getElementById('player-myinfo-page');
+    if (myInfoPage) myInfoPage.style.display = 'none';
+    const dcBody = document.getElementById('player-dc-body');
+    if (dcBody) dcBody.style.display = 'none';
+
+    // Create or reuse playbook container
+    let pbBody = document.getElementById('player-pb-body');
+    if (!pbBody) {
+      pbBody = document.createElement('div');
+      pbBody.id = 'player-pb-body';
+      pbBody.style.cssText = 'padding:0 0 80px';
+      moreTab.appendChild(pbBody);
+    }
+    pbBody.style.display = 'block';
+
+    // Render playbook UI — same as coach but no add/delete
+    const units = ['offense', 'defense', 'special'];
+    const unitLabels = { offense: 'Offense', defense: 'Defense', special: 'Special Teams' };
+
+    pbBody.innerHTML = `
+      <div style="padding:16px 0 12px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Playbook</div>
+      </div>
+
+      <!-- Unit tabs -->
+      <div style="display:flex;gap:2px;background:var(--bg-3);border-radius:var(--radius-sm);padding:3px;margin-bottom:16px;width:fit-content">
+        ${units.map((u,i) => `
+          <button id="pb-player-tab-${u}" onclick="switchPlayerPbUnit('${u}')"
+            style="padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--font);
+            ${i===0?'background:var(--team-primary);color:var(--team-primary-text)':'background:transparent;color:var(--fg-2)'}">
+            ${unitLabels[u]}
+          </button>`).join('')}
+      </div>
+
+      <!-- Plays container -->
+      <div id="player-pb-plays"></div>`;
+
+    switchPlayerPbUnit('offense');
+  }
+
+  function switchPlayerPbUnit(unit) {
+    ['offense','defense','special'].forEach(u => {
+      const btn = document.getElementById('pb-player-tab-' + u);
+      if (btn) {
+        btn.style.background = u === unit ? 'var(--team-primary)' : 'transparent';
+        btn.style.color = u === unit ? 'var(--team-primary-text)' : 'var(--fg-2)';
+      }
+    });
+
+    const container = document.getElementById('player-pb-plays');
+    if (!container) return;
+
+    // Get plays for this unit from PB_DATA
+    const folders = (window.PB_DATA && window.PB_DATA[unit]) ? window.PB_DATA[unit] : [];
+    const allPlays = folders.flatMap ? folders.flatMap(f => f.plays || []) : [];
+
+    if (!allPlays.length) {
+      container.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+        <div style="font-size:36px;margin-bottom:12px">📓</div>
+        <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">No plays yet</div>
+        <div style="font-size:13px">Your coaches haven't added any ${unit} plays yet.</div>
+      </div>`;
+      return;
+    }
+
+    container.innerHTML = folders.map(folder => `
+      <div style="margin-bottom:20px">
+        <div class="section-label">${folder.name||'Plays'}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
+          ${(folder.plays||[]).map(play => `
+            <div class="card" style="padding:12px;text-align:center">
+              ${play.diagram ? `<img src="${play.diagram}" style="width:100%;border-radius:6px;margin-bottom:8px;max-height:100px;object-fit:contain">` :
+                `<div style="height:80px;background:var(--bg-3);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>`}
+              <div style="font-size:12px;font-weight:600;color:var(--fg)">${play.name||'Play'}</div>
+              ${play.formation ? `<div style="font-size:11px;color:var(--fg-3)">${play.formation}</div>` : ''}
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  // Also hide playbook body when switching to myinfo
   function renderMyInfoPage() {
+    const pbBody = document.getElementById('player-pb-body');
+    if (pbBody) pbBody.style.display = 'none';
     // Hide DC body if showing
     const dcBody = document.getElementById('player-dc-body');
     if (dcBody) dcBody.style.display = 'none';
@@ -18324,16 +18451,9 @@ Jake Jones,8,QB,5,22,0,0,0,0"
     const isCoach = pbMode === 'coach';
     if (isDesktop()) {
       if (pbMode === 'player') {
-        // Player on desktop: show playbook overlay in read-only mode
-        const teamName = _sessionUser?.name ? (obProgram?.teamName || '') : '';
-        document.getElementById('pb-header-sub').textContent = teamName;
-        document.getElementById('playbook-overlay').querySelectorAll('.pb-action-row').forEach(el => el.style.display = 'none');
-        const selToggle = document.getElementById('pb-select-toggle');
-        if (selToggle) selToggle.style.display = 'none';
-        document.getElementById('playbook-overlay').classList.add('open');
-        showPbUnit('offense');
+        // Player: show playbook inline in tab-player-more, read-only
         await pbLoadFromSupabase();
-        showPbUnit(pbCurrentUnit);
+        renderPlayerPlaybook();
         return;
       }
       // Coach on desktop: navigate to more-playbook section
