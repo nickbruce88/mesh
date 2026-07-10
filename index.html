@@ -8200,8 +8200,14 @@
           hideAllTabs();
           const moreTab = document.getElementById('tab-' + role + '-more');
           if (moreTab) moreTab.style.display = 'block';
-          // Small delay to ensure tab is visible before rendering section
-          setTimeout(() => showMoreSection(item.more), 10);
+          // Player-specific section handling
+          if (role === 'player') {
+            if (item.more === 'stats') setTimeout(() => renderMyInfoPage(), 10);
+            else if (item.more === 'depth-player') setTimeout(() => showPlayerSection('depth'), 10);
+            else setTimeout(() => showPlayerSection(item.more), 10);
+          } else {
+            setTimeout(() => showMoreSection(item.more), 10);
+          }
         } else {
           // Top-level tabs
           const tabId = item.tab.replace('tab-' + role + '-', '').replace('tab-coach-', '').replace('tab-parent-', '').replace('tab-player-', '');
@@ -16125,15 +16131,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   // ===== PLAYER MORE TAB =====
   function showPlayerSection(section) {
-    document.getElementById('player-more-menu').classList.add('hidden');
-    document.querySelectorAll('[id^="player-section-"]').forEach(s => s.classList.remove('active'));
-    const sec = document.getElementById('player-section-' + section);
-    if (sec) sec.classList.add('active');
-    if (section === 'group') renderPlayerGroup();
-    if (section === 'standing') renderPlayerStanding();
-    if (section === 'documents') docLoadFromSupabase().then(() => renderSharedDocs('players'));
-    if (section === 'depth') renderPlayerDepthChart();
-    if (section === 'stats') renderMyInfoPage();
+    // player-more-menu no longer exists — My Info is a single page now
+    if (section === 'stats') { renderMyInfoPage(); return; }
+    if (section === 'depth') { renderPlayerDepthChart(); return; }
+    if (section === 'documents') { docLoadFromSupabase().then(() => renderSharedDocs('players')); return; }
     const tab = document.getElementById('tab-player-more');
     if (tab) tab.scrollTop = 0;
   }
@@ -16373,10 +16374,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function backToPlayerMenu() {
-    document.querySelectorAll('[id^="player-section-"]').forEach(s => s.classList.remove('active'));
-    document.getElementById('player-more-menu').classList.remove('hidden');
-    const tab = document.getElementById('tab-player-more');
-    if (tab) tab.scrollTop = 0;
+    // No longer needed — My Info is a single page
+    renderMyInfoPage();
   }
 
   // ===== MY GROUP (PLAYER VIEW) =====
