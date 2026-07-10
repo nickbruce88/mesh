@@ -16206,10 +16206,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function renderMyInfoPage() {
+    console.log('[MyInfo] renderMyInfoPage called, _sessionUser:', _sessionUser, 'PLAYERS:', PLAYERS.length);
     const page = document.getElementById('player-myinfo-page');
+    console.log('[MyInfo] page element:', page);
     if (!page) return;
 
     const name = _sessionUser?.name || '';
+    console.log('[MyInfo] name:', name);
     const player = name ? PLAYERS.find(p => p.name === name) : null;
     const ds = player?.disciplinaryStatus || 'green';
     const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
