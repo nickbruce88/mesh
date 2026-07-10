@@ -16434,6 +16434,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     unitFilter = window._playerDCUnit || 'all';
     levelFilter = window._playerDCLevel || 'Varsity';
 
+    console.log('[PlayerDC] Sample offense pos:', JSON.stringify((DC_DATA.offense||[])[0]));
+    console.log('[PlayerDC] Sample player from PLAYERS:', JSON.stringify(PLAYERS[0] ? {id:PLAYERS[0].id, db_id:PLAYERS[0].db_id, name:PLAYERS[0].name} : null));
     renderDC();
   }
 
