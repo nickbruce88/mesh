@@ -5279,7 +5279,11 @@
     if (isDesktop()) {
       const matchId = tab === 'more' ? null : tab;
       if (matchId) updateDesktopSidebarActive(matchId);
-      if (tab === 'more') showMoreSection(role === 'coach' ? 'roster' : 'myplayer');
+      if (tab === 'more') {
+        if (role === 'coach') showMoreSection('roster');
+        else if (role === 'player') setTimeout(() => renderMyInfoPage(), 50);
+        else showMoreSection('myplayer');
+      }
       if (tab === 'practice') { applyDesktopPracticeLayout(); setTimeout(initPracticeToToday, 50); }
       if (tab === 'messages') applyDesktopMessagesLayout();
     } else {
@@ -5289,8 +5293,7 @@
     if (role === 'player' && tab === 'schedule') renderPlayerSchedule();
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
-    // Player My Info — always render as single page
-    if (role === 'player' && tab === 'stats') setTimeout(() => renderMyInfoPage(), 50);
+    // Player My Info — rendered via 'more' tab hook above
   }
 
   function applyDesktopPracticeLayout() {
@@ -8149,7 +8152,7 @@
       { id: 'schedule', icon: '📅', label: 'Schedule', tab: 'tab-player-schedule' },
       { id: 'messages', icon: '💬', label: 'Messages', tab: 'tab-player-messages' },
       { label: 'MY PROFILE', section: true },
-      { id: 'stats', icon: '📈', label: 'My Info', tab: 'tab-player-more', more: 'stats' },
+      { id: 'stats', icon: '📈', label: 'My Info', tab: 'more', more: 'stats' },
       { id: 'depth', icon: '📊', label: 'Depth Chart', tab: 'tab-player-more', more: 'depth-player' },
       { id: 'playbook', icon: '📖', label: 'Playbook', tab: 'tab-player-more', more: 'playbook' },
     ]
