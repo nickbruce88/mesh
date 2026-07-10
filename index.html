@@ -16432,6 +16432,17 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Use persisted unit/level filters
     unitFilter = window._playerDCUnit || 'all';
     levelFilter = window._playerDCLevel || 'Varsity';
+
+    // Debug: check if player IDs match
+    const samplePos = (DC_DATA.offense||[])[0];
+    if (samplePos && samplePos.players?.length) {
+      const samplePid = samplePos.players[0];
+      const found = PLAYERS.find(p => p.id === samplePid || p.db_id === samplePid);
+      console.log('[PlayerDC] Sample pos:', samplePos.pos, 'players:', samplePos.players.slice(0,2));
+      console.log('[PlayerDC] Sample player ID:', samplePid, 'found in PLAYERS:', !!found);
+      if (PLAYERS.length) console.log('[PlayerDC] PLAYERS[0] id:', PLAYERS[0].id, 'db_id:', PLAYERS[0].db_id);
+    }
+
     renderDC();
   }
 
