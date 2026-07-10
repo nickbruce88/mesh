@@ -4154,16 +4154,26 @@
   <!-- Player Messages -->
   <div id="tab-player-messages" class="scroll-content" style="display:none;padding:0">
 
-    <!-- LEFT PANEL: thread list -->
+    <!-- LEFT PANEL: thread list — matches coach layout exactly -->
     <div class="msg-left-panel">
+
       <div class="msg-list-header">
         <div style="font-size:16px;font-weight:700;color:var(--fg)">Messages</div>
       </div>
-      <div class="safety-banner" style="margin:0 12px 8px;border-radius:var(--radius)">
-        <span class="safety-banner-icon">🔒</span>
-        <span>All messages are visible to coaching staff</span>
+
+      <div class="msg-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--fg-3)">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="player-msg-search-input" placeholder="Search messages" oninput="filterPlayerMsgThreads(this.value)" class="msg-search-input">
       </div>
+
       <div class="msg-group-list" id="player-msg-group-list" style="flex:1;overflow-y:auto">
+        <div id="player-msg-empty" style="text-align:center;padding:48px 20px;display:none">
+          <div style="font-size:36px;margin-bottom:10px">💬</div>
+          <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">No messages yet</div>
+          <div style="font-size:12px;color:var(--fg-3)">Messages from your coaches will appear here.</div>
+        </div>
         <div class="msg-group-item" onclick="openThread('player-allcoaches')">
           <div class="msg-group-avatar group-staff">🎙️</div>
           <div class="msg-group-content">
@@ -4174,6 +4184,7 @@
           <div class="unread-dot" id="mgu-player-allcoaches"></div>
         </div>
       </div>
+
       <div class="msg-new-btn-wrap">
         <button onclick="openPlayerNewMsg()" class="msg-compose-btn" style="width:100%;justify-content:center">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4183,7 +4194,9 @@
           New message
         </button>
       </div>
-    </div>
+
+    </div><!-- end msg-left-panel -->
+
   </div>
 
   <!-- Player More Tab -->
@@ -5149,7 +5162,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.26';
+  const APP_VERSION = 'v38.27';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7630,6 +7643,15 @@
     // Update toggle buttons
     document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
       btn.innerHTML = `<span class="pmi">${themeMode === 'light' ? '🌙' : '☀️'}</span> ${themeMode === 'light' ? 'Dark mode' : 'Light mode'}`;
+    });
+  }
+
+  function filterPlayerMsgThreads(query) {
+    const q = (query||'').toLowerCase();
+    document.querySelectorAll('#player-msg-group-list .msg-group-item').forEach(el => {
+      const name = el.querySelector('.msg-group-name')?.textContent?.toLowerCase() || '';
+      const preview = el.querySelector('.msg-group-preview')?.textContent?.toLowerCase() || '';
+      el.style.display = (!q || name.includes(q) || preview.includes(q)) ? '' : 'none';
     });
   }
 
@@ -16273,54 +16295,102 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function renderPlayerDepthChart() {
-    // Render into the more tab directly since player-dc-body was removed with old menu
     const moreTab = document.getElementById('tab-player-more');
     if (!moreTab) return;
-    // Create or reuse a dedicated container
+
+    // Hide My Info page
+    const myInfoPage = document.getElementById('player-myinfo-page');
+    if (myInfoPage) myInfoPage.style.display = 'none';
+
+    // Create or reuse container
     let body = document.getElementById('player-dc-body');
     if (!body) {
       body = document.createElement('div');
       body.id = 'player-dc-body';
-      body.style.padding = '0 0 80px';
-      // Clear the page and add DC header + body
-      const myInfoPage = document.getElementById('player-myinfo-page');
-      if (myInfoPage) myInfoPage.style.display = 'none';
-      // Remove any existing dc body
-      document.querySelectorAll('#player-dc-body').forEach(el => el.remove());
+      body.style.cssText = 'padding:0 0 80px';
       moreTab.appendChild(body);
     }
     body.style.display = 'block';
-    if (document.getElementById('player-myinfo-page')) document.getElementById('player-myinfo-page').style.display = 'none';
-    const totalPositions = DC_DATA.offense.length + DC_DATA.defense.length + DC_DATA.special.length;
+
+    const totalPositions = (DC_DATA.offense||[]).length + (DC_DATA.defense||[]).length + (DC_DATA.special||[]).length;
     if (totalPositions === 0) {
-      body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3)"><div style="font-size:32px;margin-bottom:10px">📋</div><div style="font-size:13px">Depth chart hasn't been set up yet.</div></div>`;
+      body.innerHTML = `
+        <div style="padding:16px 0 8px;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Depth Chart</div>
+        </div>
+        <div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+          <div style="font-size:36px;margin-bottom:12px">📋</div>
+          <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">Depth chart not set up yet</div>
+          <div style="font-size:13px">Your coaching staff hasn't built the depth chart yet.</div>
+        </div>`;
       return;
     }
-    // Render read-only depth chart from DC_DATA
-    const units = [
-      { key:'offense', label:'Offense', data: DC_DATA.offense },
-      { key:'defense', label:'Defense', data: DC_DATA.defense },
-      { key:'special', label:'Special Teams', data: DC_DATA.special },
-    ];
-    body.innerHTML = units.map(unit => {
-      if (!unit.data || !unit.data.length) return '';
-      return `<div style="margin-bottom:20px">
-        <div class="section-label">${unit.label}</div>
-        ${unit.data.map(pos => `
-          <div class="card" style="margin-bottom:8px;padding:12px 14px">
-            <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${pos.pos}</div>
-            ${(pos.players || []).map((pid, i) => {
-              const p = PLAYERS.find(pl => pl.id === pid || pl.db_id === pid);
-              if (!p) return '';
-              return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
-                <div style="font-size:11px;font-weight:700;color:var(--fg-3);width:18px">${i+1}</div>
-                <div style="font-size:13px;font-weight:600;flex:1">${p.name}</div>
-                <div style="font-size:11px;color:var(--fg-3)">${p.num||''}</div>
-              </div>`;
-            }).filter(Boolean).join('')}
-          </div>`).join('')}
-      </div>`;
-    }).join('');
+
+    // Build HTML matching coach DC layout, read-only
+    let unitFilter = 'all';
+    let levelFilter = 'Varsity';
+
+    const renderDC = () => {
+      const units = [
+        { key: 'offense', label: 'Offense', data: DC_DATA.offense || [] },
+        { key: 'defense', label: 'Defense', data: DC_DATA.defense || [] },
+        { key: 'special', label: 'Special Teams', data: DC_DATA.special || [] },
+      ];
+
+      const filtered = unitFilter === 'all' ? units : units.filter(u => u.key === unitFilter);
+
+      body.innerHTML = `
+        <div style="padding:16px 0 8px">
+          <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px">Depth Chart</div>
+          <div style="font-size:13px;color:var(--fg-2);margin-bottom:10px">${obProgram.teamName||''}</div>
+
+          <!-- Level selector -->
+          <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+            ${['Varsity','JV','Freshman'].map(l => `
+              <button onclick="window._playerDCLevel='${l}';renderPlayerDepthChart()"
+                style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid ${l===levelFilter?'var(--team-primary)':'var(--border)'};background:${l===levelFilter?'var(--team-primary-glow-sm)':'transparent'};color:${l===levelFilter?'var(--team-primary)':'var(--fg-2)'};cursor:pointer">
+                ${l}
+              </button>`).join('')}
+          </div>
+
+          <!-- Unit filter -->
+          <div class="unit-filter" style="margin-bottom:14px">
+            ${[['all','All'],['offense','Offense'],['defense','Defense'],['special','Special Teams']].map(([k,l]) => `
+              <div class="unit-chip${k===unitFilter?' active':''}" onclick="window._playerDCUnit='${k}';renderPlayerDepthChart()">${l}</div>`).join('')}
+          </div>
+        </div>
+
+        ${filtered.map(unit => {
+          if (!unit.data.length) return '';
+          return `<div style="margin-bottom:20px">
+            <div class="section-label">${unit.label}</div>
+            <div class="dc-grid">
+              ${unit.data.map(pos => {
+                const players = (pos.players||[]).map(pid => {
+                  return PLAYERS.find(p => p.id===pid || p.db_id===pid);
+                }).filter(Boolean);
+                return `<div class="dc-pos-card">
+                  <div class="dc-pos-label">${pos.pos}</div>
+                  ${players.length ? players.map((p,i) => `
+                    <div class="dc-player-row" style="cursor:default">
+                      <div class="dc-rank">${i+1}</div>
+                      <div class="dc-player-info">
+                        <div class="dc-player-name">${p.name}</div>
+                        <div class="dc-player-sub">${p.num||''} · ${p.year||''}</div>
+                      </div>
+                    </div>`).join('') :
+                    `<div style="font-size:11px;color:var(--fg-3);padding:8px 0;text-align:center">Empty</div>`}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        }).join('')}`;
+    };
+
+    // Use persisted unit/level filters
+    unitFilter = window._playerDCUnit || 'all';
+    levelFilter = window._playerDCLevel || 'Varsity';
+    renderDC();
   }
 
   function renderPlayerStats() {
