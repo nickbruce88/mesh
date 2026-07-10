@@ -8152,9 +8152,9 @@
       { id: 'schedule', icon: '📅', label: 'Schedule', tab: 'tab-player-schedule' },
       { id: 'messages', icon: '💬', label: 'Messages', tab: 'tab-player-messages' },
       { label: 'MY PROFILE', section: true },
-      { id: 'stats', icon: '📈', label: 'My Info', tab: 'more', more: 'stats' },
+      { id: 'stats', icon: '📈', label: 'My Info', tab: 'tab-player-more', more: 'stats' },
       { id: 'depth', icon: '📊', label: 'Depth Chart', tab: 'tab-player-more', more: 'depth-player' },
-      { id: 'playbook', icon: '📖', label: 'Playbook', tab: 'tab-player-more', more: 'playbook' },
+      { id: 'playbook', icon: '📖', label: 'Playbook', tab: 'tab-player-more', more: 'playbook-player' },
     ]
   };
 
@@ -8203,7 +8203,8 @@
           // Player-specific section handling
           if (role === 'player') {
             if (item.more === 'stats') setTimeout(() => renderMyInfoPage(), 10);
-            else if (item.more === 'depth-player') setTimeout(() => showPlayerSection('depth'), 10);
+            else if (item.more === 'depth-player') setTimeout(() => renderPlayerDepthChart(), 10);
+            else if (item.more === 'playbook-player') setTimeout(() => openPlaybook('player'), 10);
             else setTimeout(() => showPlayerSection(item.more), 10);
           } else {
             setTimeout(() => showMoreSection(item.more), 10);
