@@ -4108,6 +4108,30 @@
   </div>
 
   <!-- Player Schedule -->
+  <!-- PLAYER PERFORMANCE TAB -->
+  <div id="tab-player-performance" class="scroll-content" style="display:none;padding:0 20px 80px">
+    <div style="padding-top:16px">
+      <!-- View toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Performance</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" id="player-perf-btn-mine" onclick="switchPlayerPerfView('mine',this)" style="background:var(--team-primary);color:var(--team-primary-text)">My Stats</button>
+          <button class="btn-sm" id="player-perf-btn-board" onclick="switchPlayerPerfView('board',this)">Leaderboard</button>
+        </div>
+      </div>
+
+      <!-- My Stats view -->
+      <div id="player-perf-mine">
+        <div id="player-perf-mine-body"></div>
+      </div>
+
+      <!-- Leaderboard view -->
+      <div id="player-perf-board" style="display:none">
+        <div id="player-perf-board-body"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-player-schedule" class="scroll-content" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div>
@@ -5124,7 +5148,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.21';
+  const APP_VERSION = 'v38.23';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5152,6 +5176,7 @@
       { id: 'home', icon: '🏠', label: 'Home' },
       { id: 'schedule', icon: '📅', label: 'Schedule' },
       { id: 'messages', icon: '💬', label: 'Messages' },
+      { id: 'performance', icon: '📈', label: 'Performance' },
       { id: 'more', icon: '⋯', label: 'More' }
     ]
   };
@@ -5291,6 +5316,10 @@
     }
     // Player schedule — render from real SCHEDULE data
     if (role === 'player' && tab === 'schedule') renderPlayerSchedule();
+    if (role === 'player' && tab === 'performance') {
+      if (!PERF_DATA.length) loadPerfData().then(() => renderPlayerPerfMine());
+      else renderPlayerPerfMine();
+    }
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
     // Player My Info — rendered via 'more' tab hook above
@@ -8151,6 +8180,7 @@
       { id: 'home', icon: '🏠', label: 'Home', tab: 'tab-player-home' },
       { id: 'schedule', icon: '📅', label: 'Schedule', tab: 'tab-player-schedule' },
       { id: 'messages', icon: '💬', label: 'Messages', tab: 'tab-player-messages' },
+      { id: 'performance', icon: '📈', label: 'Performance', tab: 'tab-player-performance' },
       { label: 'MY PROFILE', section: true },
       { id: 'stats', icon: '📈', label: 'My Info', tab: 'tab-player-more', more: 'stats' },
       { id: 'depth', icon: '📊', label: 'Depth Chart', tab: 'tab-player-more', more: 'depth-player' },
@@ -16141,8 +16171,24 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function renderPlayerDepthChart() {
-    const body = document.getElementById('player-dc-body');
-    if (!body) return;
+    // Render into the more tab directly since player-dc-body was removed with old menu
+    const moreTab = document.getElementById('tab-player-more');
+    if (!moreTab) return;
+    // Create or reuse a dedicated container
+    let body = document.getElementById('player-dc-body');
+    if (!body) {
+      body = document.createElement('div');
+      body.id = 'player-dc-body';
+      body.style.padding = '0 0 80px';
+      // Clear the page and add DC header + body
+      const myInfoPage = document.getElementById('player-myinfo-page');
+      if (myInfoPage) myInfoPage.style.display = 'none';
+      // Remove any existing dc body
+      document.querySelectorAll('#player-dc-body').forEach(el => el.remove());
+      moreTab.appendChild(body);
+    }
+    body.style.display = 'block';
+    if (document.getElementById('player-myinfo-page')) document.getElementById('player-myinfo-page').style.display = 'none';
     const totalPositions = DC_DATA.offense.length + DC_DATA.defense.length + DC_DATA.special.length;
     if (totalPositions === 0) {
       body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3)"><div style="font-size:32px;margin-bottom:10px">📋</div><div style="font-size:13px">Depth chart hasn't been set up yet.</div></div>`;
@@ -16207,11 +16253,139 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       </div>`).join('');
   }
 
+  function switchPlayerPerfView(view, btn) {
+    const mine = document.getElementById('player-perf-mine');
+    const board = document.getElementById('player-perf-board');
+    const mineBtn = document.getElementById('player-perf-btn-mine');
+    const boardBtn = document.getElementById('player-perf-btn-board');
+    if (view === 'mine') {
+      mine.style.display = 'block'; board.style.display = 'none';
+      mineBtn.style.background = 'var(--team-primary)'; mineBtn.style.color = 'var(--team-primary-text)';
+      boardBtn.style.background = ''; boardBtn.style.color = '';
+      renderPlayerPerfMine();
+    } else {
+      mine.style.display = 'none'; board.style.display = 'block';
+      boardBtn.style.background = 'var(--team-primary)'; boardBtn.style.color = 'var(--team-primary-text)';
+      mineBtn.style.background = ''; mineBtn.style.color = '';
+      renderPlayerPerfBoard();
+    }
+  }
+
+  function renderPlayerPerfMine() {
+    const body = document.getElementById('player-perf-mine-body');
+    if (!body) return;
+    const player = PLAYERS.find(p => p.name === _sessionUser?.name);
+    if (!player) { body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3)">Could not find your player profile.</div>'; return; }
+
+    const records = PERF_DATA.filter(r => r.player_id === player.id || r.player_id === player.db_id);
+    if (!records.length) {
+      body.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+        <div style="font-size:36px;margin-bottom:12px">📈</div>
+        <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">No performance data yet</div>
+        <div style="font-size:13px;line-height:1.6">Your coaching staff will log your lifts, speed, and drill results here.</div>
+      </div>`;
+      return;
+    }
+
+    const allCats = [...(PERF_CATEGORIES?.lifting||[]), ...(PERF_CATEGORIES?.speed||[])];
+
+    // Group by session
+    const sessionsMap = {};
+    records.forEach(r => {
+      const key = (r.date||'') + '|' + (r.session_label||'');
+      if (!sessionsMap[key]) sessionsMap[key] = { date: r.date, label: r.session_label, vals: {} };
+      sessionsMap[key].vals[r.category] = r.value;
+    });
+    const sessions = Object.values(sessionsMap).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+    // Personal bests
+    const bests = {};
+    allCats.forEach(c => {
+      const vals = records.filter(r => r.category === c.key).map(r => r.value);
+      if (vals.length) bests[c.key] = c.lower_is_better ? Math.min(...vals) : Math.max(...vals);
+    });
+
+    const catsWithData = allCats.filter(c => bests[c.key] !== undefined);
+
+    body.innerHTML = `
+      ${catsWithData.length ? `
+        <div class="section-label">Personal Bests</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px">
+          ${catsWithData.map(c => `
+            <div class="card" style="text-align:center;padding:14px">
+              <div style="font-size:22px;font-weight:800;color:var(--team-primary)">${bests[c.key]}${c.unit ? ' '+c.unit : ''}</div>
+              <div style="font-size:11px;color:var(--fg-3);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">${c.label}</div>
+            </div>`).join('')}
+        </div>` : ''}
+
+      <div class="section-label">Session History</div>
+      ${sessions.map(s => `
+        <div class="card" style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:13px;font-weight:700;color:var(--fg)">${s.label||'Session'}</div>
+            <div style="font-size:11px;color:var(--fg-3)">${s.date||''}</div>
+          </div>
+          ${allCats.filter(c => s.vals[c.key] != null).map(c => `
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
+              <span style="color:var(--fg-2)">${c.label}</span>
+              <span style="font-weight:600">${s.vals[c.key]}${c.unit?' '+c.unit:''}</span>
+            </div>`).join('')}
+        </div>`).join('')}`;
+  }
+
+  function renderPlayerPerfBoard() {
+    const body = document.getElementById('player-perf-board-body');
+    if (!body) return;
+    const allCats = [...(PERF_CATEGORIES?.lifting||[]), ...(PERF_CATEGORIES?.speed||[])];
+    const catsWithData = allCats.filter(c => PERF_DATA.some(r => r.category === c.key));
+
+    if (!catsWithData.length) {
+      body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3)">No performance data logged yet.</div>';
+      return;
+    }
+
+    const myPlayer = PLAYERS.find(p => p.name === _sessionUser?.name);
+
+    body.innerHTML = catsWithData.map(c => {
+      const records = PERF_DATA.filter(r => r.category === c.key);
+      // Best per player
+      const byPlayer = {};
+      records.forEach(r => {
+        const pid = r.player_id;
+        if (!byPlayer[pid] || (c.lower_is_better ? r.value < byPlayer[pid].value : r.value > byPlayer[pid].value)) {
+          byPlayer[pid] = r;
+        }
+      });
+      const sorted = Object.values(byPlayer).sort((a,b) => c.lower_is_better ? a.value-b.value : b.value-a.value);
+      if (!sorted.length) return '';
+
+      return `<div style="margin-bottom:20px">
+        <div class="section-label">${c.label}${c.unit?' ('+c.unit+')':''}</div>
+        <div class="card" style="padding:0">
+          ${sorted.slice(0,10).map((r,i) => {
+            const p = PLAYERS.find(pl => pl.id === r.player_id || pl.db_id === r.player_id);
+            const isMe = myPlayer && (r.player_id === myPlayer.id || r.player_id === myPlayer.db_id);
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);${isMe?'background:var(--team-primary-glow-sm);':''}" >
+              <div style="font-size:16px;width:28px;text-align:center">${medal}</div>
+              <div style="flex:1;font-size:13px;font-weight:${isMe?'700':'500'};color:${isMe?'var(--team-primary)':'var(--fg)'}">
+                ${p?.name||'Player'}${isMe?' (You)':''}
+              </div>
+              <div style="font-size:14px;font-weight:700;color:var(--fg)">${r.value}${c.unit?' '+c.unit:''}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   function renderMyInfoPage() {
-    console.log('[MyInfo] renderMyInfoPage called, _sessionUser:', _sessionUser, 'PLAYERS:', PLAYERS.length);
+    // Hide DC body if showing
+    const dcBody = document.getElementById('player-dc-body');
+    if (dcBody) dcBody.style.display = 'none';
     const page = document.getElementById('player-myinfo-page');
-    console.log('[MyInfo] page element:', page);
     if (!page) return;
+    page.style.display = 'block';
 
     const name = _sessionUser?.name || '';
     console.log('[MyInfo] name:', name);
@@ -17496,7 +17670,20 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     pbSelectedIds.clear();
     const isCoach = pbMode === 'coach';
     if (isDesktop()) {
-      // Desktop: navigate to more-playbook section like any other tab
+      if (pbMode === 'player') {
+        // Player on desktop: show playbook overlay in read-only mode
+        const teamName = _sessionUser?.name ? (obProgram?.teamName || '') : '';
+        document.getElementById('pb-header-sub').textContent = teamName;
+        document.getElementById('playbook-overlay').querySelectorAll('.pb-action-row').forEach(el => el.style.display = 'none');
+        const selToggle = document.getElementById('pb-select-toggle');
+        if (selToggle) selToggle.style.display = 'none';
+        document.getElementById('playbook-overlay').classList.add('open');
+        showPbUnit('offense');
+        await pbLoadFromSupabase();
+        showPbUnit(pbCurrentUnit);
+        return;
+      }
+      // Coach on desktop: navigate to more-playbook section
       hideAllTabs();
       const moreTab = document.getElementById('tab-coach-more');
       if (moreTab) moreTab.style.display = 'block';
