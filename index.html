@@ -5163,7 +5163,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.31';
+  const APP_VERSION = 'v38.33';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -7838,7 +7838,6 @@
       posOff: p.posOff || '', posDef: p.posDef || '', posST: p.posST || '',
       year: p.year, height: p.height, weight: p.weight, gpa: p.gpa,
       parent: p.parent_name, parentPhone: p.parent_phone, parentEmail: p.parent_email,
-      unit: p.posOff ? 'Offense' : p.posDef ? 'Defense' : 'Special Teams',
       status: 'Active', disciplinaryStatus: 'green',
       teams: defaultTeamsForYear(p.year), group: '',
       notes: [], discipline: [], academic: [],
@@ -7939,7 +7938,6 @@
 
     // Primary pos for display = off pos, or def, or st
     const pos = posOff || posDef || posST;
-    const unit = posOff ? 'Offense' : posDef ? 'Defense' : 'Special Teams';
 
     const row = {
       name, num: num ? '#' + num.replace('#','') : '—', pos, posOff: posOff || '', posDef: posDef || '', posST: posST || '', year,
@@ -8983,7 +8981,6 @@
       name,
       num: numVal ? '#' + numVal : '#—',
       pos,
-      unit: ['QB','RB','WR','TE','OL'].includes(pos) ? 'Offense' : ['DL','LB','DB'].includes(pos) ? 'Defense' : 'Special Teams',
       year: document.getElementById('join-player-year').value,
       height: document.getElementById('join-player-height').value.trim() || '—',
       weight: document.getElementById('join-player-weight').value.trim() || '—',
@@ -9010,7 +9007,6 @@
             .update({
               num:      playerData.num,
               pos:      playerData.pos,
-              unit:     playerData.unit,
               year:     playerData.year,
               height:   playerData.height,
               weight:   playerData.weight,
@@ -9289,7 +9285,7 @@
           const newPlayer = {
             id: p.id, db_id: p.id,
             name: p.name, num: p.num, pos: p.pos,
-            unit: p.unit || '', year: p.year || '', height: p.height || '', weight: p.weight || '',
+            year: p.year || '', height: p.height || '', weight: p.weight || '',
             gpa: p.gpa || '—', status: p.status || 'Active',
             group: (p.group_name && p.group_name !== 'null') ? p.group_name : '',
             disciplinaryStatus: p.disciplinary_status || 'green',
@@ -9312,6 +9308,7 @@
       window.ROSTER_DATA = PLAYERS.filter(p => p.role !== 'coach');
       syncRosterData();
       console.log('Loaded', data.length, 'players from Supabase');
+
     } catch(e) {
       console.error('Error loading roster:', e);
     }
@@ -12019,8 +12016,8 @@
       if (!p.posOff && !p.posDef && !p.posST && p.pos) {
         const pos = p.pos.trim().toUpperCase();
         const unit = ST_ONLY_POSITIONS.has(pos) ? 'special'
-          : p.unit === 'Defense' ? 'defense'
-          : p.unit === 'Special Teams' ? 'special'
+          : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(p.pos) ? 'defense'
+          : ['K','P','LS','KR','PR'].includes(p.pos) ? 'special'
           : 'offense';
         addToUnit(unit, p.pos, p);
       }
@@ -12312,8 +12309,8 @@
       const discEl = document.getElementById('player-home-disc');
 
       if (player) {
-        if (statusEl) statusEl.textContent = player.pos + ' — ' + (player.unit || 'Offense');
-        if (detailEl) detailEl.textContent = `${player.num} · ${player.unit || 'Offense'} · ${player.group || 'Unassigned'} group`;
+        if (statusEl) statusEl.textContent = player.pos;
+        if (detailEl) detailEl.textContent = `${player.num} · ${player.group || 'Unassigned'} group`;
         const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
         const discLabels = { green: 'Good Standing', yellow: 'On Watch', red: 'Disciplinary Contract' };
         const ds = player.disciplinaryStatus || 'green';
@@ -12676,7 +12673,7 @@
         PLAYERS.push({
           id: p.id, db_id: p.id,
           name: p.name, num: p.num, pos: p.pos,
-          unit: p.unit, year: p.year, height: p.height, weight: p.weight,
+          year: p.year, height: p.height, weight: p.weight,
           gpa: p.gpa || '—', status: p.status || 'Active',
           group: p.group_name || '',
           disciplinaryStatus: p.disciplinary_status || 'green',
@@ -14742,7 +14739,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.getElementById('pp-header-sub').textContent = `${posDisplay} · ${formatNum(player.num)}`;
     document.getElementById('pp-jersey').textContent = formatNum(player.num);
     document.getElementById('pp-hero-name').textContent = player.name;
-    document.getElementById('pp-hero-pos').textContent = `${posDisplay} · ${player.unit || '—'} · ${player.year}`;
+    document.getElementById('pp-hero-pos').textContent = `${posDisplay} · ${player.year}`;
 
     // Group badges
     const badgeContainer = document.getElementById('pp-hero-badges');
@@ -16712,7 +16709,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           </div>
           <div>
             <div style="font-size:18px;font-weight:700;color:var(--fg)">${name}</div>
-            <div style="font-size:13px;color:var(--gray-2)">${player ? `${player.pos} · ${player.num} · ${player.unit || 'Offense'}` : 'Player'}</div>
+            <div style="font-size:13px;color:var(--gray-2)">${player ? `${player.pos} · ${player.num}` : 'Player'}</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -16831,7 +16828,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       <div class="section-label" style="margin-top:8px">Physical Info</div>
       <div class="card" style="padding:0;margin-bottom:16px">
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Position</span><span class="pp-info-value">${player?.pos || '—'}</span></div>
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Unit</span><span class="pp-info-value">${player?.unit || '—'}</span></div>
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Height</span><span class="pp-info-value">${player?.height || '—'}</span></div>
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Weight</span><span class="pp-info-value">${player?.weight || '—'}</span></div>
         <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Year</span><span class="pp-info-value">${player?.year || '—'}</span></div>
