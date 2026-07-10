@@ -5163,7 +5163,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.35';
+  const APP_VERSION = 'v38.36';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -16367,81 +16367,36 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     let unitFilter = 'all';
     let levelFilter = 'Varsity';
 
-    const renderDC = () => {
-      const units = [
-        { key: 'offense', label: 'Offense', data: DC_DATA.offense || [] },
-        { key: 'defense', label: 'Defense', data: DC_DATA.defense || [] },
-        { key: 'special', label: 'Special Teams', data: DC_DATA.special || [] },
-      ];
-      const filtered = unitFilter === 'all' ? units : units.filter(u => u.key === unitFilter);
+    // Render using the same renderDepthChart function as coach — read-only mode
+    // Temporarily redirect depth-chart-body to our player container
+    const realDCBody = document.getElementById('depth-chart-body');
+    const savedEditMode = dcEditMode;
+    dcEditMode = false; // force read-only
 
-      // Build HTML using string concatenation to avoid nested backtick issues
-      let html = '<div style="padding:16px 0 8px">';
-      html += '<div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:8px">Depth Chart</div>';
-      html += '<div style="font-size:13px;color:var(--fg-2);margin-bottom:10px">' + (obProgram.teamName||'') + '</div>';
+    // Create a proxy — swap the coach DC body temporarily
+    if (realDCBody) realDCBody.id = 'depth-chart-body-hidden';
+    body.id = 'depth-chart-body';
 
-      // Level selector
-      html += '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">';
-      ['Varsity','JV','Freshman'].forEach(l => {
-        const active = l === levelFilter;
-        html += '<button onclick="window._playerDCLevel=\'' + l + '\';renderPlayerDepthChart()"'
-          + ' style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid '
-          + (active ? 'var(--team-primary)' : 'var(--border)') + ';background:'
-          + (active ? 'var(--team-primary-glow-sm)' : 'transparent') + ';color:'
-          + (active ? 'var(--team-primary)' : 'var(--fg-2)') + '">' + l + '</button>';
-      });
-      html += '</div>';
+    // Render using the full coach DC function
+    renderDepthChart();
 
-      // Unit filter
-      html += '<div class="unit-filter" style="margin-bottom:14px">';
-      [['all','All'],['offense','Offense'],['defense','Defense'],['special','Special Teams']].forEach(([k,l]) => {
-        html += '<div class="unit-chip' + (k===unitFilter?' active':'') + '"'
-          + ' onclick="window._playerDCUnit=\'' + k + '\';renderPlayerDepthChart()">' + l + '</div>';
-      });
-      html += '</div></div>';
+    // Remove the edit button and edit banner from player DC view
+    const editBtn = body.querySelector('#dc-edit-btn');
+    if (editBtn) editBtn.remove();
+    const editBanner = body.querySelector('#dc-edit-banner');
+    if (editBanner) editBanner.remove();
+    // Make all drag handles non-interactive
+    body.querySelectorAll('.dc-drag-handle').forEach(el => el.style.display = 'none');
+    // Make player name buttons non-clickable
+    body.querySelectorAll('.dc-player-name-btn').forEach(el => {
+      el.style.cursor = 'default';
+      el.onclick = null;
+    });
 
-      // Positions
-      filtered.forEach(unit => {
-        if (!unit.data.length) return;
-        html += '<div style="margin-bottom:20px">';
-        html += '<div class="section-label">' + unit.label + '</div>';
-        html += '<div class="dc-grid">';
-        unit.data.forEach(pos => {
-          // DC_DATA stores player objects {num, name} directly
-          const players = (pos.players||[]).map(pid => {
-            if (pid && typeof pid === 'object') return pid; // already an object
-            return PLAYERS.find(p => p.id===pid || p.db_id===pid); // fallback for ID format
-          }).filter(Boolean);
-          html += '<div class="dc-pos-card">';
-          html += '<div class="dc-pos-label">' + pos.pos + '</div>';
-          if (players.length) {
-            players.forEach((p, i) => {
-              const name = p.name || '';
-              const num = p.num || '';
-              const year = p.year || '';
-              html += '<div class="dc-player-row" style="cursor:default">'
-                + '<div class="dc-rank">' + (i+1) + '</div>'
-                + '<div class="dc-player-info">'
-                + '<div class="dc-player-name">' + name + '</div>'
-                + '<div class="dc-player-sub">' + num + (year ? ' · ' + year : '') + '</div>'
-                + '</div></div>';
-            });
-          } else {
-            html += '<div style="font-size:11px;color:var(--fg-3);padding:8px 0;text-align:center">Empty</div>';
-          }
-          html += '</div>';
-        });
-        html += '</div></div>';
-      });
-
-      body.innerHTML = html;
-    };
-
-    // Use persisted unit/level filters
-    unitFilter = window._playerDCUnit || 'all';
-    levelFilter = window._playerDCLevel || 'Varsity';
-
-    renderDC();
+    // Restore IDs
+    body.id = 'player-dc-body';
+    if (realDCBody) realDCBody.id = 'depth-chart-body';
+    dcEditMode = savedEditMode;
   }
 
   function renderPlayerStats() {
