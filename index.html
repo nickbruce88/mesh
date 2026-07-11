@@ -5264,7 +5264,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.5</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.6</div>
   </div>
 </div>
 
@@ -5275,7 +5275,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.5';
+  const APP_VERSION = 'v39.6';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -11171,6 +11171,10 @@
     applyUserAvatar(document.getElementById('sidebar-avatar'));
     const ua=document.getElementById('user-avatar'); if(ua && (_currentAvatarUrl)) applyUserAvatar(ua);
     refreshProfileHeader();
+    // Re-render announcements so coach avatar shows in cards
+    if (currentRole === 'coach') renderAnnouncements('coach');
+    else if (currentRole === 'player') renderAnnouncements('player');
+    else if (currentRole === 'parent') renderAnnouncements('parent');
   }
   async function handleProfilePhoto(e){
     const f=e.target.files[0]; if(!f) return;
@@ -13789,7 +13793,7 @@ ${printBtnHtml}
   function annId() { return 'ann_' + Date.now() + '_' + Math.random().toString(36).slice(2,5); }
 
   async function annSave() {
-    const programId = localStorage.getItem('mesh_program_id');
+    const programId = await getValidProgramId();
     if (!programId) return;
     try {
       await db.from('programs').update({ announcements_data: JSON.stringify(ANNOUNCEMENTS) }).eq('id', programId);
@@ -13797,7 +13801,7 @@ ${printBtnHtml}
   }
 
   async function annLoad() {
-    const programId = localStorage.getItem('mesh_program_id');
+    const programId = await getValidProgramId();
     if (!programId) return;
     try {
       const { data } = await db.from('programs').select('announcements_data').eq('id', programId).single();
@@ -13833,9 +13837,14 @@ ${printBtnHtml}
       const audience  = a.audience || ['coaches'];
       const audText   = audience.length === 3 ? '🌐 Everyone' : audience.map(g => audienceLabel[g] || g).join(' · ');
       const urgBadge  = urgency !== 'normal' ? `<span class="ann-urgency-badge ${urgency}">${urgencyLabel[urgency]}</span>` : '';
+      // Use profile photo if this announcement was posted by the current user
+      const avatarPhoto = _currentAvatarUrl && a.authorUid === localStorage.getItem('mesh_auth_uid');
+      const avatarInner = avatarPhoto
+        ? `<img src="${_currentAvatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+        : initials;
       return `<div class="announcement-card urgency-${urgency}">
         <div class="announcement-card-header">
-          <div class="announcement-avatar">${initials}</div>
+          <div class="announcement-avatar">${avatarInner}</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;color:var(--fg)">${a.author || 'Coach'}${urgBadge}</div>
             <div class="announcement-meta">${a.date || ''} · ${audText}</div>
@@ -13887,6 +13896,7 @@ ${printBtnHtml}
       audience,
       urgency,
       author: user.name || 'Coach',
+      authorUid: localStorage.getItem('mesh_auth_uid') || null,
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
     });
 
