@@ -5163,7 +5163,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.38';
+  const APP_VERSION = 'v38.39';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -11985,7 +11985,7 @@
   // Positions that always belong to special teams regardless of where coaches put them
   const ST_ONLY_POSITIONS = new Set(['K','P','LS','KR','PR']);
 
-  const DC_PLACEHOLDER_POS = new Set(['—', '-', '?', '']);
+  const DC_PLACEHOLDER_POS = new Set(['—', '-', '–', '?', '', '#—', '#-']);
 
   function buildDCFromPlayers() {
     // Helper: add a player to a unit's position group, splitting on slashes
@@ -11993,7 +11993,7 @@
       if (!posStr) return;
       // Split on slash — "RB/Z" → ['RB', 'Z'], add to both
       posStr.split('/').map(s => s.trim().toUpperCase()).filter(Boolean).forEach(pos => {
-        if (DC_PLACEHOLDER_POS.has(pos) || DC_PLACEHOLDER_POS.has(pos.toLowerCase())) return; // skip placeholders
+        if (DC_PLACEHOLDER_POS.has(pos) || DC_PLACEHOLDER_POS.has(pos.toLowerCase()) || pos === '-' || pos === '—' || pos.replace(/[-—–#\s]/g,'') === '') return; // skip placeholders
         let grp = DC_DATA[unit].find(g => g.pos === pos);
         if (!grp) {
           grp = { pos, players: [] };
@@ -12016,14 +12016,27 @@
       addToUnit('special', [p.posST, stFromOff, stFromDef].filter(Boolean).join('/'), p);
 
       // Fallback: if only pos is set (skip placeholders)
-      if (!p.posOff && !p.posDef && !p.posST && p.pos && !DC_PLACEHOLDER_POS.has(p.pos.trim())) {
-        const pos = p.pos.trim().toUpperCase();
-        const unit = ST_ONLY_POSITIONS.has(pos) ? 'special'
-          : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(p.pos) ? 'defense'
-          : ['K','P','LS','KR','PR'].includes(p.pos) ? 'special'
+      const rawPos = (p.pos || '').trim();
+      const cleanPos = rawPos.toUpperCase();
+      if (!p.posOff && !p.posDef && !p.posST && rawPos && !DC_PLACEHOLDER_POS.has(rawPos) && rawPos.replace(/[-—–#\s]/g,'') !== '') {
+        const unit = ST_ONLY_POSITIONS.has(cleanPos) ? 'special'
+          : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(cleanPos) ? 'defense'
+          : ['K','P','LS','KR','PR'].includes(cleanPos) ? 'special'
           : 'offense';
-        addToUnit(unit, p.pos, p);
+        addToUnit(unit, rawPos, p);
       }
+    });
+
+    // Remove ST-only positions from offense/defense (cleanup for existing data)
+    ['offense','defense'].forEach(unit => {
+      DC_DATA[unit] = DC_DATA[unit].filter(g => !ST_ONLY_POSITIONS.has(g.pos.toUpperCase()));
+    });
+    // Remove placeholder position groups
+    ['offense','defense','special'].forEach(unit => {
+      DC_DATA[unit] = DC_DATA[unit].filter(g => {
+        const p = (g.pos||'').trim();
+        return p && !DC_PLACEHOLDER_POS.has(p) && p.replace(/[-—–#\s]/g,'') !== '';
+      });
     });
 
     // Sort positions within each unit by standard order
