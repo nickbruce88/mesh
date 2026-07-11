@@ -1085,6 +1085,56 @@
       }
 
       #tab-coach-messages.desktop-messages-active .thread-back-btn { display: none; }
+
+      /* Player messages — same two-panel layout as coach */
+      #tab-player-messages.desktop-messages-active {
+        flex-direction: row !important;
+        padding: 0 !important;
+        height: calc(100vh - 57px);
+        overflow: hidden;
+        position: relative;
+        max-width: 100% !important;
+        margin: 0 !important;
+      }
+
+      #tab-player-messages.desktop-messages-active #player-msg-thread-overlay {
+        display: flex !important;
+        flex: 1;
+        flex-direction: column;
+        height: 100% !important;
+        width: auto !important;
+        min-width: 0;
+        position: relative !important;
+        inset: auto !important;
+        z-index: 1 !important;
+        background: var(--bg) !important;
+      }
+
+      #tab-player-messages.desktop-messages-active .thread-header {
+        padding: 16px 28px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+
+      #tab-player-messages.desktop-messages-active .thread-title { font-size: 16px; font-weight: 700; }
+      #tab-player-messages.desktop-messages-active .thread-body { padding: 20px 28px; }
+      #tab-player-messages.desktop-messages-active .thread-input-row {
+        padding: 12px 28px 16px;
+        border-top: 1px solid var(--border);
+        background: var(--bg);
+      }
+
+      #tab-player-messages.desktop-messages-active #player-msg-thread-overlay:not(.open) {
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-2) !important;
+      }
+
+      #tab-player-messages.desktop-messages-active #player-msg-thread-overlay:not(.open) > *:not(#player-thread-empty-state) {
+        display: none !important;
+      }
+
+      #tab-player-messages.desktop-messages-active .thread-back { display: none; }
     }
 
     /* ===== DESKTOP HOME DASHBOARD ===== */
@@ -4199,7 +4249,7 @@
     </div><!-- end msg-left-panel -->
 
   <!-- ===== PLAYER MESSAGE THREAD VIEW ===== -->
-  <div id="player-msg-thread-overlay" style="display:none;position:absolute;inset:0;background:var(--bg);z-index:10;display:none;flex-direction:column">
+  <div id="player-msg-thread-overlay" style="position:absolute;inset:0;background:var(--bg);z-index:10;display:none;flex-direction:column">
     <div class="thread-header">
       <div class="thread-back" onclick="closePlayerThread()">‹</div>
       <div class="thread-avatar group-staff" id="player-thread-avatar">🎙️</div>
@@ -4218,6 +4268,11 @@
         <input class="compose-input" id="player-thread-input" placeholder="Message…" onkeydown="if(event.key==='Enter')sendPlayerThreadMsg()">
         <button class="send-btn" onclick="sendPlayerThreadMsg()">➤</button>
       </div>
+    </div>
+    <div id="player-thread-empty-state" class="thread-empty-state">
+      <div style="font-size:40px">💬</div>
+      <div style="font-size:15px;font-weight:600;color:var(--fg)">Select a conversation</div>
+      <div style="font-size:13px;color:var(--fg-3);margin-top:4px">Choose a thread from the left</div>
     </div>
   </div>
 
@@ -5186,7 +5241,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.40';
+  const APP_VERSION = 'v38.41';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5383,18 +5438,25 @@
   }
 
   function applyDesktopMessagesLayout() {
+    // Coach layout
     const tab = document.getElementById('tab-coach-messages');
-    if (!tab) return;
-    tab.classList.add('desktop-messages-active');
-
-    // Add empty state inside overlay if not already there
-    const overlay = document.getElementById('msg-thread-overlay');
-    if (overlay && !document.getElementById('thread-empty-state')) {
-      const emptyState = document.createElement('div');
-      emptyState.className = 'thread-empty-state';
-      emptyState.id = 'thread-empty-state';
-      emptyState.innerHTML = `<div style="font-size:40px">💬</div><div style="font-size:15px;font-weight:600;color:var(--fg)">Select a conversation</div><div style="font-size:13px;color:var(--fg-3);margin-top:4px">Choose a thread from the left</div>`;
-      overlay.appendChild(emptyState);
+    if (tab) {
+      tab.classList.add('desktop-messages-active');
+      const overlay = document.getElementById('msg-thread-overlay');
+      if (overlay && !document.getElementById('thread-empty-state')) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'thread-empty-state';
+        emptyState.id = 'thread-empty-state';
+        emptyState.innerHTML = `<div style="font-size:40px">💬</div><div style="font-size:15px;font-weight:600;color:var(--fg)">Select a conversation</div><div style="font-size:13px;color:var(--fg-3);margin-top:4px">Choose a thread from the left</div>`;
+        overlay.appendChild(emptyState);
+      }
+    }
+    // Player layout
+    const playerTab = document.getElementById('tab-player-messages');
+    if (playerTab) {
+      playerTab.classList.add('desktop-messages-active');
+      const playerOverlay = document.getElementById('player-msg-thread-overlay');
+      if (playerOverlay) playerOverlay.style.display = 'flex';
     }
   }
 
@@ -11229,7 +11291,7 @@
 
   function closePlayerThread() {
     const overlay = document.getElementById('player-msg-thread-overlay');
-    if (overlay) overlay.style.display = 'none';
+    if (overlay) { overlay.classList.remove('open'); overlay.style.display = ''; }
   }
 
   function sendPlayerThreadMsg() {
@@ -11248,7 +11310,9 @@
     if (!overlay) { openThread(groupKey); return; }
     openThread(groupKey);
     setTimeout(() => {
-      overlay.style.cssText = 'display:flex;flex-direction:column;position:absolute;inset:0;background:var(--bg);z-index:10';
+      overlay.classList.add('open');
+      overlay.style.display = 'flex';
+      overlay.style.flexDirection = 'column';
       const copyEl = (srcId, dstId) => {
         const src = document.getElementById(srcId);
         const dst = document.getElementById(dstId);
