@@ -1172,6 +1172,7 @@
     #assign-item-pick-overlay,
     #dc-swap-overlay,
     #new-group-overlay,
+    #player-new-msg-overlay,
     #add-period-overlay,
     #clone-template-overlay,
     #save-template-overlay,
@@ -1195,7 +1196,8 @@
     /* Action sheet inner panel — centered card instead of bottom slide */
     #action-sheet-overlay > div,
     #share-invite-overlay > div,
-    #new-group-overlay > div {
+    #new-group-overlay > div,
+    #player-new-msg-overlay > div {
       border-radius: 16px !important;
       width: 480px !important;
       max-width: 90vw;
@@ -1573,9 +1575,9 @@
   .group-safety-badge.warn { background:rgba(255,184,0,0.12);color:var(--amber); }
 
   /* New group modal */
-  #new-group-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:flex-end; }
+  #new-group-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center; }
   #new-group-overlay.open { display:flex; }
-  .new-group-sheet { background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--border);max-height:88vh;overflow-y:auto; }
+  .new-group-sheet { background:var(--bg-2);border-radius:16px;width:100%;max-width:480px;padding:12px 20px 32px;border:1px solid var(--border);max-height:88vh;overflow-y:auto; }
   .ng-step { display:none; }
   .ng-step.active { display:block; }
   .member-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border); }
@@ -1593,7 +1595,7 @@
   .ng-validation.pass { background:var(--team-primary-glow-sm);color:var(--team-primary);border:1px solid var(--team-primary-glow);display:block; }
 
   /* Player new message */
-  #player-new-msg-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:flex-end; }
+  #player-new-msg-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center; }
   #player-new-msg-overlay.open { display:flex; }
 
   /* ===== DRILL LIBRARY FULL ===== */
@@ -5244,7 +5246,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.2</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.3</div>
   </div>
 </div>
 
@@ -5255,7 +5257,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.2';
+  const APP_VERSION = 'v39.3';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
