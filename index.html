@@ -425,6 +425,11 @@
   .msg-list-header { display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg) }
   .msg-compose-btn { display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--team-primary);color:var(--team-primary);background:transparent;font-family:var(--font);transition:all 0.15s }
   .msg-compose-btn:hover { background:var(--team-primary);color:var(--team-primary-text) }
+  .quick-group-btn { display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:var(--fg);background:var(--bg-3);border:1px solid var(--border);cursor:pointer;font-family:var(--font);text-align:left;transition:background 0.12s,border-color 0.12s }
+  .quick-group-btn:hover { background:var(--team-primary-glow);border-color:var(--team-primary) }
+  .quick-group-btn:active { background:var(--team-primary-glow) }
+  .ng-select-all-btn { font-size:11px;font-weight:700;color:var(--team-primary);background:var(--team-primary-glow);border:none;border-radius:20px;padding:3px 10px;cursor:pointer;font-family:var(--font);transition:opacity 0.12s }
+  .ng-select-all-btn:hover { opacity:0.8 }
   .msg-search-wrap { display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0 }
   .msg-search-input { flex:1;background:var(--bg-2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:13px;color:var(--fg);font-family:var(--font);outline:none;width:100% }
   .msg-search-input::placeholder { color:var(--fg-3) }
@@ -4220,19 +4225,10 @@
       </div>
 
       <div class="msg-group-list" id="player-msg-group-list" style="flex:1;overflow-y:auto">
-        <div id="player-msg-empty" style="text-align:center;padding:48px 20px;display:none">
+        <div id="player-msg-empty" style="text-align:center;padding:56px 20px">
           <div style="font-size:36px;margin-bottom:10px">💬</div>
-          <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">No messages yet</div>
-          <div style="font-size:12px;color:var(--fg-3)">Messages from your coaches will appear here.</div>
-        </div>
-        <div class="msg-group-item" onclick="openPlayerThread('player-allcoaches')">
-          <div class="msg-group-avatar group-staff">🎙️</div>
-          <div class="msg-group-content">
-            <div class="msg-group-header"><div class="msg-group-name">All Coaches</div><div class="inbox-time" id="mgt-player-allcoaches"></div></div>
-            <div class="msg-group-preview" id="mgp-player-allcoaches">Tap to view messages from your coaching staff</div>
-            <div class="msg-group-meta">Group channel · Coaching staff</div>
-          </div>
-          <div class="unread-dot" id="mgu-player-allcoaches"></div>
+          <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">Start a conversation</div>
+          <div style="font-size:12px;color:var(--fg-3);line-height:1.5">Tap <strong style="color:var(--fg-2)">New message</strong> below to reach out to your coaching staff.</div>
         </div>
       </div>
 
@@ -4389,10 +4385,28 @@
         </div>
         <div style="font-size:13px;color:var(--fg-3);margin-bottom:14px">Select members to include in this group.</div>
         <div class="ng-validation" id="ng-validation"></div>
-        <div style="font-size:12px;font-weight:600;color:var(--fg-3);margin-bottom:8px">Coaches & Staff</div>
+
+        <!-- Coaches & Staff -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.05em">Coaches &amp; Staff</div>
+          <button onclick="ngSelectAll('coaches')" class="ng-select-all-btn">Select all</button>
+        </div>
         <div id="ng-coaches-list"></div>
-        <div style="font-size:12px;font-weight:600;color:var(--fg-3);margin:12px 0 8px">Players & Parents</div>
+
+        <!-- Players -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px">
+          <div style="font-size:12px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.05em">Players</div>
+          <button onclick="ngSelectAll('players')" class="ng-select-all-btn">Select all</button>
+        </div>
         <div id="ng-players-list"></div>
+
+        <!-- Parents -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px">
+          <div style="font-size:12px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.05em">Parents</div>
+          <button onclick="ngSelectAll('parents')" class="ng-select-all-btn">Select all</button>
+        </div>
+        <div id="ng-parents-list"></div>
+
         <button class="note-modal-save" style="margin-top:14px" onclick="ngGoToStep(2)">Next → Name your group</button>
       </div>
 
@@ -5026,7 +5040,7 @@
       <div class="notif-panel-title">Notifications</div>
       <div class="notif-panel-close" onclick="toggleNotifPanel()">✕</div>
     </div>
-    <div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">
+    <div data-notif-empty style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">
       <div style="font-size:32px;margin-bottom:10px">🔔</div>
       No notifications yet
     </div>
@@ -5230,7 +5244,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v37.3</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.2</div>
   </div>
 </div>
 
@@ -5241,7 +5255,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.41';
+  const APP_VERSION = 'v39.2';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -9122,6 +9136,11 @@
     PLAYERS.push({ ...playerData, id: 'p' + Date.now(), notes: [], discipline: [], academic: [], parent: '', parentPhone: '', parentEmail: '', disciplinaryStatus: 'green', group: '' });
     renderCoachRoster();
 
+    // Notify head coach that a new player joined
+    addNotif(`<span>${name}</span> just joined as a player — they've been added to the roster and the All Players group.`, () => {
+      showTab('tab-coach-messages');
+    });
+
     try {
       localStorage.setItem('mesh_role', 'player');
       localStorage.setItem('mesh_auth_email', document.getElementById('join-account-email')?.value?.trim() || '');
@@ -10996,6 +11015,12 @@
     notifOpen = !notifOpen;
     document.getElementById('notif-panel').classList.toggle('open', notifOpen);
     document.getElementById('notif-overlay').classList.toggle('open', notifOpen);
+    // Clear badge when panel opened
+    if (notifOpen) {
+      notifCount = 0;
+      const badge = document.getElementById('notif-badge');
+      if (badge) badge.style.display = 'none';
+    }
   }
   function markNotifRead(el) {
     const dot = el.querySelector('.notif-dot');
@@ -11007,6 +11032,39 @@
       const badge = document.getElementById('notif-badge');
       if (notifCount === 0) badge.style.display = 'none';
       else badge.textContent = notifCount;
+    }
+  }
+
+  // Add a notification item to the bell panel
+  function addNotif(text, action) {
+    const panel = document.getElementById('notif-panel');
+    if (!panel) return;
+
+    // Remove empty state placeholder if present
+    const empty = panel.querySelector('[data-notif-empty]');
+    if (empty) empty.remove();
+
+    const head = panel.querySelector('.notif-panel-head');
+    const item = document.createElement('div');
+    item.className = 'notif-item';
+    item.onclick = function() {
+      markNotifRead(this);
+      if (action) action();
+    };
+    item.innerHTML = `
+      <div class="notif-dot"></div>
+      <div>
+        <div class="notif-text">${text}</div>
+        <div class="notif-time">Just now</div>
+      </div>`;
+    head.insertAdjacentElement('afterend', item);
+
+    // Bump badge count
+    notifCount++;
+    const badge = document.getElementById('notif-badge');
+    if (badge) {
+      badge.textContent = notifCount;
+      badge.style.display = 'flex';
     }
   }
 
@@ -11284,10 +11342,46 @@
 
   // ===== MESSAGE THREADS =====
   const THREAD_DATA = {
-    staff:   { title:'All Staff',   sub:'Coaches & staff', avatarClass:'group-staff',   avatarContent:'🎙️', avatarColor:'var(--team-primary)', messages:[] },
-    parents: { title:'All Parents', sub:'All parents',     avatarClass:'group-parents', avatarContent:'👨‍👩‍👧', avatarColor:'var(--blue)', messages:[] },
+    staff:   { title:'All Coaches & Staff', sub:'All coaches and staff',  avatarClass:'group-staff',   avatarContent:'🎙️', avatarColor:'var(--team-primary)', messages:[] },
+    players: { title:'All Players',         sub:'All players on roster',  avatarClass:'group-players', avatarContent:'🏈',  avatarColor:'var(--blue)',         messages:[] },
+    parents: { title:'All Parents',         sub:'All parents',            avatarClass:'group-parents', avatarContent:'👨‍👩‍👧', avatarColor:'#3d9e5f',             messages:[] },
   };  let currentThread = null;
   let currentThreadSubscription = null;
+
+  // ===== QUICK GROUP THREADS =====
+  // Opens a built-in group thread (staff / players / parents), adding a list item if first time
+  function openOrCreateQuickThread(key) {
+    const data = THREAD_DATA[key];
+    if (!data) return;
+
+    // If not already in the thread list, add it
+    if (!document.getElementById('mgi-' + key)) {
+      const msgList = document.getElementById('coach-msg-group-list');
+      if (msgList) {
+        const emptyState = document.getElementById('coach-msg-empty');
+        if (emptyState) emptyState.style.display = 'none';
+        const colorMap = { staff: 'var(--team-primary)', players: 'var(--blue)', parents: '#3d9e5f' };
+        const color = colorMap[key] || 'var(--fg-3)';
+        const item = document.createElement('div');
+        item.className = 'msg-group-item';
+        item.id = 'mgi-' + key;
+        item.innerHTML = `
+          <div class="msg-group-avatar ${data.avatarClass}" style="background:${color}22;color:${color}">${data.avatarContent}</div>
+          <div class="msg-group-content">
+            <div class="msg-group-header">
+              <div class="msg-group-name">${data.title}</div>
+              <div class="inbox-time" id="mgt-${key}"></div>
+            </div>
+            <div class="msg-group-preview" id="mgp-${key}">No messages yet</div>
+          </div>
+          <div class="unread-dot" id="mgu-${key}" style="opacity:0"></div>`;
+        item.onclick = () => openThread(key);
+        msgList.insertBefore(item, msgList.firstChild);
+      }
+    }
+
+    openThread(key);
+  }
 
   function closePlayerThread() {
     const overlay = document.getElementById('player-msg-thread-overlay');
@@ -11550,15 +11644,25 @@
 
   function renderNGMembers() {
     renderMemberList('ng-coaches-list', STAFF_MEMBERS, ngSelectedMembers);
-    // Use ALL players from PLAYERS array, not just first 6
     const playerMembers = PLAYERS.map(p => ({
       id: 'pl-' + p.id,
-      name: p.name + ' (Player)',
+      name: p.name,
       role: 'player',
       initials: p.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(),
       color: 'var(--blue)'
     }));
-    renderMemberList('ng-players-list', [...playerMembers, ...PARENT_MEMBERS], ngSelectedMembers);
+    renderMemberList('ng-players-list', playerMembers, ngSelectedMembers);
+    renderMemberList('ng-parents-list', PARENT_MEMBERS, ngSelectedMembers);
+  }
+
+  function ngSelectAll(group) {
+    let members = [];
+    if (group === 'coaches') members = STAFF_MEMBERS;
+    else if (group === 'players') members = PLAYERS.map(p => ({ id: 'pl-' + p.id }));
+    else if (group === 'parents') members = PARENT_MEMBERS;
+    members.forEach(m => ngSelectedMembers.add(m.id));
+    renderNGMembers();
+    validateNG();
   }
 
   function renderMemberList(containerId, members, selectedSet) {
