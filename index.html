@@ -5264,7 +5264,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.7</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.8</div>
   </div>
 </div>
 
@@ -5275,7 +5275,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.7';
+  const APP_VERSION = 'v39.8';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8567,6 +8567,7 @@
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
       const uid = data.user.id;
+      try { localStorage.setItem('mesh_auth_uid', uid); } catch(e) {}
       console.log('Auth UID:', uid);
       // Let resolveUserSession handle everything from here
       const resolved = await resolveUserSession(uid);
@@ -19298,9 +19299,16 @@ Jake Jones,8,QB,5,22,0,0,0,0"
     buildNav(appRole);
     showTab(appRole, 'home');
 
-    // Always cache programId so getValidProgramId works for all roles
+    // Always cache programId and auth uid so all features work for all roles
     if (programId) {
       try { localStorage.setItem('mesh_program_id', programId); } catch(e) {}
+    }
+    // Ensure auth uid is cached — signInWithPassword doesn't set it, so pull from session
+    if (!localStorage.getItem('mesh_auth_uid')) {
+      try {
+        const { data: { session } } = await db.auth.getSession();
+        if (session?.user?.id) localStorage.setItem('mesh_auth_uid', session.user.id);
+      } catch(e) {}
     }
 
     // Greeting
