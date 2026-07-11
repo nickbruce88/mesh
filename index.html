@@ -146,13 +146,24 @@
   /* DASHBOARD */
   .greeting { font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.3px; }
   /* Announcements */
-  .announcement-card { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px; }
+  .announcement-card { background:var(--bg-2);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px; }
+  .announcement-card.urgency-important { border-left-color:var(--amber); }
+  .announcement-card.urgency-urgent    { border-left-color:var(--red); }
   .announcement-card-header { display:flex;align-items:flex-start;gap:10px;margin-bottom:6px; }
   .announcement-avatar { width:32px;height:32px;border-radius:50%;background:var(--team-primary);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
   .announcement-meta { font-size:11px;color:var(--fg-3);margin-top:2px; }
   .announcement-body { font-size:14px;color:var(--fg);line-height:1.5; }
   .announcement-del { font-size:14px;color:var(--fg-3);cursor:pointer;padding:2px 4px;flex-shrink:0; }
   .announcement-del:active { color:var(--red); }
+  .ann-urgency-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;display:inline-flex;align-items:center;gap:3px;margin-left:4px; }
+  .ann-urgency-badge.important { background:rgba(245,158,11,0.15);color:var(--amber); }
+  .ann-urgency-badge.urgent    { background:rgba(239,68,68,0.15);color:var(--red); }
+  .ann-chip { font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);color:var(--fg-3);cursor:pointer;user-select:none;transition:all 0.12s; }
+  .ann-chip.active { border-color:var(--team-primary);color:var(--team-primary);background:var(--team-primary-glow); }
+  .ann-urgency-chip { font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);color:var(--fg-3);cursor:pointer;user-select:none;transition:all 0.12s; }
+  .ann-urgency-chip.active[data-level="normal"]    { border-color:var(--fg-2);color:var(--fg);background:var(--bg-3); }
+  .ann-urgency-chip.active[data-level="important"] { border-color:var(--amber);color:var(--amber);background:rgba(245,158,11,0.1); }
+  .ann-urgency-chip.active[data-level="urgent"]    { border-color:var(--red);color:var(--red);background:rgba(239,68,68,0.1); }
   /* Announcement compose */
   #announcement-compose { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px; }
   #announcement-input { width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--fg);font-family:var(--font);resize:none;min-height:72px;box-sizing:border-box; }
@@ -2559,7 +2570,7 @@
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:10px">
       <div class="section-label" style="margin:0">Announcements</div>
-      <button class="btn-sm" onclick="openAnnouncementCompose()" id="announce-post-btn" style="display:none">+ Post</button>
+      <button class="btn-sm" onclick="openAnnouncementCompose()" id="announce-post-btn">+ Post</button>
     </div>
     <div id="announcements-list"></div>
     <div id="announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">
@@ -2641,17 +2652,24 @@
         <div class="ap-title">Post announcement</div>
         <div class="ap-close" onclick="closeAnnouncementCompose()">✕</div>
       </div>
-      <div class="ap-sub">This will be visible to all coaches on the home screen.</div>
       <div class="ap-field">
-        <textarea class="ap-input" id="announcement-text-input" placeholder="What do you want to share with your staff?" style="min-height:100px;resize:none"></textarea>
+        <textarea class="ap-input" id="announcement-text-input" placeholder="Write your announcement…" style="min-height:100px;resize:none"></textarea>
       </div>
       <div class="ap-field">
-        <div class="ap-field-label">Visibility</div>
-        <select class="ap-input" id="announcement-visibility">
-          <option value="coaches">Coaches only</option>
-          <option value="players">Coaches + Players</option>
-          <option value="all">Coaches + Players + Parents</option>
-        </select>
+        <div class="ap-field-label">Send to</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px" id="ann-audience-chips">
+          <div class="ann-chip active" data-group="coaches"   onclick="toggleAnnChip(this)">🎙️ Coaches</div>
+          <div class="ann-chip"        data-group="players"   onclick="toggleAnnChip(this)">🏈 Players</div>
+          <div class="ann-chip"        data-group="parents"   onclick="toggleAnnChip(this)">👨‍👩‍👧 Parents</div>
+        </div>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Urgency</div>
+        <div style="display:flex;gap:6px;margin-top:6px" id="ann-urgency-chips">
+          <div class="ann-urgency-chip active" data-level="normal"    onclick="selectAnnUrgency(this)">Normal</div>
+          <div class="ann-urgency-chip"        data-level="important" onclick="selectAnnUrgency(this)">⚡ Important</div>
+          <div class="ann-urgency-chip"        data-level="urgent"    onclick="selectAnnUrgency(this)">🚨 Urgent</div>
+        </div>
       </div>
       <button class="note-modal-save" onclick="postAnnouncement()">Post announcement</button>
     </div>
@@ -5246,7 +5264,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.3</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.4</div>
   </div>
 </div>
 
@@ -5257,7 +5275,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.3';
+  const APP_VERSION = 'v39.4';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -13788,19 +13806,14 @@ ${printBtnHtml}
   }
 
   function renderAnnouncements(role) {
-    // role: 'coach' | 'player' | 'parent'
-    const listId = role === 'coach' ? 'announcements-list' : role === 'player' ? 'player-announcements-list' : 'parent-announcements-list';
+    const listId  = role === 'coach' ? 'announcements-list' : role === 'player' ? 'player-announcements-list' : 'parent-announcements-list';
     const emptyId = role === 'coach' ? 'announcements-empty' : role === 'player' ? 'player-announcements-empty' : 'parent-announcements-empty';
-    const list = document.getElementById(listId);
+    const list  = document.getElementById(listId);
     const empty = document.getElementById(emptyId);
     if (!list) return;
 
     const isCoach = role === 'coach';
-    const visMap = { coaches: ['coach'], players: ['coach','player'], all: ['coach','player','parent'] };
-    const visible = ANNOUNCEMENTS.filter(a => {
-      const allowed = visMap[a.visibility] || ['coach'];
-      return allowed.includes(role);
-    });
+    const visible = ANNOUNCEMENTS.filter(a => (a.audience || ['coaches']).includes(role));
 
     if (visible.length === 0) {
       list.innerHTML = '';
@@ -13809,15 +13822,21 @@ ${printBtnHtml}
     }
     if (empty) empty.style.display = 'none';
 
+    const urgencyLabel = { important: '⚡ Important', urgent: '🚨 Urgent' };
+    const audienceLabel = { coaches:'🎙️ Coaches', players:'🏈 Players', parents:'👨‍👩‍👧 Parents' };
+
     list.innerHTML = visible.map(a => {
-      const initials = (a.author || 'C').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-      const visLabel = a.visibility === 'coaches' ? '🔒 Coaches only' : a.visibility === 'players' ? '👥 Coaches + Players' : '🌐 Everyone';
-      return `<div class="announcement-card">
+      const initials  = (a.author || 'C').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const urgency   = a.urgency || 'normal';
+      const audience  = a.audience || ['coaches'];
+      const audText   = audience.length === 3 ? '🌐 Everyone' : audience.map(g => audienceLabel[g] || g).join(' · ');
+      const urgBadge  = urgency !== 'normal' ? `<span class="ann-urgency-badge ${urgency}">${urgencyLabel[urgency]}</span>` : '';
+      return `<div class="announcement-card urgency-${urgency}">
         <div class="announcement-card-header">
           <div class="announcement-avatar">${initials}</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;color:var(--fg)">${a.author || 'Coach'}</div>
-            <div class="announcement-meta">${a.date || ''} · ${visLabel}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--fg)">${a.author || 'Coach'}${urgBadge}</div>
+            <div class="announcement-meta">${a.date || ''} · ${audText}</div>
           </div>
           ${isCoach ? `<div class="announcement-del" onclick="deleteAnnouncement('${a.id}')">✕</div>` : ''}
         </div>
@@ -13826,9 +13845,24 @@ ${printBtnHtml}
     }).join('');
   }
 
+  function toggleAnnChip(el) {
+    // Always keep at least one chip active
+    const chips = document.querySelectorAll('#ann-audience-chips .ann-chip');
+    const activeCount = [...chips].filter(c => c.classList.contains('active')).length;
+    if (el.classList.contains('active') && activeCount === 1) return; // can't deselect last
+    el.classList.toggle('active');
+  }
+
+  function selectAnnUrgency(el) {
+    document.querySelectorAll('#ann-urgency-chips .ann-urgency-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
   function openAnnouncementCompose() {
     document.getElementById('announcement-text-input').value = '';
-    document.getElementById('announcement-visibility').value = 'coaches';
+    // Reset chips — default: coaches only, normal urgency
+    document.querySelectorAll('#ann-audience-chips .ann-chip').forEach(c => c.classList.toggle('active', c.dataset.group === 'coaches'));
+    document.querySelectorAll('#ann-urgency-chips .ann-urgency-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'normal'));
     document.getElementById('announcement-overlay').classList.add('open');
     setTimeout(() => document.getElementById('announcement-text-input').focus(), 100);
   }
@@ -13840,24 +13874,40 @@ ${printBtnHtml}
   async function postAnnouncement() {
     const text = document.getElementById('announcement-text-input').value.trim();
     if (!text) { showToast('Write something first'); return; }
-    const visibility = document.getElementById('announcement-visibility').value;
-    const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+
+    const audience = [...document.querySelectorAll('#ann-audience-chips .ann-chip.active')].map(c => c.dataset.group);
+    const urgency  = document.querySelector('#ann-urgency-chips .ann-urgency-chip.active')?.dataset.level || 'normal';
+    const user     = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+
     ANNOUNCEMENTS.unshift({
       id: annId(),
       text,
-      visibility,
+      audience,
+      urgency,
       author: user.name || 'Coach',
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
     });
+
     closeAnnouncementCompose();
     renderAnnouncements('coach');
+    renderAnnouncements('player');
+    renderAnnouncements('parent');
     await annSave();
+
+    // Fire notifications for each receiving group
+    const urgencyPrefix = urgency === 'urgent' ? '🚨 ' : urgency === 'important' ? '⚡ ' : '📣 ';
+    const authorName    = user.name || 'Coach';
+    const preview       = text.length > 60 ? text.slice(0, 60) + '…' : text;
+    addNotif(`${urgencyPrefix}<span>${authorName}</span> posted an announcement: "${preview}"`);
+
     showToast('Announcement posted ✓');
   }
 
   async function deleteAnnouncement(id) {
     ANNOUNCEMENTS = ANNOUNCEMENTS.filter(a => a.id !== id);
     renderAnnouncements('coach');
+    renderAnnouncements('player');
+    renderAnnouncements('parent');
     await annSave();
     showToast('Deleted');
   }
