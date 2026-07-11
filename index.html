@@ -4175,7 +4175,7 @@
           <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">No messages yet</div>
           <div style="font-size:12px;color:var(--fg-3)">Messages from your coaches will appear here.</div>
         </div>
-        <div class="msg-group-item" onclick="openThread('player-allcoaches')">
+        <div class="msg-group-item" onclick="openPlayerThread('player-allcoaches')">
           <div class="msg-group-avatar group-staff">🎙️</div>
           <div class="msg-group-content">
             <div class="msg-group-header"><div class="msg-group-name">All Coaches</div><div class="inbox-time" id="mgt-player-allcoaches"></div></div>
@@ -4197,6 +4197,29 @@
       </div>
 
     </div><!-- end msg-left-panel -->
+
+  <!-- ===== PLAYER MESSAGE THREAD VIEW ===== -->
+  <div id="player-msg-thread-overlay" style="display:none;position:absolute;inset:0;background:var(--bg);z-index:10;display:none;flex-direction:column">
+    <div class="thread-header">
+      <div class="thread-back" onclick="closePlayerThread()">‹</div>
+      <div class="thread-avatar group-staff" id="player-thread-avatar">🎙️</div>
+      <div style="flex:1">
+        <div class="thread-title" id="player-thread-title">All Coaches</div>
+        <div class="thread-sub" id="player-thread-sub">Coaching staff</div>
+      </div>
+    </div>
+    <div class="safety-banner" id="player-thread-safety-banner">
+      <span class="safety-banner-icon">🔒</span>
+      <span>All messages are visible to coaching staff and documented</span>
+    </div>
+    <div class="thread-body" id="player-thread-body"></div>
+    <div class="thread-compose">
+      <div class="compose-row">
+        <input class="compose-input" id="player-thread-input" placeholder="Message…" onkeydown="if(event.key==='Enter')sendPlayerThreadMsg()">
+        <button class="send-btn" onclick="sendPlayerThreadMsg()">➤</button>
+      </div>
+    </div>
+  </div>
 
   </div>
 
@@ -5163,7 +5186,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v38.39';
+  const APP_VERSION = 'v38.40';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -11203,6 +11226,47 @@
     parents: { title:'All Parents', sub:'All parents',     avatarClass:'group-parents', avatarContent:'👨‍👩‍👧', avatarColor:'var(--blue)', messages:[] },
   };  let currentThread = null;
   let currentThreadSubscription = null;
+
+  function closePlayerThread() {
+    const overlay = document.getElementById('player-msg-thread-overlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function sendPlayerThreadMsg() {
+    const input = document.getElementById('player-thread-input');
+    if (!input || !input.value.trim()) return;
+    const realInput = document.getElementById('thread-input');
+    if (realInput) {
+      realInput.value = input.value;
+      input.value = '';
+      sendThreadMsg();
+    }
+  }
+
+  function openPlayerThread(groupKey) {
+    const overlay = document.getElementById('player-msg-thread-overlay');
+    if (!overlay) { openThread(groupKey); return; }
+    openThread(groupKey);
+    setTimeout(() => {
+      overlay.style.cssText = 'display:flex;flex-direction:column;position:absolute;inset:0;background:var(--bg);z-index:10';
+      const copyEl = (srcId, dstId) => {
+        const src = document.getElementById(srcId);
+        const dst = document.getElementById(dstId);
+        if (src && dst) dst.innerHTML = src.innerHTML;
+      };
+      const copyText = (srcId, dstId) => {
+        const src = document.getElementById(srcId);
+        const dst = document.getElementById(dstId);
+        if (src && dst) dst.textContent = src.textContent;
+      };
+      copyEl('thread-body', 'player-thread-body');
+      copyText('thread-title', 'player-thread-title');
+      copyText('thread-sub', 'player-thread-sub');
+      const srcAvatar = document.getElementById('thread-avatar');
+      const dstAvatar = document.getElementById('player-thread-avatar');
+      if (srcAvatar && dstAvatar) dstAvatar.textContent = srcAvatar.textContent;
+    }, 100);
+  }
 
   async function openThread(id) {
     currentThread = id;
