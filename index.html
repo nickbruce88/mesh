@@ -3530,6 +3530,12 @@
         <button class="btn-sm" onclick="openPerfImport()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">📥 Import</button>
       </div>
 
+      <!-- Pending player stat submissions -->
+      <div id="perf-pending-section" style="display:none;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:10px">⏳ Pending stat submissions</div>
+        <div id="perf-pending-list"></div>
+      </div>
+
       <!-- Category tabs -->
       <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
         <div class="att-session-tab active" onclick="setPerfView('leaderboard',this)">Leaderboard</div>
@@ -5263,7 +5269,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.20</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.21</div>
   </div>
 </div>
 
@@ -5274,7 +5280,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.20';
+  const APP_VERSION = 'v39.21';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -12045,6 +12051,7 @@
     if (section === 'performance') {
       window.ROSTER_DATA = window.ROSTER_DATA || [];
       loadPerfData();
+      renderAllPendingStats();
     }
     if (section === 'docs') { initDocs(); }
     if (section === 'documents') {
@@ -17282,6 +17289,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const playerId = player.db_id || player.id;
     try {
       await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'player');
+      addNotif(`📊 <span>${player.name}</span> submitted stats for ${opponent || 'a game'} — awaiting your approval.`, () => {
+        showTab('coach', 'more');
+        setTimeout(() => showMoreSection('performance'), 50);
+      });
       showToast('Stats submitted — awaiting coach approval');
       document.getElementById('submit-stats-overlay')?.remove();
       renderMyInfoPage(); // refresh
@@ -17767,6 +17778,43 @@ Jake Jones,8,QB,5,22,0,0,0,0"
     });
   }
 
+  function renderAllPendingStats() {
+    const section = document.getElementById('perf-pending-section');
+    const list = document.getElementById('perf-pending-list');
+    if (!section || !list) return;
+
+    const pending = GAME_STATS.filter(s => s.status === 'pending');
+    if (!pending.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+
+    // Group by player+game
+    const groups = {};
+    pending.forEach(s => {
+      const key = s.player_id + '|' + s.game_id;
+      if (!groups[key]) groups[key] = { player_id: s.player_id, game_id: s.game_id, game_date: s.game_date, opponent: s.opponent, stats: [] };
+      groups[key].stats.push(s);
+    });
+
+    list.innerHTML = Object.values(groups).map(g => {
+      const player = PLAYERS.find(p => p.db_id === g.player_id || p.id === g.player_id);
+      const statLine = g.stats.map(s => {
+        const cat = STAT_CATEGORIES.find(c => c.key === s.category);
+        return `${cat?.label || s.category}: <strong>${s.value}</strong>`;
+      }).join(' · ');
+      return `<div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius);padding:12px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:700">${player?.name || 'Player'}</div>
+          <div style="font-size:11px;color:var(--fg-3)">${g.opponent || ''} · ${g.game_date || ''}</div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-2);margin-bottom:10px">${statLine}</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="approveAllPlayerStats('${g.player_id}','${g.game_id}')" style="flex:1;padding:7px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:12px;font-weight:700;cursor:pointer">✓ Approve</button>
+          <button onclick="rejectAllPlayerStats('${g.player_id}','${g.game_id}')" style="flex:1;padding:7px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;color:var(--fg-3);cursor:pointer">✗ Reject</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   function renderPendingStats(gameId, container) {
     if (!container) return;
     const pending = GAME_STATS.filter(s => s.game_id === gameId && s.status === 'pending');
@@ -17801,6 +17849,7 @@ Jake Jones,8,QB,5,22,0,0,0,0"
     const pending = GAME_STATS.filter(s => s.player_id === playerId && s.game_id === gameId && s.status === 'pending');
     for (const s of pending) await approveGameStat(s.id);
     showToast('Stats approved ✓');
+    renderAllPendingStats();
     const el = document.getElementById('log-stats-overlay');
     if (el) el.remove();
   }
@@ -17809,6 +17858,7 @@ Jake Jones,8,QB,5,22,0,0,0,0"
     const pending = GAME_STATS.filter(s => s.player_id === playerId && s.game_id === gameId && s.status === 'pending');
     for (const s of pending) await rejectGameStat(s.id);
     showToast('Stats rejected');
+    renderAllPendingStats();
     const el = document.getElementById('log-stats-overlay');
     if (el) el.remove();
   }
