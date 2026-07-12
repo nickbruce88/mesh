@@ -3524,47 +3524,69 @@
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Performance</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-        <button class="btn-sm" onclick="openLogSession()" style="background:var(--team-primary);color:var(--team-primary-text);font-weight:700">+ Log session</button>
-        <button class="btn-sm" onclick="openPerfBulkEntry()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">⊞ Bulk entry</button>
-        <button class="btn-sm" onclick="openPerfImport()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">📥 Import</button>
+
+      <!-- Main toggle -->
+      <div style="display:flex;gap:0;background:var(--bg-3);border-radius:var(--radius);padding:3px;margin-bottom:18px;border:1px solid var(--border)">
+        <button id="coach-perf-tab-game" onclick="setCoachPerfTab('game',this)" style="flex:1;padding:7px;border-radius:calc(var(--radius) - 2px);font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:var(--font);background:var(--team-primary);color:var(--team-primary-text)">📊 Game Stats</button>
+        <button id="coach-perf-tab-training" onclick="setCoachPerfTab('training',this)" style="flex:1;padding:7px;border-radius:calc(var(--radius) - 2px);font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:var(--font);background:transparent;color:var(--fg-2)">🏋️ Training</button>
       </div>
 
-      <!-- Pending player stat submissions -->
-      <div id="perf-pending-section" style="display:none;margin-bottom:20px">
-        <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:10px">⏳ Pending stat submissions</div>
-        <div id="perf-pending-list"></div>
-      </div>
-
-      <!-- Category tabs -->
-      <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
-        <div class="att-session-tab active" onclick="setPerfView('leaderboard',this)">Leaderboard</div>
-        <div class="att-session-tab" onclick="setPerfView('byplayer',this)">By player</div>
-      </div>
-
-      <!-- Stat cards -->
-      <div class="perf-stat-grid" id="perf-stat-cards">
-        <div class="perf-stat-card"><div class="perf-stat-label">🏋️ TOP BENCH</div><div class="perf-stat-val" id="perf-top-bench">—</div><div class="perf-stat-sub" id="perf-top-bench-who"></div></div>
-        <div class="perf-stat-card"><div class="perf-stat-label">🦵 TOP SQUAT</div><div class="perf-stat-val" id="perf-top-squat">—</div><div class="perf-stat-sub" id="perf-top-squat-who"></div></div>
-        <div class="perf-stat-card"><div class="perf-stat-label">⚡ FASTEST 40</div><div class="perf-stat-val" id="perf-top-forty">—</div><div class="perf-stat-sub" id="perf-top-forty-who"></div></div>
-        <div class="perf-stat-card"><div class="perf-stat-label">↑ TOP VERTICAL</div><div class="perf-stat-val" id="perf-top-vert">—</div><div class="perf-stat-sub" id="perf-top-vert-who"></div></div>
-      </div>
-
-      <!-- Leaderboard view -->
-      <div id="perf-leaderboard-view">
-        <div id="perf-posgroup-filter" style="margin-bottom:16px"></div>
-        <div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:12px">Lifting leaderboard</div>
-        <div id="perf-lift-table"></div>
-        <div style="font-size:13px;font-weight:700;color:var(--fg);margin:20px 0 12px">Speed &amp; agility leaderboard</div>
-        <div id="perf-speed-table"></div>
-      </div>
-
-      <!-- By player view -->
-      <div id="perf-byplayer-view" style="display:none">
-        <div style="margin-bottom:12px">
-          <input id="perf-player-search" type="text" placeholder="Search player..." class="input-field" oninput="filterPerfPlayers(this.value)">
+      <!-- ===== GAME STATS VIEW ===== -->
+      <div id="coach-perf-game-view">
+        <!-- Pending submissions -->
+        <div id="perf-pending-section" style="display:none;margin-bottom:20px">
+          <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:10px">⏳ Pending stat submissions</div>
+          <div id="perf-pending-list"></div>
         </div>
-        <div id="perf-player-list"></div>
+
+        <!-- Leaderboard by category -->
+        <div id="coach-game-stats-body">
+          <div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+            <div style="font-size:36px;margin-bottom:12px">📊</div>
+            <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No game stats yet</div>
+            <div style="font-size:12px">Stats will appear here once games are logged.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TRAINING VIEW ===== -->
+      <div id="coach-perf-training-view" style="display:none">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn-sm" onclick="openLogSession()" style="background:var(--team-primary);color:var(--team-primary-text);font-weight:700">+ Log session</button>
+          <button class="btn-sm" onclick="openPerfBulkEntry()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">⊞ Bulk entry</button>
+          <button class="btn-sm" onclick="openPerfImport()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg);font-weight:700">📥 Import</button>
+        </div>
+
+        <!-- Category tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+          <div class="att-session-tab active" onclick="setPerfView('leaderboard',this)">Leaderboard</div>
+          <div class="att-session-tab" onclick="setPerfView('byplayer',this)">By player</div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="perf-stat-grid" id="perf-stat-cards">
+          <div class="perf-stat-card"><div class="perf-stat-label">🏋️ TOP BENCH</div><div class="perf-stat-val" id="perf-top-bench">—</div><div class="perf-stat-sub" id="perf-top-bench-who"></div></div>
+          <div class="perf-stat-card"><div class="perf-stat-label">🦵 TOP SQUAT</div><div class="perf-stat-val" id="perf-top-squat">—</div><div class="perf-stat-sub" id="perf-top-squat-who"></div></div>
+          <div class="perf-stat-card"><div class="perf-stat-label">⚡ FASTEST 40</div><div class="perf-stat-val" id="perf-top-forty">—</div><div class="perf-stat-sub" id="perf-top-forty-who"></div></div>
+          <div class="perf-stat-card"><div class="perf-stat-label">↑ TOP VERTICAL</div><div class="perf-stat-val" id="perf-top-vert">—</div><div class="perf-stat-sub" id="perf-top-vert-who"></div></div>
+        </div>
+
+        <!-- Leaderboard view -->
+        <div id="perf-leaderboard-view">
+          <div id="perf-posgroup-filter" style="margin-bottom:16px"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:12px">Lifting leaderboard</div>
+          <div id="perf-lift-table"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--fg);margin:20px 0 12px">Speed &amp; agility leaderboard</div>
+          <div id="perf-speed-table"></div>
+        </div>
+
+        <!-- By player view -->
+        <div id="perf-byplayer-view" style="display:none">
+          <div style="margin-bottom:12px">
+            <input id="perf-player-search" type="text" placeholder="Search player..." class="input-field" oninput="filterPerfPlayers(this.value)">
+          </div>
+          <div id="perf-player-list"></div>
+        </div>
       </div>
     </div>
 
@@ -4194,23 +4216,28 @@
   <!-- PLAYER PERFORMANCE TAB -->
   <div id="tab-player-performance" class="scroll-content" style="display:none;padding:0 20px 80px">
     <div style="padding-top:16px">
-      <!-- View toggle -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Performance</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn-sm" id="player-perf-btn-mine" onclick="switchPlayerPerfView('mine',this)" style="background:var(--team-primary);color:var(--team-primary-text)">My Stats</button>
-          <button class="btn-sm" id="player-perf-btn-board" onclick="switchPlayerPerfView('board',this)">Leaderboard</button>
+      <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:14px">Performance</div>
+
+      <!-- Main toggle -->
+      <div style="display:flex;gap:0;background:var(--bg-3);border-radius:var(--radius);padding:3px;margin-bottom:18px;border:1px solid var(--border)">
+        <button id="player-perf-tab-game" onclick="setPlayerPerfTab('game',this)" style="flex:1;padding:7px;border-radius:calc(var(--radius) - 2px);font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:var(--font);background:var(--team-primary);color:var(--team-primary-text)">📊 Game Stats</button>
+        <button id="player-perf-tab-training" onclick="setPlayerPerfTab('training',this)" style="flex:1;padding:7px;border-radius:calc(var(--radius) - 2px);font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:var(--font);background:transparent;color:var(--fg-2)">🏋️ Training</button>
+      </div>
+
+      <!-- Game Stats view -->
+      <div id="player-perf-game-view">
+        <button onclick="openSubmitStatsOverlay()" style="width:100%;padding:10px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);margin-bottom:16px">+ Submit stats</button>
+        <div id="player-game-stats-body"></div>
+      </div>
+
+      <!-- Training view -->
+      <div id="player-perf-training-view" style="display:none">
+        <div id="player-perf-mine" style="display:block">
+          <div id="player-perf-mine-body"></div>
         </div>
-      </div>
-
-      <!-- My Stats view -->
-      <div id="player-perf-mine">
-        <div id="player-perf-mine-body"></div>
-      </div>
-
-      <!-- Leaderboard view -->
-      <div id="player-perf-board" style="display:none">
-        <div id="player-perf-board-body"></div>
+        <div id="player-perf-board" style="display:none">
+          <div id="player-perf-board-body"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -4333,6 +4360,7 @@
       <button class="pp-tab-btn" onclick="showPPTab('academic',this)">Academic</button>
       <button class="pp-tab-btn" onclick="showPPTab('contacts',this)">Contacts</button>
       <button class="pp-tab-btn" onclick="showPPTab('equipment',this)">Equipment</button>
+      <button class="pp-tab-btn" onclick="showPPTab('stats',this)">Stats</button>
     </div>
 
     <div class="pp-body">
@@ -4392,6 +4420,10 @@
           </div>
         </div>
         <div id="pp-equipment-list"></div>
+      </div>
+
+      <div class="pp-section" id="pp-stats">
+        <div id="pp-stats-body"></div>
       </div>
 
     </div>
@@ -5269,7 +5301,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.21</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.24</div>
   </div>
 </div>
 
@@ -5280,7 +5312,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.21';
+  const APP_VERSION = 'v39.24';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5453,7 +5485,7 @@
       if (matchId) updateDesktopSidebarActive(matchId);
       if (tab === 'more') {
         if (role === 'coach') showMoreSection('roster');
-        else if (role === 'player') setTimeout(() => renderMyInfoPage(), 50);
+        else if (role === 'player') setTimeout(() => { renderMyInfoPage(); renderPlayerGameStats(); }, 50);
         else showMoreSection('myplayer');
       }
       if (tab === 'practice') { applyDesktopPracticeLayout(); setTimeout(initPracticeToToday, 50); }
@@ -12052,6 +12084,7 @@
       window.ROSTER_DATA = window.ROSTER_DATA || [];
       loadPerfData();
       renderAllPendingStats();
+      renderCoachGameStats();
     }
     if (section === 'docs') { initDocs(); }
     if (section === 'documents') {
@@ -12839,10 +12872,35 @@
     } catch(e) { console.error('Schedule save error:', e); }
   }
 
+  let _pendingStatsNotified = false;
+
   async function loadGameStats(programId) {
     try {
       const { data } = await db.from('game_stats').select('*').eq('program_id', programId).order('game_date', { ascending: false });
       GAME_STATS = data || [];
+
+      // Notify coach about pending submissions — only once per session, after DOM is ready
+      if (currentRole === 'coach' && !_pendingStatsNotified) {
+        _pendingStatsNotified = true;
+        const pending = GAME_STATS.filter(s => s.status === 'pending');
+        if (pending.length) {
+          const byPlayerGame = {};
+          pending.forEach(s => {
+            const key = s.player_id + '|' + s.game_id;
+            if (!byPlayerGame[key]) byPlayerGame[key] = s;
+          });
+          // Defer slightly so notif panel DOM is guaranteed mounted
+          setTimeout(() => {
+            Object.values(byPlayerGame).forEach(s => {
+              const player = PLAYERS.find(p => p.db_id === s.player_id || p.id === s.player_id);
+              addNotif(`📊 <span>${player?.name || 'A player'}</span> submitted stats for ${s.opponent || 'a game'} — awaiting approval.`, () => {
+                showTab('coach', 'more');
+                setTimeout(() => showMoreSection('performance'), 50);
+              });
+            });
+          }, 500);
+        }
+      }
     } catch(e) { console.warn('Game stats load error:', e); }
   }
 
@@ -13842,7 +13900,195 @@ ${printBtnHtml}
   }
 
   // ===== COACH DOC CENTER FOLDERS =====
-  // ===== ANNOUNCEMENTS =====
+  // ===== PERFORMANCE TAB TOGGLES =====
+  function setCoachPerfTab(tab, btn) {
+    document.getElementById('coach-perf-game-view').style.display = tab === 'game' ? 'block' : 'none';
+    document.getElementById('coach-perf-training-view').style.display = tab === 'training' ? 'block' : 'none';
+    document.getElementById('coach-perf-tab-game').style.background = tab === 'game' ? 'var(--team-primary)' : 'transparent';
+    document.getElementById('coach-perf-tab-game').style.color = tab === 'game' ? 'var(--team-primary-text)' : 'var(--fg-2)';
+    document.getElementById('coach-perf-tab-training').style.background = tab === 'training' ? 'var(--team-primary)' : 'transparent';
+    document.getElementById('coach-perf-tab-training').style.color = tab === 'training' ? 'var(--team-primary-text)' : 'var(--fg-2)';
+    if (tab === 'game') { renderCoachGameStats(); renderAllPendingStats(); }
+    else { loadPerfData(); }
+  }
+
+  function setPlayerPerfTab(tab, btn) {
+    document.getElementById('player-perf-game-view').style.display = tab === 'game' ? 'block' : 'none';
+    document.getElementById('player-perf-training-view').style.display = tab === 'training' ? 'block' : 'none';
+    document.getElementById('player-perf-tab-game').style.background = tab === 'game' ? 'var(--team-primary)' : 'transparent';
+    document.getElementById('player-perf-tab-game').style.color = tab === 'game' ? 'var(--team-primary-text)' : 'var(--fg-2)';
+    document.getElementById('player-perf-tab-training').style.background = tab === 'training' ? 'var(--team-primary)' : 'transparent';
+    document.getElementById('player-perf-tab-training').style.color = tab === 'training' ? 'var(--team-primary-text)' : 'var(--fg-2)';
+    if (tab === 'game') renderPlayerGameStats();
+    else renderMyInfoPage();
+  }
+
+  // ===== COACH GAME STATS LEADERBOARD =====
+  function renderCoachGameStats() {
+    const body = document.getElementById('coach-game-stats-body');
+    if (!body) return;
+    const approved = GAME_STATS.filter(s => s.status === 'approved');
+    if (!approved.length) {
+      body.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
+        <div style="font-size:36px;margin-bottom:12px">📊</div>
+        <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No game stats yet</div>
+        <div style="font-size:12px">Stats will appear here once games are logged or submitted by players.</div>
+      </div>`;
+      return;
+    }
+
+    // Aggregate season totals per player per category
+    const totals = {}; // { player_id: { category: total } }
+    approved.forEach(s => {
+      if (!totals[s.player_id]) totals[s.player_id] = {};
+      totals[s.player_id][s.category] = (totals[s.player_id][s.category] || 0) + (parseFloat(s.value) || 0);
+    });
+
+    // Get categories that have data
+    const usedCats = [...new Set(approved.map(s => s.category))];
+    const cats = STAT_CATEGORIES.filter(c => usedCats.includes(c.key));
+
+    body.innerHTML = cats.map(cat => {
+      // Build leaderboard for this category
+      const entries = Object.entries(totals)
+        .filter(([pid, cats]) => cats[cat.key] !== undefined)
+        .map(([pid, cats]) => {
+          const player = PLAYERS.find(p => p.db_id === pid || p.id === pid);
+          return { pid, name: player?.name || 'Unknown', pos: player?.position || '', total: cats[cat.key] || 0 };
+        })
+        .sort((a, b) => b.total - a.total);
+
+      if (!entries.length) return '';
+      const top3 = entries.slice(0, 3);
+      const hasMore = entries.length > 3;
+
+      return `<div class="game-stat-cat-block" id="gscat-${cat.key}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:700;color:var(--fg)">${cat.label}</div>
+          ${hasMore ? `<button onclick="toggleGSCatViewAll('${cat.key}')" id="gscat-viewall-btn-${cat.key}" style="font-size:11px;font-weight:700;color:var(--team-primary);background:none;border:none;cursor:pointer;font-family:var(--font)">View all</button>` : ''}
+        </div>
+        <div id="gscat-top3-${cat.key}">
+          ${top3.map((e, i) => gsStatRow(e, i, cat)).join('')}
+        </div>
+        <div id="gscat-all-${cat.key}" style="display:none">
+          ${entries.map((e, i) => gsStatRow(e, i, cat)).join('')}
+        </div>
+      </div>`;
+    }).filter(Boolean).join('<div style="height:1px;background:var(--border);margin:16px 0"></div>');
+  }
+
+  function gsStatRow(e, i, cat) {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+    return `<div onclick="openPPStatsFromRoster('${e.pid}')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-subtle,var(--border));cursor:pointer">
+      <div style="width:24px;text-align:center;font-size:13px;flex-shrink:0">${medal}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">${e.name}</div>
+        <div style="font-size:11px;color:var(--fg-3)">${e.pos}</div>
+      </div>
+      <div style="font-size:15px;font-weight:800;color:var(--team-primary)">${e.total}${cat.unit ? ' '+cat.unit : ''}</div>
+    </div>`;
+  }
+
+  function toggleGSCatViewAll(key) {
+    const top3 = document.getElementById('gscat-top3-' + key);
+    const all = document.getElementById('gscat-all-' + key);
+    const btn = document.getElementById('gscat-viewall-btn-' + key);
+    const expanded = all.style.display !== 'none';
+    top3.style.display = expanded ? 'block' : 'none';
+    all.style.display = expanded ? 'none' : 'block';
+    btn.textContent = expanded ? 'View all' : 'Show less';
+  }
+
+  function openPPStatsFromRoster(playerId) {
+    const player = PLAYERS.find(p => p.db_id === playerId || p.id === playerId);
+    if (!player) return;
+    openPlayerProfile(player.id);
+    setTimeout(() => showPPTab('stats'), 300);
+  }
+
+  // ===== PLAYER GAME STATS (own history) =====
+  function renderPlayerGameStats() {
+    const body = document.getElementById('player-game-stats-body');
+    if (!body) return;
+    const player = PLAYERS.find(p => p.name === _sessionUser?.name);
+    if (!player) { body.innerHTML = '<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:40px 0">Could not find your player profile.</div>'; return; }
+    const pid = player.db_id || player.id;
+    const myStats = GAME_STATS.filter(s => (s.player_id === pid) && s.status === 'approved');
+    if (!myStats.length) {
+      body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3)">
+        <div style="font-size:36px;margin-bottom:10px">📊</div>
+        <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No approved stats yet</div>
+        <div style="font-size:12px">Submit stats after a game and your coach will approve them.</div>
+      </div>`;
+      return;
+    }
+    body.innerHTML = renderPlayerStatHistory(pid);
+  }
+
+  // ===== PLAYER PROFILE STATS TAB =====
+  function renderPPStats(player) {
+    const body = document.getElementById('pp-stats-body');
+    if (!body || !player) return;
+    const pid = player.db_id || player.id;
+    const playerStats = GAME_STATS.filter(s => (s.player_id === pid) && s.status === 'approved');
+    if (!playerStats.length) {
+      body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3)">
+        <div style="font-size:36px;margin-bottom:10px">📊</div>
+        <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No approved stats yet</div>
+        <div style="font-size:12px">Log or approve stats to see them here.</div>
+      </div>`;
+      return;
+    }
+    body.innerHTML = renderPlayerStatHistory(pid);
+  }
+
+  // Shared: render season totals + game-by-game breakdown for a player
+  function renderPlayerStatHistory(pid) {
+    const playerStats = GAME_STATS.filter(s => (s.player_id === pid) && s.status === 'approved');
+
+    // Season totals
+    const totals = {};
+    playerStats.forEach(s => { totals[s.category] = (totals[s.category] || 0) + (parseFloat(s.value) || 0); });
+    const usedCats = STAT_CATEGORIES.filter(c => totals[c.key] !== undefined);
+
+    const totalsHTML = usedCats.length ? `
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Season totals</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          ${usedCats.map(c => `
+            <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px;text-align:center;border:1px solid var(--border)">
+              <div style="font-size:18px;font-weight:800;color:var(--team-primary)">${totals[c.key]}${c.unit?' '+c.unit:''}</div>
+              <div style="font-size:10px;font-weight:600;color:var(--fg-3);margin-top:2px">${c.label.toUpperCase()}</div>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    // Game-by-game
+    const byGame = {};
+    playerStats.forEach(s => {
+      const key = s.game_id;
+      if (!byGame[key]) byGame[key] = { date: s.game_date, opponent: s.opponent, stats: {} };
+      byGame[key].stats[s.category] = (byGame[key].stats[s.category] || 0) + (parseFloat(s.value) || 0);
+    });
+    const games = Object.values(byGame).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const gamesHTML = `
+      <div style="font-size:12px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Game log</div>
+      ${games.map(g => {
+        const statLine = Object.entries(g.stats).map(([k, v]) => {
+          const cat = STAT_CATEGORIES.find(c => c.key === k);
+          return `<span style="margin-right:10px"><strong>${v}${cat?.unit?' '+cat.unit:''}</strong> <span style="color:var(--fg-3)">${cat?.label||k}</span></span>`;
+        }).join('');
+        return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <div style="font-size:13px;font-weight:700">${g.opponent || 'Game'}</div>
+            <div style="font-size:11px;color:var(--fg-3)">${g.date || ''}</div>
+          </div>
+          <div style="font-size:12px;flex-wrap:wrap">${statLine}</div>
+        </div>`;
+      }).join('')}`;
+
+    return totalsHTML + gamesHTML;
+  }
   let ANNOUNCEMENTS = [];
   const ANN_SUPABASE_COL = 'announcements_data';
 
@@ -15240,12 +15486,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (btnEl) btnEl.classList.add('active');
     else {
       const btns = document.querySelectorAll('.pp-tab-btn');
-      const tabNames = ['overview','notes','discipline','academic','contacts','equipment'];
+      const tabNames = ['overview','notes','discipline','academic','contacts','equipment','stats'];
       const idx = tabNames.indexOf(tab);
       if (btns[idx]) btns[idx].classList.add('active');
     }
     if (tab === 'equipment' && currentPlayerId) {
       renderPPEquipment(PLAYERS.find(p => p.id === currentPlayerId));
+    }
+    if (tab === 'stats' && currentPlayerId) {
+      renderPPStats(PLAYERS.find(p => p.id === currentPlayerId));
     }
   }
 
@@ -17289,10 +17538,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const playerId = player.db_id || player.id;
     try {
       await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'player');
-      addNotif(`📊 <span>${player.name}</span> submitted stats for ${opponent || 'a game'} — awaiting your approval.`, () => {
-        showTab('coach', 'more');
-        setTimeout(() => showMoreSection('performance'), 50);
-      });
       showToast('Stats submitted — awaiting coach approval');
       document.getElementById('submit-stats-overlay')?.remove();
       renderMyInfoPage(); // refresh
