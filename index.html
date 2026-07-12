@@ -5264,7 +5264,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.8</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.10</div>
   </div>
 </div>
 
@@ -5275,7 +5275,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.8';
+  const APP_VERSION = 'v39.10';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5503,7 +5503,8 @@
   }
 
   // Apply the saved profile photo (or fall back to initials) to any avatar element
-  let _currentAvatarUrl = null; // in-memory only, no localStorage
+  let _currentAvatarUrl = null;  // signed URL (expires ~1hr)
+  let _currentAvatarPath = null; // raw storage path (permanent)
 
   async function refreshAvatarSignedUrl() {
     try {
@@ -5523,6 +5524,7 @@
       const { data: signed, error } = await db.storage.from('avatars').createSignedUrl(path, 3600);
       console.log('[AvatarLoad] signed URL:', signed?.signedUrl, 'error:', error);
       if (error || !signed?.signedUrl) return;
+      _currentAvatarPath = path;
       _currentAvatarUrl = signed.signedUrl;
       refreshAllUserAvatars();
       console.log('[AvatarLoad] avatar applied ✓');
@@ -11172,10 +11174,9 @@
     applyUserAvatar(document.getElementById('sidebar-avatar'));
     const ua=document.getElementById('user-avatar'); if(ua && (_currentAvatarUrl)) applyUserAvatar(ua);
     refreshProfileHeader();
-    // Patch any announcement avatar cards posted by the current user
-    const myUid = localStorage.getItem('mesh_auth_uid');
-    if (myUid && _currentAvatarUrl) {
-      document.querySelectorAll(`.announcement-avatar[data-ann-author="${myUid}"]`).forEach(el => {
+    // Patch any announcement cards whose path matches the current user's avatar
+    if (_currentAvatarPath && _currentAvatarUrl) {
+      document.querySelectorAll(`.announcement-avatar[data-ann-path="${_currentAvatarPath}"]`).forEach(el => {
         el.innerHTML = `<img src="${_currentAvatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       });
     }
@@ -11218,6 +11219,7 @@
           const { data: signed, error: signErr } = await db.storage.from('avatars').createSignedUrl(path, 3600);
           console.log('[Avatar] signed URL:', signed?.signedUrl, 'error:', signErr);
           if (signed?.signedUrl) {
+            _currentAvatarPath = path;
             _currentAvatarUrl = signed.signedUrl;
             const av2=document.getElementById('edit-profile-avatar');
             if(av2) av2.innerHTML=`<img src="${signed.signedUrl}" style="width:100%;height:100%;object-fit:cover">`;
@@ -11231,6 +11233,7 @@
     rd.readAsDataURL(f);
   }
   async function removeProfilePhoto(){
+    _currentAvatarPath = null;
     _currentAvatarUrl = null;
     refreshAllUserAvatars();
     document.getElementById('edit-profile-overlay')?.remove();
@@ -13813,7 +13816,7 @@ ${printBtnHtml}
     } catch(e) { console.warn('Ann load error:', e); }
   }
 
-  function renderAnnouncements(role) {
+  async function renderAnnouncements(role) {
     const listId  = role === 'coach' ? 'announcements-list' : role === 'player' ? 'player-announcements-list' : 'parent-announcements-list';
     const emptyId = role === 'coach' ? 'announcements-empty' : role === 'player' ? 'player-announcements-empty' : 'parent-announcements-empty';
     const list  = document.getElementById(listId);
@@ -13832,23 +13835,35 @@ ${printBtnHtml}
     }
     if (empty) empty.style.display = 'none';
 
+    // Batch-sign all unique avatar paths so URLs are always fresh
+    const myUid = localStorage.getItem('mesh_auth_uid');
+    const pathToUrl = {};
+    const uniquePaths = [...new Set(visible.map(a => a.avatarPath).filter(Boolean))];
+    if (uniquePaths.length) {
+      try {
+        const { data: signed } = await db.storage.from('avatars').createSignedUrls(uniquePaths, 3600);
+        (signed || []).forEach(s => { if (s.signedUrl) pathToUrl[s.path] = s.signedUrl; });
+      } catch(e) { console.warn('Ann avatar sign error:', e); }
+    }
+    // Override with live URL for current user's own path (already in memory)
+    if (_currentAvatarPath && _currentAvatarUrl) pathToUrl[_currentAvatarPath] = _currentAvatarUrl;
+
     const urgencyLabel = { important: '⚡ Important', urgent: '🚨 Urgent' };
     const audienceLabel = { coaches:'🎙️ Coaches', players:'🏈 Players', parents:'👨‍👩‍👧 Parents' };
 
     list.innerHTML = visible.map(a => {
-      const initials  = (a.author || 'C').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-      const urgency   = a.urgency || 'normal';
-      const audience  = a.audience || ['coaches'];
-      const audText   = audience.length === 3 ? '🌐 Everyone' : audience.map(g => audienceLabel[g] || g).join(' · ');
-      const urgBadge  = urgency !== 'normal' ? `<span class="ann-urgency-badge ${urgency}">${urgencyLabel[urgency]}</span>` : '';
-      const myUid     = localStorage.getItem('mesh_auth_uid');
-      const isMe      = a.authorUid && myUid && a.authorUid === myUid;
-      const avatarInner = (isMe && _currentAvatarUrl)
-        ? `<img src="${_currentAvatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      const initials    = (a.author || 'C').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const urgency     = a.urgency || 'normal';
+      const audience    = a.audience || ['coaches'];
+      const audText     = audience.length === 3 ? '🌐 Everyone' : audience.map(g => audienceLabel[g] || g).join(' · ');
+      const urgBadge    = urgency !== 'normal' ? `<span class="ann-urgency-badge ${urgency}">${urgencyLabel[urgency]}</span>` : '';
+      const photoUrl    = a.avatarPath ? pathToUrl[a.avatarPath] : null;
+      const avatarInner = photoUrl
+        ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
         : initials;
       return `<div class="announcement-card urgency-${urgency}">
         <div class="announcement-card-header">
-          <div class="announcement-avatar" data-ann-author="${a.authorUid || ''}">${avatarInner}</div>
+          <div class="announcement-avatar" data-ann-path="${a.avatarPath || ''}">${avatarInner}</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;color:var(--fg)">${a.author || 'Coach'}${urgBadge}</div>
             <div class="announcement-meta">${a.date || ''} · ${audText}</div>
@@ -13858,14 +13873,6 @@ ${printBtnHtml}
         <div class="announcement-body">${escHtml(a.text)}</div>
       </div>`;
     }).join('');
-
-    // Apply profile photo to any cards posted by current user
-    const myUid = localStorage.getItem('mesh_auth_uid');
-    if (myUid && _currentAvatarUrl) {
-      list.querySelectorAll(`.announcement-avatar[data-ann-author="${myUid}"]`).forEach(el => {
-        el.innerHTML = `<img src="${_currentAvatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-      });
-    }
   }
 
   function toggleAnnChip(el) {
@@ -13909,6 +13916,7 @@ ${printBtnHtml}
       urgency,
       author: user.name || 'Coach',
       authorUid: localStorage.getItem('mesh_auth_uid') || null,
+      avatarPath: _currentAvatarPath || null,
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
     });
 
