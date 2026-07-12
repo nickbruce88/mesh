@@ -2202,7 +2202,6 @@
     <div class="ob-field-label">Confirm password</div>
     <input class="input-field" id="signup-password-confirm" type="password" placeholder="Re-enter password" style="margin-bottom:8px" autocomplete="new-password">
     <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="signup-error"></div>
-    <!-- TOS acceptance -->
     <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;cursor:pointer">
       <input type="checkbox" id="signup-tos-checkbox" style="margin-top:3px;accent-color:var(--team-primary);width:16px;height:16px;flex-shrink:0">
       <span style="font-size:12px;color:var(--fg-2);line-height:1.5">I agree to the Mesh Sports <a href="https://meshsports.co/terms" target="_blank" style="color:var(--team-primary);font-weight:600">Terms of Service</a> and <a href="https://meshsports.co/privacy" target="_blank" style="color:var(--team-primary);font-weight:600">Privacy Policy</a>. I understand that Mesh Sports is currently in beta.</span>
@@ -5314,7 +5313,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.39</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.40</div>
   </div>
 </div>
 
@@ -5325,7 +5324,93 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.39';
+  const APP_VERSION = 'v39.40';
+
+  // ===== PUSH NOTIFICATIONS =====
+  const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
+  const PUSH_EDGE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co/functions/v1/send-notification';
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+  }
+
+  async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
+      return reg;
+    } catch (e) {
+      console.warn('[Push] Service worker registration failed:', e);
+      return null;
+    }
+  }
+
+  async function subscribeToPush(role) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'denied') return;
+
+    const reg = await registerServiceWorker();
+    if (!reg) return;
+
+    try {
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY)
+        });
+      }
+
+      // Upsert token in Supabase
+      const programId = await getValidProgramId();
+      const uid = localStorage.getItem('mesh_auth_uid');
+      if (!programId || !uid) return;
+
+      const subJson = sub.toJSON();
+      await db.from('notification_tokens')
+        .upsert({
+          user_id: uid,
+          program_id: programId,
+          user_role: role,
+          subscription: subJson,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id,program_id' });
+
+      console.log('[Push] Subscribed and token saved for role:', role);
+    } catch (e) {
+      console.warn('[Push] Subscribe error:', e);
+    }
+  }
+
+  async function sendPushNotification(programId, type, title, body, targetRoles) {
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) return;
+      await fetch(PUSH_EDGE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          program_id: programId,
+          type,
+          title,
+          body: body || '',
+          target_roles: targetRoles
+        })
+      });
+    } catch (e) {
+      console.warn('[Push] Send notification error:', e);
+    }
+  }
+
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -9573,6 +9658,8 @@
     buildNav('coach');
     showTab('coach', 'home');
     updateInviteBanner();
+    // Prompt for push notifications after onboarding
+    setTimeout(() => subscribeToPush('coach'), 1500);
     // Load any existing roster from Supabase
     getValidProgramId().then(id => {
       if (id) {
@@ -11792,6 +11879,18 @@
           content: text
         });
         console.log('Message saved to Supabase');
+
+        // Push notification to other participants — determine target roles from thread name
+        const threadLower = (currentThread || '').toLowerCase();
+        let pushRoles = ['coach', 'player', 'parent'];
+        if (threadLower.includes('coach')) pushRoles = ['coach'];
+        else if (threadLower.includes('player')) pushRoles = ['player', 'coach'];
+        else if (threadLower.includes('parent')) pushRoles = ['parent', 'coach'];
+        sendPushNotification(programId, 'message',
+          `💬 ${senderName}`,
+          text.length > 80 ? text.slice(0, 80) + '…' : text,
+          pushRoles
+        );
       } catch(e) {
         console.error('Send message error:', e);
       }
@@ -14515,6 +14614,20 @@ ${printBtnHtml}
     renderAnnouncements('parent');
     await annSave();
     showToast('Announcement posted ✓');
+
+    // Push notification to audience
+    const programId = await getValidProgramId();
+    if (programId) {
+      const pushRoles = audience.includes('all')
+        ? ['coach', 'player', 'parent']
+        : audience.filter(a => ['coach','player','parent'].includes(a));
+      const authorName = user.name || 'Coach';
+      sendPushNotification(programId, 'announcement',
+        `📣 ${authorName}`,
+        text.length > 80 ? text.slice(0, 80) + '…' : text,
+        pushRoles
+      );
+    }
   }
 
   async function deleteAnnouncement(id) {
@@ -20293,6 +20406,9 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       const homeCode = document.getElementById('home-join-code');
       if (homeCode) homeCode.textContent = obProgram.coachCode || '';
     }
+
+    // Register push subscription (upserts on every login — handles token refresh)
+    setTimeout(() => subscribeToPush(appRole), 2000);
 
     console.log('[Session] App launched — role:', appRole, 'program:', obProgram.teamName);
   }
