@@ -5264,7 +5264,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.12</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.13</div>
   </div>
 </div>
 
@@ -5275,7 +5275,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.12';
+  const APP_VERSION = 'v39.13';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -13868,8 +13868,13 @@ ${printBtnHtml}
     if (uniquePaths.length) {
       try {
         const { data: signed, error: signErr } = await db.storage.from('avatars').createSignedUrls(uniquePaths, 3600);
-        console.log('[Ann] signed URLs:', signed, 'error:', signErr);
-        (signed || []).forEach(s => { if (s.signedUrl) pathToUrl[s.path] = s.signedUrl; });
+        console.log('[Ann] signed URLs:', JSON.stringify(signed), 'error:', signErr);
+        // Map by index — the response path field may differ from what we stored
+        if (signed) {
+          signed.forEach((s, i) => {
+            if (s.signedUrl) pathToUrl[uniquePaths[i]] = s.signedUrl;
+          });
+        }
       } catch(e) { console.warn('Ann avatar sign error:', e); }
     }
     // Override with live URL for current user's own path (already in memory)
