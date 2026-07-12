@@ -4216,7 +4216,6 @@
         <div style="font-size:13px;color:var(--gray-2);margin-top:2px" id="player-sched-sub"></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <button class="btn-sm" onclick="exportCalendar('player')">📅 Export</button>
         <div style="display:flex;gap:6px">
           <button class="btn-sm" id="player-view-list" onclick="setPlayerSchedView('list',this)">List</button>
           <button class="btn-sm active-btn" id="player-view-cal" onclick="setPlayerSchedView('cal',this)" style="background:var(--team-primary);color:var(--team-primary-text)">Calendar</button>
@@ -5264,7 +5263,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.17</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.19</div>
   </div>
 </div>
 
@@ -5275,7 +5274,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.17';
+  const APP_VERSION = 'v39.19';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -12856,14 +12855,15 @@
     } catch(e) { console.warn('Stat categories load error:', e); }
   }
 
-  async function saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, submittedBy = 'coach') {
+  async function saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, submittedBy = 'coach', level = null) {
     const status = submittedBy === 'coach' ? 'approved' : 'pending';
     const rows = Object.entries(stats)
       .filter(([, v]) => v !== '' && v !== null && v !== undefined)
       .map(([category, value]) => ({
         program_id: programId, player_id: playerId,
         game_id: gameId, game_date: gameDate, opponent,
-        category, value: parseFloat(value), status, submitted_by: submittedBy
+        category, value: parseFloat(value), status, submitted_by: submittedBy,
+        ...(level ? { level } : {})
       }));
     if (!rows.length) return;
     // Delete existing stats for this player+game first (upsert by replacing)
@@ -17221,7 +17221,9 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
 
-    const games = [...SCHEDULE].filter(g => new Date(g.date) < new Date() && (g.tag === 'game' || g.tag === 'scrimmage')).slice(0, 10);
+    const games = [...SCHEDULE]
+      .filter(g => g.tag === 'game' || g.tag === 'scrimmage')
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const cats = STAT_CATEGORIES;
     const player = PLAYERS.find(p => p.name === _sessionUser?.name);
 
@@ -17237,9 +17239,22 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
           <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">GAME</div>
           <select id="submit-stats-game" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
-            <option value="">Select a game...</option>
-            ${games.map(g => `<option value="${g.id}" data-date="${g.date}" data-opp="${g.opponent||g.title||''}">${g.opponent||g.title||'Game'} · ${g.date}</option>`).join('')}
+            <option value="">${games.length ? 'Select a game...' : 'No games on schedule yet'}</option>
+            ${games.map(g => {
+              const gid = g.id || g.date + '_' + (g.opponent||g.title||'game').replace(/\s+/g,'_');
+              const label = (g.opponent||g.title||'Game') + ' · ' + (g.date||'');
+              return `<option value="${gid}" data-date="${g.date||''}" data-opp="${g.opponent||g.title||''}">${label}</option>`;
+            }).join('')}
           </select>
+        </div>
+        <div style="padding:12px 20px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">LEVEL</div>
+          <div style="display:flex;gap:8px">
+            ${['Varsity','JV','Freshman'].map(l => `
+              <div class="ann-chip" data-level="${l}" onclick="selectStatLevel(this)" style="flex:1;text-align:center">${l}</div>
+            `).join('')}
+          </div>
+          <input type="hidden" id="submit-stats-level" value="">
         </div>
         <div style="flex:1;overflow-y:auto;padding:16px 20px">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -17259,11 +17274,19 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.body.appendChild(overlay);
   }
 
+  function selectStatLevel(el) {
+    document.querySelectorAll('#submit-stats-overlay .ann-chip[data-level]').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('submit-stats-level').value = el.dataset.level;
+  }
+
   async function submitPlayerStats() {
     const sel = document.getElementById('submit-stats-game');
     const gameId = sel?.value;
     const opt = sel?.options[sel.selectedIndex];
     if (!gameId) { showToast('Please select a game'); return; }
+    const level = document.getElementById('submit-stats-level')?.value;
+    if (!level) { showToast('Please select a level (Varsity, JV, or Freshman)'); return; }
     const gameDate = opt?.dataset.date || '';
     const opponent = opt?.dataset.opp || '';
     const inputs = document.querySelectorAll('#submit-stats-overlay input[data-cat]');
@@ -17275,7 +17298,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const programId = obProgram?.id || localStorage.getItem('mesh_program_id');
     const playerId = player.db_id || player.id;
     try {
-      await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'player');
+      await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'player', level);
       showToast('Stats submitted — awaiting coach approval');
       document.getElementById('submit-stats-overlay')?.remove();
       renderMyInfoPage(); // refresh
