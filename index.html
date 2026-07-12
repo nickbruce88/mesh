@@ -2172,7 +2172,7 @@
     <input class="input-field" id="beta-code-input" placeholder="e.g. MESH-BETA-XXXX" style="text-transform:uppercase;letter-spacing:0.08em;font-size:18px;text-align:center;margin-bottom:8px" oninput="this.value=this.value.toUpperCase()">
     <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="beta-code-error"></div>
     <button class="btn-primary" onclick="verifyBetaCode()">Continue →</button>
-    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--fg-3)">Don't have a code? <a href="mailto:hello@meshsports.co" style="color:var(--team-primary);font-weight:600">Request access</a></div>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--fg-3)">Don't have a code? <a href="mailto:support@meshsports.co" style="color:var(--team-primary);font-weight:600">Request access</a></div>
   </div>
 </div>
 
@@ -2202,6 +2202,11 @@
     <div class="ob-field-label">Confirm password</div>
     <input class="input-field" id="signup-password-confirm" type="password" placeholder="Re-enter password" style="margin-bottom:8px" autocomplete="new-password">
     <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="signup-error"></div>
+    <!-- TOS acceptance -->
+    <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:20px;cursor:pointer">
+      <input type="checkbox" id="signup-tos-checkbox" style="margin-top:3px;accent-color:var(--team-primary);width:16px;height:16px;flex-shrink:0">
+      <span style="font-size:12px;color:var(--fg-2);line-height:1.5">I agree to the Mesh Sports <a href="https://meshsports.co/terms" target="_blank" style="color:var(--team-primary);font-weight:600">Terms of Service</a> and <a href="https://meshsports.co/privacy" target="_blank" style="color:var(--team-primary);font-weight:600">Privacy Policy</a>. I understand that Mesh Sports is currently in beta.</span>
+    </label>
     <button class="btn-primary" id="signup-btn" onclick="createAccount()">Create account →</button>
   </div>
 </div>
@@ -5309,7 +5314,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.38</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.39</div>
   </div>
 </div>
 
@@ -5320,7 +5325,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.38';
+  const APP_VERSION = 'v39.39';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -8560,7 +8565,7 @@
 
       if (error) throw error;
       if (!data) {
-        errEl.textContent = 'Invalid or already used code. Contact us at hello@meshsports.co';
+        errEl.textContent = 'Invalid or already used code. Contact us at support@meshsports.co';
         return;
       }
       // Valid — store code for use after signup
@@ -8620,6 +8625,10 @@
     if (!strength.hasNumber)  { errEl.textContent = 'Password must include a number'; return; }
     if (!strength.hasSpecial) { errEl.textContent = 'Password must include a special character (!@#$%^&*)'; return; }
     if (password !== confirm)  { errEl.textContent = 'Passwords don\'t match'; return; }
+    if (!document.getElementById('signup-tos-checkbox').checked) {
+      errEl.textContent = 'Please accept the Terms of Service and Privacy Policy to continue';
+      return;
+    }
 
     btn.textContent = 'Creating account…';
     btn.disabled = true;
@@ -8630,6 +8639,18 @@
 
       localStorage.setItem('mesh_auth_email', email);
       localStorage.setItem('mesh_auth_uid', data.user?.id || '');
+
+      // Log TOS acceptance
+      if (data.user?.id) {
+        await db.from('tos_acceptances').insert({
+          user_id: data.user.id,
+          accepted_at: new Date().toISOString(),
+          tos_version: 'beta-1.0',
+          ip_hint: null
+        }).then(({ error: tosErr }) => {
+          if (tosErr) console.warn('[TOS] Could not log acceptance:', tosErr.message);
+        });
+      }
 
       // Show check email screen
       document.getElementById('check-email-address').textContent = email;
