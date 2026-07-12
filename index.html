@@ -5264,7 +5264,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.10</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.12</div>
   </div>
 </div>
 
@@ -5275,7 +5275,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.10';
+  const APP_VERSION = 'v39.12';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -13835,13 +13835,40 @@ ${printBtnHtml}
     }
     if (empty) empty.style.display = 'none';
 
-    // Batch-sign all unique avatar paths so URLs are always fresh
-    const myUid = localStorage.getItem('mesh_auth_uid');
+    // Collect avatar paths — for announcements missing avatarPath, fetch from profiles table
     const pathToUrl = {};
+    const needsLookup = visible.filter(a => !a.avatarPath && a.authorUid);
+    if (needsLookup.length) {
+      try {
+        const uids = [...new Set(needsLookup.map(a => a.authorUid))];
+        console.log('[Ann] looking up profiles for uids:', uids);
+        const { data: profiles, error: profErr } = await db.from('profiles').select('id, photo_url').in('id', uids);
+        console.log('[Ann] profile lookup result:', profiles, 'error:', profErr);
+        if (profiles?.length) {
+          let didBackfill = false;
+          profiles.forEach(p => {
+            if (p.photo_url) {
+              ANNOUNCEMENTS.forEach(a => {
+                if (a.authorUid === p.id && !a.avatarPath) {
+                  a.avatarPath = p.photo_url;
+                  didBackfill = true;
+                }
+              });
+            }
+          });
+          // Persist backfill to Supabase so future loads don't need to re-query
+          if (didBackfill) annSave();
+        }
+      } catch(e) { console.warn('[Ann] profile lookup error:', e); }
+    }
+
+    // Batch-sign all unique avatar paths so URLs are always fresh
     const uniquePaths = [...new Set(visible.map(a => a.avatarPath).filter(Boolean))];
+    console.log('[Ann] unique avatar paths to sign:', uniquePaths);
     if (uniquePaths.length) {
       try {
-        const { data: signed } = await db.storage.from('avatars').createSignedUrls(uniquePaths, 3600);
+        const { data: signed, error: signErr } = await db.storage.from('avatars').createSignedUrls(uniquePaths, 3600);
+        console.log('[Ann] signed URLs:', signed, 'error:', signErr);
         (signed || []).forEach(s => { if (s.signedUrl) pathToUrl[s.path] = s.signedUrl; });
       } catch(e) { console.warn('Ann avatar sign error:', e); }
     }
