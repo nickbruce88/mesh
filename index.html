@@ -1687,6 +1687,7 @@
   .pb-action-row { display:flex;gap:8px;margin-bottom:14px; }
   .pb-upload-btn { flex:1;background:var(--bg-3);border:1.5px dashed var(--border-2);border-radius:var(--radius);padding:13px 10px;font-size:13px;color:var(--team-primary);cursor:pointer;font-family:var(--font);text-align:center;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;position:relative;overflow:hidden; }
   .pb-upload-btn input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
+  .pb-coming-soon { flex:1;background:var(--bg-3);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:12px;font-weight:600;color:var(--fg-3);font-family:var(--font);text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;letter-spacing:0.01em; }
   .pb-folder-btn { background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;font-size:13px;color:var(--fg-2);cursor:pointer;font-family:var(--font);font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap; }
   /* Folders */
   .pb-folder { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden; }
@@ -3615,21 +3616,21 @@
       <div id="pb-inline-body">
         <div class="pb-unit-section active" id="pb-offense-inline">
           <div class="pb-action-row" id="pb-offense-actions-inline">
-            <div class="pb-upload-btn" onclick="openAddPlaysModal('offense')">📷 Add plays</div>
+            <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
             <button class="pb-folder-btn" onclick="openNewFolderModal('offense')">📁 New folder</button>
           </div>
           <div id="pb-offense-content"></div>
         </div>
         <div class="pb-unit-section" id="pb-defense-inline">
           <div class="pb-action-row" id="pb-defense-actions-inline">
-            <div class="pb-upload-btn" onclick="openAddPlaysModal('defense')">📷 Add plays</div>
+            <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
             <button class="pb-folder-btn" onclick="openNewFolderModal('defense')">📁 New folder</button>
           </div>
           <div id="pb-defense-content"></div>
         </div>
         <div class="pb-unit-section" id="pb-special-inline">
           <div class="pb-action-row" id="pb-special-actions-inline">
-            <div class="pb-upload-btn" onclick="openAddPlaysModal('special')">📷 Add plays</div>
+            <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
             <button class="pb-folder-btn" onclick="openNewFolderModal('special')">📁 New folder</button>
           </div>
           <div id="pb-special-content"></div>
@@ -4233,7 +4234,7 @@
 
       <!-- Game Stats view -->
       <div id="player-perf-game-view">
-        <button onclick="openSubmitStatsOverlay()" style="width:100%;padding:10px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);margin-bottom:16px">+ Submit stats</button>
+        <button onclick="openSubmitStats()" style="width:100%;padding:10px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);margin-bottom:16px">+ Submit stats</button>
         <div id="player-game-stats-body"></div>
       </div>
 
@@ -5205,21 +5206,21 @@
     <div class="pb-body">
       <div class="pb-unit-section active" id="pb-offense">
         <div class="pb-action-row" id="pb-offense-actions">
-          <div class="pb-upload-btn" onclick="openAddPlaysModal('offense')">📷 Add plays</div>
+          <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
           <button class="pb-folder-btn" onclick="openNewFolderModal('offense')">📁 New folder</button>
         </div>
         <div id="pb-offense-content"></div>
       </div>
       <div class="pb-unit-section" id="pb-defense">
         <div class="pb-action-row" id="pb-defense-actions">
-          <div class="pb-upload-btn" onclick="openAddPlaysModal('defense')">📷 Add plays</div>
+          <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
           <button class="pb-folder-btn" onclick="openNewFolderModal('defense')">📁 New folder</button>
         </div>
         <div id="pb-defense-content"></div>
       </div>
       <div class="pb-unit-section" id="pb-special">
         <div class="pb-action-row" id="pb-special-actions">
-          <div class="pb-upload-btn" onclick="openAddPlaysModal('special')">📷 Add plays</div>
+          <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
           <button class="pb-folder-btn" onclick="openNewFolderModal('special')">📁 New folder</button>
         </div>
         <div id="pb-special-content"></div>
@@ -5308,7 +5309,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.31</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.38</div>
   </div>
 </div>
 
@@ -5319,7 +5320,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.31';
+  const APP_VERSION = 'v39.38';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -6537,10 +6538,6 @@
     });
   }
 
-  let perfLiftCat = 'bench';
-  let perfSpeedCat = 'forty';
-  function setPerfLiftCat(k){ perfLiftCat = k; renderPerfLeaderboard(); }
-  function setPerfSpeedCat(k){ perfSpeedCat = k; renderPerfLeaderboard(); }
 
   // Position-group filter (broader than depth-chart positions)
   const PERF_POS_GROUPS = { offense:['QB','RB','WR','OL'], defense:['DL','LB','DB'] };
@@ -6576,50 +6573,70 @@
     return '' + v;
   }
 
-  function buildLeaderboardTable(cats, selectedCat, setterName) {
-    let ranked = getBest(selectedCat) || [];
+  function buildCategoryLeaderboard(cat) {
+    let ranked = getBest(cat.key) || [];
     if (perfPosFilter !== 'all') {
       ranked = ranked.filter(r => {
         const pl = (window.ROSTER_DATA||[]).find(x => x.id === r.player_id);
         return pl && perfPosGroup(pl.pos) === perfPosFilter;
       });
     }
-    const chips = `<div class="perf-chip-row">${cats.map(c =>
-      `<div class="perf-chip ${c.key===selectedCat?'active':''}" onclick="${setterName}('${c.key}')">${c.label}</div>`
-    ).join('')}</div>`;
-    if (!ranked.length) {
-      return chips + '<div style="color:var(--fg-3);font-size:13px;padding:12px 0">No data yet — log a session to get started</div>';
-    }
-    const bestByCat = {};
-    cats.forEach(c => {
-      bestByCat[c.key] = {};
-      (getBest(c.key)||[]).forEach(r => { bestByCat[c.key][r.player_id] = r.value; });
-    });
-    const head = `<tr><th>Rank</th><th>Player</th><th>Pos</th>${cats.map(c =>
-      `<th class="sortable ${c.key===selectedCat?'sorted':''}" onclick="${setterName}('${c.key}')">${c.label}</th>`
-    ).join('')}</tr>`;
-    const body = ranked.slice(0,20).map((r,i) => {
-      const p = (window.ROSTER_DATA||[]).find(pl => pl.id === r.player_id);
-      const cells = cats.map(c => {
-        const isSel = c.key === selectedCat;
-        return `<td class="${isSel?'sorted-col':''}">${fmtPerfVal(bestByCat[c.key][r.player_id], c.unit)}</td>`;
-      }).join('');
-      return `<tr>
-        <td class="perf-rank ${i===0?'perf-rank-1':''}">${i+1}</td>
-        <td style="font-weight:600">${getPlayerName(r.player_id)}</td>
-        <td style="color:var(--fg-2);font-weight:600">${p?.pos||'—'}</td>
-        ${cells}
-      </tr>`;
+    if (!ranked.length) return '';
+
+    const top3 = ranked.slice(0, 3);
+    const hasMore = ranked.length > 3;
+    const catKey = cat.key;
+
+    const rows = (entries) => entries.map((r, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+      const val = fmtPerfVal(r.value, cat.unit);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="width:24px;text-align:center;font-size:13px;flex-shrink:0">${medal}</div>
+        <div style="flex:1;font-size:13px;font-weight:600;color:var(--fg)">${getPlayerName(r.player_id)}</div>
+        <div style="font-size:15px;font-weight:800;color:var(--team-primary)">${val}</div>
+      </div>`;
     }).join('');
-    return chips + `<table class="perf-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+
+    return `<div style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--fg)">${cat.label} <span style="font-size:11px;font-weight:500;color:var(--fg-3)">(${cat.unit})</span></div>
+        ${hasMore ? `<button onclick="togglePerfCatAll('${catKey}')" id="perf-viewall-btn-${catKey}" style="font-size:11px;font-weight:700;color:var(--team-primary);background:var(--team-primary-glow);border:1.5px solid var(--team-primary);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:var(--font)">View all</button>` : ''}
+      </div>
+      <div id="perf-top3-${catKey}">${rows(top3)}</div>
+      ${hasMore ? `<div id="perf-all-${catKey}" style="display:none">${rows(ranked)}</div>` : ''}
+    </div>`;
+  }
+
+  function togglePerfCatAll(key) {
+    const top3 = document.getElementById('perf-top3-' + key);
+    const all  = document.getElementById('perf-all-' + key);
+    const btn  = document.getElementById('perf-viewall-btn-' + key);
+    const expanded = all?.style.display !== 'none';
+    if (top3) top3.style.display = expanded ? 'block' : 'none';
+    if (all)  all.style.display  = expanded ? 'none'  : 'block';
+    if (btn)  btn.textContent    = expanded ? 'View all' : 'Show less';
   }
 
   function renderPerfLeaderboard() {
     renderPosGroupFilter();
-    const liftEl = document.getElementById('perf-lift-table');
+    const liftEl  = document.getElementById('perf-lift-table');
     const speedEl = document.getElementById('perf-speed-table');
-    if (liftEl) liftEl.innerHTML = buildLeaderboardTable(PERF_CATEGORIES.lifting, perfLiftCat, 'setPerfLiftCat');
-    if (speedEl) speedEl.innerHTML = buildLeaderboardTable(PERF_CATEGORIES.speed, perfSpeedCat, 'setPerfSpeedCat');
+
+    if (liftEl) {
+      const html = PERF_CATEGORIES.lifting.map((cat, i) => {
+        const block = buildCategoryLeaderboard(cat);
+        return block ? (i > 0 ? '<div style="height:1px;background:var(--border);margin:16px 0"></div>' : '') + block : '';
+      }).join('');
+      liftEl.innerHTML = html || '<div style="color:var(--fg-3);font-size:13px;padding:12px 0">No lifting data yet — log a session to get started</div>';
+    }
+
+    if (speedEl) {
+      const html = PERF_CATEGORIES.speed.map((cat, i) => {
+        const block = buildCategoryLeaderboard(cat);
+        return block ? (i > 0 ? '<div style="height:1px;background:var(--border);margin:16px 0"></div>' : '') + block : '';
+      }).join('');
+      speedEl.innerHTML = html || '<div style="color:var(--fg-3);font-size:13px;padding:12px 0">No speed & agility data yet — log a session to get started</div>';
+    }
   }
 
   function renderPerfByPlayer(filter='') {
@@ -12005,7 +12022,7 @@
 
   function selectPNMCoach(id) {
     pnmSelectedCoach = id;
-    document.querySelectorAll('[id^="pnm-coach-"]').forEach(el => { el.className = 'member-check'; el.textContent = ''; });
+    document.querySelectorAll('#pnm-coach-list .member-check').forEach(el => { el.className = 'member-check'; el.textContent = ''; });
     const el = document.getElementById('pnm-coach-' + id);
     if (el) { el.className = 'member-check checked'; el.textContent = '✓'; }
     validatePNM();
@@ -12013,7 +12030,7 @@
 
   function selectPNMWitness(id) {
     pnmSelectedWitness = id;
-    document.querySelectorAll('[id^="pnm-wit-"]').forEach(el => { el.className = 'member-check'; el.textContent = ''; });
+    document.querySelectorAll('#pnm-witness-list .member-check').forEach(el => { el.className = 'member-check'; el.textContent = ''; });
     const el = document.getElementById('pnm-wit-' + id);
     if (el) { el.className = 'member-check checked'; el.textContent = '✓'; }
     validatePNM();
@@ -14074,15 +14091,24 @@ ${printBtnHtml}
       return;
     }
 
-    // Deduplicate per player+game+category — coach entry wins over player self-report
-    const deduped = {};
+    // Two-pass dedup — handles mismatched game_id between player/coach submissions
+    const byGameId = {};
     approved.filter(s => s.submitted_by !== 'coach').forEach(s => {
-      deduped[s.player_id + '|' + s.game_id + '|' + s.category] = s;
+      if (s.game_id) byGameId[s.player_id + '||' + s.game_id + '||' + s.category] = s;
     });
     approved.filter(s => s.submitted_by === 'coach').forEach(s => {
-      deduped[s.player_id + '|' + s.game_id + '|' + s.category] = s;
+      if (s.game_id) byGameId[s.player_id + '||' + s.game_id + '||' + s.category] = s;
     });
-    const uniqueApproved = Object.values(deduped);
+    const byOppDate = {};
+    approved.filter(s => s.submitted_by !== 'coach').forEach(s => {
+      const k = s.player_id + '||' + (s.opponent||'') + '|' + (s.game_date||'') + '||' + s.category;
+      byOppDate[k] = s;
+    });
+    approved.filter(s => s.submitted_by === 'coach').forEach(s => {
+      const k = s.player_id + '||' + (s.opponent||'') + '|' + (s.game_date||'') + '||' + s.category;
+      byOppDate[k] = s;
+    });
+    const uniqueApproved = Object.values({ ...byOppDate, ...byGameId });
 
     // Aggregate season totals per player per category
     const totals = {};
@@ -14193,19 +14219,30 @@ ${printBtnHtml}
   function renderPlayerStatHistory(pid) {
     const playerStats = GAME_STATS.filter(s => (s.player_id === pid) && s.status === 'approved');
 
-    // Deduplicate: one value per game+category — prefer coach entry over player self-report
-    const deduped = {};
-    // First pass: player-submitted
+    // Two-pass dedup — handles mismatched game_id values between player/coach submissions
+    // Pass 1: dedupe by game_id + category (coach wins)
+    const byGameId = {};
     playerStats.filter(s => s.submitted_by !== 'coach').forEach(s => {
-      const key = s.game_id + '|' + s.category;
-      deduped[key] = s;
+      if (s.game_id) byGameId[s.game_id + '||' + s.category] = s;
     });
-    // Second pass: coach entries override
     playerStats.filter(s => s.submitted_by === 'coach').forEach(s => {
-      const key = s.game_id + '|' + s.category;
-      deduped[key] = s;
+      if (s.game_id) byGameId[s.game_id + '||' + s.category] = s;
     });
-    const uniqueStats = Object.values(deduped);
+
+    // Pass 2: dedupe by opponent + date + category (catches mismatched game_id)
+    const byOppDate = {};
+    playerStats.filter(s => s.submitted_by !== 'coach').forEach(s => {
+      const k = (s.opponent || '') + '|' + (s.game_date || '') + '||' + s.category;
+      byOppDate[k] = s;
+    });
+    playerStats.filter(s => s.submitted_by === 'coach').forEach(s => {
+      const k = (s.opponent || '') + '|' + (s.game_date || '') + '||' + s.category;
+      byOppDate[k] = s;
+    });
+
+    // Merge both maps — prefer game_id-keyed entries, fill gaps from opp+date keyed
+    const merged = { ...byOppDate, ...byGameId };
+    const uniqueStats = Object.values(merged);
 
     // Season totals
     const totals = {};
@@ -14271,6 +14308,18 @@ ${printBtnHtml}
       if (data?.announcements_data) ANNOUNCEMENTS = JSON.parse(data.announcements_data);
     } catch(e) { console.warn('Ann load error:', e); }
 
+    // Backfill postedAt on old announcements that are missing it
+    let annNeedsSave = false;
+    ANNOUNCEMENTS.forEach(a => {
+      if (!a.postedAt) {
+        // Set to 1 (epoch + 1ms) — will notify players whose lastSeen is 0 (never logged in since v39.29)
+        // but won't re-notify players who already logged in after v39.29 was deployed
+        a.postedAt = 1;
+        annNeedsSave = true;
+      }
+    });
+    if (annNeedsSave && currentRole === 'coach') annSave();
+
     // Notify player/parent about announcements posted since their last visit
     if (currentRole === 'player' || currentRole === 'parent') {
       const lastSeenKey = 'mesh_ann_last_seen_' + currentRole;
@@ -14292,6 +14341,7 @@ ${printBtnHtml}
           });
         }, 600);
       }
+      // Update last seen AFTER building the notification list
       try { localStorage.setItem(lastSeenKey, String(Date.now())); } catch(e) {}
     }
 
@@ -17651,8 +17701,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function openSubmitStats() {
+    if (!STAT_CATEGORIES.length) { showToast('Stat categories not loaded yet — try again in a moment'); return; }
+    const existing = document.getElementById('submit-stats-overlay');
+    if (existing) existing.remove();
     const overlay = document.createElement('div');
-    overlay.id = 'submit-stats-overlay';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
 
@@ -19690,7 +19742,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       html = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3)">
         <div style="font-size:36px;margin-bottom:12px">📋</div>
         <div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px">No plays yet</div>
-        <div style="font-size:13px">Tap "Add plays" to upload play diagrams or screenshots.</div>
+        <div style="font-size:13px">Mesh Play Designer is coming soon — draw, animate, and share plays directly in the app.</div>
       </div>`;
     }
     content.innerHTML = html;
