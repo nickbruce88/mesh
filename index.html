@@ -5263,7 +5263,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.19</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.20</div>
   </div>
 </div>
 
@@ -5274,7 +5274,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.19';
+  const APP_VERSION = 'v39.20';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -17247,15 +17247,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
             }).join('')}
           </select>
         </div>
-        <div style="padding:12px 20px;border-bottom:1px solid var(--border)">
-          <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">LEVEL</div>
-          <div style="display:flex;gap:8px">
-            ${['Varsity','JV','Freshman'].map(l => `
-              <div class="ann-chip" data-level="${l}" onclick="selectStatLevel(this)" style="flex:1;text-align:center">${l}</div>
-            `).join('')}
-          </div>
-          <input type="hidden" id="submit-stats-level" value="">
-        </div>
         <div style="flex:1;overflow-y:auto;padding:16px 20px">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             ${cats.map(c => `
@@ -17274,19 +17265,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.body.appendChild(overlay);
   }
 
-  function selectStatLevel(el) {
-    document.querySelectorAll('#submit-stats-overlay .ann-chip[data-level]').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('submit-stats-level').value = el.dataset.level;
-  }
-
   async function submitPlayerStats() {
     const sel = document.getElementById('submit-stats-game');
     const gameId = sel?.value;
     const opt = sel?.options[sel.selectedIndex];
     if (!gameId) { showToast('Please select a game'); return; }
-    const level = document.getElementById('submit-stats-level')?.value;
-    if (!level) { showToast('Please select a level (Varsity, JV, or Freshman)'); return; }
     const gameDate = opt?.dataset.date || '';
     const opponent = opt?.dataset.opp || '';
     const inputs = document.querySelectorAll('#submit-stats-overlay input[data-cat]');
@@ -17298,7 +17281,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const programId = obProgram?.id || localStorage.getItem('mesh_program_id');
     const playerId = player.db_id || player.id;
     try {
-      await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'player', level);
+      await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'player');
       showToast('Stats submitted — awaiting coach approval');
       document.getElementById('submit-stats-overlay')?.remove();
       renderMyInfoPage(); // refresh
