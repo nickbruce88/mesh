@@ -5264,7 +5264,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.14</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.15</div>
   </div>
 </div>
 
@@ -5275,7 +5275,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.14';
+  const APP_VERSION = 'v39.15';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5503,8 +5503,34 @@
   }
 
   // Apply the saved profile photo (or fall back to initials) to any avatar element
-  let _currentAvatarUrl = null;  // signed URL (expires ~1hr)
+  let _currentAvatarUrl = null;  // signed URL (1yr expiry via edge function)
   let _currentAvatarPath = null; // raw storage path (permanent)
+
+  // Call the sign-avatar edge function — returns { path: signedUrl } map
+  // Accepts one or many paths; always returns a map for consistency
+  async function signAvatarUrls(paths) {
+    const arr = Array.isArray(paths) ? paths : [paths];
+    if (!arr.length) return {};
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return {};
+      const res = await fetch(
+        'https://zsjxauwwqyyhgxzgnfoj.supabase.co/functions/v1/sign-avatar',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ paths: arr })
+        }
+      );
+      if (!res.ok) { console.warn('[signAvatarUrls] HTTP error:', res.status); return {}; }
+      const json = await res.json();
+      return json.data || {};
+    } catch(e) {
+      console.warn('[signAvatarUrls] error:', e);
+      return {};
+    }
+  }
 
   async function refreshAvatarSignedUrl() {
     try {
@@ -5521,11 +5547,12 @@
       if (!profile?.photo_url) return;
       const path = profile.photo_url.startsWith('http') ? `${uid}/avatar.jpg` : profile.photo_url;
       console.log('[AvatarLoad] generating signed URL for path:', path);
-      const { data: signed, error } = await db.storage.from('avatars').createSignedUrl(path, 3600);
-      console.log('[AvatarLoad] signed URL:', signed?.signedUrl, 'error:', error);
-      if (error || !signed?.signedUrl) return;
+      const urlMap = await signAvatarUrls(path);
+      const signedUrl = urlMap[path];
+      console.log('[AvatarLoad] signed URL:', signedUrl);
+      if (!signedUrl) return;
       _currentAvatarPath = path;
-      _currentAvatarUrl = signed.signedUrl;
+      _currentAvatarUrl = signedUrl;
       refreshAllUserAvatars();
       console.log('[AvatarLoad] avatar applied ✓');
     } catch(e) { console.warn('[AvatarLoad] error:', e); }
@@ -11216,7 +11243,7 @@
           const { error: profErr } = await db.from('profiles').update({ photo_url: path }).eq('id', uid);
           console.log('[Avatar] profile update error:', profErr);
           // Get signed URL
-          const { data: signed, error: signErr } = await db.storage.from('avatars').createSignedUrl(path, 3600);
+          const { data: signed, error: signErr } = { data: { signedUrl: (await signAvatarUrls(path))[path] }, error: null };
           console.log('[Avatar] signed URL:', signed?.signedUrl, 'error:', signErr);
           if (signed?.signedUrl) {
             _currentAvatarPath = path;
@@ -13821,10 +13848,8 @@ ${printBtnHtml}
     if (needsUrl.length) {
       try {
         const paths = [...new Set(needsUrl.map(a => a.avatarPath))];
-        const { data: signed } = await db.storage.from('avatars').createSignedUrls(paths, 3600);
-        if (signed) {
-          const pathMap = {};
-          signed.forEach((s, i) => { if (s.signedUrl) pathMap[paths[i]] = s.signedUrl; });
+        const pathMap = await signAvatarUrls(paths);
+        if (pathMap) {
           let changed = false;
           ANNOUNCEMENTS.forEach(a => {
             if (a.avatarPath && !a.avatarUrl && pathMap[a.avatarPath]) {
@@ -13869,10 +13894,8 @@ ${printBtnHtml}
 
     // For own paths, re-sign to get a fresh URL
     if (ownPaths.length) {
-      try {
-        const { data: signed } = await db.storage.from('avatars').createSignedUrls(ownPaths, 3600);
-        if (signed) signed.forEach((s, i) => { if (s.signedUrl) pathToUrl[ownPaths[i]] = s.signedUrl; });
-      } catch(e) { console.warn('Ann self-sign error:', e); }
+      const freshMap = await signAvatarUrls(ownPaths);
+      Object.assign(pathToUrl, freshMap);
     }
     // Override with live in-memory URL for current user (most up to date)
     if (_currentAvatarPath && _currentAvatarUrl) pathToUrl[_currentAvatarPath] = _currentAvatarUrl;
