@@ -5308,7 +5308,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.28</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.31</div>
   </div>
 </div>
 
@@ -5319,7 +5319,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.28';
+  const APP_VERSION = 'v39.31';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -11811,7 +11811,14 @@
     if (group === 'coaches') members = STAFF_MEMBERS;
     else if (group === 'players') members = PLAYERS.map(p => ({ id: 'pl-' + p.id }));
     else if (group === 'parents') members = PARENT_MEMBERS;
-    members.forEach(m => ngSelectedMembers.add(m.id));
+
+    // If all already selected, deselect all; otherwise select all
+    const allSelected = members.every(m => ngSelectedMembers.has(m.id));
+    if (allSelected) {
+      members.forEach(m => ngSelectedMembers.delete(m.id));
+    } else {
+      members.forEach(m => ngSelectedMembers.add(m.id));
+    }
     renderNGMembers();
     validateNG();
   }
@@ -14105,7 +14112,7 @@ ${printBtnHtml}
       return `<div class="game-stat-cat-block" id="gscat-${cat.key}">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:13px;font-weight:700;color:var(--fg)">${cat.label}</div>
-          ${hasMore ? `<button onclick="toggleGSCatViewAll('${cat.key}')" id="gscat-viewall-btn-${cat.key}" style="font-size:11px;font-weight:700;color:var(--team-primary);background:none;border:none;cursor:pointer;font-family:var(--font)">View all</button>` : ''}
+          ${hasMore ? `<button onclick="toggleGSCatViewAll('${cat.key}')" id="gscat-viewall-btn-${cat.key}" style="font-size:11px;font-weight:700;color:var(--team-primary);background:var(--team-primary-glow);border:1.5px solid var(--team-primary);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:var(--font);transition:opacity 0.12s">View all</button>` : ''}
         </div>
         <div id="gscat-top3-${cat.key}">
           ${top3.map((e, i) => gsStatRow(e, i, cat)).join('')}
@@ -14264,6 +14271,30 @@ ${printBtnHtml}
       if (data?.announcements_data) ANNOUNCEMENTS = JSON.parse(data.announcements_data);
     } catch(e) { console.warn('Ann load error:', e); }
 
+    // Notify player/parent about announcements posted since their last visit
+    if (currentRole === 'player' || currentRole === 'parent') {
+      const lastSeenKey = 'mesh_ann_last_seen_' + currentRole;
+      const lastSeen = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
+      const group = currentRole === 'player' ? 'players' : 'parents';
+      const urgencyPrefix = { normal: '📣', important: '⚡', urgent: '🚨' };
+      const newAnns = ANNOUNCEMENTS.filter(a =>
+        (a.postedAt || 0) > lastSeen &&
+        (a.audience || ['coaches']).includes(group)
+      );
+      if (newAnns.length) {
+        setTimeout(() => {
+          newAnns.forEach(a => {
+            const prefix = urgencyPrefix[a.urgency || 'normal'] || '📣';
+            const preview = a.text.length > 60 ? a.text.slice(0, 60) + '\u2026' : a.text;
+            addNotif(prefix + ' New announcement from <span>' + (a.author || 'Coach') + '</span>: "' + preview + '"', () => {
+              showTab(currentRole, 'home');
+            });
+          });
+        }, 600);
+      }
+      try { localStorage.setItem(lastSeenKey, String(Date.now())); } catch(e) {}
+    }
+
     // Backfill avatarUrl for own announcements that are missing it (posted before v39.14)
     const myUid = localStorage.getItem('mesh_auth_uid');
     const needsUrl = ANNOUNCEMENTS.filter(a => a.avatarPath && !a.avatarUrl && a.authorUid === myUid);
@@ -14403,6 +14434,7 @@ ${printBtnHtml}
       avatarPath: _currentAvatarPath || null,
       avatarUrl: _currentAvatarUrl || null,   // signed at post time, good for 1hr
       avatarPostedAt: _currentAvatarUrl ? Date.now() : null,
+      postedAt: Date.now(),
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
     });
 
@@ -14411,13 +14443,6 @@ ${printBtnHtml}
     renderAnnouncements('player');
     renderAnnouncements('parent');
     await annSave();
-
-    // Fire notifications for each receiving group
-    const urgencyPrefix = urgency === 'urgent' ? '🚨 ' : urgency === 'important' ? '⚡ ' : '📣 ';
-    const authorName    = user.name || 'Coach';
-    const preview       = text.length > 60 ? text.slice(0, 60) + '…' : text;
-    addNotif(`${urgencyPrefix}<span>${authorName}</span> posted an announcement: "${preview}"`);
-
     showToast('Announcement posted ✓');
   }
 
@@ -17906,20 +17931,36 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         </div>
 
         <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:12px;font-weight:600;color:var(--fg-2)">PASTE CSV DATA</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:600;color:var(--fg-2)">STATS DATA</div>
             <a href="https://www.maxpreps.com" target="_blank" style="font-size:11px;color:var(--team-primary)">How to export from MaxPreps ↗</a>
           </div>
-          <textarea id="mp-csv-input" rows="6" placeholder="Paste MaxPreps pipe-delimited data here...
+
+          <!-- File upload drop zone -->
+          <div id="mp-dropzone"
+            ondragover="event.preventDefault();this.style.borderColor='var(--team-primary)'"
+            ondragleave="this.style.borderColor='var(--border)'"
+            ondrop="handleMPFileDrop(event)"
+            onclick="document.getElementById('mp-file-input').click()"
+            style="border:2px dashed var(--border);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;margin-bottom:10px;transition:border-color 0.15s">
+            <div style="font-size:22px;margin-bottom:4px">📂</div>
+            <div style="font-size:13px;font-weight:600;color:var(--fg)">Upload .txt or .csv file</div>
+            <div style="font-size:11px;color:var(--fg-3);margin-top:2px">Drag & drop or click to browse</div>
+            <input type="file" id="mp-file-input" accept=".txt,.csv" style="display:none" onchange="handleMPFileSelect(this)">
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+            <div style="font-size:11px;color:var(--fg-3);font-weight:600">OR PASTE</div>
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+          </div>
+
+          <textarea id="mp-csv-input" rows="5" placeholder="Paste MaxPreps pipe-delimited data here...
 Example (MaxPreps native format):
 Jersey|RushingNum|RushingYards|RushingTDNum
 22|15|87|1
-8|5|22|0
-
-Or comma-delimited CSV:
-Player,Rush Yards,Rush TDs
-Dan Smith,87,1"
-            style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:12px;font-family:monospace;padding:10px;resize:vertical;line-height:1.5"></textarea>
+8|5|22|0"
+            style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:12px;font-family:monospace;padding:10px;resize:vertical;line-height:1.5;box-sizing:border-box"></textarea>
         </div>
 
         <div id="mp-preview" style="flex:1;overflow-y:auto;padding:0 20px;display:none"></div>
@@ -18268,6 +18309,37 @@ Dan Smith,87,1"
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     document.body.appendChild(overlay);
   }
+  function handleMPFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    readMPFile(file);
+  }
+
+  function handleMPFileDrop(event) {
+    event.preventDefault();
+    document.getElementById('mp-dropzone').style.borderColor = 'var(--border)';
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    readMPFile(file);
+  }
+
+  function readMPFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      document.getElementById('mp-csv-input').value = text;
+      // Show filename confirmation on dropzone
+      const dz = document.getElementById('mp-dropzone');
+      if (dz) dz.innerHTML = `
+        <div style="font-size:20px;margin-bottom:4px">✅</div>
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">${file.name}</div>
+        <div style="font-size:11px;color:var(--fg-3);margin-top:2px">${(file.size/1024).toFixed(1)} KB — click Preview to continue</div>`;
+      showToast('File loaded — click Preview →');
+    };
+    reader.onerror = () => showToast('Could not read file');
+    reader.readAsText(file);
+  }
+
   function previewMaxPreps() {
     const text = document.getElementById('mp-csv-input')?.value?.trim();
     if (!text) { showToast('Paste CSV data first'); return; }
