@@ -3533,6 +3533,13 @@
 
       <!-- ===== GAME STATS VIEW ===== -->
       <div id="coach-perf-game-view">
+        <!-- Action buttons -->
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button onclick="openCoachSubmitStats()" style="flex:1;padding:9px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">+ Log stats</button>
+          <button onclick="openMaxPrepsImport()" style="padding:9px 14px;background:var(--bg-3);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">📥 Import</button>
+          <button onclick="openMaxPrepsExport()" style="padding:9px 14px;background:var(--bg-3);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">📤 Export</button>
+        </div>
+
         <!-- Pending submissions -->
         <div id="perf-pending-section" style="display:none;margin-bottom:20px">
           <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:10px">⏳ Pending stat submissions</div>
@@ -5301,7 +5308,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.24</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.28</div>
   </div>
 </div>
 
@@ -5312,7 +5319,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.24';
+  const APP_VERSION = 'v39.28';
   const SUPABASE_URL = 'https://zsjxauwwqyyhgxzgnfoj.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzanhhdXd3cXl5aGd4emduZm9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjkxOTQsImV4cCI6MjA5NzkwNTE5NH0.yKDYc8GqOogiivjaj3xI-dkG4YPrqOQJTawDpL5HaQc';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -5485,7 +5492,7 @@
       if (matchId) updateDesktopSidebarActive(matchId);
       if (tab === 'more') {
         if (role === 'coach') showMoreSection('roster');
-        else if (role === 'player') setTimeout(() => { renderMyInfoPage(); renderPlayerGameStats(); }, 50);
+        else if (role === 'player') setTimeout(() => renderMyInfoPage(), 50);
         else showMoreSection('myplayer');
       }
       if (tab === 'practice') { applyDesktopPracticeLayout(); setTimeout(initPracticeToToday, 50); }
@@ -11138,6 +11145,27 @@
   }
 
   // Add a notification item to the bell panel
+  function dismissNotif(item) {
+    const panel = document.getElementById('notif-panel');
+    item.remove();
+    notifCount = Math.max(0, notifCount - 1);
+    const badge = document.getElementById('notif-badge');
+    if (notifCount === 0) {
+      if (badge) badge.style.display = 'none';
+      // Restore empty state if no items remain
+      if (panel && !panel.querySelector('.notif-item')) {
+        const head = panel.querySelector('.notif-panel-head');
+        const empty = document.createElement('div');
+        empty.setAttribute('data-notif-empty', '');
+        empty.style.cssText = 'text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px';
+        empty.innerHTML = '<div style="font-size:32px;margin-bottom:10px">🔔</div>No notifications yet';
+        head.insertAdjacentElement('afterend', empty);
+      }
+    } else {
+      if (badge) badge.textContent = notifCount;
+    }
+  }
+
   function addNotif(text, action) {
     const panel = document.getElementById('notif-panel');
     if (!panel) return;
@@ -11149,25 +11177,38 @@
     const head = panel.querySelector('.notif-panel-head');
     const item = document.createElement('div');
     item.className = 'notif-item';
-    item.onclick = function() {
-      markNotifRead(this);
-      if (action) action();
-    };
+    item.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-top:1px solid var(--border);position:relative';
     item.innerHTML = `
-      <div class="notif-dot"></div>
-      <div>
+      <div class="notif-dot" style="margin-top:5px;flex-shrink:0"></div>
+      <div style="flex:1;cursor:pointer" class="notif-action-area">
         <div class="notif-text">${text}</div>
         <div class="notif-time">Just now</div>
-      </div>`;
+      </div>
+      <div class="notif-dismiss" style="font-size:14px;color:var(--fg-3);cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1" title="Dismiss">✕</div>`;
+
+    // Clicking the text/dot area triggers action and removes
+    item.querySelector('.notif-action-area').onclick = (e) => {
+      e.stopPropagation();
+      if (action) action();
+      dismissNotif(item);
+    };
+    item.querySelector('.notif-dot').onclick = (e) => {
+      e.stopPropagation();
+      if (action) action();
+      dismissNotif(item);
+    };
+    // ✕ just dismisses
+    item.querySelector('.notif-dismiss').onclick = (e) => {
+      e.stopPropagation();
+      dismissNotif(item);
+    };
+
     head.insertAdjacentElement('afterend', item);
 
-    // Bump badge count
+    // Bump badge
     notifCount++;
     const badge = document.getElementById('notif-badge');
-    if (badge) {
-      badge.textContent = notifCount;
-      badge.style.display = 'flex';
-    }
+    if (badge) { badge.textContent = notifCount; badge.style.display = 'flex'; }
   }
 
   // ===== PROFILE MODAL =====
@@ -13923,6 +13964,95 @@ ${printBtnHtml}
     else renderMyInfoPage();
   }
 
+  // ===== COACH LOG STATS MODAL =====
+  function openCoachSubmitStats() {
+    const existing = document.getElementById('coach-submit-stats-overlay');
+    if (existing) existing.remove();
+
+    const games = [...SCHEDULE]
+      .filter(g => g.tag === 'game' || g.tag === 'scrimmage')
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    const overlay = document.createElement('div');
+    overlay.id = 'coach-submit-stats-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border)">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <div style="font-size:16px;font-weight:700">Log game stats</div>
+          <div onclick="document.getElementById('coach-submit-stats-overlay').remove()" style="cursor:pointer;font-size:20px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="flex:1;overflow-y:auto">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">PLAYER</div>
+            <select id="css-player" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
+              <option value="">Select a player...</option>
+              ${PLAYERS.map(p => `<option value="${p.db_id||p.id}">${p.name}${p.position?' · '+p.position:''}</option>`).join('')}
+            </select>
+          </div>
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">GAME</div>
+            <select id="css-game" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
+              <option value="">${games.length ? 'Select a game...' : 'No games on schedule yet'}</option>
+              ${games.map(g => {
+                const gid = g.id || g.date + '_' + (g.opponent||g.title||'game').replace(/\s+/g,'_');
+                return `<option value="${gid}" data-date="${g.date||''}" data-opp="${g.opponent||g.title||''}">${g.opponent||g.title||'Game'} · ${g.date||''}</option>`;
+              }).join('')}
+            </select>
+          </div>
+          <div style="padding:14px 20px">
+            <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:10px">STATS</div>
+            <div id="css-stat-inputs" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              ${STAT_CATEGORIES.map(c => `
+                <div>
+                  <div style="font-size:11px;color:var(--fg-3);margin-bottom:3px">${c.label}</div>
+                  <input type="number" id="css-stat-${c.key}" placeholder="0" min="0"
+                    style="width:100%;padding:8px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);font-size:14px;font-family:var(--font);box-sizing:border-box">
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0">
+          <button onclick="submitCoachStats()" style="width:100%;padding:12px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">Save stats</button>
+        </div>
+      </div>`;
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+  }
+
+  async function submitCoachStats() {
+    const playerSel = document.getElementById('css-player');
+    const gameSel = document.getElementById('css-game');
+    const playerId = playerSel?.value;
+    const gameId = gameSel?.value;
+    if (!playerId) { showToast('Please select a player'); return; }
+    if (!gameId) { showToast('Please select a game'); return; }
+
+    const opt = gameSel.options[gameSel.selectedIndex];
+    const gameDate = opt?.dataset.date || '';
+    const opponent = opt?.dataset.opp || '';
+
+    const stats = {};
+    STAT_CATEGORIES.forEach(c => {
+      const val = document.getElementById('css-stat-' + c.key)?.value;
+      if (val !== '' && val !== null && val !== undefined && parseFloat(val) !== 0) stats[c.key] = val;
+    });
+
+    if (!Object.keys(stats).length) { showToast('Enter at least one stat'); return; }
+
+    const programId = await getValidProgramId();
+    try {
+      await saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, 'coach');
+      document.getElementById('coach-submit-stats-overlay')?.remove();
+      renderCoachGameStats();
+      renderAllPendingStats();
+      showToast('Stats saved ✓');
+    } catch(e) {
+      showToast('Error saving stats');
+      console.error(e);
+    }
+  }
+
   // ===== COACH GAME STATS LEADERBOARD =====
   function renderCoachGameStats() {
     const body = document.getElementById('coach-game-stats-body');
@@ -13937,15 +14067,25 @@ ${printBtnHtml}
       return;
     }
 
+    // Deduplicate per player+game+category — coach entry wins over player self-report
+    const deduped = {};
+    approved.filter(s => s.submitted_by !== 'coach').forEach(s => {
+      deduped[s.player_id + '|' + s.game_id + '|' + s.category] = s;
+    });
+    approved.filter(s => s.submitted_by === 'coach').forEach(s => {
+      deduped[s.player_id + '|' + s.game_id + '|' + s.category] = s;
+    });
+    const uniqueApproved = Object.values(deduped);
+
     // Aggregate season totals per player per category
-    const totals = {}; // { player_id: { category: total } }
-    approved.forEach(s => {
+    const totals = {};
+    uniqueApproved.forEach(s => {
       if (!totals[s.player_id]) totals[s.player_id] = {};
       totals[s.player_id][s.category] = (totals[s.player_id][s.category] || 0) + (parseFloat(s.value) || 0);
     });
 
     // Get categories that have data
-    const usedCats = [...new Set(approved.map(s => s.category))];
+    const usedCats = [...new Set(uniqueApproved.map(s => s.category))];
     const cats = STAT_CATEGORIES.filter(c => usedCats.includes(c.key));
 
     body.innerHTML = cats.map(cat => {
@@ -14002,7 +14142,7 @@ ${printBtnHtml}
   function openPPStatsFromRoster(playerId) {
     const player = PLAYERS.find(p => p.db_id === playerId || p.id === playerId);
     if (!player) return;
-    openPlayerProfile(player.id);
+    openPlayerProfile(player.name);
     setTimeout(() => showPPTab('stats'), 300);
   }
 
@@ -14046,9 +14186,23 @@ ${printBtnHtml}
   function renderPlayerStatHistory(pid) {
     const playerStats = GAME_STATS.filter(s => (s.player_id === pid) && s.status === 'approved');
 
+    // Deduplicate: one value per game+category — prefer coach entry over player self-report
+    const deduped = {};
+    // First pass: player-submitted
+    playerStats.filter(s => s.submitted_by !== 'coach').forEach(s => {
+      const key = s.game_id + '|' + s.category;
+      deduped[key] = s;
+    });
+    // Second pass: coach entries override
+    playerStats.filter(s => s.submitted_by === 'coach').forEach(s => {
+      const key = s.game_id + '|' + s.category;
+      deduped[key] = s;
+    });
+    const uniqueStats = Object.values(deduped);
+
     // Season totals
     const totals = {};
-    playerStats.forEach(s => { totals[s.category] = (totals[s.category] || 0) + (parseFloat(s.value) || 0); });
+    uniqueStats.forEach(s => { totals[s.category] = (totals[s.category] || 0) + (parseFloat(s.value) || 0); });
     const usedCats = STAT_CATEGORIES.filter(c => totals[c.key] !== undefined);
 
     const totalsHTML = usedCats.length ? `
@@ -14065,7 +14219,7 @@ ${printBtnHtml}
 
     // Game-by-game
     const byGame = {};
-    playerStats.forEach(s => {
+    uniqueStats.forEach(s => {
       const key = s.game_id;
       if (!byGame[key]) byGame[key] = { date: s.game_date, opponent: s.opponent, stats: {} };
       byGame[key].stats[s.category] = (byGame[key].stats[s.category] || 0) + (parseFloat(s.value) || 0);
@@ -17735,8 +17889,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       <div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:580px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column" onclick="event.stopPropagation()">
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div>
-            <div style="font-size:16px;font-weight:700">Import Stats from MaxPreps</div>
-            <div style="font-size:12px;color:var(--fg-3)">Paste a MaxPreps stat export or any CSV with player stats</div>
+            <div style="font-size:16px;font-weight:700">Import Stats</div>
+            <div style="font-size:12px;color:var(--fg-3)">Paste MaxPreps pipe-delimited (.txt) or CSV data</div>
           </div>
           <div onclick="document.getElementById('maxpreps-overlay').remove()" style="cursor:pointer;font-size:20px;color:var(--fg-3)">✕</div>
         </div>
@@ -17756,11 +17910,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
             <div style="font-size:12px;font-weight:600;color:var(--fg-2)">PASTE CSV DATA</div>
             <a href="https://www.maxpreps.com" target="_blank" style="font-size:11px;color:var(--team-primary)">How to export from MaxPreps ↗</a>
           </div>
-          <textarea id="mp-csv-input" rows="6" placeholder="Paste CSV data here...
-Example:
-Player,#,Pos,Rush Att,Rush Yards,Rush TD,Rec,Rec Yards,Rec TD
-Dan Smith,15,RB,12,87,1,3,24,0
-Jake Jones,8,QB,5,22,0,0,0,0"
+          <textarea id="mp-csv-input" rows="6" placeholder="Paste MaxPreps pipe-delimited data here...
+Example (MaxPreps native format):
+Jersey|RushingNum|RushingYards|RushingTDNum
+22|15|87|1
+8|5|22|0
+
+Or comma-delimited CSV:
+Player,Rush Yards,Rush TDs
+Dan Smith,87,1"
             style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:12px;font-family:monospace;padding:10px;resize:vertical;line-height:1.5"></textarea>
         </div>
 
@@ -17775,83 +17933,223 @@ Jake Jones,8,QB,5,22,0,0,0,0"
     document.body.appendChild(overlay);
   }
 
-  // Known MaxPreps column mappings → our stat category keys
-  const MAXPREPS_COL_MAP = {
+  // MaxPreps exact field names → our stat keys (import)
+  const MAXPREPS_FIELD_MAP = {
     // Rushing
-    'rush att': 'rush_att', 'rush attempts': 'rush_att', 'car': 'rush_att', 'carries': 'rush_att',
-    'rush yds': 'rush_yards', 'rush yards': 'rush_yards', 'rushing yards': 'rush_yards', 'yds': 'rush_yards',
-    'rush td': 'rush_td', 'rush tds': 'rush_td', 'rushing td': 'rush_td', 'rushing tds': 'rush_td',
+    'RushingNum':             'rush_att',
+    'RushingYards':           'rush_yards',
+    'RushingLong':            null,
     // Receiving
-    'rec': 'receptions', 'receptions': 'receptions', 'catches': 'receptions',
-    'rec yds': 'rec_yards', 'rec yards': 'rec_yards', 'receiving yards': 'rec_yards',
-    'rec td': 'rec_td', 'rec tds': 'rec_td', 'receiving td': 'rec_td',
+    'ReceivingNum':           'receptions',
+    'ReceivingYards':         'rec_yards',
+    'ReceivingLong':          null,
     // Passing
-    'pass att': 'pass_att', 'att': 'pass_att', 'pass attempts': 'pass_att',
-    'comp': 'pass_comp', 'completions': 'pass_comp', 'pass comp': 'pass_comp',
-    'pass yds': 'pass_yards', 'pass yards': 'pass_yards', 'passing yards': 'pass_yards',
-    'pass td': 'pass_td', 'pass tds': 'pass_td', 'passing tds': 'pass_td', 'td': 'pass_td',
-    'int': 'ints',
+    'PassingComp':            'pass_comp',
+    'PassingAtt':             'pass_att',
+    'PassingInt':             'ints',
+    'PassingYards':           'pass_yards',
+    'PassingTD':              'pass_td',
+    'PassingLong':            null,
+    // Fumbles
+    'OffensiveFumbles':       null,
+    'OffensiveFumblesLost':   null,
+    // O Line
+    'PancakeBlocks':          null,
     // Defense
-    'tackles': 'tackles', 'tkl': 'tackles', 'total tackles': 'tackles',
+    'Tackles':                'tackles',
+    'Assists':                null,
+    'TotalTackles':           'tackles',
+    'TacklesForLoss':         'tfl',
+    'Sacks':                  'sacks',
+    'SacksYardsLost':         null,
+    'QBHurries':              null,
+    // Pass Defense
+    'INTs':                   'ints',
+    'INTYards':               null,
+    'PassesDefensed':         null,
+    // Blocks
+    'BlockedPunts':           null,
+    'BlockedFG':              null,
+    // Fumbles (Def)
+    'FumbleRecoveries':       null,
+    'FumbleRecoveryYards':    null,
+    'CausedFumbles':          null,
+    // Punt Returns
+    'PuntReturnNum':          null,
+    'PuntReturnYards':        null,
+    'PuntReturnLong':         null,
+    'PuntReturnFairCatches':  null,
+    // Kickoff Returns
+    'KickoffReturnNum':       null,
+    'KickoffReturnYards':     null,
+    'KickoffReturnLong':      null,
+    // Total Returns
+    'TotalReturnYards':       null,
+    // Punts
+    'PuntNum':                null,
+    'PuntYards':              null,
+    'PuntLong':               null,
+    'PuntInside20':           null,
+    // Kickoffs
+    'KickoffNum':             null,
+    'KickoffYards':           null,
+    'KickoffLong':            null,
+    'KickoffTouchbacks':      null,
+    // Scoring
+    'RushingTDNum':           'rush_td',
+    'ReceivingTDNum':         'rec_td',
+    'FumbleReturnedTDNum':    null,
+    'IntReturnedTDNum':       null,
+    'PuntReturnedTDNum':      null,
+    'KickoffReturnedTDNum':   null,
+    'TotalTDNum':             null,
+    // PAT Kicks
+    'PATKickingMade':         null,
+    'PATKickingAtt':          null,
+    'PATKickingPoints':       null,
+    // Conversions
+    'PATRushingNum':          null,
+    'PATReceivingNum':        null,
+    'TotalConversionPoints':  null,
+    // Field Goals
+    'FGMade':                 null,
+    'FGAttempted':            null,
+    'FGLong':                 null,
+    // Misc
+    'Safeties':               null,
+    'TotalPoints':            null,
+  };
+
+  // Our stat key → MaxPreps exact field name (export)
+  const MAXPREPS_EXPORT_MAP = {
+    'rush_att':    'RushingNum',
+    'rush_yards':  'RushingYards',
+    'rush_td':     'RushingTDNum',
+    'receptions':  'ReceivingNum',
+    'rec_yards':   'ReceivingYards',
+    'rec_td':      'ReceivingTDNum',
+    'pass_comp':   'PassingComp',
+    'pass_att':    'PassingAtt',
+    'pass_yards':  'PassingYards',
+    'pass_td':     'PassingTD',
+    'ints':        'INTs',
+    'tackles':     'Tackles',
+    'sacks':       'Sacks',
+    'tfl':         'TacklesForLoss',
+    'hits':        'Hits',
+    'rbi':         'RunsBattedIn',
+    'runs':        'Runs',
+    'hr':          'HomeRuns',
+    'bb':          'BaseOnBalls',
+    'so_bat':      'Strikeouts',
+    'innings':     'InningsPitched',
+    'er':          'EarnedRuns',
+    'goals':       'Goals',
+    'assists':     'Assists',
+    'shots':       'Shots',
+    'shots_on':    'ShotsOnGoal',
+    'saves':       'Saves',
+    'points':      'Points',
+    'rebounds':    'Rebounds',
+    'steals':      'Steals',
+    'blocks':      'BlockedShots',
+    'turnovers':   'Turnovers',
+  };
+
+  // Loose CSV column map for comma-delimited fallback imports
+  const MAXPREPS_COL_MAP = {
+    'rush att': 'rush_att', 'rush attempts': 'rush_att', 'car': 'rush_att', 'carries': 'rush_att', 'rushingattempts': 'rush_att', 'rushingnum': 'rush_att',
+    'rush yds': 'rush_yards', 'rush yards': 'rush_yards', 'rushing yards': 'rush_yards', 'yds': 'rush_yards', 'rushingyards': 'rush_yards',
+    'rush td': 'rush_td', 'rush tds': 'rush_td', 'rushing td': 'rush_td', 'rushingtouchdowns': 'rush_td', 'rushingtdnum': 'rush_td',
+    'rec': 'receptions', 'receptions': 'receptions', 'catches': 'receptions', 'receivingnum': 'receptions',
+    'rec yds': 'rec_yards', 'rec yards': 'rec_yards', 'receiving yards': 'rec_yards', 'receivingyards': 'rec_yards',
+    'rec td': 'rec_td', 'rec tds': 'rec_td', 'receiving td': 'rec_td', 'receivingtouchdowns': 'rec_td', 'receivingtdnum': 'rec_td',
+    'pass att': 'pass_att', 'att': 'pass_att', 'pass attempts': 'pass_att', 'passattempts': 'pass_att', 'passingatt': 'pass_att',
+    'comp': 'pass_comp', 'completions': 'pass_comp', 'pass comp': 'pass_comp', 'passcompletions': 'pass_comp', 'passingcomp': 'pass_comp',
+    'pass yds': 'pass_yards', 'pass yards': 'pass_yards', 'passing yards': 'pass_yards', 'passingyards': 'pass_yards',
+    'pass td': 'pass_td', 'pass tds': 'pass_td', 'passing tds': 'pass_td', 'passingtouchdowns': 'pass_td', 'passingtd': 'pass_td', 'td': 'pass_td',
+    'int': 'ints', 'interceptions': 'ints', 'defensiveinterceptions': 'ints', 'passingint': 'ints', 'ints': 'ints',
+    'tackles': 'tackles', 'tkl': 'tackles', 'total tackles': 'tackles', 'totaltackles': 'tackles',
     'sacks': 'sacks', 'sck': 'sacks',
-    'tfl': 'tfl', 'tackles for loss': 'tfl',
-    // Baseball
+    'tfl': 'tfl', 'tackles for loss': 'tfl', 'tacklesforloss': 'tfl',
     'hits': 'hits', 'h': 'hits',
-    'rbi': 'rbi', 'rbis': 'rbi',
+    'rbi': 'rbi', 'rbis': 'rbi', 'runsbattedin': 'rbi',
     'runs': 'runs', 'r': 'runs',
-    'hr': 'hr', 'home runs': 'hr',
-    'bb': 'bb', 'walks': 'bb',
+    'hr': 'hr', 'home runs': 'hr', 'homeruns': 'hr',
+    'bb': 'bb', 'walks': 'bb', 'baseonballs': 'bb',
     'k': 'so_bat', 'so': 'so_bat', 'strikeouts': 'so_bat',
-    'ip': 'innings', 'innings pitched': 'innings',
-    'er': 'er', 'earned runs': 'er',
-    // Soccer
+    'ip': 'innings', 'innings pitched': 'innings', 'inningspitched': 'innings',
+    'er': 'er', 'earned runs': 'er', 'earnedruns': 'er',
     'goals': 'goals', 'g': 'goals',
     'assists': 'assists', 'a': 'assists',
     'shots': 'shots', 'sh': 'shots',
-    'shots on goal': 'shots_on', 'sog': 'shots_on',
+    'shots on goal': 'shots_on', 'sog': 'shots_on', 'shotsongoal': 'shots_on',
     'saves': 'saves', 'sv': 'saves',
-    // Basketball
     'points': 'points', 'pts': 'points',
     'rebounds': 'rebounds', 'reb': 'rebounds',
     'ast': 'assists',
     'stl': 'steals', 'steals': 'steals',
-    'blk': 'blocks', 'blocks': 'blocks',
+    'blk': 'blocks', 'blocks': 'blocks', 'blockedshots': 'blocks',
     'to': 'turnovers', 'turnovers': 'turnovers',
   };
 
-  let _mpParsed = null; // store parsed preview data
+  let _mpParsed = null;
 
   function parseMaxPrepsCSV(text) {
     const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) return null;
 
-    // Parse headers
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
-    const statCols = []; // { colIdx, statKey, label }
+    // Check if first line is a 32-char supplier ID (UUID-like, no pipes/commas)
+    let dataStart = 0;
+    const firstLine = lines[0].trim();
+    if (/^[0-9a-f\-]{32,36}$/i.test(firstLine) && !firstLine.includes('|') && !firstLine.includes(',')) {
+      dataStart = 1;
+    }
 
-    // Find player name column
-    const nameIdx = headers.findIndex(h => ['player','name','athlete'].includes(h.toLowerCase()));
-    if (nameIdx < 0) return { error: 'Could not find a "Player" or "Name" column.' };
+    const headerLine = lines[dataStart]?.trim();
+    if (!headerLine) return null;
 
-    // Map remaining columns to stat keys
+    // Detect delimiter
+    const delimiter = headerLine.includes('|') ? '|' : ',';
+    const headers = headerLine.split(delimiter).map(h => h.trim().replace(/"/g, ''));
+
+    const isPipeFormat = delimiter === '|';
+    const jerseyIdx = isPipeFormat ? headers.findIndex(h => h.toLowerCase() === 'jersey') : -1;
+    const nameIdx   = isPipeFormat ? -1 : headers.findIndex(h => ['player','name','athlete'].includes(h.toLowerCase()));
+
+    if (isPipeFormat && jerseyIdx < 0) return { error: 'Pipe-delimited format requires a "Jersey" column.' };
+    if (!isPipeFormat && nameIdx < 0)  return { error: 'Could not find a "Player", "Name", or "Jersey" column.' };
+
+    // Map columns to stat keys
+    const statCols = [];
     headers.forEach((h, i) => {
-      if (i === nameIdx) return;
-      const mapped = MAXPREPS_COL_MAP[h.toLowerCase()];
+      if (i === jerseyIdx || i === nameIdx) return;
+      const mapped = (MAXPREPS_FIELD_MAP[h] !== undefined ? MAXPREPS_FIELD_MAP[h] : null)
+                  || MAXPREPS_COL_MAP[h.toLowerCase()];
       if (mapped) statCols.push({ colIdx: i, statKey: mapped, label: h });
     });
 
-    if (!statCols.length) return { error: 'No recognizable stat columns found. Make sure you copied the header row.' };
+    if (!statCols.length) return { error: 'No recognizable stat columns found. Check column names match MaxPreps field names exactly.' };
 
-    // Parse rows
+    // Parse data rows
     const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cells = lines[i].split(',').map(c => c.trim().replace(/"/g,''));
-      const playerName = cells[nameIdx];
-      if (!playerName) continue;
+    for (let i = dataStart + 1; i < lines.length; i++) {
+      const cells = lines[i].split(delimiter).map(c => c.trim().replace(/"/g, ''));
+      let matched = null;
+      let displayName = '';
 
-      // Try to match to roster
-      const matched = PLAYERS.find(p => p.name?.toLowerCase() === playerName.toLowerCase()) ||
-                      PLAYERS.find(p => p.name?.toLowerCase().includes(playerName.toLowerCase().split(' ')[0]));
+      if (isPipeFormat) {
+        const jersey = cells[jerseyIdx];
+        displayName = '#' + jersey;
+        // Match by jersey — strip leading zeros for comparison
+        matched = PLAYERS.find(p => String(p.num || p.jersey || p.number || '').replace(/^0+/, '') === String(jersey).replace(/^0+/, ''))
+               || PLAYERS.find(p => String(p.num || p.jersey || p.number || '') === String(jersey));
+      } else {
+        const playerName = cells[nameIdx];
+        displayName = playerName;
+        matched = PLAYERS.find(p => p.name?.toLowerCase() === playerName?.toLowerCase())
+               || PLAYERS.find(p => p.name?.toLowerCase().includes(playerName?.toLowerCase().split(' ')[0]));
+      }
 
       const stats = {};
       statCols.forEach(sc => {
@@ -17859,12 +18157,117 @@ Jake Jones,8,QB,5,22,0,0,0,0"
         if (!isNaN(val)) stats[sc.statKey] = val;
       });
 
-      rows.push({ csvName: playerName, matched, stats });
+      if (Object.keys(stats).length) rows.push({ csvName: displayName, matched, stats });
     }
 
-    return { headers, statCols, rows };
+    return { headers, statCols, rows, isPipeFormat };
   }
 
+  // Export game stats for a specific game as MaxPreps pipe-delimited .txt
+  function exportMaxPreps(gameId, supplierID = '') {
+    // Gather approved stats for this game
+    const gameStats = GAME_STATS.filter(s => s.game_id === gameId && s.status === 'approved');
+    if (!gameStats.length) { showToast('No approved stats for this game'); return; }
+
+    // Deduplicate per player+category (coach wins)
+    const deduped = {};
+    gameStats.filter(s => s.submitted_by !== 'coach').forEach(s => {
+      deduped[s.player_id + '|' + s.category] = s;
+    });
+    gameStats.filter(s => s.submitted_by === 'coach').forEach(s => {
+      deduped[s.player_id + '|' + s.category] = s;
+    });
+    const unique = Object.values(deduped);
+
+    // Group by player
+    const byPlayer = {};
+    unique.forEach(s => {
+      if (!byPlayer[s.player_id]) byPlayer[s.player_id] = {};
+      byPlayer[s.player_id][s.category] = s.value;
+    });
+
+    // Get all stat keys present in this game
+    const usedKeys = [...new Set(unique.map(s => s.category))];
+    const exportCols = usedKeys.filter(k => MAXPREPS_EXPORT_MAP[k]);
+
+    if (!exportCols.length) { showToast('No exportable stats found'); return; }
+
+    const mpFields = exportCols.map(k => MAXPREPS_EXPORT_MAP[k]);
+
+    // Build file lines
+    const fileLines = [];
+    if (supplierID.trim()) fileLines.push(supplierID.trim());
+    fileLines.push(['Jersey', ...mpFields].join('|'));
+
+    Object.entries(byPlayer).forEach(([pid, stats]) => {
+      const player = PLAYERS.find(p => p.db_id === pid || p.id === pid);
+      const jersey = player?.num || player?.jersey || player?.number || '0';
+      const values = exportCols.map(k => stats[k] !== undefined ? stats[k] : '');
+      // Per MaxPreps spec: omit zeros unless stat is actually zero (include empty for missing)
+      fileLines.push([jersey, ...values].join('|'));
+    });
+
+    const content = fileLines.join('\n');
+    const game = SCHEDULE.find(g => (g.id || '') === gameId);
+    const opp = (game?.opponent || game?.title || 'game').replace(/[^a-z0-9]/gi, '_');
+    const date = game?.date || new Date().toISOString().slice(0,10);
+    const filename = `mesh_stats_${opp}_${date}.txt`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported ✓ — ' + filename);
+  }
+
+  function openMaxPrepsExport() {
+    const games = [...SCHEDULE]
+      .filter(g => (g.tag === 'game' || g.tag === 'scrimmage') && GAME_STATS.some(s => s.game_id === (g.id || '')))
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    if (!games.length) { showToast('No games with stats to export'); return; }
+
+    const existing = document.getElementById('mp-export-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'mp-export-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px';
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:460px;border:1px solid var(--border);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:16px;font-weight:700">Export to MaxPreps</div>
+            <div style="font-size:12px;color:var(--fg-3);margin-top:2px">Generates a MaxPreps-compatible stat file (.txt) ready for direct upload</div>
+          </div>
+          <div onclick="document.getElementById('mp-export-overlay').remove()" style="cursor:pointer;font-size:20px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">GAME</div>
+          <select id="mp-export-game" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
+            <option value="">Select a game...</option>
+            ${games.map(g => `<option value="${g.id || ''}">${g.opponent||g.title||'Game'} · ${g.date||''}</option>`).join('')}
+          </select>
+        </div>
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:4px">SUPPLIER ID <span style="font-weight:400;color:var(--fg-3)">(optional — required for accredited imports)</span></div>
+          <input id="mp-export-supplier" type="text" placeholder="12345678-1234-1234-123456789012" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:13px;font-family:monospace;box-sizing:border-box">
+        </div>
+        <div style="padding:14px 20px">
+          <button onclick="exportMaxPreps(document.getElementById('mp-export-game').value, document.getElementById('mp-export-supplier').value); document.getElementById('mp-export-overlay').remove();"
+            style="width:100%;padding:12px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">
+            📤 Download .txt file
+          </button>
+          <div style="font-size:11px;color:var(--fg-3);margin-top:10px;line-height:1.6;text-align:center">
+            The exported file follows the MaxPreps stat import specification.<br>
+            A Supplier ID is required for accredited imports — <a href="https://www.maxpreps.com/utility/stat_import/register.aspx" target="_blank" style="color:var(--team-primary)">register here</a> if you don't have one.
+          </div>
+        </div>
+      </div>`;
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+  }
   function previewMaxPreps() {
     const text = document.getElementById('mp-csv-input')?.value?.trim();
     if (!text) { showToast('Paste CSV data first'); return; }
@@ -19730,6 +20133,7 @@ Jake Jones,8,QB,5,22,0,0,0,0"
     // Render announcements for correct role
     if (appRole === 'player') {
       renderAnnouncements('player');
+      renderPlayerGameStats();
       populatePlayerHome(); // roster is already loaded by this point
       subscribeToPlayerMessages(programId);
     } else if (appRole === 'parent') {
