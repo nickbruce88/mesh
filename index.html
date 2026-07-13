@@ -5349,7 +5349,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.50</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.51</div>
   </div>
 </div>
 
@@ -5360,7 +5360,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.50';
+  const APP_VERSION = 'v39.51';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -20625,13 +20625,13 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     await loadGameStats(programId);
     await loadStatCategories(programId);
     subscribeToPlayers(programId);
+    subscribeToPlayerMessages(programId); // message-list realtime for ALL roles
 
     // Render announcements for correct role
     if (appRole === 'player') {
       renderAnnouncements('player');
       renderPlayerGameStats();
       populatePlayerHome(); // roster is already loaded by this point
-      subscribeToPlayerMessages(programId);
     } else if (appRole === 'parent') {
       renderAnnouncements('parent');
     } else {

@@ -201,6 +201,21 @@ grant execute on function thread_participant_ids(uuid) to authenticated;
 -- =====================  END PART 1  ========================================================
 
 
+-- =====================  PART 1b — ENABLE REALTIME (run now)  ================================
+-- Realtime (postgres_changes) only fires for tables in the supabase_realtime publication.
+-- Without this, new messages never push to open clients (you must refresh to see them).
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and tablename='messages') then
+    alter publication supabase_realtime add table messages;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and tablename='message_threads') then
+    alter publication supabase_realtime add table message_threads;
+  end if;
+end $$;
+-- =====================  END PART 1b  =======================================================
+
+
 -- =====================  PART 2 — MIGRATE LEGACY MESSAGES (run later, after client verified) ==
 -- Creates one broadcast thread per distinct (program_id, group_name) and backfills messages.thread_id.
 /*
