@@ -44,9 +44,10 @@ security definer
 set search_path = public
 as $$
 begin
+  -- alias the table (pr) so its id/owner_id can't collide with the RETURNS TABLE out-columns
   if not exists (
-    select 1 from programs
-    where id = p_program_id and owner_id = auth.uid()
+    select 1 from programs pr
+    where pr.id = p_program_id and pr.owner_id = auth.uid()
   ) then
     raise exception 'Not authorized';
   end if;
