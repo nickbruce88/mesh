@@ -5326,7 +5326,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.44</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.45</div>
   </div>
 </div>
 
@@ -5337,7 +5337,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.44';
+  const APP_VERSION = 'v39.45';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9514,10 +9514,18 @@
     const role = joinSelectedRole || 'player';
     // Seed the sidebar identity from the just-created profile so the name/initials are correct
     // on this first session (launchApp only sets _sessionUser on a later reload).
-    try {
-      const u = JSON.parse(localStorage.getItem('mesh_user') || '{}');
-      if (u && u.name) _sessionUser = { name: u.name, role: u.role || role };
-    } catch(e) {}
+    let u={}; try { u = JSON.parse(localStorage.getItem('mesh_user') || '{}'); } catch(e) {}
+    if (u && u.name) _sessionUser = { name: u.name, role: u.role || role };
+    if (role === 'coach') {
+      // Assistant coach: launch through launchApp so the real roster/schedule/etc. load and
+      // per-feature permissions apply immediately. login() alone loads NO Supabase data, which
+      // left a freshly-joined assistant looking at an empty roster until they reloaded.
+      const pid = localStorage.getItem('mesh_joining_program_id') || localStorage.getItem('mesh_program_id') || null;
+      const nm = (document.getElementById('join-program-name')?.textContent || '').trim();
+      if (nm) obProgram.teamName = obProgram.teamName || nm;
+      launchApp('coach', { name: u.name, role: u.role || 'coach' }, pid);
+      return;
+    }
     login(role);
     if (role === 'player') {
       getValidProgramId().then(id => {
@@ -11811,32 +11819,55 @@
       body.innerHTML='<div style="font-size:13px;color:var(--fg-3);line-height:1.6">No assistant coaches yet. Share your <b>coach code</b> — when a coach joins, they\'ll appear here. New coaches default to view-only except Attendance, Inventory, Performance, Messages, and Drill Library.</div>';
       return;
     }
+    const total = COACH_FEATURES.length;
     let html='';
     coaches.forEach(c=>{
       const eff = { ...defaultAssistantPerms(), ...(c.permissions||{}) };
       _staffAccess[c.id] = { perms: eff, name: c.name };
       const init=(c.name||'Coach').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
-      html+=`<div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      const enabled = COACH_FEATURES.filter(f=>eff[f.key]).length;
+      // Collapsed by default — with many coaches on staff this keeps the list short.
+      html+=`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
+        <div onclick="toggleStaffCard('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer">
           <div style="width:34px;height:34px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${init}</div>
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">${(c.name||'Coach').replace(/</g,'&lt;')}</div><div style="font-size:12px;color:var(--fg-3)">Assistant coach</div></div>
+          <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${(c.name||'Coach').replace(/</g,'&lt;')}</div><div style="font-size:12px;color:var(--fg-3)" id="sa-sub-${c.id}">${enabled} of ${total} features editable</div></div>
+          <div id="sa-chev-${c.id}" style="font-size:13px;color:var(--fg-3);transition:transform .15s">▸</div>
         </div>
-        <div style="display:flex;flex-direction:column">
-          ${COACH_FEATURES.map(f=>`
-            <label style="display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer;border-top:1px solid var(--border)">
-              <span style="width:22px;text-align:center">${f.icon}</span>
-              <span style="flex:1;font-size:13px">${f.label}</span>
-              <input type="checkbox" ${eff[f.key]?'checked':''} onchange="toggleStaffPerm('${c.id}','${f.key}',this)" style="width:18px;height:18px;accent-color:var(--team-primary);cursor:pointer">
-            </label>`).join('')}
+        <div id="sa-body-${c.id}" style="display:none;padding:0 14px 14px">
+          <div style="display:flex;flex-direction:column">
+            ${COACH_FEATURES.map(f=>`
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer;border-top:1px solid var(--border)">
+                <span style="width:22px;text-align:center">${f.icon}</span>
+                <span style="flex:1;font-size:13px">${f.label}</span>
+                <input type="checkbox" ${eff[f.key]?'checked':''} onchange="toggleStaffPerm('${c.id}','${f.key}',this)" style="width:18px;height:18px;accent-color:var(--team-primary);cursor:pointer">
+              </label>`).join('')}
+          </div>
+          <button onclick="saveStaffAccess('${c.id}','${programId}',this)" style="width:100%;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:12px">Save access</button>
         </div>
-        <button onclick="saveStaffAccess('${c.id}','${programId}',this)" style="width:100%;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:12px">Save access</button>
       </div>`;
     });
     body.innerHTML=html;
   }
 
+  function toggleStaffCard(coachId){
+    const body=document.getElementById('sa-body-'+coachId);
+    const chev=document.getElementById('sa-chev-'+coachId);
+    if(!body) return;
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    if(chev) chev.style.transform = open ? 'rotate(0deg)' : 'rotate(90deg)';
+  }
+
   function toggleStaffPerm(coachId, feature, el){
-    if(_staffAccess[coachId]) _staffAccess[coachId].perms[feature]=el.checked;
+    if(!_staffAccess[coachId]) return;
+    _staffAccess[coachId].perms[feature]=el.checked;
+    // Keep the collapsed summary count in sync.
+    const sub=document.getElementById('sa-sub-'+coachId);
+    if(sub){
+      const eff=_staffAccess[coachId].perms;
+      const n=COACH_FEATURES.filter(f=>eff[f.key]).length;
+      sub.textContent=n+' of '+COACH_FEATURES.length+' features editable';
+    }
   }
 
   async function saveStaffAccess(coachId, programId, btn){
