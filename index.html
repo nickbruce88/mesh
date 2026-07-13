@@ -3999,22 +3999,8 @@
     </div>
     <div class="section-label">Announcements</div>
     <div style="font-size:11px;color:var(--gray-3);margin:-6px 0 10px">Pushed by coaching staff to all parents</div>
-    <div class="card">
-      <div style="display:flex;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--black-4)">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--black-4);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">📣</div>
-        <div><div style="font-size:14px;font-weight:600;margin-bottom:3px">Game Friday — kickoff at 7PM</div><div style="font-size:13px;color:var(--gray-2)">Kickoff has been moved to 7:00 PM this Friday. Gates open at 6:00 PM.</div><div style="font-size:11px;color:var(--gray-3);margin-top:5px">Coach Williams · 2h ago</div></div>
-      </div>
-      <div style="display:flex;gap:12px;padding-top:12px">
-        <div style="width:36px;height:36px;border-radius:50%;background:var(--black-4);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🚌</div>
-        <div><div style="font-size:14px;font-weight:600;margin-bottom:3px">Away game bus — 4:30 PM sharp</div><div style="font-size:13px;color:var(--gray-2)">Bus departs field house at 4:30 PM next Thursday. Full gear required.</div><div style="font-size:11px;color:var(--gray-3);margin-top:5px">Coach Williams · Yesterday</div></div>
-      </div>
-    </div>
-    <div class="section-label">This week</div>
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--black-4)"><div style="min-width:44px;text-align:center"><div style="font-size:10px;color:var(--gray-3);font-weight:600;text-transform:uppercase">TUE</div><div style="font-size:18px;font-weight:700">15</div></div><div><div style="font-size:14px;font-weight:600">Practice</div><div style="font-size:12px;color:var(--gray-2)">3:30 – 6:00 PM · Varsity field</div></div></div>
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--black-4)"><div style="min-width:44px;text-align:center"><div style="font-size:10px;color:var(--gray-3);font-weight:600;text-transform:uppercase">THU</div><div style="font-size:18px;font-weight:700">17</div></div><div><div style="font-size:14px;font-weight:600">Walkthrough</div><div style="font-size:12px;color:var(--gray-2)">3:30 – 5:00 PM · Varsity field</div></div></div>
-      <div style="display:flex;align-items:center;gap:12px;padding-top:10px"><div style="min-width:44px;text-align:center"><div style="font-size:10px;color:var(--gray-3);font-weight:600;text-transform:uppercase">FRI</div><div style="font-size:18px;font-weight:700;color:var(--team-primary)">18</div></div><div><div style="font-size:14px;font-weight:600;color:var(--team-primary)">🏈 Game — Emmett Huskies</div><div style="font-size:12px;color:var(--gray-2)">7:00 PM · Nampa High School</div></div></div>
-    </div>
+    <div id="parent-announcements-list"></div>
+    <div id="parent-announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">No announcements yet</div>
   </div>
 
   <!-- Parent Schedule -->
@@ -4075,13 +4061,6 @@
         <div style="font-size:12px;color:var(--fg-3)">Tap + New to message a coach.</div>
       </div>
     </div>
-
-    <!-- Announcements -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px">
-      <div class="section-label" style="margin:0">Announcements</div>
-    </div>
-    <div id="parent-announcements-list"></div>
-    <div id="parent-announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">No announcements yet</div>
   </div>
 
   <!-- Parent More Tab -->
@@ -5326,7 +5305,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.48</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.49</div>
   </div>
 </div>
 
@@ -5337,7 +5316,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.48';
+  const APP_VERSION = 'v39.49';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
