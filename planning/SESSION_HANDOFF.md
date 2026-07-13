@@ -60,6 +60,37 @@ Client changes in `index.html`:
 excludes `'coach'` (only `head_coach`/`parent` seen so far). Fix = drop/loosen the constraint. Watch the
 console for `[Join] create_profile (coach) error`.
 
+## Phase 2b — Staff Access (per-coach, per-feature edit permissions) — v39.44, this session
+Assistant coaches now default to view-only EXCEPT edit on Attendance, Inventory, Performance, Messages,
+Drill Library. Head coach can grant/revoke edit on ANY of 12 features per coach, via Settings → Staff Access.
+**REQUIRES SQL:** run `planning/phase2b-staff-access.sql` in Supabase (adds `profiles.permissions jsonb` +
+3 SECURITY DEFINER RPCs: `set_coach_permissions`, `list_program_coaches`, `get_my_permissions`, all guarded
+so only the program owner can grant). Until it's run, Staff Access won't load and grants won't save (client
+falls back to role defaults + toasts on write attempts — no crash).
+Client model (all in `index.html`, ~line 9958 region):
+- `COACH_FEATURES` (12: roster, practice, schedule, depth, inventory, attendance, performance, drills,
+  playbook, docs, messages, announcements), `ASSISTANT_DEFAULT_EDIT` = [attendance,inventory,performance,
+  messages,drills]. `canEdit(feature)` (head coach & non-coach roles → always true), `requireEdit(feature)`
+  (guards + toasts), `defaultAssistantPerms()`, `effectiveCoachPerms()`.
+- `launchApp` loads the assistant's perms via `get_my_permissions` and computes `isHeadCoach` from
+  `programs.owner_id === uid`.
+- `applyPermissionState()` rewritten: hides any `[data-edit="<feature>"]` control (via `.perm-hidden`
+  `!important`) the coach can't edit, plus the practice-tab specifics. Called on every coach showTab /
+  showMoreSection.
+- Enforcement = **38 `requireEdit` guards** on mutating handlers + **21 `data-edit` button tags**. Practice
+  gates converted from `isHeadCoach` → `canEdit('practice')`.
+- Staff Access UI: `openStaffAccess`/`renderStaffAccessBody`/`toggleStaffPerm`/`saveStaffAccess`
+  (profile menu item `#pmi-staff-access`, head-coach-only).
+- Also fixed: first-session sidebar name/initials (joinGoToApp seeds `_sessionUser`).
+**Enforcement is CLIENT-SIDE only** (honest UI + blocked writes/toasts). TRUE security = RLS, which is
+Phase 3. A determined assistant could still hit the DB directly until then.
+**TEST after SQL + deploy (footer v39.44):**
+1. Head coach → Settings (avatar) → Staff Access → see the assistant → toggle e.g. Roster ON → Save access.
+2. Assistant reloads → can now add players; toggle OFF + save → assistant reload → "+ Player" hidden,
+   and any edit attempt toasts "🔒 View only…".
+3. Confirm defaults: fresh assistant can edit Attendance/Inventory/Performance/Messages/Drills, nothing else.
+Static verification done this session: `node --check` passes; all feature keys valid; no new dup functions.
+
 ## What changed in `index.html` this session (all local, in v39.42)
 **Performance tab (player) — done:**
 - `setPlayerPerfTab` (~14108): Training toggle now calls `renderPlayerPerfMine()` (was `renderMyInfoPage()`).

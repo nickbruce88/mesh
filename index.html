@@ -1864,6 +1864,7 @@
 
   /* ===== LOCKED STATE (assistant coach view) ===== */
   .locked-banner { display: flex; align-items: center; gap: 10px; background: rgba(255,180,0,0.08); border: 1px solid rgba(255,180,0,0.25); border-radius: var(--radius); padding: 10px 14px; margin: 0 20px 14px; font-size: 12px; color: var(--amber); }
+  .perm-hidden { display: none !important; }
   .grid-cell.locked, .grid-time-cell.locked { cursor: default; }
   .practice-edit-btn-hidden { display: none !important; }
 
@@ -2586,7 +2587,7 @@
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:10px">
       <div class="section-label" style="margin:0">Announcements</div>
-      <button class="btn-sm" onclick="openAnnouncementCompose()" id="announce-post-btn">+ Post</button>
+      <button class="btn-sm" data-edit="announcements" onclick="openAnnouncementCompose()" id="announce-post-btn">+ Post</button>
     </div>
     <div id="announcements-list"></div>
     <div id="announcements-empty" style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px;display:none">
@@ -3165,7 +3166,7 @@
             <div class="unit-chip" onclick="filterUnit('defense', this)">Defense</div>
             <div class="unit-chip" onclick="filterUnit('special', this)">Special Teams</div>
           </div>
-          <button class="btn-sm" id="dc-edit-btn" onclick="toggleDCEdit()">Edit</button>
+          <button class="btn-sm" data-edit="depth" id="dc-edit-btn" onclick="toggleDCEdit()">Edit</button>
         </div>
 
         <div class="dc-edit-banner" id="dc-edit-banner" style="display:none">
@@ -3189,7 +3190,7 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Drill Library</div>
-        <button class="btn-sm" onclick="openDrillAddChooser()" style="margin-left:auto">+ Add drill</button>
+        <button class="btn-sm" data-edit="drills" onclick="openDrillAddChooser()" style="margin-left:auto">+ Add drill</button>
       </div>
 
       <!-- Filter bar -->
@@ -3215,7 +3216,7 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Documents</div>
-        <button class="btn-sm" style="margin-left:auto" onclick="openDocNewFolderModal()">+ Folder</button>
+        <button class="btn-sm" data-edit="docs" style="margin-left:auto" onclick="openDocNewFolderModal()">+ Folder</button>
       </div>
 
       <div id="doc-folder-list"></div>
@@ -3328,8 +3329,8 @@
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Roster</div>
         <div style="display:flex;gap:6px;margin-left:auto">
-          <button class="btn-sm" onclick="openRosterImport()">📥 Import</button>
-          <button class="btn-sm" onclick="openAddPlayerManual()" style="background:var(--team-primary);color:var(--team-primary-text);border-color:var(--team-primary)">+ Player</button>
+          <button class="btn-sm" data-edit="roster" onclick="openRosterImport()">📥 Import</button>
+          <button class="btn-sm" data-edit="roster" onclick="openAddPlayerManual()" style="background:var(--team-primary);color:var(--team-primary-text);border-color:var(--team-primary)">+ Player</button>
           <button class="btn-sm" onclick="toggleRosterFilter()" id="roster-filter-btn">Filter</button>
         </div>
       </div>
@@ -3374,8 +3375,8 @@
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Inventory</div>
         <div style="display:flex;gap:6px;margin-left:auto">
-          <button class="btn-sm" onclick="openCSVImport()">Import</button>
-          <button class="btn-sm" onclick="openAddItem()">+ Add</button>
+          <button class="btn-sm" data-edit="inventory" onclick="openCSVImport()">Import</button>
+          <button class="btn-sm" data-edit="inventory" onclick="openAddItem()">+ Add</button>
         </div>
       </div>
 
@@ -3442,7 +3443,7 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Attendance</div>
-        <button class="btn-sm" id="save-roll-btn" onclick="saveRoll()" style="margin-left:auto;background:var(--team-primary);color:var(--team-primary-text);font-weight:700">Save roll</button>
+        <button class="btn-sm" data-edit="attendance" id="save-roll-btn" onclick="saveRoll()" style="margin-left:auto;background:var(--team-primary);color:var(--team-primary-text);font-weight:700">Save roll</button>
       </div>
 
       <!-- Tab switcher -->
@@ -3551,7 +3552,7 @@
       <div id="coach-perf-game-view">
         <!-- Action buttons -->
         <div style="display:flex;gap:8px;margin-bottom:16px">
-          <button onclick="openCoachSubmitStats()" style="flex:1;padding:9px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">+ Log stats</button>
+          <button data-edit="performance" onclick="openCoachSubmitStats()" style="flex:1;padding:9px;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">+ Log stats</button>
           <button onclick="openMaxPrepsImport()" style="padding:9px 14px;background:var(--bg-3);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">📥 Import</button>
           <button onclick="openMaxPrepsExport()" style="padding:9px 14px;background:var(--bg-3);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">📤 Export</button>
         </div>
@@ -3632,21 +3633,21 @@
         <div class="pb-unit-section active" id="pb-offense-inline">
           <div class="pb-action-row" id="pb-offense-actions-inline">
             <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-            <button class="pb-folder-btn" onclick="openNewFolderModal('offense')">📁 New folder</button>
+            <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('offense')">📁 New folder</button>
           </div>
           <div id="pb-offense-content"></div>
         </div>
         <div class="pb-unit-section" id="pb-defense-inline">
           <div class="pb-action-row" id="pb-defense-actions-inline">
             <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-            <button class="pb-folder-btn" onclick="openNewFolderModal('defense')">📁 New folder</button>
+            <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('defense')">📁 New folder</button>
           </div>
           <div id="pb-defense-content"></div>
         </div>
         <div class="pb-unit-section" id="pb-special-inline">
           <div class="pb-action-row" id="pb-special-actions-inline">
             <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-            <button class="pb-folder-btn" onclick="openNewFolderModal('special')">📁 New folder</button>
+            <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('special')">📁 New folder</button>
           </div>
           <div id="pb-special-content"></div>
         </div>
@@ -3918,7 +3919,7 @@
         <label for="game-past" style="font-size:13px;color:var(--gray-2);cursor:pointer">Game already played — enter final score</label>
       </div>
 
-      <button class="note-modal-save" onclick="saveGame()" id="save-game-btn">Add game</button>
+      <button class="note-modal-save" data-edit="schedule" onclick="saveGame()" id="save-game-btn">Add game</button>
     </div>
   </div>
 
@@ -3952,7 +3953,7 @@
 
       <!-- New message button pinned to bottom of left panel -->
       <div class="msg-new-btn-wrap">
-        <button onclick="openNewGroupModal()" class="msg-compose-btn" style="width:100%;justify-content:center">
+        <button data-edit="messages" onclick="openNewGroupModal()" class="msg-compose-btn" style="width:100%;justify-content:center">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -5222,21 +5223,21 @@
       <div class="pb-unit-section active" id="pb-offense">
         <div class="pb-action-row" id="pb-offense-actions">
           <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-          <button class="pb-folder-btn" onclick="openNewFolderModal('offense')">📁 New folder</button>
+          <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('offense')">📁 New folder</button>
         </div>
         <div id="pb-offense-content"></div>
       </div>
       <div class="pb-unit-section" id="pb-defense">
         <div class="pb-action-row" id="pb-defense-actions">
           <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-          <button class="pb-folder-btn" onclick="openNewFolderModal('defense')">📁 New folder</button>
+          <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('defense')">📁 New folder</button>
         </div>
         <div id="pb-defense-content"></div>
       </div>
       <div class="pb-unit-section" id="pb-special">
         <div class="pb-action-row" id="pb-special-actions">
           <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-          <button class="pb-folder-btn" onclick="openNewFolderModal('special')">📁 New folder</button>
+          <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('special')">📁 New folder</button>
         </div>
         <div id="pb-special-content"></div>
       </div>
@@ -5321,10 +5322,11 @@
     <div class="profile-menu-item" onclick="closeProfileModal();openThemeColors()"><span class="pmi">🎨</span> Appearance</div>
     <div class="profile-menu-item" onclick="openNotifSettings()"><span class="pmi">🔔</span> Notification settings</div>
     <div class="profile-menu-item" onclick="closeProfileModal();openShareInvite()"><span class="pmi">🔗</span> Share invite link</div>
+    <div class="profile-menu-item" id="pmi-staff-access" onclick="openStaffAccess()"><span class="pmi">🔐</span> Staff access</div>
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.43</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.44</div>
   </div>
 </div>
 
@@ -5335,7 +5337,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.43';
+  const APP_VERSION = 'v39.44';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5614,6 +5616,8 @@
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
     // Player My Info — rendered via 'more' tab hook above
+    // Re-apply per-feature edit gating after the tab (and its dynamic controls) render.
+    if (role === 'coach') setTimeout(applyPermissionState, 80);
   }
 
   function applyDesktopPracticeLayout() {
@@ -6476,6 +6480,7 @@
   }
 
   async function saveRoll() {
+    if(!requireEdit('attendance'))return;
     if (attSaving) return;
 
     if (!attDate) {
@@ -6936,6 +6941,7 @@
   }
 
   async function saveLogSession(presetPlayerId) {
+    if(!requireEdit('performance'))return;
     const programId = await getValidProgramId();
     if (!programId) return;
 
@@ -7051,6 +7057,7 @@
     document.querySelectorAll('#bulk-entry-overlay .bulk-unit').forEach(s=>s.textContent=short);
   }
   async function saveBulkEntry(){
+    if(!requireEdit('performance'))return;
     const programId=await getValidProgramId();
     if(!programId) return;
     const key=document.getElementById('bulk-cat')?.value;
@@ -7211,6 +7218,7 @@
     }
   }
   async function confirmPerfImport(){
+    if(!requireEdit('performance'))return;
     const programId=await getValidProgramId();
     if(!programId) return;
     if(!perfImportRows.length){ showToast('Nothing to import — check your data'); return; }
@@ -7382,6 +7390,7 @@
   }
 
   async function confirmPasteImport() {
+    if(!requireEdit('schedule'))return;
     if (!pasteImportParsed.length) { previewPasteImport(); return; }
     let added = 0, skipped = 0;
     pasteImportParsed.forEach(g => {
@@ -7467,6 +7476,7 @@
   }
 
   async function confirmBulkEntry() {
+    if(!requireEdit('schedule'))return;
     const rows = document.querySelectorAll('#bulk-entry-rows > div[id^="bulk-row-"]');
     let added = 0, errors = 0;
     rows.forEach(row => {
@@ -8153,6 +8163,7 @@
   }
 
   async function confirmRosterImport() {
+    if(!requireEdit('roster'))return;
     const text = document.getElementById('roster-csv-paste').value.trim();
     if (!rosterImportParsed.length && text) previewRosterCSV();
     if (!rosterImportParsed.length) { showToast('Preview your data first'); return; }
@@ -8247,6 +8258,7 @@
   }
 
   async function saveAddPlayerManual() {
+    if(!requireEdit('roster'))return;
     const name = document.getElementById('apm-name')?.value.trim();
     const num = document.getElementById('apm-number')?.value.trim();
     const posOff = document.getElementById('apm-pos-off')?.value;
@@ -9500,6 +9512,12 @@
 
   function joinGoToApp() {
     const role = joinSelectedRole || 'player';
+    // Seed the sidebar identity from the just-created profile so the name/initials are correct
+    // on this first session (launchApp only sets _sessionUser on a later reload).
+    try {
+      const u = JSON.parse(localStorage.getItem('mesh_user') || '{}');
+      if (u && u.name) _sessionUser = { name: u.name, role: u.role || role };
+    } catch(e) {}
     login(role);
     if (role === 'player') {
       getValidProgramId().then(id => {
@@ -9909,7 +9927,7 @@
       if (blank) blank.style.display = 'none';
       if (filled) filled.style.display = 'none';
       if (gridWrap) gridWrap.style.display = 'none';
-      if (editBtn) editBtn.style.display = isHeadCoach ? 'inline-block' : 'none';
+      if (editBtn) editBtn.style.display = canEdit('practice') ? 'inline-block' : 'none';
     } else if (savedGrid) {
       const pgrid = document.getElementById('practice-grid-table');
       if (pgrid) pgrid.innerHTML = savedGrid;
@@ -9918,7 +9936,7 @@
       if (gridWrap) gridWrap.style.display = 'block';
       if (blank) blank.style.display = 'none';
       if (hintWrap) hintWrap.style.display = '';
-      if (editBtn) editBtn.style.display = isHeadCoach ? 'inline-block' : 'none';
+      if (editBtn) editBtn.style.display = canEdit('practice') ? 'inline-block' : 'none';
     } else {
       if (filled) filled.style.display = 'none';
       if (gridWrap) gridWrap.style.display = 'none';
@@ -9939,6 +9957,49 @@
   // ===== HEAD COACH / ASSISTANT PERMISSION MODEL =====
   let isHeadCoach = true;
 
+  // Per-feature edit access for assistant coaches. Head coach (program owner) = full edit.
+  // _coachPerms is null for the head coach / not-yet-loaded; an object of {feature: bool}
+  // for an assistant. Persisted server-side on profiles.permissions (see Staff Access UI).
+  const COACH_FEATURES = [
+    { key:'roster',        label:'Roster',        icon:'👥' },
+    { key:'practice',      label:'Practice',      icon:'📋' },
+    { key:'schedule',      label:'Schedule',      icon:'📅' },
+    { key:'depth',         label:'Depth Chart',   icon:'📊' },
+    { key:'inventory',     label:'Inventory',     icon:'🎽' },
+    { key:'attendance',    label:'Attendance',    icon:'🗒️' },
+    { key:'performance',   label:'Performance',   icon:'📈' },
+    { key:'drills',        label:'Drill Library', icon:'🏃' },
+    { key:'playbook',      label:'Playbook',      icon:'📖' },
+    { key:'docs',          label:'Documents',     icon:'📄' },
+    { key:'messages',      label:'Messages',      icon:'💬' },
+    { key:'announcements', label:'Announcements', icon:'📢' },
+  ];
+  // Assistant coaches can edit these by default; everything else is view-only until granted.
+  const ASSISTANT_DEFAULT_EDIT = ['attendance','inventory','performance','messages','drills'];
+  let _coachPerms = null;
+
+  function defaultAssistantPerms() {
+    const p = {};
+    COACH_FEATURES.forEach(f => { p[f.key] = ASSISTANT_DEFAULT_EDIT.includes(f.key); });
+    return p;
+  }
+  // Merge stored overrides onto the role defaults so features added later default sanely.
+  function effectiveCoachPerms() {
+    return { ...defaultAssistantPerms(), ...(_coachPerms || {}) };
+  }
+  // Can the CURRENT user edit this feature? Head coach & non-coach roles: always yes.
+  function canEdit(feature) {
+    if (isHeadCoach) return true;
+    if (currentRole !== 'coach') return true;
+    return !!effectiveCoachPerms()[feature];
+  }
+  // Guard for mutating handlers — returns false + toasts when the user lacks access.
+  function requireEdit(feature) {
+    if (canEdit(feature)) return true;
+    showToast('🔒 View only — ask ' + (obProgram.coachName || 'the head coach') + ' for edit access');
+    return false;
+  }
+
   function switchSubRole(sub, el) {
     isHeadCoach = (sub === 'head');
     document.querySelectorAll('.subrole-tab').forEach(t => t.classList.remove('active'));
@@ -9947,13 +10008,20 @@
   }
 
   function applyPermissionState() {
+    // Generic pass: hide any edit control tagged with data-edit="<feature>" that this coach can't use.
+    document.querySelectorAll('[data-edit]').forEach(el => {
+      el.classList.toggle('perm-hidden', !canEdit(el.getAttribute('data-edit')));
+    });
+
+    // Practice-tab specifics (feature 'practice').
+    const canPractice = canEdit('practice');
     const editBtn = document.getElementById('practice-edit-btn');
     const addPeriodBtn = document.querySelector('.add-period-btn');
     const scriptEditBtn = document.querySelector('.script-card-head .btn-sm');
     const scriptToggle = document.querySelector('.script-visibility-toggle');
     let banner = document.getElementById('locked-banner');
 
-    if (!isHeadCoach) {
+    if (!canPractice) {
       if (editBtn) editBtn.style.display = 'none';
       if (addPeriodBtn) addPeriodBtn.style.display = 'none';
       if (scriptEditBtn) scriptEditBtn.style.display = 'none';
@@ -10027,19 +10095,19 @@
     document.getElementById('note-modal-sub').textContent = timeRange + ' · ' + periodId;
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a note for this period… e.g. "OL focus on pad level"';
-    document.getElementById('note-modal-textarea').readOnly = !isHeadCoach;
+    document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
     document.getElementById('note-cancel-btn').style.display = 'none';
-    document.getElementById('note-modal-footer').textContent = isHeadCoach
+    document.getElementById('note-modal-footer').textContent = canEdit('practice')
       ? 'Visible to all staff · You can edit this note'
-      : 'Visible to all staff · Only the head coach can edit';
+      : 'Visible to all staff · You have view-only access';
     document.getElementById('drill-picker-section').style.display = 'none';
     document.getElementById('note-modal-drill-section') && (document.getElementById('note-modal-drill-section').style.display = 'none');
     // Show delete period button
     const delBtn = document.getElementById('note-modal-delete-period');
-    if (delBtn) delBtn.style.display = isHeadCoach ? 'block' : 'none';
+    if (delBtn) delBtn.style.display = canEdit('practice') ? 'block' : 'none';
 
     const scriptAction = document.getElementById('period-script-action');
-    scriptAction.style.display = isHeadCoach ? 'block' : 'none';
+    scriptAction.style.display = canEdit('practice') ? 'block' : 'none';
     updatePeriodScriptBtn();
 
     renderNoteCards();
@@ -10059,16 +10127,16 @@
     document.getElementById('note-modal-sub').textContent = periodId + ' · ' + coachName;
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a coaching note for this cell…';
-    document.getElementById('note-modal-textarea').readOnly = !isHeadCoach;
+    document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
     document.getElementById('note-cancel-btn').style.display = 'none';
-    document.getElementById('note-modal-footer').textContent = isHeadCoach
+    document.getElementById('note-modal-footer').textContent = canEdit('practice')
       ? 'Visible to all staff · You can edit this note'
-      : 'Visible to all staff · Only the head coach can edit';
+      : 'Visible to all staff · You have view-only access';
     // Hide delete period button for cell notes
     const delBtn = document.getElementById('note-modal-delete-period');
     if (delBtn) delBtn.style.display = 'none';
 
-    document.getElementById('drill-picker-section').style.display = isHeadCoach ? 'block' : 'none';
+    document.getElementById('drill-picker-section').style.display = canEdit('practice') ? 'block' : 'none';
     selectedDrillId = null;
     drillDropdownOpen = false;
     document.getElementById('drill-picker-label').textContent = 'Search drills…';
@@ -11308,7 +11376,7 @@
     (document.getElementById('practice-below-grid')||{style:{}}).style.display='block';
     (document.getElementById('practice-scripts-reminders')||{style:{}}).style.display='block';
     document.getElementById('practice-grid-wrap').style.display = 'block';
-    if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
+    if (canEdit('practice')) document.getElementById('practice-edit-btn').style.display = 'inline-block';
 
     showToast('Loaded "' + selectedTemplateName + '" ✓');
   }
@@ -11441,6 +11509,9 @@
   // ===== PROFILE MODAL =====
   function openProfileModal() {
     refreshProfileHeader();
+    // Staff Access is head-coach-only.
+    const saItem = document.getElementById('pmi-staff-access');
+    if (saItem) saItem.style.display = (currentRole === 'coach' && isHeadCoach) ? 'flex' : 'none';
     if (isDesktop()) {
       const footer = document.querySelector('.sidebar-footer');
       const modal = document.getElementById('profile-modal');
@@ -11695,6 +11766,95 @@
     document.body.appendChild(ov);
   }
 
+  // ===== STAFF ACCESS (per-coach, per-feature edit permissions) =====
+  let _staffAccess = {}; // coachId -> { perms:{feature:bool}, name }
+
+  async function openStaffAccess(){
+    closeProfileModal();
+    if (!(currentRole === 'coach' && isHeadCoach)) { showToast('Only the head coach can manage staff access'); return; }
+    const programId = await getValidProgramId();
+    let ov=document.getElementById('staff-access-overlay'); if(ov) ov.remove();
+    ov=document.createElement('div'); ov.id='staff-access-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+    ov.innerHTML=`
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:18px;font-weight:700">Staff access</div>
+          <div onclick="document.getElementById('staff-access-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-3);line-height:1.5;margin-bottom:16px">Choose what each assistant coach can edit. Toggles off = view-only.</div>
+        <div id="staff-access-body"><div style="font-size:13px;color:var(--fg-3)">Loading staff…</div></div>
+      </div>`;
+    document.body.appendChild(ov);
+
+    if (!programId) { const b=document.getElementById('staff-access-body'); if(b) b.innerHTML='<div style="font-size:13px;color:var(--fg-3)">No program found.</div>'; return; }
+    let coaches=[];
+    try {
+      const { data, error } = await db.rpc('list_program_coaches', { p_program_id: programId });
+      if (error) throw error;
+      coaches = data || [];
+    } catch(e){
+      console.error('[StaffAccess] list error:', e);
+      const b=document.getElementById('staff-access-body');
+      if(b) b.innerHTML='<div style="font-size:13px;color:var(--red)">Could not load staff'+(e.message?': '+e.message:'')+'</div>';
+      return;
+    }
+    renderStaffAccessBody(coaches, programId);
+  }
+
+  function renderStaffAccessBody(coaches, programId){
+    _staffAccess = {};
+    const body=document.getElementById('staff-access-body');
+    if(!body) return;
+    if(!coaches.length){
+      body.innerHTML='<div style="font-size:13px;color:var(--fg-3);line-height:1.6">No assistant coaches yet. Share your <b>coach code</b> — when a coach joins, they\'ll appear here. New coaches default to view-only except Attendance, Inventory, Performance, Messages, and Drill Library.</div>';
+      return;
+    }
+    let html='';
+    coaches.forEach(c=>{
+      const eff = { ...defaultAssistantPerms(), ...(c.permissions||{}) };
+      _staffAccess[c.id] = { perms: eff, name: c.name };
+      const init=(c.name||'Coach').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
+      html+=`<div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${init}</div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">${(c.name||'Coach').replace(/</g,'&lt;')}</div><div style="font-size:12px;color:var(--fg-3)">Assistant coach</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          ${COACH_FEATURES.map(f=>`
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer;border-top:1px solid var(--border)">
+              <span style="width:22px;text-align:center">${f.icon}</span>
+              <span style="flex:1;font-size:13px">${f.label}</span>
+              <input type="checkbox" ${eff[f.key]?'checked':''} onchange="toggleStaffPerm('${c.id}','${f.key}',this)" style="width:18px;height:18px;accent-color:var(--team-primary);cursor:pointer">
+            </label>`).join('')}
+        </div>
+        <button onclick="saveStaffAccess('${c.id}','${programId}',this)" style="width:100%;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:12px">Save access</button>
+      </div>`;
+    });
+    body.innerHTML=html;
+  }
+
+  function toggleStaffPerm(coachId, feature, el){
+    if(_staffAccess[coachId]) _staffAccess[coachId].perms[feature]=el.checked;
+  }
+
+  async function saveStaffAccess(coachId, programId, btn){
+    const entry=_staffAccess[coachId]; if(!entry) return;
+    const old=btn.textContent; btn.textContent='Saving…'; btn.disabled=true;
+    try{
+      const { error } = await db.rpc('set_coach_permissions', { p_coach_uid: coachId, p_program_id: programId, p_perms: entry.perms });
+      if(error) throw error;
+      showToast('Access updated for '+(entry.name||'coach')+' ✓');
+      btn.textContent='Saved ✓';
+      setTimeout(()=>{ if(btn){ btn.textContent=old; btn.disabled=false; } }, 1500);
+    }catch(e){
+      console.error('[StaffAccess] save error:', e);
+      showToast('Could not save: '+(e.message||'error'));
+      btn.textContent=old; btn.disabled=false;
+    }
+  }
+
   // ===== SUBSCRIPTION =====
   function openSubscription(){
     closeProfileModal();
@@ -11946,6 +12106,7 @@
   }
 
   async function sendThreadMsg() {
+    if(!requireEdit('messages'))return;
     const input = document.getElementById('thread-input');
     const text = input.value.trim();
     if (!text || !currentThread) return;
@@ -12112,6 +12273,7 @@
   }
 
   function createNewGroup() {
+    if(!requireEdit('messages'))return;
     const selected = [...ngSelectedMembers];
     const coachCount = selected.filter(id => STAFF_MEMBERS.find(m => m.id === id)).length;
     const hasPlayer = selected.some(id => id.startsWith('pl-'));
@@ -12389,6 +12551,8 @@
       pbLoadFromSupabase().then(() => showPbUnit(pbCurrentUnit));
       showPbUnit('offense');
     }
+    // Gate this section's edit controls for assistant coaches (runs after section render).
+    setTimeout(applyPermissionState, 60);
   }
 
   function backToMoreMenu() {
@@ -12588,6 +12752,7 @@
   }
 
   function reassignPlayerGroup(playerId, groupName) {
+    if(!requireEdit('roster'))return;
     const p = PLAYERS.find(pl => pl.id === playerId || pl.db_id === playerId);
     if (p) {
       p.group = groupName === 'Unassigned' ? '' : groupName;
@@ -12921,6 +13086,7 @@
   }
 
   function moveDCPlayerByArrow(pos, idx, unit, direction) {
+    if(!requireEdit('depth'))return;
     const posGroup = DC_DATA[unit]?.find(p => p.pos === pos);
     if (!posGroup) return;
     const newIdx = idx + direction;
@@ -13083,6 +13249,7 @@
   }
 
   async function saveGame() {
+    if(!requireEdit('schedule'))return;
     const opponent = document.getElementById('game-opponent').value.trim();
     const date = document.getElementById('game-date').value;
     if (!opponent) { showToast('Please enter an opponent'); return; }
@@ -13208,6 +13375,7 @@
   }
 
   async function saveGameStat(programId, playerId, gameId, gameDate, opponent, stats, submittedBy = 'coach', level = null) {
+    if(!requireEdit('performance'))return;
     const status = submittedBy === 'coach' ? 'approved' : 'pending';
     const rows = Object.entries(stats)
       .filter(([, v]) => v !== '' && v !== null && v !== undefined)
@@ -13226,12 +13394,14 @@
   }
 
   async function approveGameStat(statId) {
+    if(!requireEdit('performance'))return;
     await db.from('game_stats').update({ status: 'approved' }).eq('id', statId);
     const pid = obProgram?.id || localStorage.getItem('mesh_program_id');
     if (pid) await loadGameStats(pid);
   }
 
   async function rejectGameStat(statId) {
+    if(!requireEdit('performance'))return;
     await db.from('game_stats').update({ status: 'rejected' }).eq('id', statId);
     const pid = obProgram?.id || localStorage.getItem('mesh_program_id');
     if (pid) await loadGameStats(pid);
@@ -13400,6 +13570,7 @@
   }
 
   function toggleDCEdit() {
+    if(!requireEdit('depth'))return;
     dcEditMode = !dcEditMode;
     const btn = document.getElementById('dc-edit-btn');
     const banner = document.getElementById('dc-edit-banner');
@@ -13588,6 +13759,7 @@
   }
 
   function confirmDCSwap(name, num) {
+    if(!requireEdit('depth'))return;
     for (const unit of Object.keys(DC_DATA)) {
       const posGroup = DC_DATA[unit].find(p => p.pos === dcSwapPos);
       if (posGroup) {
@@ -13602,6 +13774,7 @@
   }
 
   function removeDCPlayer() {
+    if(!requireEdit('depth'))return;
     for (const unit of Object.keys(DC_DATA)) {
       const posGroup = DC_DATA[unit].find(p => p.pos === dcSwapPos);
       if (posGroup && posGroup.players[dcSwapIdx]) {
@@ -14689,6 +14862,7 @@ ${printBtnHtml}
   }
 
   async function postAnnouncement() {
+    if(!requireEdit('announcements'))return;
     const text = document.getElementById('announcement-text-input').value.trim();
     if (!text) { showToast('Write something first'); return; }
 
@@ -14733,6 +14907,7 @@ ${printBtnHtml}
   }
 
   async function deleteAnnouncement(id) {
+    if(!requireEdit('announcements'))return;
     ANNOUNCEMENTS = ANNOUNCEMENTS.filter(a => a.id !== id);
     renderAnnouncements('coach');
     renderAnnouncements('player');
@@ -14776,6 +14951,7 @@ ${printBtnHtml}
   }
 
   async function docSaveToSupabase() {
+    if(!requireEdit('docs'))return;
     const programId = localStorage.getItem('mesh_program_id');
     if (!programId) return;
     try {
@@ -15245,7 +15421,7 @@ ${printBtnHtml}
     document.getElementById('practice-simple').style.display = 'none';
     (document.getElementById('practice-scripts-reminders')||{style:{}}).style.display='none';
     document.getElementById('practice-day-blank').style.display = 'none';
-    if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
+    if (canEdit('practice')) document.getElementById('practice-edit-btn').style.display = 'inline-block';
     showToast('Blank detailed plan ready — tap + Add period');
     setTimeout(() => openAddPeriod(), 400);
   }
@@ -15388,7 +15564,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.getElementById('practice-day-blank').style.display = 'none';
     document.getElementById('practice-simple').style.display = 'block';
     const _psr2 = document.getElementById('practice-scripts-reminders'); if(_psr2) _psr2.style.display='block';
-    if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
+    if (canEdit('practice')) document.getElementById('practice-edit-btn').style.display = 'inline-block';
     renderSimpleBlocks();
   }
 
@@ -15531,7 +15707,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.getElementById('practice-simple').style.display = 'none';
     (document.getElementById('practice-scripts-reminders')||{style:{}}).style.display='none';
     document.getElementById('practice-day-blank').style.display = 'none';
-    if (isHeadCoach) document.getElementById('practice-edit-btn').style.display = 'inline-block';
+    if (canEdit('practice')) document.getElementById('practice-edit-btn').style.display = 'inline-block';
     renderGridHeader();
     showToast('AI Coach plan loaded ✓');
   }
@@ -15714,8 +15890,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:6px">No players yet</div>
           <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Import your roster from a spreadsheet or add players one at a time.</div>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-            <button onclick="openRosterImport()" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">📥 Import roster</button>
-            <button onclick="openAddPlayerManual()" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">+ Add player</button>
+            <button data-edit="roster" onclick="openRosterImport()" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">📥 Import roster</button>
+            <button data-edit="roster" onclick="openAddPlayerManual()" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">+ Add player</button>
           </div>
         </div>`;
       return;
@@ -15781,6 +15957,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function savePlayerEdit() {
+    if(!requireEdit('roster'))return;
     const overlay = document.getElementById('player-edit-overlay');
     const playerId = overlay.dataset.playerId;
     const player = PLAYERS.find(p => p.id === playerId);
@@ -15824,6 +16001,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function deletePlayer(player) {
+    if(!requireEdit('roster'))return;
     const name = player.name;
     const dbId = player.db_id || player.id;
 
@@ -16468,6 +16646,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function saveItem() {
+    if(!requireEdit('inventory'))return;
     const name = document.getElementById('item-name-input').value.trim();
     const cat = document.getElementById('item-cat-input').value;
     if (!name) { showToast('Please enter an item name'); return; }
@@ -16606,6 +16785,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function returnItem(id) {
+    if(!requireEdit('inventory'))return;
     const item = INVENTORY.find(i => i.id === id);
     if (!item) return;
     const playerName = item.assignedTo;
@@ -16709,6 +16889,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function confirmAssignFromProfile(itemId, playerName) {
+    if(!requireEdit('inventory'))return;
     const item = INVENTORY.find(i => i.id === itemId);
     if (!item) return;
     item.assignedTo = playerName;
@@ -16745,6 +16926,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   async function confirmAssign(playerName) {
+    if(!requireEdit('inventory'))return;
     const item = INVENTORY.find(i => i.id === currentItemId);
     if (!item) return;
     item.assignedTo = playerName;
@@ -17350,6 +17532,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   function parseCSV(text) { return parseInvListCSV(text); } // backwards compat
 
   function importCSV() {
+    if(!requireEdit('inventory'))return;
     const text = document.getElementById('csv-paste-input').value.trim();
     if (!text) { showToast('Paste or upload a CSV first'); return; }
     const rows = invImportMode === 'checkout' ? parseGearCheckoutCSV(text) : parseInvListCSV(text);
@@ -18681,6 +18864,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
   }
 
   async function importMaxPreps() {
+    if(!requireEdit('performance'))return;
     if (!_mpParsed) { showToast('Preview first'); return; }
     const sel = document.getElementById('mp-game-select');
     const gameId = sel?.value;
@@ -19111,6 +19295,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
   }
 
   async function saveAddEvent() {
+    if(!requireEdit('schedule'))return;
     const name = document.getElementById('ae-name')?.value.trim();
     const date = document.getElementById('ae-date')?.value;
     if (!name || !date) { showToast('Please enter a name and date'); return; }
@@ -19225,6 +19410,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
   }
 
   async function saveEditCalEvent(id, isSeries) {
+    if(!requireEdit('schedule'))return;
     const ev = SCHEDULE.find(e => e.id === id);
     if (!ev) return;
     const updates = {
@@ -19330,6 +19516,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
   }
 
   async function deleteCalEvent(id) {
+    if(!requireEdit('schedule'))return;
     SCHEDULE = SCHEDULE.filter(e => e.id !== id);
     renderCalendar(); updateNextGame(); updateTodaySchedule();
     await saveScheduleToSupabase();
@@ -19540,6 +19727,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     document.getElementById('add-drill-overlay').classList.add('open');
   }
   function deleteCurrentDrill(){
+    if(!requireEdit('drills'))return;
     if(!editingDrillId) return;
     if(!confirm('Delete this drill? This cannot be undone.')) return;
     const idx=DRILLS.findIndex(d=>d.id===editingDrillId);
@@ -19602,6 +19790,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
   }
 
   function saveDrill() {
+    if(!requireEdit('drills'))return;
     const title = document.getElementById('drill-title-input').value.trim();
     if (!title) { showToast('Please enter a drill title'); return; }
     if (drillSelectedPos.size === 0) { showToast('Select at least one position group'); return; }
@@ -19679,6 +19868,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     el.classList.toggle('selected', bulkDrillPos.has(pos));
   }
   function saveDrillBulk(){
+    if(!requireEdit('drills'))return;
     const text=(document.getElementById('bulk-drill-text')?.value||'').trim();
     if(!text){ showToast('Enter at least one drill'); return; }
     const positions=[...bulkDrillPos];
@@ -19863,6 +20053,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
   }
 
   async function pbSaveToSupabase() {
+    if(!requireEdit('playbook'))return;
     const programId = localStorage.getItem('mesh_program_id');
     if (!programId) return;
     try {
@@ -20439,12 +20630,21 @@ Jersey|RushingNum|RushingYards|RushingTDNum
         if (ap.team_primary) teamColors.primary = ap.team_primary;
         if (ap.team_secondary) teamColors.secondary = ap.team_secondary;
         teamColors.sidebarFont = ap.sidebar_font || null;
-        // Head coach = program owner; anyone else in the coach UI is an assistant (view-only).
+        // Head coach = program owner; anyone else in the coach UI is an assistant.
         if (appRole === 'coach') {
           let myUid = localStorage.getItem('mesh_auth_uid');
           if (!myUid) { try { const { data: { session } } = await db.auth.getSession(); myUid = session?.user?.id || ''; } catch(e) {} }
           isHeadCoach = !!(ap.owner_id && myUid && ap.owner_id === myUid);
           console.log('[Session] Coach permission — isHeadCoach:', isHeadCoach);
+          if (isHeadCoach) {
+            _coachPerms = null; // full edit
+          } else {
+            // Load this assistant's per-feature edit access (falls back to role defaults).
+            try {
+              const { data: perms } = await db.rpc('get_my_permissions');
+              _coachPerms = { ...defaultAssistantPerms(), ...(perms || {}) };
+            } catch(e) { console.warn('[Session] get_my_permissions error:', e); _coachPerms = defaultAssistantPerms(); }
+          }
         }
       }
     } catch(e) { console.warn('Appearance load error:', e); }
