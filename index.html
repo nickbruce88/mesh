@@ -4046,21 +4046,65 @@
   </div><!-- end tab-parent-schedule -->
 
   <!-- Parent Messages -->
-  <div id="tab-parent-messages" class="scroll-content" style="display:none;padding:0 0 80px">
-    <div style="padding:16px 20px 0">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Messages</div>
-        <button class="btn-sm" onclick="openParentNewMsg()">+ New</button>
+  <div id="tab-parent-messages" class="scroll-content" style="display:none;padding:0">
+
+    <!-- LEFT PANEL: thread list — matches coach/player layout -->
+    <div class="msg-left-panel">
+
+      <div class="msg-list-header">
+        <div style="font-size:16px;font-weight:700;color:var(--fg)">Messages</div>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:12px">Coaching staff</div>
-    </div>
-    <div class="msg-group-list" id="parent-msg-group-list">
-      <div id="parent-msg-empty" style="text-align:center;padding:48px 20px">
-        <div style="font-size:36px;margin-bottom:10px">💬</div>
-        <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">No messages yet</div>
-        <div style="font-size:12px;color:var(--fg-3)">Tap + New to message a coach.</div>
+
+      <div class="msg-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--fg-3)">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="parent-msg-search-input" placeholder="Search messages" oninput="filterParentMsgThreads(this.value)" class="msg-search-input">
+      </div>
+
+      <div class="msg-group-list" id="parent-msg-group-list" style="flex:1;overflow-y:auto">
+        <div id="parent-msg-empty" style="text-align:center;padding:56px 20px">
+          <div style="font-size:36px;margin-bottom:10px">💬</div>
+          <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">Start a conversation</div>
+          <div style="font-size:12px;color:var(--fg-3);line-height:1.5">Tap <strong style="color:var(--fg-2)">New message</strong> below to reach your coaching staff.</div>
+        </div>
+      </div>
+
+      <div class="msg-new-btn-wrap">
+        <button onclick="openParentNewMsg()" class="msg-compose-btn" style="width:100%;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          New message
+        </button>
+      </div>
+
+    </div><!-- end msg-left-panel -->
+
+    <!-- ===== PARENT MESSAGE THREAD VIEW ===== -->
+    <div id="parent-msg-thread-overlay" style="position:absolute;inset:0;background:var(--bg);z-index:10;display:none;flex-direction:column">
+      <div class="thread-header">
+        <div class="thread-back" onclick="closeParentThread()">‹</div>
+        <div class="thread-avatar" id="parent-thread-avatar">💬</div>
+        <div style="flex:1">
+          <div class="thread-title" id="parent-thread-title">Coach</div>
+          <div class="thread-sub" id="parent-thread-sub">Direct message</div>
+        </div>
+      </div>
+      <div class="safety-banner" id="parent-thread-safety-banner">
+        <span class="safety-banner-icon">🔒</span>
+        <span>Messages with coaching staff are documented</span>
+      </div>
+      <div class="thread-body" id="parent-thread-body"></div>
+      <div class="thread-compose">
+        <div class="compose-row">
+          <input class="compose-input" id="parent-thread-input" placeholder="Message…" onkeydown="if(event.key==='Enter')sendParentThreadMsg()">
+          <button class="send-btn" onclick="sendParentThreadMsg()">➤</button>
+        </div>
       </div>
     </div>
+
   </div>
 
   <!-- Parent More Tab -->
@@ -5305,7 +5349,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.49</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.50</div>
   </div>
 </div>
 
@@ -5316,7 +5360,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.49';
+  const APP_VERSION = 'v39.50';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -7979,10 +8023,19 @@
 
   function filterMsgThreads(query) {
     const q = query.toLowerCase().trim();
-    document.querySelectorAll('.msg-group-item').forEach(item => {
+    document.querySelectorAll('#coach-msg-group-list .msg-group-item').forEach(item => {
       const name = item.querySelector('.msg-group-name')?.textContent?.toLowerCase() || '';
       const preview = item.querySelector('.msg-group-preview')?.textContent?.toLowerCase() || '';
       item.style.display = (!q || name.includes(q) || preview.includes(q)) ? '' : 'none';
+    });
+  }
+
+  function filterParentMsgThreads(query) {
+    const q = (query||'').toLowerCase();
+    document.querySelectorAll('#parent-msg-group-list .msg-group-item').forEach(el => {
+      const name = el.querySelector('.msg-group-name')?.textContent?.toLowerCase() || '';
+      const preview = el.querySelector('.msg-group-preview')?.textContent?.toLowerCase() || '';
+      el.style.display = (!q || name.includes(q) || preview.includes(q)) ? '' : 'none';
     });
   }
 
@@ -11987,15 +12040,21 @@
     if (overlay) { overlay.classList.remove('open'); overlay.style.display = ''; }
   }
 
-  // openThread renders the player overlay directly (role-aware) — these are thin shims now.
+  // openThread renders each role's overlay directly (role-aware) — these are thin shims.
   function sendPlayerThreadMsg() { sendThreadMsg(); }
   function openPlayerThread(threadId) { openThread(threadId); }
+  function sendParentThreadMsg() { sendThreadMsg(); }
+  function closeParentThread() {
+    const ov = document.getElementById('parent-msg-thread-overlay');
+    if (ov) { ov.classList.remove('open'); ov.style.display = 'none'; }
+    if (currentThreadSubscription) { try { currentThreadSubscription.unsubscribe(); } catch(e){} currentThreadSubscription = null; }
+  }
 
   // DOM ids for the thread overlay differ for the player role (its own overlay).
   function threadOverlayIds(role){
-    return role === 'player'
-      ? { overlay:'player-msg-thread-overlay', title:'player-thread-title', sub:'player-thread-sub', avatar:'player-thread-avatar', body:'player-thread-body', input:'player-thread-input' }
-      : { overlay:'msg-thread-overlay', title:'thread-title', sub:'thread-sub', avatar:'thread-avatar', body:'thread-body', input:'thread-input' };
+    if (role === 'player') return { overlay:'player-msg-thread-overlay', title:'player-thread-title', sub:'player-thread-sub', avatar:'player-thread-avatar', body:'player-thread-body', input:'player-thread-input' };
+    if (role === 'parent') return { overlay:'parent-msg-thread-overlay', title:'parent-thread-title', sub:'parent-thread-sub', avatar:'parent-thread-avatar', body:'parent-thread-body', input:'parent-thread-input' };
+    return { overlay:'msg-thread-overlay', title:'thread-title', sub:'thread-sub', avatar:'thread-avatar', body:'thread-body', input:'thread-input' };
   }
 
   async function loadThreadSubtitle(t, subEl){
@@ -12015,7 +12074,7 @@
     const t = _threads[threadId] || { id: threadId, kind: currentThreadKind };
     currentThreadKind = t.kind;
     const role = currentRole || 'coach';
-    const isPlayer = role === 'player';
+    const ownOverlay = (role === 'player' || role === 'parent'); // own display:none overlay (not the coach .open one)
     const ids = threadOverlayIds(role);
 
     document.querySelectorAll('.msg-group-item').forEach(el => el.classList.remove('active-thread'));
@@ -12035,13 +12094,13 @@
 
     // Safety banner (coach overlay only) — private/witnessed threads.
     const banner = document.getElementById('thread-safety-banner');
-    if (banner && !isPlayer) banner.style.display = (t.kind === 'witnessed_dm' || t.kind === 'dm') ? 'flex' : 'none';
+    if (banner && role === 'coach') banner.style.display = (t.kind === 'witnessed_dm' || t.kind === 'dm') ? 'flex' : 'none';
 
     const dot = document.getElementById('mgu-' + threadId); if (dot) dot.style.opacity = '0';
 
     const overlay = document.getElementById(ids.overlay);
-    if (overlay) { overlay.classList.add('open'); if (isPlayer) { overlay.style.display='flex'; overlay.style.flexDirection='column'; } }
-    const emptyState = document.getElementById('thread-empty-state'); if (emptyState && !isPlayer) emptyState.style.display = 'none';
+    if (overlay) { overlay.classList.add('open'); if (ownOverlay) { overlay.style.display='flex'; overlay.style.flexDirection='column'; } }
+    const emptyState = document.getElementById('thread-empty-state'); if (emptyState && role === 'coach') emptyState.style.display = 'none';
     const inputEl = document.getElementById(ids.input); if (inputEl) inputEl.value = '';
 
     // Load history by thread_id.
