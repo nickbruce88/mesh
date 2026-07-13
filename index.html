@@ -5313,7 +5313,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.40</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.42</div>
   </div>
 </div>
 
@@ -5324,7 +5324,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.40';
+  const APP_VERSION = 'v39.42';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5594,8 +5594,11 @@
     // Player schedule — render from real SCHEDULE data
     if (role === 'player' && tab === 'schedule') renderPlayerSchedule();
     if (role === 'player' && tab === 'performance') {
-      if (!PERF_DATA.length) loadPerfData().then(() => renderPlayerPerfMine());
-      else renderPlayerPerfMine();
+      // Load training data in the background so the Training sub-tab is ready when toggled
+      if (!PERF_DATA.length) loadPerfData();
+      // Default to the Game Stats view and render it (previously rendered the hidden Training body,
+      // leaving the visible Game Stats view blank until the user toggled sub-tabs)
+      setPlayerPerfTab('game');
     }
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
@@ -8847,7 +8850,29 @@
         return true;
       }
 
-      console.log('[Session] No program or player row found for uid:', uid);
+      // 3. Check profiles table — parents (and later assistant coaches) have no players/programs row of their own.
+      //    profiles has RLS, so read the caller's own row via a SECURITY DEFINER RPC (mirrors create_profile).
+      //    Placed last so the working coach/player paths above are untouched.
+      const { data: profRows, error: profErr } = await db.rpc('get_my_profile');
+      if (profErr) console.warn('[Session] get_my_profile error:', profErr);
+      const profile = Array.isArray(profRows) ? profRows[0] : profRows;
+      if (profile?.program_id) {
+        const { data: pprog } = await db.from('programs').select('*').eq('id', profile.program_id).maybeSingle();
+        if (pprog) {
+          const role = profile.role || 'parent';
+          console.log('[Session] Resolved via profiles as', role, '— program:', pprog.team_name);
+          obProgram.teamName   = pprog.team_name;
+          obProgram.schoolName = pprog.school_name;
+          obProgram.coachName  = pprog.coach_name;
+          obProgram.coachCode  = pprog.coach_code;
+          obProgram.playerCode = pprog.player_code;
+          obProgram.parentCode = pprog.parent_code;
+          await launchApp(role, { name: profile.name, role }, pprog.id);
+          return true;
+        }
+      }
+
+      console.log('[Session] No program, player, or profile row found for uid:', uid);
       return false;
     } catch(e) {
       console.error('[Session] Resolve error:', e);
@@ -9185,16 +9210,18 @@
     select.innerHTML = '<option value="">Select your player</option>';
 
     // Only query Supabase if we have a real UUID
+    // Option value = player id (needed to persist the parent↔player link); label + data-name keep the name
     if (storedProgramId) {
       try {
         const { data: dbPlayers } = await db.from('players')
-          .select('name, pos')
+          .select('id, name, pos')
           .eq('program_id', storedProgramId)
           .eq('role', 'player');
         if (dbPlayers) {
           dbPlayers.forEach(p => {
             const opt = document.createElement('option');
-            opt.value = p.name;
+            opt.value = p.id;
+            opt.dataset.name = p.name;
             opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
             select.appendChild(opt);
           });
@@ -9205,7 +9232,8 @@
     // Also add existing PLAYERS array
     PLAYERS.forEach(p => {
       const opt = document.createElement('option');
-      opt.value = p.name;
+      opt.value = p.db_id || p.id;
+      opt.dataset.name = p.name;
       opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
       select.appendChild(opt);
     });
@@ -9385,14 +9413,38 @@
     joinGoToStep(4);
   }
 
-  function submitParentProfile() {
+  async function submitParentProfile() {
     const name = document.getElementById('join-parent-name').value.trim();
-    const player = document.getElementById('join-parent-player').value;
+    const sel = document.getElementById('join-parent-player');
+    const playerId = sel.value;
+    const playerName = sel.options[sel.selectedIndex]?.dataset.name || 'your player';
     if (!name) { showToast('Please enter your name'); return; }
-    if (!player) { showToast('Please select your player'); return; }
+    if (!playerId) { showToast('Please select your player'); return; }
+
+    // Persist the parent server-side: profiles row (role='parent') + parent_links row.
+    // Uses the register_parent SECURITY DEFINER RPC so it works regardless of RLS state.
+    const uid = localStorage.getItem('mesh_auth_uid') || null;
+    const programId = localStorage.getItem('mesh_joining_program_id') || null;
+    const validProgramId = programId && programId.includes('-') ? programId : null;
+    const validPlayerId = playerId && playerId.includes('-') ? playerId : null;  // real DB rows only (UUIDs)
+    if (uid && validProgramId && validPlayerId) {
+      try {
+        const { error } = await db.rpc('register_parent', {
+          p_user_id: uid,
+          p_program_id: validProgramId,
+          p_name: name,
+          p_player_id: validPlayerId
+        });
+        if (error) { console.error('[Join] register_parent error:', error); showToast('Saved locally — sync will retry'); }
+        else console.log('[Join] Parent persisted:', uid, '→ player', validPlayerId);
+      } catch(e) { console.error('[Join] register_parent exception:', e); showToast('Saved locally — sync will retry'); }
+    } else {
+      console.warn('[Join] Parent not persisted — missing uid/programId/playerId', { uid, validProgramId, validPlayerId });
+    }
+
     try { localStorage.setItem('mesh_role', 'parent'); localStorage.setItem('mesh_user', JSON.stringify({ name, role: 'parent' })); } catch(e) {}
     document.getElementById('join-done-title').textContent = 'Welcome, ' + name.split(' ')[0] + '!';
-    document.getElementById('join-done-sub').textContent = "You've been linked to " + player + "'s profile. You'll receive announcements from coaching staff.";
+    document.getElementById('join-done-sub').textContent = "You've been linked to " + playerName + "'s profile. You'll receive announcements from coaching staff.";
     joinGoToStep(4);
   }
 
@@ -14105,7 +14157,7 @@ ${printBtnHtml}
     document.getElementById('player-perf-tab-training').style.background = tab === 'training' ? 'var(--team-primary)' : 'transparent';
     document.getElementById('player-perf-tab-training').style.color = tab === 'training' ? 'var(--team-primary-text)' : 'var(--fg-2)';
     if (tab === 'game') renderPlayerGameStats();
-    else renderMyInfoPage();
+    else renderPlayerPerfMine();
   }
 
   // ===== COACH LOG STATS MODAL =====
