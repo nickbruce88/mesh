@@ -33,8 +33,32 @@ Full worst-first list is in the "PARENT DEMO-DATA CLEANUP" section below. Revisi
 2. **Assistant-coach join flow + Staff Access permissions** — ✅ DONE & VERIFIED live (v39.43–v39.47).
    Assistant joins via coach code, persists, reloads into coach UI; head coach grants per-feature edit
    via Settings → Staff Access; assistant can add players (persists) when granted roster access.
-3. **Messaging schema + proper RLS** ← NEXT (then, later, the witnessed private-DM UI once real members exist)
-Witnessed-DM UI is **deferred** until real members (2nd coach / parents) exist.
+3. **Messaging schema + RLS + witnessed DM** ← IN PROGRESS (v39.48). Scope: everything in one pass.
+   Sequenced to de-risk RLS: (Step 1) schema + RPCs + full client rewrite, RLS OFF → verify;
+   (Step 2) migrate legacy group_name messages; (Step 3) enable RLS + re-verify.
+
+## Phase 3 — Messaging (v39.48, this session) — status & how to run
+SQL in `planning/phase3-messaging.sql`, THREE labeled parts. **Run PART 1 now** (schema: message_threads,
+thread_participants, messages.thread_id/sender_id; helper fns my_program_id/my_role/is_thread_participant;
+RPCs: list_program_directory, ensure_broadcast_thread, create_thread, list_my_threads, thread_members,
+thread_participant_ids). PART 2 (migrate legacy messages) and PART 3 (enable RLS + policies) are commented
+out — run them at Steps 2 and 3 after client verification.
+Client rewrite (all in index.html): thread identity is now a real thread UUID (was free-text group_name);
+sender identity is auth uid (sender_id). Thread model:
+- Broadcasts (All Coaches/Players/Parents) = role-scoped via audience_roles; coach ensures the 3 exist on
+  entering Messages. dm/witnessed_dm = explicit thread_participants.
+- loadThreadList/renderThreadList (list_my_threads) populate the list per role on Messages tab open
+  (wired in showTab). openThread loads by thread_id, role-aware overlay (fixes the player DOM-mirror desync).
+- sendThreadMsg inserts thread_id+sender_id; targeted push (broadcasts→roles, DMs→participant uids via new
+  sendPushNotification targetUserIds arg — edge fn must honor target_user_ids for true per-recipient push).
+- Compose rewired to create_thread: coach New Group (directory picker), player New Message = witnessed_dm
+  (coach + witness), parent New Message = dm to a coach (new dynamic picker). sendPlayerDirectMsg stub is gone.
+- Removed: THREAD_DATA, STAFF_MEMBERS, PARENT_MEMBERS, openOrCreateQuickThread, playerKnownThreads.
+**Enforcement note:** RLS still OFF until Step 3 — so during verify, privacy is not yet enforced server-side.
+**TEST (after PART 1 + deploy v39.48):** coach sees 3 broadcasts + can post; create a group (directory picker)
+→ appears + opens; player New Message (pick coach + witness) sends a witnessed DM; parent New Message → coach
+DM; recipient sees the thread (reload/realtime). Then do Step 2 (migration) and Step 3 (RLS) and re-verify a
+non-participant genuinely cannot read a private thread. Realtime under RLS may need policies correct (watch it).
 
 ## Latest deployed version: v39.47 (all pushed to main, live)
 Bugs fixed while verifying Phase 2 (both were PRE-EXISTING, not from the permissions work):

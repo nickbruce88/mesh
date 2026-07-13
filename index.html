@@ -4068,14 +4068,14 @@
       </div>
       <div style="font-size:13px;color:var(--gray-2);margin-bottom:12px">Coaching staff</div>
     </div>
-    <div class="msg-group-list">
-      <div style="text-align:center;padding:48px 20px">
+    <div class="msg-group-list" id="parent-msg-group-list">
+      <div id="parent-msg-empty" style="text-align:center;padding:48px 20px">
         <div style="font-size:36px;margin-bottom:10px">💬</div>
         <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:6px">No messages yet</div>
-        <div style="font-size:12px;color:var(--fg-3)">Your coach will send messages here.</div>
+        <div style="font-size:12px;color:var(--fg-3)">Tap + New to message a coach.</div>
       </div>
     </div>
-  
+
     <!-- Announcements -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px">
       <div class="section-label" style="margin:0">Announcements</div>
@@ -5326,7 +5326,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.47</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.48</div>
   </div>
 </div>
 
@@ -5337,7 +5337,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.47';
+  const APP_VERSION = 'v39.48';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5401,7 +5401,7 @@
     }
   }
 
-  async function sendPushNotification(programId, type, title, body, targetRoles) {
+  async function sendPushNotification(programId, type, title, body, targetRoles, targetUserIds) {
     try {
       const { data: { session } } = await db.auth.getSession();
       if (!session) return;
@@ -5416,7 +5416,9 @@
           type,
           title,
           body: body || '',
-          target_roles: targetRoles
+          target_roles: targetRoles,
+          // Optional per-recipient targeting for DMs (edge fn honors target_user_ids if supported).
+          target_user_ids: targetUserIds || null
         })
       });
     } catch (e) {
@@ -5615,6 +5617,8 @@
     }
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
+    // Messages — load the caller's real threads (all roles).
+    if (tab === 'messages') loadThreadList(role);
     // Player My Info — rendered via 'more' tab hook above
     // Re-apply per-feature edit gating after the tab (and its dynamic controls) render.
     if (role === 'coach') setTimeout(applyPermissionState, 80);
@@ -11919,216 +11923,180 @@
   }
 
   // ===== MESSAGE THREADS =====
-  const THREAD_DATA = {
-    staff:   { title:'All Coaches & Staff', sub:'All coaches and staff',  avatarClass:'group-staff',   avatarContent:'🎙️', avatarColor:'var(--team-primary)', messages:[] },
-    players: { title:'All Players',         sub:'All players on roster',  avatarClass:'group-players', avatarContent:'🏈',  avatarColor:'var(--blue)',         messages:[] },
-    parents: { title:'All Parents',         sub:'All parents',            avatarClass:'group-parents', avatarContent:'👨‍👩‍👧', avatarColor:'#3d9e5f',             messages:[] },
-  };  let currentThread = null;
-  let currentThreadSubscription = null;
+  // ===== MESSAGING (thread-based; schema in planning/phase3-messaging.sql) =====
+  // A thread is a real message_threads row (uuid). Broadcasts are role-scoped (audience_roles);
+  // dm / witnessed_dm use explicit thread_participants. Sender identity = auth uid (sender_id).
+  let _threads = {};                     // threadId -> meta from list_my_threads
+  let currentThread = null;              // active thread UUID
+  let currentThreadKind = null;
+  let currentThreadSubscription = null;  // realtime channel for the open thread
 
-  // ===== QUICK GROUP THREADS =====
-  // Opens a built-in group thread (staff / players / parents), adding a list item if first time
-  function openOrCreateQuickThread(key) {
-    const data = THREAD_DATA[key];
-    if (!data) return;
+  const BROADCASTS = [
+    { subject:'All Coaches & Staff', audience:['coach'],           icon:'🎙️',  color:'var(--team-primary)' },
+    { subject:'All Players',         audience:['player','coach'],  icon:'🏈',   color:'var(--blue)' },
+    { subject:'All Parents',         audience:['parent','coach'],  icon:'👨‍👩‍👧', color:'#3d9e5f' },
+  ];
+  function _myUid(){ try { return localStorage.getItem('mesh_auth_uid') || ''; } catch(e){ return ''; } }
+  function _myName(){ try { return (JSON.parse(localStorage.getItem('mesh_user')||'{}').name) || 'Me'; } catch(e){ return 'Me'; } }
+  function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-    // If not already in the thread list, add it
-    if (!document.getElementById('mgi-' + key)) {
-      const msgList = document.getElementById('coach-msg-group-list');
-      if (msgList) {
-        const emptyState = document.getElementById('coach-msg-empty');
-        if (emptyState) emptyState.style.display = 'none';
-        const colorMap = { staff: 'var(--team-primary)', players: 'var(--blue)', parents: '#3d9e5f' };
-        const color = colorMap[key] || 'var(--fg-3)';
-        const item = document.createElement('div');
-        item.className = 'msg-group-item';
-        item.id = 'mgi-' + key;
-        item.innerHTML = `
-          <div class="msg-group-avatar ${data.avatarClass}" style="background:${color}22;color:${color}">${data.avatarContent}</div>
-          <div class="msg-group-content">
-            <div class="msg-group-header">
-              <div class="msg-group-name">${data.title}</div>
-              <div class="inbox-time" id="mgt-${key}"></div>
-            </div>
-            <div class="msg-group-preview" id="mgp-${key}">No messages yet</div>
-          </div>
-          <div class="unread-dot" id="mgu-${key}" style="opacity:0"></div>`;
-        item.onclick = () => openThread(key);
-        msgList.insertBefore(item, msgList.firstChild);
-      }
+  function threadAvatar(t){
+    if (t.kind === 'broadcast') {
+      const b = BROADCASTS.find(x => x.subject === t.subject);
+      return b ? { icon:b.icon, color:b.color } : { icon:'📣', color:'var(--fg-3)' };
     }
-
-    openThread(key);
+    if (t.kind === 'witnessed_dm') return { icon:'🛡️', color:'var(--team-primary)' };
+    return { icon:'💬', color:'var(--blue)' };
   }
+  function threadTitle(t){
+    return t.subject || (t.kind === 'witnessed_dm' ? 'Private (witnessed)' : 'Direct message');
+  }
+  function msgListId(role){ return role==='player'?'player-msg-group-list':role==='parent'?'parent-msg-group-list':'coach-msg-group-list'; }
+  function msgEmptyId(role){ return role==='player'?'player-msg-empty':role==='parent'?'parent-msg-empty':'coach-msg-empty'; }
+
+  // Load the caller's threads for the current role and render the list.
+  async function loadThreadList(role){
+    role = role || currentRole || 'coach';
+    const programId = await getValidProgramId();
+    if (!programId) return;
+    // Coaches ensure the 3 standing broadcasts exist (idempotent) before listing.
+    if (role === 'coach') {
+      try { for (const b of BROADCASTS) await db.rpc('ensure_broadcast_thread', { p_program_id: programId, p_subject: b.subject, p_audience: b.audience }); }
+      catch(e){ console.warn('[Msg] ensure_broadcast_thread:', e); }
+    }
+    let rows = [];
+    try {
+      const { data, error } = await db.rpc('list_my_threads', { p_program_id: programId });
+      if (error) throw error;
+      rows = data || [];
+    } catch(e){ console.error('[Msg] list_my_threads:', e); return; }
+    _threads = {};
+    rows.forEach(r => { _threads[r.id] = r; });
+    renderThreadList(role, rows);
+  }
+
+  function renderThreadList(role, rows){
+    const list = document.getElementById(msgListId(role));
+    const empty = document.getElementById(msgEmptyId(role));
+    if (!list) return;
+    list.querySelectorAll('.msg-group-item').forEach(el => el.remove());
+    if (!rows.length) { if (empty) empty.style.display = ''; return; }
+    if (empty) empty.style.display = 'none';
+    rows.forEach(t => {
+      const av = threadAvatar(t);
+      const preview = t.last_content ? ((t.last_sender ? t.last_sender + ': ' : '') + t.last_content) : 'No messages yet';
+      const when = t.last_at ? new Date(t.last_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+      const item = document.createElement('div');
+      item.className = 'msg-group-item';
+      item.id = 'mgi-' + t.id;
+      item.innerHTML =
+        '<div class="msg-group-avatar" style="background:'+av.color+'22;color:'+av.color+'">'+av.icon+'</div>'+
+        '<div class="msg-group-content"><div class="msg-group-header">'+
+        '<div class="msg-group-name">'+_esc(threadTitle(t))+'</div>'+
+        '<div class="inbox-time">'+when+'</div></div>'+
+        '<div class="msg-group-preview" id="mgp-'+t.id+'">'+_esc(preview)+'</div></div>'+
+        '<div class="unread-dot" id="mgu-'+t.id+'" style="opacity:0"></div>';
+      item.onclick = () => openThread(t.id);
+      list.appendChild(item);
+    });
+  }
+
+  // (Built-in group threads are now real broadcast rows loaded via loadThreadList → renderThreadList.)
 
   function closePlayerThread() {
     const overlay = document.getElementById('player-msg-thread-overlay');
     if (overlay) { overlay.classList.remove('open'); overlay.style.display = ''; }
   }
 
-  function sendPlayerThreadMsg() {
-    const input = document.getElementById('player-thread-input');
-    if (!input || !input.value.trim()) return;
-    const realInput = document.getElementById('thread-input');
-    if (realInput) {
-      realInput.value = input.value;
-      input.value = '';
-      sendThreadMsg();
-    }
+  // openThread renders the player overlay directly (role-aware) — these are thin shims now.
+  function sendPlayerThreadMsg() { sendThreadMsg(); }
+  function openPlayerThread(threadId) { openThread(threadId); }
+
+  // DOM ids for the thread overlay differ for the player role (its own overlay).
+  function threadOverlayIds(role){
+    return role === 'player'
+      ? { overlay:'player-msg-thread-overlay', title:'player-thread-title', sub:'player-thread-sub', avatar:'player-thread-avatar', body:'player-thread-body', input:'player-thread-input' }
+      : { overlay:'msg-thread-overlay', title:'thread-title', sub:'thread-sub', avatar:'thread-avatar', body:'thread-body', input:'thread-input' };
   }
 
-  function openPlayerThread(groupKey) {
-    const overlay = document.getElementById('player-msg-thread-overlay');
-    if (!overlay) { openThread(groupKey); return; }
-    openThread(groupKey);
-    setTimeout(() => {
-      overlay.classList.add('open');
-      overlay.style.display = 'flex';
-      overlay.style.flexDirection = 'column';
-      const copyEl = (srcId, dstId) => {
-        const src = document.getElementById(srcId);
-        const dst = document.getElementById(dstId);
-        if (src && dst) dst.innerHTML = src.innerHTML;
-      };
-      const copyText = (srcId, dstId) => {
-        const src = document.getElementById(srcId);
-        const dst = document.getElementById(dstId);
-        if (src && dst) dst.textContent = src.textContent;
-      };
-      copyEl('thread-body', 'player-thread-body');
-      copyText('thread-title', 'player-thread-title');
-      copyText('thread-sub', 'player-thread-sub');
-      const srcAvatar = document.getElementById('thread-avatar');
-      const dstAvatar = document.getElementById('player-thread-avatar');
-      if (srcAvatar && dstAvatar) dstAvatar.textContent = srcAvatar.textContent;
-    }, 100);
-  }
-
-  async function openThread(id) {
-    currentThread = id;
-
-    // Highlight active thread in list
-    document.querySelectorAll('.msg-group-item').forEach(el => el.classList.remove('active-thread'));
-    const activeItem = document.getElementById('mgi-' + id);
-    if (activeItem) activeItem.classList.add('active-thread');
-    const data = THREAD_DATA[id];
-    document.getElementById('thread-title').textContent = data.title;
-    document.getElementById('thread-sub').textContent = data.sub;
-    const av = document.getElementById('thread-avatar');
-    av.className = 'thread-avatar ' + data.avatarClass;
-    av.style.background = '';
-    av.style.color = '';
-    av.textContent = data.avatarContent;
-
-    const body = document.getElementById('thread-body');
-    body.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:12px;padding:16px">Loading messages…</div>';
-
-    // Show safety banner
-    const parentOnlyThreads = ['parents', 'senior'];
-    const isParentView = document.getElementById('tab-parent-messages') &&
-      document.getElementById('tab-parent-messages').style.display !== 'none';
-    document.getElementById('thread-safety-banner').style.display =
-      (isParentView && parentOnlyThreads.includes(id)) ? 'none' : 'flex';
-
-    // Clear unread dot
-    const dot = document.getElementById('mgu-' + id);
-    if (dot) dot.style.opacity = '0';
-
-    document.getElementById('msg-thread-overlay').classList.add('open');
-    // On desktop hide the empty state
-    const emptyState = document.getElementById('thread-empty-state');
-    if (emptyState) emptyState.style.display = 'none';
-    document.getElementById('thread-input').value = '';
-
-    // Load messages from Supabase
-    const programId = await getValidProgramId();
-    if (programId) {
-      try {
-        const { data: msgs, error } = await db.from('messages')
-          .select('*')
-          .eq('program_id', programId)
-          .eq('group_name', id)
-          .order('created_at', { ascending: true });
-
-        body.innerHTML = '';
-        if (!error && msgs && msgs.length > 0) {
-          const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
-          msgs.forEach(m => renderMessageBubble(m, user.name));
-        } else {
-          // Fall back to static demo messages
-          data.messages.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'thread-msg' + (m.mine ? ' mine' : '');
-            div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
-            body.appendChild(div);
-          });
-        }
-        body.scrollTop = body.scrollHeight;
-
-        // Subscribe to real-time new messages
-        if (currentThreadSubscription) currentThreadSubscription.unsubscribe();
-        // Unsubscribe any existing subscription first
-        if (currentThreadSubscription) {
-          currentThreadSubscription.unsubscribe();
-          currentThreadSubscription = null;
-        }
-
-        currentThreadSubscription = db.channel('thread-' + id + '-' + Date.now())
-          .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages'
-          }, payload => {
-            // Only show messages for current thread and program
-            if (payload.new.group_name !== currentThread) return;
-            if (payload.new.program_id !== programId) return;
-            const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
-            // Don't render own messages — already rendered immediately on send
-            if (payload.new.sender_name === (user.name || 'Coach')) return;
-            renderMessageBubble(payload.new, user.name);
-            const body = document.getElementById('thread-body');
-            if (body) body.scrollTop = body.scrollHeight;
-            // Update preview
-            const preview = document.getElementById('mgp-' + currentThread);
-            if (preview) preview.textContent = payload.new.sender_name + ': ' + payload.new.content;
-          })
-          .subscribe(status => {
-            console.log('Real-time subscription status:', status);
-          });
-
-      } catch(e) {
-        console.error('Error loading messages:', e);
-        body.innerHTML = '';
-        data.messages.forEach(m => {
-          const div = document.createElement('div');
-          div.className = 'thread-msg' + (m.mine ? ' mine' : '');
-          div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
-          body.appendChild(div);
-        });
-        body.scrollTop = body.scrollHeight;
+  async function loadThreadSubtitle(t, subEl){
+    if (!subEl) return;
+    if (t.kind === 'broadcast') { subEl.textContent = 'Everyone in this group'; return; }
+    try {
+      const { data } = await db.rpc('thread_members', { p_thread: t.id });
+      if (data) {
+        const others = data.filter(m => m.user_id !== _myUid());
+        subEl.textContent = others.map(m => m.name + (m.is_witness ? ' (witness)' : '')).join(', ') || 'Direct message';
       }
-    } else {
-      // No program ID — show demo messages
-      body.innerHTML = '';
-      data.messages.forEach(m => {
-        const div = document.createElement('div');
-        div.className = 'thread-msg' + (m.mine ? ' mine' : '');
-        div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
-        body.appendChild(div);
-      });
-      body.scrollTop = body.scrollHeight;
-    }
+    } catch(e){ subEl.textContent = ''; }
   }
 
-  function renderMessageBubble(msg, currentUserName) {
-    const body = document.getElementById('thread-body');
-    const isMine = msg.sender_name === currentUserName;
+  async function openThread(threadId) {
+    currentThread = threadId;
+    const t = _threads[threadId] || { id: threadId, kind: currentThreadKind };
+    currentThreadKind = t.kind;
+    const role = currentRole || 'coach';
+    const isPlayer = role === 'player';
+    const ids = threadOverlayIds(role);
+
+    document.querySelectorAll('.msg-group-item').forEach(el => el.classList.remove('active-thread'));
+    const activeItem = document.getElementById('mgi-' + threadId);
+    if (activeItem) activeItem.classList.add('active-thread');
+
+    const titleEl = document.getElementById(ids.title);
+    const subEl   = document.getElementById(ids.sub);
+    const avEl    = document.getElementById(ids.avatar);
+    const body    = document.getElementById(ids.body);
+    const av = threadAvatar(t);
+    if (titleEl) titleEl.textContent = threadTitle(t);
+    if (avEl) { avEl.className = 'thread-avatar'; avEl.style.background=''; avEl.style.color=''; avEl.textContent = av.icon; }
+    loadThreadSubtitle(t, subEl);
+
+    if (body) body.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:12px;padding:16px">Loading…</div>';
+
+    // Safety banner (coach overlay only) — private/witnessed threads.
+    const banner = document.getElementById('thread-safety-banner');
+    if (banner && !isPlayer) banner.style.display = (t.kind === 'witnessed_dm' || t.kind === 'dm') ? 'flex' : 'none';
+
+    const dot = document.getElementById('mgu-' + threadId); if (dot) dot.style.opacity = '0';
+
+    const overlay = document.getElementById(ids.overlay);
+    if (overlay) { overlay.classList.add('open'); if (isPlayer) { overlay.style.display='flex'; overlay.style.flexDirection='column'; } }
+    const emptyState = document.getElementById('thread-empty-state'); if (emptyState && !isPlayer) emptyState.style.display = 'none';
+    const inputEl = document.getElementById(ids.input); if (inputEl) inputEl.value = '';
+
+    // Load history by thread_id.
+    try {
+      const { data: msgs, error } = await db.from('messages').select('*').eq('thread_id', threadId).order('created_at', { ascending: true });
+      if (body) body.innerHTML = '';
+      if (!error && msgs) { const myUid = _myUid(); msgs.forEach(m => renderMessageBubble(m, ids.body, myUid)); }
+      if (body) body.scrollTop = body.scrollHeight;
+    } catch(e) { console.error('[Msg] load thread:', e); if (body) body.innerHTML = ''; }
+
+    // Realtime for this thread (keyed by thread_id).
+    if (currentThreadSubscription) { try { currentThreadSubscription.unsubscribe(); } catch(e){} currentThreadSubscription = null; }
+    currentThreadSubscription = db.channel('thread-' + threadId + '-' + Date.now())
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, payload => {
+        const m = payload.new;
+        if (m.thread_id !== currentThread) return;
+        if (m.sender_id && m.sender_id === _myUid()) return; // own message already rendered
+        renderMessageBubble(m, ids.body, _myUid());
+        const b = document.getElementById(ids.body); if (b) b.scrollTop = b.scrollHeight;
+        const pv = document.getElementById('mgp-' + currentThread); if (pv) pv.textContent = (m.sender_name ? m.sender_name + ': ' : '') + m.content;
+      })
+      .subscribe();
+  }
+
+  function renderMessageBubble(msg, bodyId, myUid) {
+    const body = document.getElementById(bodyId || 'thread-body');
+    if (!body) return;
+    const isMine = msg.sender_id ? (msg.sender_id === myUid) : (msg.sender_name === _myName());
     const time = msg.created_at
       ? new Date(msg.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : 'Just now';
     const div = document.createElement('div');
     div.className = 'thread-msg' + (isMine ? ' mine' : '');
-    div.innerHTML = `<div class="thread-sender">${isMine ? 'You' : msg.sender_name} · ${time}</div><div class="thread-bubble">${msg.content}</div>`;
+    div.innerHTML = '<div class="thread-sender">' + (isMine ? 'You' : _esc(msg.sender_name || 'Member')) + ' · ' + time + '</div><div class="thread-bubble">' + _esc(msg.content) + '</div>';
     body.appendChild(div);
   }
 
@@ -12147,80 +12115,86 @@
 
   async function sendThreadMsg() {
     if(!requireEdit('messages'))return;
-    const input = document.getElementById('thread-input');
-    const text = input.value.trim();
-    if (!text || !currentThread) return;
+    if (!currentThread) return;
+    const role = currentRole || 'coach';
+    const ids = threadOverlayIds(role);
+    const input = document.getElementById(ids.input) || document.getElementById('thread-input');
+    const text = (input && input.value.trim()) || '';
+    if (!text) return;
+    if (input) input.value = '';
 
-    input.value = '';
+    const senderName = _myName();
+    let senderRole = role; try { senderRole = JSON.parse(localStorage.getItem('mesh_user')||'{}').role || role; } catch(e){}
+    const myUid = _myUid();
 
-    const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
-    const senderName = user.name || 'Coach';
-    const senderRole = user.role || 'coach';
+    // Optimistic render into the active overlay.
+    renderMessageBubble({ sender_id: myUid, sender_name: senderName, content: text, created_at: new Date().toISOString() }, ids.body, myUid);
+    const body = document.getElementById(ids.body); if (body) body.scrollTop = body.scrollHeight;
+    const preview = document.getElementById('mgp-' + currentThread); if (preview) preview.textContent = 'You: ' + text;
 
-    // Always render immediately for the sender
-    const body = document.getElementById('thread-body');
-    const div = document.createElement('div');
-    div.className = 'thread-msg mine';
-    div.innerHTML = `<div class="thread-sender">You · Just now</div><div class="thread-bubble">${text}</div>`;
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-
-    // Update preview
-    const preview = document.getElementById('mgp-' + currentThread);
-    if (preview) preview.textContent = 'You: ' + text;
-
-    // Also save to Supabase so other users get it via real-time
     const programId = await getValidProgramId();
-    console.log('sendThreadMsg — programId:', programId, '| user:', senderName);
-    if (programId) {
-      try {
-        await db.from('messages').insert({
-          program_id: programId,
-          group_name: currentThread,
-          sender_name: senderName,
-          sender_role: senderRole,
-          content: text
-        });
-        console.log('Message saved to Supabase');
+    if (!programId) return;
+    try {
+      const { error } = await db.from('messages').insert({
+        program_id: programId,
+        thread_id: currentThread,
+        sender_id: myUid,
+        sender_name: senderName,
+        sender_role: senderRole,
+        content: text
+      });
+      if (error) throw error;
 
-        // Push notification to other participants — determine target roles from thread name
-        const threadLower = (currentThread || '').toLowerCase();
-        let pushRoles = ['coach', 'player', 'parent'];
-        if (threadLower.includes('coach')) pushRoles = ['coach'];
-        else if (threadLower.includes('player')) pushRoles = ['player', 'coach'];
-        else if (threadLower.includes('parent')) pushRoles = ['parent', 'coach'];
-        sendPushNotification(programId, 'message',
-          `💬 ${senderName}`,
-          text.length > 80 ? text.slice(0, 80) + '…' : text,
-          pushRoles
-        );
-      } catch(e) {
-        console.error('Send message error:', e);
+      const t = _threads[currentThread] || { kind: currentThreadKind };
+      const short = text.length > 80 ? text.slice(0, 80) + '…' : text;
+      if (t.kind === 'broadcast') {
+        const b = BROADCASTS.find(x => x.subject === t.subject);
+        const roles = (b && b.audience) || t.audience_roles || ['coach','player','parent'];
+        sendPushNotification(programId, 'message', '💬 ' + senderName, short, roles);
+      } else {
+        // DM / witnessed: notify the specific other participants.
+        try {
+          const { data: mem } = await db.rpc('thread_members', { p_thread: currentThread });
+          const recipients = (mem || []).map(m => m.user_id).filter(u => u && u !== myUid);
+          if (recipients.length) sendPushNotification(programId, 'message', '💬 ' + senderName, short, null, recipients);
+        } catch(e){ console.warn('[Msg] participant push:', e); }
       }
-    } else {
-      // No program — also save to local THREAD_DATA
-      const data = THREAD_DATA[currentThread];
-      if (data) data.messages.push({ from: 'You', mine: true, text, time: 'Just now' });
+    } catch(e) {
+      console.error('[Msg] send error:', e);
+      showToast('Message failed to send');
     }
   }
   // ===== MESSAGING GUARDRAILS =====
 
-  const STAFF_MEMBERS = [
-    { id:'coach-self', name:'You (Head Coach)', role:'coach', initials:'HC', color:'var(--team-primary)' }
-  ];
-  const PARENT_MEMBERS = [];
+  // Program member directory (real logins), loaded on demand for compose pickers.
+  let _dir = [];
+  async function loadDirectory(){
+    const programId = await getValidProgramId();
+    if (!programId) { _dir = []; return _dir; }
+    try {
+      const { data, error } = await db.rpc('list_program_directory', { p_program_id: programId });
+      if (error) throw error;
+      _dir = (data || []).filter(m => m.user_id && m.user_id !== _myUid()); // exclude self
+    } catch(e){ console.error('[Msg] directory:', e); _dir = []; }
+    return _dir;
+  }
+  const _initials = n => (n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const _roleColor = r => r==='coach'?'var(--team-primary)':r==='parent'?'#3d9e5f':'var(--blue)';
+  function _dirByRole(role){ return _dir.filter(m => m.role === role).map(m => ({ id:m.user_id, name:m.name, role:m.role, initials:_initials(m.name), color:_roleColor(m.role) })); }
+  function _selRole(id){ const m=_dir.find(x=>x.user_id===id); return m?m.role:null; }
 
-  let ngSelectedMembers = new Set();
-  let pnmSelectedCoach = null;
-  let pnmSelectedWitness = null;
+  let ngSelectedMembers = new Set();   // set of user_id
+  let pnmSelectedCoach = null;         // user_id
+  let pnmSelectedWitness = null;       // user_id
 
   // ===== COACH: NEW GROUP MODAL =====
-  function openNewGroupModal() {
+  async function openNewGroupModal() {
     ngSelectedMembers = new Set();
-    document.getElementById('ng-name-input').value = '';
-    document.getElementById('ng-validation').className = 'ng-validation';
+    const nm = document.getElementById('ng-name-input'); if (nm) nm.value = '';
+    const val = document.getElementById('ng-validation'); if (val) val.className = 'ng-validation';
     ngGoToStep(1);
     document.getElementById('new-group-overlay').classList.add('open');
+    await loadDirectory();
     renderNGMembers();
   }
 
@@ -12234,31 +12208,16 @@
   }
 
   function renderNGMembers() {
-    renderMemberList('ng-coaches-list', STAFF_MEMBERS, ngSelectedMembers);
-    const playerMembers = PLAYERS.map(p => ({
-      id: 'pl-' + p.id,
-      name: p.name,
-      role: 'player',
-      initials: p.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(),
-      color: 'var(--blue)'
-    }));
-    renderMemberList('ng-players-list', playerMembers, ngSelectedMembers);
-    renderMemberList('ng-parents-list', PARENT_MEMBERS, ngSelectedMembers);
+    renderMemberList('ng-coaches-list', _dirByRole('coach'), ngSelectedMembers);
+    renderMemberList('ng-players-list', _dirByRole('player'), ngSelectedMembers);
+    renderMemberList('ng-parents-list', _dirByRole('parent'), ngSelectedMembers);
   }
 
   function ngSelectAll(group) {
-    let members = [];
-    if (group === 'coaches') members = STAFF_MEMBERS;
-    else if (group === 'players') members = PLAYERS.map(p => ({ id: 'pl-' + p.id }));
-    else if (group === 'parents') members = PARENT_MEMBERS;
-
-    // If all already selected, deselect all; otherwise select all
-    const allSelected = members.every(m => ngSelectedMembers.has(m.id));
-    if (allSelected) {
-      members.forEach(m => ngSelectedMembers.delete(m.id));
-    } else {
-      members.forEach(m => ngSelectedMembers.add(m.id));
-    }
+    const role = group==='coaches'?'coach':group==='players'?'player':'parent';
+    const ids = _dirByRole(role).map(m => m.id);
+    const allSelected = ids.length && ids.every(id => ngSelectedMembers.has(id));
+    ids.forEach(id => allSelected ? ngSelectedMembers.delete(id) : ngSelectedMembers.add(id));
     renderNGMembers();
     validateNG();
   }
@@ -12289,155 +12248,88 @@
 
   function validateNG() {
     const selected = [...ngSelectedMembers];
-    const coachCount = selected.filter(id => STAFF_MEMBERS.find(m => m.id === id)).length;
-    const hasPlayer = selected.some(id => id.startsWith('pl-'));
-    const hasParent = selected.some(id => id.startsWith('par'));
     const el = document.getElementById('ng-validation');
-
+    if (!el) return;
     if (selected.length === 0) { el.className = 'ng-validation'; return; }
-
-    // Creator is always a coach — so total coaches = selected coaches + 1 (the creator)
-    const totalCoaches = coachCount + 1;
-
-    if (hasPlayer) {
-      const meetsRequirement = totalCoaches >= 2 || (totalCoaches >= 1 && hasParent);
-      if (!meetsRequirement) {
-        el.className = 'ng-validation fail';
-        el.textContent = '⚠️ Add 1 more coach or a parent to include players.';
-        return;
-      }
+    const totalCoaches = selected.filter(id => _selRole(id) === 'coach').length + 1; // +creator (coach)
+    const hasPlayer = selected.some(id => _selRole(id) === 'player');
+    const hasParent = selected.some(id => _selRole(id) === 'parent');
+    if (hasPlayer && !(totalCoaches >= 2 || (totalCoaches >= 1 && hasParent))) {
+      el.className = 'ng-validation fail';
+      el.textContent = '⚠️ Add 1 more coach or a parent to include players.';
+      return;
     }
-
     el.className = 'ng-validation pass';
     el.textContent = '✅ Group meets safety requirements.';
   }
 
-  function createNewGroup() {
+  async function createNewGroup() {
     if(!requireEdit('messages'))return;
     const selected = [...ngSelectedMembers];
-    const coachCount = selected.filter(id => STAFF_MEMBERS.find(m => m.id === id)).length;
-    const hasPlayer = selected.some(id => id.startsWith('pl-'));
-    const hasParent = selected.some(id => id.startsWith('par'));
-    const totalCoaches = coachCount + 1;
-
+    const el = document.getElementById('ng-validation');
     if (selected.length === 0) {
       ngGoToStep(1);
-      document.getElementById('ng-validation').className = 'ng-validation fail';
-      document.getElementById('ng-validation').textContent = '⚠️ Select at least one member.';
+      if (el) { el.className = 'ng-validation fail'; el.textContent = '⚠️ Select at least one member.'; }
+      return;
+    }
+    const totalCoaches = selected.filter(id => _selRole(id) === 'coach').length + 1;
+    const hasPlayer = selected.some(id => _selRole(id) === 'player');
+    const hasParent = selected.some(id => _selRole(id) === 'parent');
+    if (hasPlayer && !(totalCoaches >= 2 || (totalCoaches >= 1 && hasParent))) {
+      ngGoToStep(1);
+      if (el) { el.className = 'ng-validation fail'; el.textContent = '⚠️ Add 1 more coach or a parent to include players.'; }
       return;
     }
 
-    if (hasPlayer) {
-      const meetsRequirement = totalCoaches >= 2 || (totalCoaches >= 1 && hasParent);
-      if (!meetsRequirement) {
-        ngGoToStep(1);
-        document.getElementById('ng-validation').className = 'ng-validation fail';
-        document.getElementById('ng-validation').textContent = '⚠️ Add 1 more coach or a parent to include players.';
-        return;
-      }
-    }
-
-    // Auto-generate name from first 2 member first names if blank
     let name = document.getElementById('ng-name-input').value.trim();
     if (!name) {
-      const allMembers = [...STAFF_MEMBERS, ...PLAYERS.map(p => ({ id: 'pl-' + p.id, name: p.name })), ...PARENT_MEMBERS];
-      const selectedNames = selected.map(id => {
-        const m = allMembers.find(m => m.id === id);
-        return m ? m.name.split(' ')[0] : '';
-      }).filter(Boolean);
-      name = selectedNames.slice(0, 2).join(', ') + (selected.length > 2 ? ' & ' + (selected.length - 2) + ' more' : '');
+      const names = selected.map(id => { const m = _dir.find(x => x.user_id === id); return m ? m.name.split(' ')[0] : ''; }).filter(Boolean);
+      name = names.slice(0, 2).join(', ') + (selected.length > 2 ? ' & ' + (selected.length - 2) + ' more' : '');
     }
 
-    // Generate a unique thread ID
-    const threadId = 'custom-' + Date.now();
-    const memberCount = selected.length;
-    const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-    const color = ['var(--team-primary)', 'var(--red)', 'var(--blue)', 'var(--amber)'][Math.floor(Math.random()*4)];
-
-    // Add to THREAD_DATA
-    THREAD_DATA[threadId] = {
-      title: name,
-      sub: memberCount + ' members',
-      avatarClass: 'group-custom',
-      avatarContent: initials,
-      avatarColor: color,
-      messages: []
-    };
-
-    // Add to the coach message list UI
-    const msgList = document.getElementById('coach-msg-group-list');
-    if (msgList) {
-      // Hide empty state
-      const emptyState = document.getElementById('coach-msg-empty');
-      if (emptyState) emptyState.style.display = 'none';
-      const item = document.createElement('div');
-      item.className = 'msg-group-item';
-      item.id = 'mgi-' + threadId;
-      item.innerHTML = `
-        <div class="msg-group-avatar group-custom" style="background:${color}22;color:${color}">${initials}</div>
-        <div class="msg-group-content">
-          <div class="msg-group-header">
-            <div class="msg-group-name">${name}</div>
-            <div class="inbox-time">Just now</div>
-          </div>
-          <div class="msg-group-preview" id="mgp-${threadId}">No messages yet</div>
-          <div class="msg-group-meta">${memberCount} members</div>
-        </div>`;
-      item.onclick = () => openThread(threadId);
-      // Insert at top
-      msgList.insertBefore(item, msgList.firstChild);
-    }
-
-    closeNewGroupModal();
-    showToast(`Group "${name}" created ✓`);
-    // Open the new thread immediately
-    setTimeout(() => openThread(threadId), 300);
+    const programId = await getValidProgramId();
+    if (!programId) { showToast('No program'); return; }
+    try {
+      const { data: threadId, error } = await db.rpc('create_thread', {
+        p_program_id: programId, p_kind: 'dm', p_subject: name,
+        p_participant_uids: selected, p_witness_uids: []
+      });
+      if (error) throw error;
+      closeNewGroupModal();
+      showToast('Group "' + name + '" created ✓');
+      await loadThreadList('coach');
+      currentThreadKind = 'dm';
+      setTimeout(() => openThread(threadId), 200);
+    } catch(e) { console.error('[Msg] create group:', e); showToast('Could not create group: ' + (e.message || 'error')); }
   }
 
   // ===== PLAYER: NEW DIRECT MESSAGE =====
-  function openPlayerNewMsg() {
+  async function openPlayerNewMsg() {
     pnmSelectedCoach = null;
     pnmSelectedWitness = null;
-    document.getElementById('pnm-text').value = '';
-    document.getElementById('pnm-validation').className = 'ng-validation';
-
-    // Render coach picker
-    const coachList = document.getElementById('pnm-coach-list');
-    coachList.innerHTML = '';
-    STAFF_MEMBERS.forEach(m => {
-      const row = document.createElement('div');
-      row.className = 'member-row';
-      row.style.cursor = 'pointer';
-      row.innerHTML = `
-        <div class="member-avatar" style="background:${m.color}22;color:${m.color}">${m.initials}</div>
-        <div class="member-name">${m.name}</div>
-        <span class="member-role-tag coach">coach</span>
-        <div class="member-check" id="pnm-coach-${m.id}"></div>`;
-      row.onclick = () => selectPNMCoach(m.id);
-      coachList.appendChild(row);
-    });
-
-    // Render witness picker
-    const witnessList = document.getElementById('pnm-witness-list');
-    witnessList.innerHTML = '';
-    const witnesses = [
-      ...STAFF_MEMBERS.slice(1).map(m => ({...m, label: 'coach'})),
-      ...PARENT_MEMBERS.map(m => ({...m, label: 'parent'}))
-    ];
-    witnesses.forEach(m => {
-      const row = document.createElement('div');
-      row.className = 'member-row';
-      row.style.cursor = 'pointer';
-      row.innerHTML = `
-        <div class="member-avatar" style="background:${m.color}22;color:${m.color}">${m.initials}</div>
-        <div class="member-name">${m.name}</div>
-        <span class="member-role-tag ${m.role}">${m.label}</span>
-        <div class="member-check" id="pnm-wit-${m.id}"></div>`;
-      row.onclick = () => selectPNMWitness(m.id);
-      witnessList.appendChild(row);
-    });
-
+    const txt = document.getElementById('pnm-text'); if (txt) txt.value = '';
+    const val = document.getElementById('pnm-validation'); if (val) val.className = 'ng-validation';
     document.getElementById('player-new-msg-overlay').classList.add('open');
+    await loadDirectory();
+
+    const mkRow = (m, pickFn, idPrefix, labelRole) => {
+      const row = document.createElement('div');
+      row.className = 'member-row'; row.style.cursor = 'pointer';
+      row.innerHTML =
+        '<div class="member-avatar" style="background:'+m.color+'22;color:'+m.color+'">'+m.initials+'</div>'+
+        '<div class="member-name">'+_esc(m.name)+'</div>'+
+        '<span class="member-role-tag '+m.role+'">'+(labelRole||m.role)+'</span>'+
+        '<div class="member-check" id="'+idPrefix+m.id+'"></div>';
+      row.onclick = () => pickFn(m.id);
+      return row;
+    };
+
+    const coachList = document.getElementById('pnm-coach-list');
+    if (coachList) { coachList.innerHTML = ''; _dirByRole('coach').forEach(m => coachList.appendChild(mkRow(m, selectPNMCoach, 'pnm-coach-', 'coach'))); }
+
+    // Witness = another coach or a parent (must differ from the chosen coach).
+    const witnessList = document.getElementById('pnm-witness-list');
+    if (witnessList) { witnessList.innerHTML = ''; [..._dirByRole('coach'), ..._dirByRole('parent')].forEach(m => witnessList.appendChild(mkRow(m, selectPNMWitness, 'pnm-wit-', m.role))); }
   }
 
   function closePlayerNewMsg() {
@@ -12473,67 +12365,69 @@
     }
   }
 
-  function sendPlayerDirectMsg() {
+  async function sendPlayerDirectMsg() {
     const text = document.getElementById('pnm-text').value.trim();
-    if (!pnmSelectedCoach || !pnmSelectedWitness) {
-      validatePNM();
-      return;
-    }
+    if (!pnmSelectedCoach || !pnmSelectedWitness) { validatePNM(); return; }
+    if (pnmSelectedCoach === pnmSelectedWitness) { showToast('Pick a witness who is not the coach'); return; }
     if (!text) { showToast('Please enter a message'); return; }
-    closePlayerNewMsg();
-    showToast('Message sent ✓ — all parties notified');
+    const programId = await getValidProgramId();
+    if (!programId) { showToast('No program'); return; }
+    try {
+      const { data: threadId, error } = await db.rpc('create_thread', {
+        p_program_id: programId, p_kind: 'witnessed_dm', p_subject: null,
+        p_participant_uids: [pnmSelectedCoach], p_witness_uids: [pnmSelectedWitness]
+      });
+      if (error) throw error;
+      closePlayerNewMsg();
+      await loadThreadList('player');
+      currentThreadKind = 'witnessed_dm';
+      await openThread(threadId);
+      const inp = document.getElementById('player-thread-input');
+      if (inp) { inp.value = text; sendThreadMsg(); }
+    } catch(e) { console.error('[Msg] player witnessed DM:', e); showToast('Could not send: ' + (e.message || 'error')); }
   }
 
-  function openParentDirectThread() {
-    // Reuse the parents thread but with a parent's perspective
-    const data = THREAD_DATA['parents'];
-    document.getElementById('thread-title').textContent = 'Coach Williams';
-    document.getElementById('thread-sub').textContent = 'Direct message';
-    const av = document.getElementById('thread-avatar');
-    av.className = 'thread-avatar';
-    av.style.background = 'var(--team-primary-glow-sm)';
-    av.style.color = 'var(--team-primary)';
-    av.textContent = 'CW';
-    const body = document.getElementById('thread-body');
-    body.innerHTML = '';
-    const msgs = [
-
-      { mine: true,  from: 'You', text: 'Hi Coach, will Marcus need his away jersey for Friday\'s game?', time: 'Sun' },
-
-    ];
-    msgs.forEach(m => {
-      const div = document.createElement('div');
-      div.className = 'thread-msg' + (m.mine ? ' mine' : '');
-      div.innerHTML = `<div class="thread-sender">${m.mine ? 'You' : m.from} · ${m.time}</div><div class="thread-bubble">${m.text}</div>`;
-      body.appendChild(div);
+  // Parent → coach direct message. Dynamic coach picker (parent tab has no dedicated modal).
+  async function openParentNewMsg() {
+    const programId = await getValidProgramId();
+    if (!programId) { showToast('No program'); return; }
+    await loadDirectory();
+    const coaches = _dirByRole('coach');
+    let ov = document.getElementById('parent-newmsg-overlay'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id = 'parent-newmsg-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    ov.innerHTML =
+      '<div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="font-size:17px;font-weight:700">Message a coach</div>'+
+      '<div onclick="document.getElementById(\'parent-newmsg-overlay\').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div></div>'+
+      (coaches.length ? '<div id="parent-coach-list"></div>' : '<div style="font-size:13px;color:var(--fg-3)">No coaches available yet.</div>')+
+      '</div>';
+    document.body.appendChild(ov);
+    const list = document.getElementById('parent-coach-list');
+    if (list) coaches.forEach(m => {
+      const row = document.createElement('div'); row.className='member-row'; row.style.cursor='pointer';
+      row.innerHTML = '<div class="member-avatar" style="background:'+m.color+'22;color:'+m.color+'">'+m.initials+'</div><div class="member-name">'+_esc(m.name)+'</div><span class="member-role-tag coach">coach</span>';
+      row.onclick = () => startParentDM(m.id);
+      list.appendChild(row);
     });
-    body.scrollTop = body.scrollHeight;
-    document.getElementById('thread-safety-banner').style.display = 'none';
-    document.getElementById('thread-input').value = '';
-    currentThread = 'parent-direct';
-    document.getElementById('msg-thread-overlay').classList.add('open');
   }
 
-  function openParentNewMsg() {
-    // Parents can message any coach directly — no guardrails needed
-    const coachName = prompt('Message to (coach name):');
-    if (coachName && coachName.trim()) {
-      // Open a blank thread
-      document.getElementById('thread-title').textContent = coachName.trim();
-      document.getElementById('thread-sub').textContent = 'Direct message';
-      const av = document.getElementById('thread-avatar');
-      av.className = 'thread-avatar';
-      av.style.background = 'var(--team-primary-glow-sm)';
-      av.style.color = 'var(--team-primary)';
-      av.textContent = coachName.trim().split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-      document.getElementById('thread-body').innerHTML = '';
-      document.getElementById('thread-safety-banner').style.display = 'none';
-      document.getElementById('thread-input').value = '';
-      currentThread = 'parent-new';
-      document.getElementById('msg-thread-overlay').classList.add('open');
-      setTimeout(() => document.getElementById('thread-input').focus(), 300);
-    }
+  async function startParentDM(coachUid) {
+    const ov = document.getElementById('parent-newmsg-overlay'); if (ov) ov.remove();
+    const programId = await getValidProgramId(); if (!programId) return;
+    try {
+      const { data: threadId, error } = await db.rpc('create_thread', {
+        p_program_id: programId, p_kind: 'dm', p_subject: null,
+        p_participant_uids: [coachUid], p_witness_uids: []
+      });
+      if (error) throw error;
+      await loadThreadList('parent');
+      currentThreadKind = 'dm';
+      openThread(threadId);
+    } catch(e) { console.error('[Msg] parent DM:', e); showToast('Could not start message: ' + (e.message || 'error')); }
   }
+  function openParentDirectThread() { openParentNewMsg(); }
 
   // ===== MORE TAB =====
   function showMoreSection(section) {
@@ -13463,77 +13357,33 @@
     } catch(e) { console.error('Schedule load error:', e); }
   }
 
-  // ===== PLAYER MESSAGE SUBSCRIPTION =====
+  // ===== MESSAGE LIST REALTIME =====
+  // Program-wide realtime that keeps the thread LIST fresh (new threads, previews, unread dots).
+  // The open thread renders its own incoming messages via its per-thread channel in openThread().
   let playerMsgSubscription = null;
-  const playerKnownThreads = new Set(['player-allcoaches']);
+  let _msgListRefreshTimer = null;
 
   async function subscribeToPlayerMessages(programId) {
     if (!programId || !programId.includes('-')) return;
-    if (playerMsgSubscription) playerMsgSubscription.unsubscribe();
+    if (playerMsgSubscription) { try { playerMsgSubscription.unsubscribe(); } catch(e){} }
 
-    playerMsgSubscription = db.channel('player-msgs-' + Date.now())
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages'
-      }, payload => {
+    playerMsgSubscription = db.channel('msglist-' + Date.now())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
         const msg = payload.new;
         if (msg.program_id !== programId) return;
-
-        const threadId = msg.group_name;
-        const user = JSON.parse(localStorage.getItem('mesh_user') || '{}');
-
-        // Add to THREAD_DATA if not known
-        if (!THREAD_DATA[threadId]) {
-          THREAD_DATA[threadId] = {
-            title: threadId.startsWith('custom-') ? 'Group Message' : threadId,
-            sub: 'New message',
-            avatarClass: 'group-staff',
-            avatarContent: '💬',
-            messages: []
-          };
-        }
-
-        // Add to player message list if new thread
-        if (!playerKnownThreads.has(threadId)) {
-          playerKnownThreads.add(threadId);
-          const list = document.getElementById('player-msg-group-list');
-          if (list) {
-            const item = document.createElement('div');
-            item.className = 'msg-group-item';
-            item.id = 'mgi-' + threadId;
-            const title = THREAD_DATA[threadId].title;
-            const initials = title.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-            item.innerHTML = `
-              <div class="msg-group-avatar group-custom">${initials}</div>
-              <div class="msg-group-content">
-                <div class="msg-group-header">
-                  <div class="msg-group-name">${title}</div>
-                  <div class="inbox-time">Just now</div>
-                </div>
-                <div class="msg-group-preview" id="mgp-${threadId}">${msg.sender_name}: ${msg.content}</div>
-                <div class="msg-group-meta">Group message</div>
-              </div>
-              <div class="unread-dot" id="mgu-${threadId}" style="opacity:1"></div>`;
-            item.onclick = () => openThread(threadId);
-            list.insertBefore(item, list.firstChild);
-          }
-        } else {
-          // Update preview and show unread dot
-          const preview = document.getElementById('mgp-' + threadId);
-          if (preview) preview.textContent = msg.sender_name + ': ' + msg.content;
-          const dot = document.getElementById('mgu-' + threadId);
-          if (dot) dot.style.opacity = '1';
-        }
-
-        // If currently in this thread, render the message
-        if (currentThread === threadId) {
-          renderMessageBubble(msg, user.name);
-          const body = document.getElementById('thread-body');
-          if (body) body.scrollTop = body.scrollHeight;
+        if (msg.sender_id && msg.sender_id === _myUid()) return; // ignore own
+        // Update an existing row's preview + unread dot inline.
+        const preview = document.getElementById('mgp-' + msg.thread_id);
+        if (preview) preview.textContent = (msg.sender_name ? msg.sender_name + ': ' : '') + msg.content;
+        const dot = document.getElementById('mgu-' + msg.thread_id);
+        if (dot && msg.thread_id !== currentThread) dot.style.opacity = '1';
+        // Brand-new thread → refresh the list (debounced) so it appears.
+        if (msg.thread_id && !document.getElementById('mgi-' + msg.thread_id)) {
+          clearTimeout(_msgListRefreshTimer);
+          _msgListRefreshTimer = setTimeout(() => { if (currentTab === 'messages') loadThreadList(currentRole); }, 700);
         }
       })
-      .subscribe(status => console.log('Player message subscription:', status));
+      .subscribe();
   }
 
   // ===== REAL-TIME PLAYER SUBSCRIPTION =====
