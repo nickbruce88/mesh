@@ -30,9 +30,20 @@ Full worst-first list is in the "PARENT DEMO-DATA CLEANUP" section below. Revisi
 
 ## The 3-phase plan (user-approved scope — nothing beyond these three)
 1. **Parent server-side persistence** — ✅ DONE & VERIFIED live (v39.42).
-2. **Assistant-coach join flow** — ✅ CODE DONE in v39.43 (this session); NEEDS DEPLOY + TEST (see below).
+2. **Assistant-coach join flow + Staff Access permissions** — ✅ DONE & VERIFIED live (v39.43–v39.47).
+   Assistant joins via coach code, persists, reloads into coach UI; head coach grants per-feature edit
+   via Settings → Staff Access; assistant can add players (persists) when granted roster access.
 3. **Messaging schema + proper RLS** ← NEXT (then, later, the witnessed private-DM UI once real members exist)
 Witnessed-DM UI is **deferred** until real members (2nd coach / parents) exist.
+
+## Latest deployed version: v39.47 (all pushed to main, live)
+Bugs fixed while verifying Phase 2 (both were PRE-EXISTING, not from the permissions work):
+- v39.46: `applyPermissionState` referenced undefined `DAY_INFO` → threw in launchApp during session
+  restore → aborted launchApp BEFORE roster/schedule loaded (hit ALL coaches on reload once
+  applyPermissionState was wired into launchApp). Guarded with `typeof` + try/catch backstop.
+- v39.47: `saveAddPlayerManual` referenced undeclared `unit` → ReferenceError → manual "+ Player" add
+  silently did nothing. Now derives unit from position. (Head coaches dodged it via CSV import.)
+players-table RLS does NOT block assistant inserts (add-player persists) — no RLS change was needed.
 
 ## Phase 2 — Assistant-coach join (v39.43, this session) — what changed & how to test
 **No new SQL required** — reuses the existing `create_profile(user_id, user_program_id, user_role, user_name)`
