@@ -2471,6 +2471,17 @@
       <button class="btn-primary" onclick="submitParentProfile()">Join program →</button>
     </div>
 
+    <!-- Step 3c: Assistant coach profile -->
+    <div class="ob-step" id="join-step-3-coach">
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px">Your coach profile</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:20px">You'll join the staff with view access to the game plan. The head coach can grant you edit access.</div>
+      <div class="ob-field-label">Your full name *</div>
+      <input class="input-field" id="join-coach-name" placeholder="Coach Reed" style="margin-bottom:12px">
+      <div class="ob-field-label">Title (optional)</div>
+      <input class="input-field" id="join-coach-title" placeholder="e.g. Offensive Coordinator" style="margin-bottom:24px">
+      <button class="btn-primary" onclick="submitCoachProfile()">Join staff →</button>
+    </div>
+
     <!-- Step 4: Welcome -->
     <div class="ob-step" id="join-step-4">
       <div style="text-align:center;padding:20px 0">
@@ -5313,7 +5324,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.42</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.43</div>
   </div>
 </div>
 
@@ -5324,7 +5335,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.42';
+  const APP_VERSION = 'v39.43';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9245,7 +9256,7 @@
     document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
 
     // If role was auto-detected, go to account creation step
-    if (joinSelectedRole === 'player' || joinSelectedRole === 'parent') {
+    if (joinSelectedRole === 'player' || joinSelectedRole === 'parent' || joinSelectedRole === 'coach') {
       document.getElementById('join-step-account').classList.add('active');
     } else {
       // Show role selection (for coach code or unknown)
@@ -9313,7 +9324,10 @@
 
       // Move to profile step
       document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
-      document.getElementById(joinSelectedRole === 'player' ? 'join-step-3-player' : 'join-step-3-parent').classList.add('active');
+      const profileStep = joinSelectedRole === 'player' ? 'join-step-3-player'
+                        : joinSelectedRole === 'coach'  ? 'join-step-3-coach'
+                        : 'join-step-3-parent';
+      document.getElementById(profileStep).classList.add('active');
     } catch(e) {
       errEl.textContent = e.message || 'Could not create account. Try again.';
     } finally {
@@ -9445,6 +9459,42 @@
     try { localStorage.setItem('mesh_role', 'parent'); localStorage.setItem('mesh_user', JSON.stringify({ name, role: 'parent' })); } catch(e) {}
     document.getElementById('join-done-title').textContent = 'Welcome, ' + name.split(' ')[0] + '!';
     document.getElementById('join-done-sub').textContent = "You've been linked to " + playerName + "'s profile. You'll receive announcements from coaching staff.";
+    joinGoToStep(4);
+  }
+
+  async function submitCoachProfile() {
+    const name = document.getElementById('join-coach-name').value.trim();
+    const title = document.getElementById('join-coach-title').value.trim();
+    if (!name) { showToast('Please enter your name'); return; }
+
+    // Persist server-side as an assistant coach: profiles row (role='coach').
+    // Reuses the create_profile SECURITY DEFINER RPC — the same one the head coach uses (role='head_coach').
+    const uid = localStorage.getItem('mesh_auth_uid') || null;
+    const programId = localStorage.getItem('mesh_joining_program_id') || null;
+    const validProgramId = programId && programId.includes('-') ? programId : null;
+    if (uid && validProgramId) {
+      try {
+        const { error } = await db.rpc('create_profile', {
+          user_id: uid,
+          user_program_id: validProgramId,
+          user_role: 'coach',
+          user_name: name,
+        });
+        if (error) { console.error('[Join] create_profile (coach) error:', error); showToast('Saved locally — sync will retry'); }
+        else console.log('[Join] Assistant coach persisted:', uid, '→ program', validProgramId);
+      } catch(e) { console.error('[Join] create_profile (coach) exception:', e); showToast('Saved locally — sync will retry'); }
+    } else {
+      console.warn('[Join] Coach not persisted — missing uid/programId', { uid, validProgramId });
+    }
+
+    // Assistant coaches join view-only; the head coach grants edit access.
+    isHeadCoach = false;
+    try {
+      localStorage.setItem('mesh_role', 'coach');
+      localStorage.setItem('mesh_user', JSON.stringify({ name, role: title || 'Assistant Coach' }));
+    } catch(e) {}
+    document.getElementById('join-done-title').textContent = 'Welcome, ' + name.split(' ')[0] + '!';
+    document.getElementById('join-done-sub').textContent = "You've joined " + document.getElementById('join-program-name').textContent + "'s staff with view access. Ask the head coach for edit access when you're ready.";
     joinGoToStep(4);
   }
 
@@ -9912,7 +9962,7 @@
         banner = document.createElement('div');
         banner.id = 'locked-banner';
         banner.className = 'locked-banner';
-        banner.innerHTML = '🔒 View only — ask Coach Williams for edit access to make changes';
+        banner.innerHTML = '🔒 View only — ask ' + (obProgram.coachName || 'the head coach') + ' for edit access to make changes';
         const hintRow = document.getElementById('col-filter-hint');
         if (hintRow) hintRow.parentElement.insertBefore(banner, hintRow);
       }
@@ -20383,12 +20433,19 @@ Jersey|RushingNum|RushingYards|RushingTDNum
 
     // Load appearance first so colors are right before UI renders
     try {
-      const { data: ap } = await db.from('programs').select('theme_mode,team_primary,team_secondary,sidebar_font').eq('id', programId).single();
+      const { data: ap } = await db.from('programs').select('theme_mode,team_primary,team_secondary,sidebar_font,owner_id').eq('id', programId).single();
       if (ap) {
         if (ap.theme_mode) { themeMode = ap.theme_mode; try { localStorage.setItem('mesh_theme', themeMode); } catch(e) {} }
         if (ap.team_primary) teamColors.primary = ap.team_primary;
         if (ap.team_secondary) teamColors.secondary = ap.team_secondary;
         teamColors.sidebarFont = ap.sidebar_font || null;
+        // Head coach = program owner; anyone else in the coach UI is an assistant (view-only).
+        if (appRole === 'coach') {
+          let myUid = localStorage.getItem('mesh_auth_uid');
+          if (!myUid) { try { const { data: { session } } = await db.auth.getSession(); myUid = session?.user?.id || ''; } catch(e) {} }
+          isHeadCoach = !!(ap.owner_id && myUid && ap.owner_id === myUid);
+          console.log('[Session] Coach permission — isHeadCoach:', isHeadCoach);
+        }
       }
     } catch(e) { console.warn('Appearance load error:', e); }
     _suppressAppearanceSave = true;
@@ -20400,6 +20457,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     document.getElementById('screen-app').classList.add('active');
     buildNav(appRole);
     showTab(appRole, 'home');
+    if (appRole === 'coach') applyPermissionState();
 
     // Always cache programId and auth uid so all features work for all roles
     if (programId) {
