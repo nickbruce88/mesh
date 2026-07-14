@@ -1,16 +1,15 @@
 # Mesh — Session Handoff
-_Last updated: 2026-07-12 (session 2). Read this first when resuming._
+_Last updated: 2026-07-13 (session 2). Read this first when resuming._
 
 ## Where we are in one paragraph
-We set out to "test and fix the player role" (single-file app `index.html`, deployed to
-app.meshsports.co via Cloudflare Pages, Supabase project `zsjxauwwqyyhgxzgnfoj`). That surfaced that
-**messaging is unfinished and the server-side member directory doesn't exist**, so we pivoted to a
-3-phase foundation build (see the approved plan at
-`C:\Users\NickB\.claude\plans\imperative-sleeping-cupcake.md`). **Phase 1 (parent persistence) is
-DONE and VERIFIED live** (v39.42 is deployed; a fresh parent join persists across refresh — which
-proves `get_my_profile()` RPC exists & works, since the boot path only trusts Supabase, not
-localStorage). **Now starting Phase 2 (assistant-coach join flow).** Git is installed & working —
-Claude commits/pushes to `main` directly (Cloudflare auto-deploys from main push).
+Single-file app `index.html`, deployed to app.meshsports.co via Cloudflare Pages, Supabase project
+`zsjxauwwqyyhgxzgnfoj`. Approved 3-phase foundation build (plan:
+`C:\Users\NickB\.claude\plans\imperative-sleeping-cupcake.md`). **Phase 1 (parent persistence) & Phase 2
+(assistant-coach join + Staff Access permissions) are DONE & VERIFIED live.** **Phase 3 (messaging rewrite)
+is at Step 1 done, live at v39.55 with RLS still OFF** — threads/participants schema, per-role thread lists,
+real-time, witnessed DMs, per-user push, in-app bell all working. **NEXT: Phase 3 Step 2 (migrate legacy
+messages) then Step 3 (enable RLS).** Git works — Claude commits/pushes to `main`; Cloudflare auto-deploys.
+Deploy consent: **ask before each push** (see [[mesh-deploy-versioning]]).
 
 ## PARKED (do NOT forget — user explicitly flagged): Parent demo-data cleanup
 Deferred to stay in the 3-phase scope, but the user wants it done. The parent role persists correctly
@@ -33,34 +32,43 @@ Full worst-first list is in the "PARENT DEMO-DATA CLEANUP" section below. Revisi
 2. **Assistant-coach join flow + Staff Access permissions** — ✅ DONE & VERIFIED live (v39.43–v39.47).
    Assistant joins via coach code, persists, reloads into coach UI; head coach grants per-feature edit
    via Settings → Staff Access; assistant can add players (persists) when granted roster access.
-3. **Messaging schema + RLS + witnessed DM** ← IN PROGRESS (v39.48). Scope: everything in one pass.
-   Sequenced to de-risk RLS: (Step 1) schema + RPCs + full client rewrite, RLS OFF → verify;
-   (Step 2) migrate legacy group_name messages; (Step 3) enable RLS + re-verify.
+3. **Messaging schema + RLS + witnessed DM** ← Step 1 DONE & live (v39.55), RLS still OFF. Scope: one pass.
+   Sequence: (Step 1) schema + RPCs + client rewrite, RLS OFF → verify ✅; (Step 2) migrate legacy
+   group_name messages ← NEXT; (Step 3) enable RLS + re-verify.
 
-## Phase 3 — Messaging (v39.48, this session) — status & how to run
-SQL in `planning/phase3-messaging.sql`, THREE labeled parts. **Run PART 1 now** (schema: message_threads,
-thread_participants, messages.thread_id/sender_id; helper fns my_program_id/my_role/is_thread_participant;
-RPCs: list_program_directory, ensure_broadcast_thread, create_thread, list_my_threads, thread_members,
-thread_participant_ids). PART 2 (migrate legacy messages) and PART 3 (enable RLS + policies) are commented
-out — run them at Steps 2 and 3 after client verification.
-Client rewrite (all in index.html): thread identity is now a real thread UUID (was free-text group_name);
-sender identity is auth uid (sender_id). Thread model:
-- Broadcasts (All Coaches/Players/Parents) = role-scoped via audience_roles; coach ensures the 3 exist on
-  entering Messages. dm/witnessed_dm = explicit thread_participants.
-- loadThreadList/renderThreadList (list_my_threads) populate the list per role on Messages tab open
-  (wired in showTab). openThread loads by thread_id, role-aware overlay (fixes the player DOM-mirror desync).
-- sendThreadMsg inserts thread_id+sender_id; targeted push (broadcasts→roles, DMs→participant uids via new
-  sendPushNotification targetUserIds arg — edge fn must honor target_user_ids for true per-recipient push).
-- Compose rewired to create_thread: coach New Group (directory picker), player New Message = witnessed_dm
-  (coach + witness), parent New Message = dm to a coach (new dynamic picker). sendPlayerDirectMsg stub is gone.
-- Removed: THREAD_DATA, STAFF_MEMBERS, PARENT_MEMBERS, openOrCreateQuickThread, playerKnownThreads.
-**Enforcement note:** RLS still OFF until Step 3 — so during verify, privacy is not yet enforced server-side.
-**TEST (after PART 1 + deploy v39.48):** coach sees 3 broadcasts + can post; create a group (directory picker)
-→ appears + opens; player New Message (pick coach + witness) sends a witnessed DM; parent New Message → coach
-DM; recipient sees the thread (reload/realtime). Then do Step 2 (migration) and Step 3 (RLS) and re-verify a
-non-participant genuinely cannot read a private thread. Realtime under RLS may need policies correct (watch it).
+## Phase 3 — Messaging — status & how to run
+SQL in `planning/phase3-messaging.sql`, labeled parts. **RAN: PART 1** (schema + RPCs) **and PART 1b**
+(realtime: added messages + message_threads to supabase_realtime publication). **Edge function
+`send-notification` REDEPLOYED** to honor `target_user_ids` (per-recipient DM push). **NOT YET RUN:**
+PART 2 (migrate legacy messages) ← do next, PART 3 (enable RLS + policies) ← last.
+Schema: message_threads(id,program_id,created_by,kind,subject,audience_roles[],created_at),
+thread_participants(thread_id,user_id,role,is_witness), messages += thread_id + sender_id.
+kind = 'broadcast' (role-scoped via audience_roles) | 'dm' | 'witnessed_dm' (explicit participants).
+RPCs (all SECURITY DEFINER): my_program_id/my_role/is_thread_participant, list_program_directory,
+ensure_broadcast_thread, create_thread, list_my_threads, thread_members, thread_participant_ids.
+Client (index.html): thread identity = thread UUID (was group_name); sender = auth uid (sender_id).
+loadThreadList/renderThreadList (list_my_threads) per role on Messages open; openThread loads by thread_id
+into a role-aware overlay (coach `#msg-thread-overlay`, player `#player-msg-thread-overlay`, parent
+`#parent-msg-thread-overlay` — each role has its OWN overlay); sendThreadMsg writes thread_id+sender_id +
+targeted push. Compose via create_thread: coach New Group (directory picker), player New Message =
+witnessed_dm (coach+witness), parent New Message = dm to a coach. Real-time via a program-wide msglist
+channel (all roles) + per-thread channel. In-app bell (addNotif) on incoming messages in MY threads.
+Removed: THREAD_DATA/STAFF_MEMBERS/PARENT_MEMBERS/openOrCreateQuickThread/playerKnownThreads.
+Step-1 fixes along the way: parent Messages tab made uniform (v39.49/.50); real-time (v39.51, needs PART 1b);
+sender name showed "Me" → prefer `_sessionUser.name` (v39.52); notifications bell+push (v39.53); notif-click
+left the full-screen notif-overlay open (froze nav) + header avatar stuck on "CW" on reload (v39.54);
+player thread back button collapsed the overlay to display:block (v39.55).
+**Enforcement note:** RLS OFF until Step 3 — privacy NOT yet server-enforced (realtime currently sees all
+program messages; bell/list are gated client-side by `_threads` = list_my_threads = my participant/audience
+threads, which is correct now AND under RLS).
+**KNOWN PUSH CAVEAT:** web push only reaches devices that granted notification permission + have a
+`notification_tokens` row; iOS needs the PWA installed to home screen. In-app bell works regardless.
+**STEP 2 (do now):** uncomment & run PART 2 in `phase3-messaging.sql` (creates a broadcast thread per
+distinct program_id+group_name and backfills messages.thread_id). Then verify old messages still show.
+**STEP 3 (after):** uncomment & run PART 3 (enable RLS + policies). Re-verify: a non-participant cannot read
+a thread; realtime still delivers (Supabase realtime respects RLS — policies must be correct).
 
-## Latest deployed version: v39.47 (all pushed to main, live)
+## Latest deployed version: v39.55 (all pushed to main, live)
 Bugs fixed while verifying Phase 2 (both were PRE-EXISTING, not from the permissions work):
 - v39.46: `applyPermissionState` referenced undefined `DAY_INFO` → threw in launchApp during session
   restore → aborted launchApp BEFORE roster/schedule loaded (hit ALL coaches on reload once
