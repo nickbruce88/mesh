@@ -5349,7 +5349,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.53</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.54</div>
   </div>
 </div>
 
@@ -5360,7 +5360,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.53';
+  const APP_VERSION = 'v39.54';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11534,17 +11534,17 @@
       </div>
       <div class="notif-dismiss" style="font-size:14px;color:var(--fg-3);cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1" title="Dismiss">✕</div>`;
 
-    // Clicking the text/dot area triggers action and removes
-    item.querySelector('.notif-action-area').onclick = (e) => {
+    // Clicking the text/dot area closes the panel, triggers the action, and removes the item.
+    // (Closing is essential — the notif-overlay is full-screen and would otherwise keep
+    //  swallowing taps, making the destination look "stuck" with nav/back unresponsive.)
+    const activate = (e) => {
       e.stopPropagation();
+      if (notifOpen) toggleNotifPanel();
       if (action) action();
       dismissNotif(item);
     };
-    item.querySelector('.notif-dot').onclick = (e) => {
-      e.stopPropagation();
-      if (action) action();
-      dismissNotif(item);
-    };
+    item.querySelector('.notif-action-area').onclick = activate;
+    item.querySelector('.notif-dot').onclick = activate;
     // ✕ just dismisses
     item.querySelector('.notif-dismiss').onclick = (e) => {
       e.stopPropagation();
@@ -11595,7 +11595,7 @@
   // ===== PROFILE HEADER =====
   function refreshProfileHeader(){
     let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
-    const name=user.name||'Coach';
+    const name=((typeof _sessionUser==='object' && _sessionUser && _sessionUser.name) || user.name || 'Coach');
     const team=localStorage.getItem('mesh_team_name')||'Your team';
     let roleLabel='Head Coach';
     if(user.role){
@@ -20605,6 +20605,9 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     document.getElementById('screen-app').classList.add('active');
     buildNav(appRole);
     showTab(appRole, 'home');
+    // Session restore doesn't go through switchRole, so set the top-right avatar from the
+    // resolved identity (otherwise it keeps the hardcoded "CW" placeholder for every role).
+    const _ua = document.getElementById('user-avatar'); if (_ua) applyUserAvatar(_ua);
     if (appRole === 'coach') { try { applyPermissionState(); } catch(e) { console.warn('[Perms] applyPermissionState failed (non-fatal):', e); } }
 
     // Always cache programId and auth uid so all features work for all roles
