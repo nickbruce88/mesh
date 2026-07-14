@@ -86,10 +86,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { program_id, type, title, body, target_roles, target_user_ids } = await req.json();
+    const { program_id, type, title, body, target_roles, target_user_ids, category, thread_id } = await req.json();
     // type: 'announcement' | 'message'
     // target_roles: ['coach','player','parent'] or subset  (broadcasts)
     // target_user_ids: ['<uuid>', ...]  (direct/witnessed messages — takes precedence)
+    // category: notification-pref key to honor (e.g. 'messages'); thread_id: for per-thread mute
 
     if (!program_id || !type || !title) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
@@ -120,9 +121,32 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
 
+    // Honor per-user notification prefs (category off) and per-thread mutes.
+    let recipients = tokens;
+    const uids = [...new Set(tokens.map((t) => t.user_id).filter(Boolean))];
+    if (uids.length) {
+      if (category) {
+        const { data: prefRows } = await db
+          .from('notification_prefs').select('user_id, prefs').in('user_id', uids);
+        const disabled = new Set(
+          (prefRows || []).filter((r) => r.prefs && r.prefs[category] === false).map((r) => r.user_id)
+        );
+        if (disabled.size) recipients = recipients.filter((t) => !disabled.has(t.user_id));
+      }
+      if (thread_id) {
+        const { data: muteRows } = await db
+          .from('thread_mutes').select('user_id').eq('thread_id', thread_id).in('user_id', uids);
+        const muted = new Set((muteRows || []).map((r) => r.user_id));
+        if (muted.size) recipients = recipients.filter((t) => !muted.has(t.user_id));
+      }
+    }
+    if (recipients.length === 0) {
+      return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
+    }
+
     // Send push to each subscriber
     const results = await Promise.allSettled(
-      tokens.map(async (token) => {
+      recipients.map(async (token) => {
         const sub = token.subscription;
         const headers = await buildVapidHeaders(sub.endpoint);
         const payloadStr = JSON.stringify({ title, body: body || '', tag: type });
