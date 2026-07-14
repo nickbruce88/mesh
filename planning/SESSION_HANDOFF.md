@@ -4,12 +4,13 @@ _Last updated: 2026-07-13 (session 2). Read this first when resuming._
 ## Where we are in one paragraph
 Single-file app `index.html`, deployed to app.meshsports.co via Cloudflare Pages, Supabase project
 `zsjxauwwqyyhgxzgnfoj`. Approved 3-phase foundation build (plan:
-`C:\Users\NickB\.claude\plans\imperative-sleeping-cupcake.md`). **Phase 1 (parent persistence) & Phase 2
-(assistant-coach join + Staff Access permissions) are DONE & VERIFIED live.** **Phase 3 (messaging rewrite)
-is at Step 1 done, live at v39.55 with RLS still OFF** — threads/participants schema, per-role thread lists,
-real-time, witnessed DMs, per-user push, in-app bell all working. **NEXT: Phase 3 Step 2 (migrate legacy
-messages) then Step 3 (enable RLS).** Git works — Claude commits/pushes to `main`; Cloudflare auto-deploys.
-Deploy consent: **ask before each push** (see [[mesh-deploy-versioning]]).
+`C:\Users\NickB\.claude\plans\imperative-sleeping-cupcake.md`). **ALL THREE PHASES DONE & VERIFIED LIVE
+(v39.58).** Phase 1 (parent persistence), Phase 2 (assistant-coach join + Staff Access permissions), Phase 3
+(secure threads/participants messaging + RLS + witnessed DMs + real-time + notifications). **Phase 3b
+(post-scope, user-requested) also DONE & live:** hide/archive threads + server-side notification prefs +
+per-thread mute. Git works — Claude commits/pushes to `main`; Cloudflare auto-deploys. Deploy consent:
+**ask before each push** (see [[mesh-deploy-versioning]]).
+**LIKELY NEXT:** the PARKED parent demo-data cleanup (see below) — parent Home still has some fake content.
 
 ## PARKED (do NOT forget — user explicitly flagged): Parent demo-data cleanup
 Deferred to stay in the 3-phase scope, but the user wants it done. The parent role persists correctly
@@ -32,9 +33,20 @@ Full worst-first list is in the "PARENT DEMO-DATA CLEANUP" section below. Revisi
 2. **Assistant-coach join flow + Staff Access permissions** — ✅ DONE & VERIFIED live (v39.43–v39.47).
    Assistant joins via coach code, persists, reloads into coach UI; head coach grants per-feature edit
    via Settings → Staff Access; assistant can add players (persists) when granted roster access.
-3. **Messaging schema + RLS + witnessed DM** ← Step 1 DONE & live (v39.55), RLS still OFF. Scope: one pass.
-   Sequence: (Step 1) schema + RPCs + client rewrite, RLS OFF → verify ✅; (Step 2) migrate legacy
-   group_name messages ← NEXT; (Step 3) enable RLS + re-verify.
+3. **Messaging schema + RLS + witnessed DM** — ✅ DONE & VERIFIED live. Step 1 (schema+client, v39.48–55),
+   Step 2 (migrated legacy msgs — 0 unmigrated), Step 3 (RLS ENABLED — messages/message_threads/
+   thread_participants; read/write iff participant or broadcast-to-my-role). All SQL parts in
+   `planning/phase3-messaging.sql` were run; realtime publication (PART 1b) added; edge fn redeployed.
+3b. **Hide/archive + notifications (post-scope, user-requested)** — ✅ DONE & live (v39.56–58).
+   SQL: `planning/phase3b-notifications.sql` (RAN): thread_hides, thread_mutes, notification_prefs +
+   RPCs (hide_thread/unhide_thread, set_thread_mute, set/get_notification_prefs); list_my_threads now
+   returns `muted`+`archived`. Edge fn `send-notification` REDEPLOYED to skip muted/category-disabled
+   recipients (client sends category+thread_id). Features: archive (hide-for-me; auto-archive >6mo quiet;
+   new message un-archives) via 🗄️ in thread header + "Archived (N)" toggle in the list; per-thread mute
+   🔔/🔕; category prefs (Notification settings) now persist server-side and gate bell + push.
+   Key fixes found while testing 3b: un-archive on new message needed a client list refresh (v39.57);
+   bell was suppressed because close functions didn't reset `currentThread` (v39.58 — closeThread/
+   closePlayerThread/closeParentThread now null it).
 
 ## Phase 3 — Messaging — status & how to run
 SQL in `planning/phase3-messaging.sql`, labeled parts. **RAN: PART 1** (schema + RPCs) **and PART 1b**
@@ -68,7 +80,7 @@ distinct program_id+group_name and backfills messages.thread_id). Then verify ol
 **STEP 3 (after):** uncomment & run PART 3 (enable RLS + policies). Re-verify: a non-participant cannot read
 a thread; realtime still delivers (Supabase realtime respects RLS — policies must be correct).
 
-## Latest deployed version: v39.55 (all pushed to main, live)
+## Latest deployed version: v39.58 (all pushed to main, live)
 Bugs fixed while verifying Phase 2 (both were PRE-EXISTING, not from the permissions work):
 - v39.46: `applyPermissionState` referenced undefined `DAY_INFO` → threw in launchApp during session
   restore → aborted launchApp BEFORE roster/schedule loaded (hit ALL coaches on reload once
