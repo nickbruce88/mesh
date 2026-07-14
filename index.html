@@ -5349,7 +5349,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.52</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.53</div>
   </div>
 </div>
 
@@ -5360,7 +5360,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.52';
+  const APP_VERSION = 'v39.53';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -13415,18 +13415,33 @@
         const msg = payload.new;
         if (msg.program_id !== programId) return;
         if (msg.sender_id && msg.sender_id === _myUid()) return; // ignore own
+        const known = !!_threads[msg.thread_id]; // _threads = MY threads (list_my_threads filters by participant/audience)
         // Update an existing row's preview + unread dot inline.
         const preview = document.getElementById('mgp-' + msg.thread_id);
         if (preview) preview.textContent = (msg.sender_name ? msg.sender_name + ': ' : '') + msg.content;
         const dot = document.getElementById('mgu-' + msg.thread_id);
         if (dot && msg.thread_id !== currentThread) dot.style.opacity = '1';
-        // Brand-new thread → refresh the list (debounced) so it appears.
-        if (msg.thread_id && !document.getElementById('mgi-' + msg.thread_id)) {
+        // In-app bell for one of MY threads I'm not currently viewing.
+        if (known && msg.thread_id !== currentThread) notifyIncomingMessage(msg);
+        // Unknown thread → reload my list (warms _threads); bell only if it turns out to be mine.
+        if (msg.thread_id && !known) {
           clearTimeout(_msgListRefreshTimer);
-          _msgListRefreshTimer = setTimeout(() => { if (currentTab === 'messages') loadThreadList(currentRole); }, 700);
+          _msgListRefreshTimer = setTimeout(async () => {
+            await loadThreadList(currentRole);
+            if (_threads[msg.thread_id] && msg.thread_id !== currentThread) notifyIncomingMessage(msg);
+          }, 700);
         }
       })
       .subscribe();
+  }
+
+  function notifyIncomingMessage(msg){
+    const who = msg.sender_name || 'New message';
+    const preview = (msg.content || '').length > 60 ? msg.content.slice(0,60) + '…' : (msg.content || '');
+    addNotif('💬 <span>' + _esc(who) + '</span>: ' + _esc(preview), () => {
+      showTab(currentRole || 'coach', 'messages');
+      setTimeout(() => openThread(msg.thread_id), 250);
+    });
   }
 
   // ===== REAL-TIME PLAYER SUBSCRIPTION =====
@@ -20631,6 +20646,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     await loadStatCategories(programId);
     subscribeToPlayers(programId);
     subscribeToPlayerMessages(programId); // message-list realtime for ALL roles
+    loadThreadList(appRole); // warm the thread list/_threads so message bells can resolve threads
 
     // Render announcements for correct role
     if (appRole === 'player') {

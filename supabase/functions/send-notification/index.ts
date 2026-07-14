@@ -86,9 +86,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { program_id, type, title, body, target_roles } = await req.json();
+    const { program_id, type, title, body, target_roles, target_user_ids } = await req.json();
     // type: 'announcement' | 'message'
-    // target_roles: ['coach','player','parent'] or subset
+    // target_roles: ['coach','player','parent'] or subset  (broadcasts)
+    // target_user_ids: ['<uuid>', ...]  (direct/witnessed messages — takes precedence)
 
     if (!program_id || !type || !title) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
@@ -99,13 +100,20 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Fetch all push subscriptions for this program filtered by role
-    const roles = target_roles || ['coach', 'player', 'parent'];
-    const { data: tokens, error } = await db
+    // Fetch push subscriptions for this program.
+    // If specific user ids are given (a DM), target ONLY those users; otherwise fall back to roles.
+    let q = db
       .from('notification_tokens')
-      .select('subscription, user_role')
-      .eq('program_id', program_id)
-      .in('user_role', roles);
+      .select('subscription, user_role, user_id')
+      .eq('program_id', program_id);
+
+    if (Array.isArray(target_user_ids) && target_user_ids.length > 0) {
+      q = q.in('user_id', target_user_ids);
+    } else {
+      q = q.in('user_role', target_roles || ['coach', 'player', 'parent']);
+    }
+
+    const { data: tokens, error } = await q;
 
     if (error) throw error;
     if (!tokens || tokens.length === 0) {
