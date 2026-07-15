@@ -3996,11 +3996,8 @@
   <!-- Parent Home -->
   <div id="tab-parent-home" class="scroll-content" style="display:none">
     <div class="greeting">Hi, <span id="parent-home-name">Family</span> 👋</div>
-    <div class="sub-greeting" id="parent-home-sub">Your team · 2026 Season</div>
-    <div style="background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
-      <div style="font-size:24px">🏈</div>
-      <div style="font-size:13px;color:var(--gray-1);line-height:1.4"><span style="color:var(--team-primary);font-weight:600">Next: Friday Oct 18 vs Emmett</span><br>Nampa High School · 7:00 PM kickoff</div>
-    </div>
+    <div class="sub-greeting" id="parent-home-sub"></div>
+    <div id="parent-next-game" style="display:none"></div>
     <div class="section-label">Announcements</div>
     <div style="font-size:11px;color:var(--gray-3);margin:-6px 0 10px">Pushed by coaching staff to all parents</div>
     <div id="parent-announcements-list"></div>
@@ -4011,42 +4008,19 @@
   <div id="tab-parent-schedule" class="scroll-content" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px" id="player-sched-title">Schedule</div>
-        <div style="font-size:13px;color:var(--gray-2);margin-top:2px" id="player-sched-sub"></div>
+        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px" id="parent-sched-title">Schedule</div>
+        <div style="font-size:13px;color:var(--gray-2);margin-top:2px" id="parent-sched-sub"></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn-sm" onclick="exportCalendar('parent')">📅 Export</button>
         <div class="sched-view-toggle">
-          <button class="sched-view-btn active" onclick="setSchedView('parent','list',this)">List</button>
-          <button class="sched-view-btn" onclick="setSchedView('parent','cal',this)">Calendar</button>
+          <button class="sched-view-btn active" id="parent-view-list" onclick="setSchedView('parent','list',this)">List</button>
+          <button class="sched-view-btn" id="parent-view-cal" onclick="setSchedView('parent','cal',this)">Calendar</button>
         </div>
       </div>
     </div>
     <div id="parent-sched-cal" style="display:none;margin-top:14px"></div>
-    <div id="parent-sched-list" style="margin-top:0">
-    <div class="sched-week-label">Preseason</div>
-    <div class="sched-item practice-item"><div class="sched-date-col"><div class="sched-day-label">AUG</div><div class="sched-day-num">19</div></div><div class="sched-info"><div class="sched-name">Fall Camp begins</div><div class="sched-meta">Practice · 8:00 AM – 12:00 PM daily</div></div></div>
-    <div class="sched-week-label">Week 1</div>
-    <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">6</div></div><div class="sched-info"><div class="sched-name">vs. Caldwell Cougars</div><div class="sched-meta">Home · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">28–14</div></div></div>
-    <div class="sched-week-label">Week 2</div>
-    <div class="sched-item game-loss"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">13</div></div><div class="sched-info"><div class="sched-name">at Mountain View Mavericks</div><div class="sched-meta">Away · 7:00 PM</div></div><div class="sched-score"><div class="score-result loss">L</div><div class="score-nums">14–35</div></div></div>
-    <div class="sched-week-label">Week 3</div>
-    <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">20</div></div><div class="sched-info"><div class="sched-name">vs. Twin Falls Bruins</div><div class="sched-meta">Home · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">21–17</div></div></div>
-    <div class="sched-week-label">Week 4</div>
-    <div class="sched-item game-loss"><div class="sched-date-col"><div class="sched-day-label">SEP</div><div class="sched-day-num game-num">27</div></div><div class="sched-info"><div class="sched-name">at Skyview Hawks</div><div class="sched-meta">Away · 7:00 PM</div></div><div class="sched-score"><div class="score-result loss">L</div><div class="score-nums">7–42</div></div></div>
-    <div class="sched-week-label">Week 5 — Bye</div>
-    <div class="sched-item practice-item"><div class="sched-date-col"><div class="sched-day-label">OCT</div><div class="sched-day-num">4</div></div><div class="sched-info"><div class="sched-name">Bye week</div><div class="sched-meta">No game · Practice schedule adjusted</div></div></div>
-    <div class="sched-week-label">Week 6</div>
-    <div class="sched-item game-win"><div class="sched-date-col"><div class="sched-day-label">OCT</div><div class="sched-day-num game-num">11</div></div><div class="sched-info"><div class="sched-name">vs. Ridgevue Warhawks</div><div class="sched-meta">Home · 7:00 PM</div></div><div class="sched-score"><div class="score-result win">W</div><div class="score-nums">35–21</div></div></div>
-    <div class="sched-week-label">Week 7 — This week</div>
-    <div class="sched-item practice-item"><div class="sched-date-col"><div class="sched-day-label">TUE</div><div class="sched-day-num">15</div></div><div class="sched-info"><div class="sched-name">Practice</div><div class="sched-meta">3:30 – 6:00 PM · Varsity field</div></div></div>
-    <div class="sched-item practice-item"><div class="sched-date-col"><div class="sched-day-label">THU</div><div class="sched-day-num">17</div></div><div class="sched-info"><div class="sched-name">Walkthrough</div><div class="sched-meta">3:30 – 5:00 PM · Varsity field</div></div></div>
-    <div class="sched-item upcoming" style="border-color:var(--team-primary);border-left-width:3px"><div class="sched-date-col"><div class="sched-day-label">FRI</div><div class="sched-day-num game-num">18</div></div><div class="sched-info"><div class="sched-name" style="color:var(--team-primary)">🏈 vs. Emmett Huskies</div><div class="sched-meta">Home · 7:00 PM · Tonight!</div></div><span class="pill pill-green">UP NEXT</span></div>
-    <div class="sched-week-label">Week 8</div>
-    <div class="sched-item upcoming"><div class="sched-date-col"><div class="sched-day-label">OCT</div><div class="sched-day-num">25</div></div><div class="sched-info"><div class="sched-name">at Vallivue Falcons</div><div class="sched-meta">Away · 7:00 PM</div></div><span class="pill pill-gray">AWAY</span></div>
-    <div class="sched-week-label">Week 9</div>
-    <div class="sched-item upcoming"><div class="sched-date-col"><div class="sched-day-label">NOV</div><div class="sched-day-num">1</div></div><div class="sched-info"><div class="sched-name">vs. Middleton Vikings</div><div class="sched-meta">Home · 7:00 PM</div></div><span class="pill pill-green">HOME</span></div>
-    </div><!-- end parent-sched-list -->
+    <div id="parent-sched-list" style="margin-top:0"></div><!-- end parent-sched-list -->
   </div><!-- end tab-parent-schedule -->
 
   <!-- Parent Messages -->
@@ -4121,16 +4095,11 @@
     <!-- MORE MENU LIST -->
     <div class="more-menu" id="parent-more-menu">
       <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px;padding-top:4px">More</div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px">Nampa Bulldogs</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px" id="parent-more-team"></div>
 
       <div class="more-menu-item" onclick="showParentSection('myplayer')">
         <div class="more-menu-icon" style="background:var(--team-primary-glow-sm)">🏈</div>
-        <div><div class="more-menu-label">My Player</div><div class="more-menu-sub" id="player-menu-sub">My profile</div></div>
-        <div class="more-menu-arrow">›</div>
-      </div>
-      <div class="more-menu-item" onclick="showParentSection('checklist')">
-        <div class="more-menu-icon" style="background:rgba(255,180,0,0.1)">✅</div>
-        <div><div class="more-menu-label">Preseason Checklist</div><div class="more-menu-sub">3 of 5 complete</div></div>
+        <div><div class="more-menu-label">My Player</div><div class="more-menu-sub" id="parent-menu-sub">Profile & standing</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
       <div class="more-menu-item" onclick="showParentSection('documents')">
@@ -4151,84 +4120,7 @@
         <div class="more-back-btn" onclick="backToParentMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">My Player</div>
       </div>
-      <div class="player-hero" style="margin-bottom:16px">
-        <div class="player-jersey">#22</div>
-        <div>
-          <div class="player-name" id="player-name-display2">—</div>
-          <div class="player-pos">Wide Receiver · <span>1st String</span></div>
-          <div style="margin-top:6px"><span class="pill pill-green">Active</span></div>
-        </div>
-      </div>
-
-      <div class="section-label">Player info</div>
-      <div class="card" style="padding:0">
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Jersey</span><span class="pp-info-value">#22</span></div>
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Position</span><span class="pp-info-value">Wide Receiver</span></div>
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Year</span><span class="pp-info-value">Senior</span></div>
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Unit</span><span class="pp-info-value">Offense</span></div>
-        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Practice status</span><span class="pp-info-value" style="color:var(--team-primary)">Active</span></div>
-      </div>
-
-      <div class="section-label">Position coach</div>
-      <div class="card">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="width:40px;height:40px;border-radius:50%;background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--team-primary);flex-shrink:0">CR</div>
-          <div>
-            <div style="font-size:14px;font-weight:700">Coach Reed</div>
-            <div style="font-size:12px;color:var(--gray-2);margin-top:2px">Offensive Coordinator · WR position coach</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-label">2026 Season stats</div>
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-box-num green">34</div><div class="stat-box-label">Receptions</div></div>
-        <div class="stat-box"><div class="stat-box-num">487</div><div class="stat-box-label">Rec Yards</div></div>
-        <div class="stat-box"><div class="stat-box-num green">5</div><div class="stat-box-label">TDs</div></div>
-        <div class="stat-box"><div class="stat-box-num">14.3</div><div class="stat-box-label">Avg/Catch</div></div>
-        <div class="stat-box"><div class="stat-box-num">8</div><div class="stat-box-label">Games</div></div>
-        <div class="stat-box"><div class="stat-box-num green">61</div><div class="stat-box-label">Long</div></div>
-      </div>
-
-      <div class="section-label">Standing</div>
-      <div class="card" style="padding:0">
-        <div class="pp-info-row" style="padding:11px 14px">
-          <span class="pp-info-label">Disciplinary status</span>
-          <span class="disc-status-badge green">Good Standing</span>
-        </div>
-        <div class="pp-info-row" style="padding:11px 14px">
-          <span class="pp-info-label">Academic eligibility</span>
-          <span class="pp-info-value" style="color:var(--team-primary)">✅ Eligible</span>
-        </div>
-        <div class="pp-info-row" style="padding:11px 14px">
-          <span class="pp-info-label">Current GPA</span>
-          <span class="pp-info-value">3.8</span>
-        </div>
-        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none">
-          <span class="pp-info-label">Minimum required</span>
-          <span class="pp-info-value" style="color:var(--gray-3)">2.0 GPA</span>
-        </div>
-      </div>
-      <div style="font-size:11px;color:var(--gray-3);margin-top:6px;margin-bottom:4px">Standing is updated by coaching staff. Contact Coach Waite with any questions.</div>
-    </div>
-
-    <!-- CHECKLIST SECTION -->
-    <div class="more-section" id="parent-section-checklist">
-      <div class="more-section-header">
-        <div class="more-back-btn" onclick="backToParentMenu()">‹</div>
-        <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Preseason Checklist</div>
-      </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:10px">Player · Eligibility requirements</div>
-      <div class="checklist-progress-card">
-        <div class="checklist-progress-row"><div class="checklist-progress-label">3 of 5 complete</div><div class="checklist-progress-pct">60%</div></div>
-        <div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:60%"></div></div>
-      </div>
-      <div class="check-item done"><div class="check-icon">✓</div><div class="check-content"><div class="check-title">Preseason Physical</div><div class="check-sub">Verified by athletic office · Aug 2</div></div></div>
-      <div class="check-item done"><div class="check-icon">✓</div><div class="check-content"><div class="check-title">Athletic Fee Paid</div><div class="check-sub">Verified by athletic office · Aug 5</div></div></div>
-      <div class="check-item done"><div class="check-icon">✓</div><div class="check-content"><div class="check-title">Concussion Waiver Signed</div><div class="check-sub">Verified by Coach Williams · Aug 6</div></div></div>
-      <div class="check-item pending"><div class="check-icon">○</div><div class="check-content"><div class="check-title">Emergency Contact Form</div><div class="check-sub pending-text">Not yet on file — submit to front office</div></div></div>
-      <div class="check-item pending"><div class="check-icon">○</div><div class="check-content"><div class="check-title">Code of Conduct Agreement</div><div class="check-sub pending-text">Not yet on file — submit to front office</div></div></div>
-      <div class="checklist-footer-note">💡 Coaches and the athletic office mark these complete once forms are received.</div>
+      <div id="parent-myplayer-body"></div>
     </div>
 
     <!-- DOCUMENTS SECTION -->
@@ -5361,7 +5253,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.58</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.59</div>
   </div>
 </div>
 
@@ -5372,7 +5264,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.58';
+  const APP_VERSION = 'v39.59';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5531,37 +5423,48 @@
     document.querySelectorAll('.scroll-content').forEach(t => t.style.display = 'none');
   }
 
-  function setPlayerSchedView(view, btn) {
-    const listEl = document.getElementById('player-sched-list');
-    const calEl = document.getElementById('player-sched-cal');
-    const listBtn = document.getElementById('player-view-list');
-    const calBtn = document.getElementById('player-view-cal');
-    if (view === 'list') {
-      if (listEl) listEl.style.display = 'block';
-      if (calEl) calEl.style.display = 'none';
-      if (listBtn) { listBtn.style.background = 'var(--team-primary)'; listBtn.style.color = 'var(--team-primary-text)'; }
-      if (calBtn) { calBtn.style.background = ''; calBtn.style.color = ''; }
-      // Render list if empty
-      if (listEl && !listEl.innerHTML.trim()) renderPlayerSchedule();
-    } else {
-      if (listEl) listEl.style.display = 'none';
-      if (calEl) { calEl.style.display = 'block'; renderCalendar(calEl); }
-      if (calBtn) { calBtn.style.background = 'var(--team-primary)'; calBtn.style.color = 'var(--team-primary-text)'; }
-      if (listBtn) { listBtn.style.background = ''; listBtn.style.color = ''; }
+  // Schedule view toggle — shared by player and parent; `role` selects the element set.
+  // Player buttons show "active" via inline colors, parent buttons via an .active class,
+  // so set both and let whichever the markup uses win.
+  function setSchedView(role, view, btn) {
+    const listEl = document.getElementById(role + '-sched-list');
+    const calEl = document.getElementById(role + '-sched-cal');
+    const listBtn = document.getElementById(role + '-view-list');
+    const calBtn = document.getElementById(role + '-view-cal');
+    const showList = view === 'list';
+    if (listEl) listEl.style.display = showList ? 'block' : 'none';
+    if (calEl) {
+      calEl.style.display = showList ? 'none' : 'block';
+      if (!showList) renderCalendar(calEl);
     }
+    [[listBtn, showList], [calBtn, !showList]].forEach(([el, on]) => {
+      if (!el) return;
+      el.classList.toggle('active', on);
+      el.style.background = on ? 'var(--team-primary)' : '';
+      el.style.color = on ? 'var(--team-primary-text)' : '';
+    });
+    // Render list lazily on first switch
+    if (showList && listEl && !listEl.innerHTML.trim()) renderRoleSchedule(role);
   }
 
-  function renderPlayerSchedule() {
-    const titleEl = document.getElementById('player-sched-title');
-    const subEl = document.getElementById('player-sched-sub');
-    const listEl = document.getElementById('player-sched-list');
-    const calEl = document.getElementById('player-sched-cal');
+  function setPlayerSchedView(view, btn) { setSchedView('player', view, btn); }
+
+  // NOTE: named renderRoleSchedule, NOT renderSchedule — a coach-side
+  // renderSchedule() already exists further down and would clobber this one
+  // (function declarations, same scope, last wins).
+  function renderRoleSchedule(role) {
+    const titleEl = document.getElementById(role + '-sched-title');
+    const subEl = document.getElementById(role + '-sched-sub');
+    const listEl = document.getElementById(role + '-sched-list');
+    const calEl = document.getElementById(role + '-sched-cal');
     if (!listEl) return;
     const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
     if (titleEl) titleEl.textContent = (new Date().getFullYear()) + ' Schedule';
     if (subEl) subEl.textContent = teamName;
     if (!SCHEDULE || SCHEDULE.length === 0) {
-      if (calEl) calEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px"><div style="font-size:32px;margin-bottom:10px">📅</div>No games scheduled yet.</div>';
+      const empty = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px"><div style="font-size:32px;margin-bottom:10px">📅</div>No games scheduled yet.</div>';
+      listEl.innerHTML = empty;
+      if (calEl) calEl.innerHTML = empty;
       return;
     }
     // Render calendar view by default
@@ -5609,6 +5512,110 @@
     }).join('');
   }
 
+  function renderPlayerSchedule() { renderRoleSchedule('player'); }
+
+  // ===== PARENT — real data renderers =====
+  // The parent tabs were static demo markup until v39.59; these wire them to
+  // the same real sources the coach/player views already use.
+
+  // Cache of the parent's linked player (get_my_player), so switching tabs
+  // doesn't re-hit the RPC on every render.
+  let _parentPlayer = null;
+
+  async function loadParentPlayer(force) {
+    if (_parentPlayer && !force) return _parentPlayer;
+    try {
+      const { data, error } = await db.rpc('get_my_player');
+      if (error) { console.error('[Parent] get_my_player error:', error); return null; }
+      // A guardian can be linked to more than one player; the UI shows one for
+      // now (first by name). Multi-player switcher is a follow-up.
+      _parentPlayer = (data && data.length) ? data[0] : null;
+      return _parentPlayer;
+    } catch (e) { console.error('[Parent] get_my_player threw:', e); return null; }
+  }
+
+  function renderParentHome() {
+    const nameEl = document.getElementById('parent-home-name');
+    const subEl = document.getElementById('parent-home-sub');
+    const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your team';
+    if (nameEl) nameEl.textContent = (_sessionUser?.name || '').split(' ')[0] || 'Family';
+    if (subEl) subEl.textContent = teamName + ' · ' + (new Date().getFullYear()) + ' Season';
+
+    // Next upcoming event from the real SCHEDULE (first game today or later).
+    const box = document.getElementById('parent-next-game');
+    if (!box) return;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const next = (SCHEDULE || [])
+      .filter(g => g.date && new Date(g.date + 'T00:00:00') >= today)
+      .sort((a,b) => a.date < b.date ? -1 : 1)[0];
+    if (!next) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    const d = new Date(next.date + 'T00:00:00');
+    const when = d.toLocaleDateString('en', { weekday:'long', month:'short', day:'numeric' });
+    const isToday = d.toDateString() === today.toDateString();
+    const bits = [next.home ? 'Home' : 'Away', next.time, next.location].filter(Boolean).join(' · ');
+    box.style.display = 'flex';
+    box.style.cssText = 'background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px';
+    box.innerHTML = `<div style="font-size:24px">🏈</div>
+      <div style="font-size:13px;color:var(--gray-1);line-height:1.4">
+        <span style="color:var(--team-primary);font-weight:600">${isToday ? 'Tonight' : 'Next'}: ${when}${next.opponent ? ' vs ' + next.opponent : ''}</span>
+        ${bits ? '<br>' + bits : ''}
+      </div>`;
+  }
+
+  async function renderParentMyPlayer() {
+    const body = document.getElementById('parent-myplayer-body');
+    if (!body) return;
+    body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">Loading…</div>';
+    const p = await loadParentPlayer();
+    const teamEl = document.getElementById('parent-more-team');
+    if (teamEl) teamEl.textContent = obProgram.teamName || localStorage.getItem('mesh_team_name') || '';
+
+    if (!p) {
+      body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">
+        <div style="font-size:32px;margin-bottom:10px">🏈</div>
+        No player linked to your account yet.<br>
+        <span style="font-size:12px">Ask your coach to confirm your player link.</span>
+      </div>`;
+      return;
+    }
+
+    const val = v => (v && String(v).trim() && v !== '—') ? v : '—';
+    const ds = p.disciplinary_status || 'green';
+    const initials = (p.name || '').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+
+    body.innerHTML = `
+      <div class="player-hero" style="margin-bottom:16px">
+        <div class="player-jersey">${p.num ? '#' + p.num : initials}</div>
+        <div>
+          <div class="player-name">${p.name || '—'}</div>
+          <div class="player-pos">${val(p.pos)}</div>
+          <div style="margin-top:6px"><span class="pill pill-green">${val(p.status) === '—' ? 'Active' : p.status}</span></div>
+        </div>
+      </div>
+
+      <div class="section-label">Player info</div>
+      <div class="card" style="padding:0">
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Jersey</span><span class="pp-info-value">${p.num ? '#' + p.num : '—'}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Position</span><span class="pp-info-value">${val(p.pos)}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Year</span><span class="pp-info-value">${val(p.year)}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Height</span><span class="pp-info-value">${val(p.height)}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Weight</span><span class="pp-info-value">${val(p.weight)}</span></div>
+      </div>
+
+      <div class="section-label">Standing</div>
+      <div class="card" style="padding:0">
+        <div class="pp-info-row" style="padding:11px 14px">
+          <span class="pp-info-label">Disciplinary status</span>
+          <span class="disc-status-badge ${ds}">${discStatusLabel(ds)}</span>
+        </div>
+        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none">
+          <span class="pp-info-label">Current GPA</span>
+          <span class="pp-info-value">${val(p.gpa)}</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--gray-3);margin-top:6px;margin-bottom:4px">Standing is updated by coaching staff. Message a coach with any questions.</div>`;
+  }
+
   function showTab(role, tab) {
     currentTab = tab;
     // Close player profile if open
@@ -5637,7 +5644,9 @@
       if (tab === 'more') {
         if (role === 'coach') showMoreSection('roster');
         else if (role === 'player') setTimeout(() => renderMyInfoPage(), 50);
-        else showMoreSection('myplayer');
+        // Parent sections live under `parent-section-*`, not the coach's `more-*`,
+        // so they need showParentSection — showMoreSection silently rendered nothing.
+        else showParentSection('myplayer');
       }
       if (tab === 'practice') { applyDesktopPracticeLayout(); setTimeout(initPracticeToToday, 50); }
       if (tab === 'messages') applyDesktopMessagesLayout();
@@ -5645,7 +5654,10 @@
       if (tab === 'practice') setTimeout(initPracticeToToday, 50);
     }
     // Player schedule — render from real SCHEDULE data
-    if (role === 'player' && tab === 'schedule') renderPlayerSchedule();
+    if (role === 'player' && tab === 'schedule') renderRoleSchedule('player');
+    // Parent tabs — render from real data (were static demo markup pre-v39.59)
+    if (role === 'parent' && tab === 'schedule') renderRoleSchedule('parent');
+    if (role === 'parent' && tab === 'home') renderParentHome();
     if (role === 'player' && tab === 'performance') {
       // Load training data in the background so the Training sub-tab is ready when toggled
       if (!PERF_DATA.length) loadPerfData();
@@ -17673,6 +17685,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const sec = document.getElementById('parent-section-' + section);
     if (sec) sec.classList.add('active');
     if (section === 'documents') docLoadFromSupabase().then(() => renderSharedDocs('parents'));
+    if (section === 'myplayer') renderParentMyPlayer();
     const tab = document.getElementById('tab-parent-more');
     if (tab) tab.scrollTop = 0;
   }

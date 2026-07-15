@@ -1,5 +1,57 @@
 # Mesh — Session Handoff
-_Last updated: 2026-07-13 (session 2). Read this first when resuming._
+_Last updated: 2026-07-15 (session 3). Read this first when resuming._
+
+## SESSION 3 (2026-07-15) — Parent demo-data cleanup → v39.59
+The PARKED parent cleanup is **DONE (client-side)** but **needs SQL + a live test**.
+**⚠️ RUN THIS FIRST: `planning/parent-cleanup.sql`** (adds `get_my_player()` SECURITY DEFINER RPC).
+Until it's run, parent → More → My Player shows "No player linked to your account yet" (it degrades
+gracefully — verified — but shows no real player).
+
+**Decision taken (user):** full wire-to-real-data, not a cosmetic pass.
+- **Home** — `renderParentHome()`: greeting from `_sessionUser`, team+season sub from `obProgram.teamName`,
+  next game computed from real `SCHEDULE` (hidden entirely when none). Fake "vs Emmett Oct 18" GONE.
+- **Schedule** — fake season GONE. `renderPlayerSchedule` generalized to **`renderRoleSchedule(role)`**;
+  new **`setSchedView(role,view,btn)`** (the toggle previously called a function that DIDN'T EXIST →
+  ReferenceError, so the view never switched). `setPlayerSchedView` is now a thin alias.
+- **My Player** — `renderParentMyPlayer()` renders the REAL linked player via `get_my_player()`
+  (name/jersey/pos/year/height/weight + **real GPA** + **real disciplinary_status** badge).
+  Cached in `_parentPlayer` via `loadParentPlayer(force)`.
+- **Preseason Checklist** — REMOVED (section + menu item). User: it's a document-center thing
+  (a coach uploads the form), not a first-class feature.
+- **Position coach** card — REMOVED (no schema for it; see Future work below).
+- `openParentDirectThread` demo — was already scrubbed in an earlier session (now aliases `openParentNewMsg`).
+
+**Two PRE-EXISTING bugs found & fixed while doing this (neither caused by the cleanup):**
+1. **Duplicate element IDs**: `player-sched-title`/`player-sched-sub` existed in BOTH the parent tab
+   (first in document order) and the player tab. `getElementById` returns the first match, so
+   **`renderPlayerSchedule` had been writing the PLAYER's title into the hidden PARENT tab** — the
+   player's own schedule header never updated. Parent's are now `parent-sched-title`/`parent-sched-sub`.
+   Verified with sentinel values: each role's render now writes only to its own element.
+2. **Desktop parent More tab rendered nothing**: `showTab` desktop branch called `showMoreSection('myplayer')`,
+   which targets the COACH's `more-*` ids (`more-myplayer` doesn't exist) and also hid the coach's
+   `more-menu`. Now routes to `showParentSection('myplayer')`.
+
+**⚠️ NAMING TRAP (cost a real bug this session):** a coach-side **`renderSchedule()` already exists**
+(~19596, argless). Naming the new one `renderSchedule(role)` silently clobbered it — same scope, function
+declarations, last wins. Hence **`renderRoleSchedule`**. `node --check` does NOT catch this; grep for
+`function <name>` before adding any top-level function to this file.
+
+**Privacy decision (deliberate):** `get_my_player()` returns a strict WHITELIST. It does **NOT** return
+`notes_data` (private coach notes about the player), `discipline_data` (incident log), `academic_data`, or
+parent contact PII. The disciplinary **status badge** is exposed; the **incident log is not**. Don't widen
+this without a product decision — see the header comment in `parent-cleanup.sql`.
+Also dropped the invented "✅ Academic eligibility: Eligible" row — there is no eligibility column and
+deriving it from `gpa >= 2.0` would be inventing a business rule. Real GPA is shown instead.
+
+**Verified in-browser (file:// + dev role-switcher, no auth):** v39.59 in DOM; parent Home/Schedule/
+My Player all render honest empty states with zero console errors (only the expected `get_my_player`
+error since the SQL isn't run); `setSchedView` no longer throws; desktop More activates the section;
+player schedule unaffected. **NOT yet verified with real parent auth + data — do that after the SQL.**
+
+**Future work surfaced (user idea, NOT built):** assign assistant coaches to a **position group + age
+level**, which would give "Position coach" a real data source and could drive the depth-chart column
+headers (`Coach Waite` is still hardcoded at ~2768). Also: `get_my_player()` returns ALL linked players
+(a guardian can have several) but the UI renders only the first — add a switcher if that comes up.
 
 ## Where we are in one paragraph
 Single-file app `index.html`, deployed to app.meshsports.co via Cloudflare Pages, Supabase project
@@ -10,12 +62,11 @@ Single-file app `index.html`, deployed to app.meshsports.co via Cloudflare Pages
 (post-scope, user-requested) also DONE & live:** hide/archive threads + server-side notification prefs +
 per-thread mute. Git works — Claude commits/pushes to `main`; Cloudflare auto-deploys. Deploy consent:
 **ask before each push** (see [[mesh-deploy-versioning]]).
-**LIKELY NEXT:** the PARKED parent demo-data cleanup (see below) — parent Home still has some fake content.
+**LIKELY NEXT:** run `planning/parent-cleanup.sql`, then live-test the parent role at v39.59 (see SESSION 3).
 
-## PARKED (do NOT forget — user explicitly flagged): Parent demo-data cleanup
-Deferred to stay in the 3-phase scope, but the user wants it done. The parent role persists correctly
-but is still full of fake content (GPA 3.8, "vs Emmett Huskies · Tonight!", "Coach Williams").
-Full worst-first list is in the "PARENT DEMO-DATA CLEANUP" section below. Revisit after Phase 2/3.
+## ~~PARKED: Parent demo-data cleanup~~ → DONE in session 3 (v39.59), pending SQL + live test.
+See the SESSION 3 section at the top. The old worst-first list below is kept for reference only —
+items 1–5 are all addressed.
 
 ## Deploy / git (NEW as of 2026-07-12)
 - Git was just installed so Claude can **commit + push to `main` directly** in future sessions
