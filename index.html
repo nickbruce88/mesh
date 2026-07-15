@@ -3998,6 +3998,15 @@
     <div class="greeting">Hi, <span id="parent-home-name">Family</span> 👋</div>
     <div class="sub-greeting" id="parent-home-sub"></div>
     <div id="parent-next-game" style="display:none"></div>
+
+    <div class="section-label">This week</div>
+    <div id="parent-week-events" style="margin-bottom:16px"></div>
+
+    <div id="parent-upcoming-wrap" style="display:none">
+      <div class="section-label">Coming up</div>
+      <div id="parent-upcoming-events" style="margin-bottom:16px"></div>
+    </div>
+
     <div class="section-label">Announcements</div>
     <div style="font-size:11px;color:var(--gray-3);margin:-6px 0 10px">Pushed by coaching staff to all parents</div>
     <div id="parent-announcements-list"></div>
@@ -4105,11 +4114,6 @@
       <div class="more-menu-item" onclick="showParentSection('documents')">
         <div class="more-menu-icon" style="background:rgba(160,100,255,0.1)">📁</div>
         <div><div class="more-menu-label">Document Center</div><div class="more-menu-sub">Forms, fundraisers & schedules</div></div>
-        <div class="more-menu-arrow">›</div>
-      </div>
-      <div class="more-menu-item" onclick="openPlaybook('player')">
-        <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">📖</div>
-        <div><div class="more-menu-label">Playbook</div><div class="more-menu-sub">Offense, Defense, Special Teams</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
     </div>
@@ -5253,7 +5257,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.59</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.60</div>
   </div>
 </div>
 
@@ -5264,7 +5268,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.59';
+  const APP_VERSION = 'v39.60';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5490,15 +5494,17 @@
         const hasScore = g.scoreUs !== undefined && g.scoreThem !== undefined;
         const isWin = hasScore && g.scoreUs > g.scoreThem;
         const cls = hasScore ? (isWin ? 'game-win' : 'game-loss') : 'upcoming';
-        const loc = g.home ? 'Home' : 'Away';
-        const time = g.time ? ` · ${g.time}` : '';
+        const ha = (g.homeAway || '').toLowerCase();
+        const loc = schedLocLabel(g);
+        const meta = [loc, (g.time||''), (g.location||'')].filter(Boolean).join(' · ');
         return `<div class="sched-item ${cls}${isToday?' sched-today':''}" style="margin-bottom:6px">
           <div class="sched-info">
-            <div class="sched-name">${isToday?'🏈 ':''}${g.opponent||g.title||'Game'}</div>
-            <div class="sched-meta">${loc}${time}${g.location?' · '+g.location:''}</div>
+            <div class="sched-name">${isToday?'🏈 ':''}${schedEventName(g)}</div>
+            <div class="sched-meta">${meta || '&nbsp;'}</div>
           </div>
           ${hasScore ? `<div class="sched-score"><div class="score-result ${isWin?'win':'loss'}">${isWin?'W':'L'}</div><div class="score-nums">${g.scoreUs}–${g.scoreThem}</div></div>` :
-            `<span class="pill ${g.home?'pill-green':'pill-gray'}">${isToday?'TONIGHT':loc.toUpperCase()}</span>`}
+            (isToday ? '<span class="pill pill-green">TONIGHT</span>'
+                     : (ha ? `<span class="pill ${ha==='home'?'pill-green':'pill-gray'}">${loc.toUpperCase()}</span>` : ''))}
         </div>`;
       }).join('');
 
@@ -5534,6 +5540,41 @@
     } catch (e) { console.error('[Parent] get_my_player threw:', e); return null; }
   }
 
+  // SCHEDULE entries use `homeAway` ('home'|'away'|'neutral'|null) — NOT `home`.
+  // (`g.home` is never set; reading it silently labelled every event "Away".)
+  function schedLocLabel(g) {
+    const ha = (g.homeAway || '').toLowerCase();
+    return ha === 'home' ? 'Home' : ha === 'away' ? 'Away' : ha === 'neutral' ? 'Neutral' : '';
+  }
+
+  // Games carry `opponent`; imported/other events carry only `title`.
+  function schedEventName(g) {
+    const ha = (g.homeAway || '').toLowerCase();
+    const prefix = ha === 'home' ? 'vs. ' : ha === 'away' ? 'at ' : '';
+    return g.opponent ? prefix + g.opponent : (g.title || 'Event');
+  }
+
+  // One compact row for the parent home dashboard lists.
+  function parentEventRow(g, today) {
+    const d = new Date(g.date + 'T00:00:00');
+    const isToday = d.toDateString() === today.toDateString();
+    const loc = schedLocLabel(g);
+    const meta = [loc, g.time, g.location].filter(Boolean).join(' · ');
+    const ha = (g.homeAway || '').toLowerCase();
+    return `<div class="sched-item ${isToday ? 'upcoming' : ''}" style="margin-bottom:6px${isToday ? ';border-color:var(--team-primary);border-left-width:3px' : ''}">
+      <div class="sched-date-col" style="flex-shrink:0;width:40px">
+        <div class="sched-day-label">${d.toLocaleString('en',{weekday:'short'}).toUpperCase()}</div>
+        <div class="sched-day-num${isToday ? ' sched-today' : ''}">${d.getDate()}</div>
+      </div>
+      <div class="sched-info">
+        <div class="sched-name"${isToday ? ' style="color:var(--team-primary)"' : ''}>${isToday ? '🏈 ' : ''}${schedEventName(g)}</div>
+        <div class="sched-meta">${meta || '&nbsp;'}</div>
+      </div>
+      ${isToday ? '<span class="pill pill-green">TODAY</span>'
+                : (ha ? `<span class="pill ${ha === 'home' ? 'pill-green' : 'pill-gray'}">${loc.toUpperCase()}</span>` : '')}
+    </div>`;
+  }
+
   function renderParentHome() {
     const nameEl = document.getElementById('parent-home-name');
     const subEl = document.getElementById('parent-home-sub');
@@ -5541,25 +5582,61 @@
     if (nameEl) nameEl.textContent = (_sessionUser?.name || '').split(' ')[0] || 'Family';
     if (subEl) subEl.textContent = teamName + ' · ' + (new Date().getFullYear()) + ' Season';
 
-    // Next upcoming event from the real SCHEDULE (first game today or later).
-    const box = document.getElementById('parent-next-game');
-    if (!box) return;
     const today = new Date(); today.setHours(0,0,0,0);
-    const next = (SCHEDULE || [])
+    // "This week" = today through the end of the current week (Sunday).
+    const dow = today.getDay(); // 0 = Sunday
+    const weekEnd = new Date(today);
+    weekEnd.setDate(today.getDate() + (dow === 0 ? 0 : 7 - dow));
+    weekEnd.setHours(23,59,59,999);
+
+    const upcomingAll = (SCHEDULE || [])
       .filter(g => g.date && new Date(g.date + 'T00:00:00') >= today)
-      .sort((a,b) => a.date < b.date ? -1 : 1)[0];
-    if (!next) { box.style.display = 'none'; box.innerHTML = ''; return; }
-    const d = new Date(next.date + 'T00:00:00');
-    const when = d.toLocaleDateString('en', { weekday:'long', month:'short', day:'numeric' });
-    const isToday = d.toDateString() === today.toDateString();
-    const bits = [next.home ? 'Home' : 'Away', next.time, next.location].filter(Boolean).join(' · ');
-    box.style.display = 'flex';
-    box.style.cssText = 'background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px';
-    box.innerHTML = `<div style="font-size:24px">🏈</div>
-      <div style="font-size:13px;color:var(--gray-1);line-height:1.4">
-        <span style="color:var(--team-primary);font-weight:600">${isToday ? 'Tonight' : 'Next'}: ${when}${next.opponent ? ' vs ' + next.opponent : ''}</span>
-        ${bits ? '<br>' + bits : ''}
-      </div>`;
+      .sort((a,b) => a.date.localeCompare(b.date));
+    const thisWeek = upcomingAll.filter(g => new Date(g.date + 'T00:00:00') <= weekEnd);
+    const later = upcomingAll.filter(g => new Date(g.date + 'T00:00:00') > weekEnd);
+
+    // Next-game banner
+    const box = document.getElementById('parent-next-game');
+    if (box) {
+      const next = upcomingAll[0];
+      if (!next) { box.style.display = 'none'; box.innerHTML = ''; }
+      else {
+        const d = new Date(next.date + 'T00:00:00');
+        const when = d.toLocaleDateString('en', { weekday:'long', month:'short', day:'numeric' });
+        const isToday = d.toDateString() === today.toDateString();
+        const bits = [schedLocLabel(next), next.time, next.location].filter(Boolean).join(' · ');
+        box.style.cssText = 'background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px';
+        box.innerHTML = `<div style="font-size:24px">🏈</div>
+          <div style="font-size:13px;color:var(--gray-1);line-height:1.4">
+            <span style="color:var(--team-primary);font-weight:600">${isToday ? 'Today' : 'Next'}: ${when} · ${schedEventName(next)}</span>
+            ${bits ? '<br>' + bits : ''}
+          </div>`;
+      }
+    }
+
+    // This week
+    const weekEl = document.getElementById('parent-week-events');
+    if (weekEl) {
+      weekEl.innerHTML = thisWeek.length
+        ? thisWeek.map(g => parentEventRow(g, today)).join('')
+        : `<div style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px">Nothing else scheduled this week.</div>`;
+    }
+
+    // Coming up — everything after this week, capped so Home stays a dashboard.
+    const upWrap = document.getElementById('parent-upcoming-wrap');
+    const upEl = document.getElementById('parent-upcoming-events');
+    if (upWrap && upEl) {
+      const CAP = 5;
+      if (!later.length) { upWrap.style.display = 'none'; upEl.innerHTML = ''; }
+      else {
+        upWrap.style.display = 'block';
+        const shown = later.slice(0, CAP);
+        upEl.innerHTML = shown.map(g => parentEventRow(g, today)).join('')
+          + (later.length > CAP
+              ? `<div onclick="showTab('parent','schedule')" style="text-align:center;padding:10px;color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer">View all ${later.length} upcoming events ›</div>`
+              : '');
+      }
+    }
   }
 
   async function renderParentMyPlayer() {
@@ -8602,7 +8679,8 @@
       { id: 'messages', icon: '💬', label: 'Messages', tab: 'tab-parent-messages' },
       { label: 'MY PLAYER', section: true },
       { id: 'player', icon: '🏈', label: 'My Player', tab: 'tab-parent-more', more: 'myplayer' },
-      { id: 'docs', icon: '📄', label: 'Documents', tab: 'tab-parent-more', more: 'docs' },
+      // `more` must match the parent's `parent-section-*` id (documents, not docs)
+      { id: 'docs', icon: '📄', label: 'Documents', tab: 'tab-parent-more', more: 'documents' },
     ],
     player: [
       { id: 'home', icon: '🏠', label: 'Home', tab: 'tab-player-home' },
@@ -8664,6 +8742,10 @@
             else if (item.more === 'depth-player') setTimeout(() => renderPlayerDepthChart(), 10);
             else if (item.more === 'playbook-player') setTimeout(() => openPlaybook('player'), 10);
             else setTimeout(() => showPlayerSection(item.more), 10);
+          } else if (role === 'parent') {
+            // Parent sections are `parent-section-*`; showMoreSection targets the
+            // coach's `more-*` ids and silently rendered nothing here.
+            setTimeout(() => showParentSection(item.more), 10);
           } else {
             setTimeout(() => showMoreSection(item.more), 10);
           }

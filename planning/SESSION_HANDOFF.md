@@ -1,6 +1,34 @@
 # Mesh — Session Handoff
 _Last updated: 2026-07-15 (session 3). Read this first when resuming._
 
+## SESSION 3b (2026-07-15) — Parent Home events + Playbook removal → v39.60
+User-requested after v39.59 went live and My Player was confirmed pulling real data.
+- **Playbook REMOVED from the parent role** (More-menu item). Parents don't need it. It was never in the
+  parent desktop sidebar, so the menu item was the only entry point.
+- **Parent Home now has "This week" + "Coming up"** (`renderParentHome`): "This week" = today → end of the
+  current week (Sunday); "Coming up" = everything after, capped at 5 with a "View all N upcoming events ›"
+  link into the Schedule tab. Both read the real `SCHEDULE`. New helpers: `schedLocLabel`, `schedEventName`,
+  `parentEventRow`.
+- **PRE-EXISTING BUG FIXED — `g.home` doesn't exist.** SCHEDULE entries carry **`homeAway`**
+  ('home'|'away'|'neutral'|null), NOT `home`. `renderRoleSchedule` read `g.home` → always undefined →
+  **every event in the player AND parent schedule list was labelled "Away"** with a gray pill. Now uses
+  `schedLocLabel`/`schedEventName` (which also handle `neutral`, and title-only non-game events that
+  have no opponent). `updateNextGame` (coach) always used `homeAway` correctly.
+- **PRE-EXISTING BUG FIXED — parent desktop sidebar rendered nothing.** `buildDesktopSidebar`'s click
+  handler routed parent `more` items through the COACH's `showMoreSection` (same bug class as the
+  `showTab` one in v39.59). "My Player" looked for `more-myplayer` (doesn't exist); "Documents" targeted
+  the coach's `more-docs` inside a hidden tab. Added a `role === 'parent'` branch → `showParentSection`,
+  and changed the parent sidebar config `more: 'docs'` → `'documents'` to match `parent-section-documents`.
+- Verified in-browser with injected SCHEDULE data: banner/this-week/coming-up bucket correctly, past games
+  excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
+  Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
+
+**⚠️ SEPARATE PRE-EXISTING BUG — NOT fixed, needs a decision:** `exportCalendar()` (the 📅 Export button on
+the parent AND player/coach schedule) iterates **`SEASON_EVENTS`, which is a hardcoded EMPTY array**
+(~5834). So Export produces an empty .ics for every role. It should almost certainly iterate `SCHEDULE`.
+It also reads `evt.home` (same nonexistent field as above) and hardcodes "Kickoff: 7:00 PM" / 2024 in the
+calendar name. Left alone to avoid scope creep — flag to the user.
+
 ## SESSION 3 (2026-07-15) — Parent demo-data cleanup → v39.59
 The PARKED parent cleanup is **DONE (client-side)** but **needs SQL + a live test**.
 **⚠️ RUN THIS FIRST: `planning/parent-cleanup.sql`** (adds `get_my_player()` SECURITY DEFINER RPC).
