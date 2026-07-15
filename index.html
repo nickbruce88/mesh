@@ -4983,7 +4983,7 @@
         <div class="ap-title">Export to Calendar</div>
         <div class="ap-close" onclick="closeCalExport()">✕</div>
       </div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px;line-height:1.6">Downloads a <strong style="color:var(--white)">.ics file</strong> you can import into Apple Calendar, Google Calendar, or Outlook. All 2026 season games will be added.</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px;line-height:1.6">Downloads a <strong style="color:var(--white)">.ics file</strong> you can import into Apple Calendar, Google Calendar, or Outlook. Every game and event on the schedule will be added.</div>
       <div style="background:var(--black-3);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:12px;color:var(--gray-3);line-height:1.6">
         💡 <strong style="color:var(--gray-1)">How to import:</strong> After downloading, tap the file to open it. Your phone will ask which calendar app to add it to. Tap Add.
       </div>
@@ -5257,7 +5257,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.60</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.61</div>
   </div>
 </div>
 
@@ -5268,7 +5268,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.60';
+  const APP_VERSION = 'v39.61';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5908,14 +5908,10 @@
   }
 
   // ===== CALENDAR EXPORT =====
-  const SEASON_EVENTS = [
-
-  ];
-
-  let calExportRole = 'coach';
+  // Exports the REAL SCHEDULE. (Until v39.61 this iterated a SEASON_EVENTS
+  // constant that was an empty array, so every role downloaded an empty .ics.)
 
   function exportCalendar(role) {
-    calExportRole = role;
     document.getElementById('cal-export-overlay').style.display = 'flex';
   }
 
@@ -5923,49 +5919,107 @@
     document.getElementById('cal-export-overlay').style.display = 'none';
   }
 
-  function buildICS() {
-    const team = obProgram.teamName || 'Nampa Bulldogs';
-    const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+  // RFC 5545 escaping — a comma or semicolon in a location/opponent would
+  // otherwise split the field and corrupt the event.
+  function icsEscape(s) {
+    return String(s == null ? '' : s)
+      .replace(/\\/g, '\\\\')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,')
+      .replace(/\r?\n/g, '\\n');
+  }
 
-    let ics = [
+  // RFC 5545 line folding at 75 chars. Split on code points (Array.from) so a
+  // fold can't land inside an emoji's surrogate pair and mangle it.
+  function icsFold(line) {
+    const chars = Array.from(line);
+    if (chars.length <= 75) return line;
+    let out = chars.slice(0, 75).join('');
+    let rest = chars.slice(75);
+    while (rest.length) {
+      out += '\r\n ' + rest.slice(0, 74).join('');
+      rest = rest.slice(74);
+    }
+    return out;
+  }
+
+  // 'HH:MM' -> {h,m}; anything else (including '') -> null = treat as all-day.
+  function parseSchedTime(t) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim());
+    if (!m) return null;
+    const h = parseInt(m[1], 10), min = parseInt(m[2], 10);
+    if (h > 23 || min > 59) return null;
+    return { h, m: min };
+  }
+
+  const icsStamp = (d) =>
+    d.getFullYear() +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0');
+
+  function buildICS() {
+    const team = obProgram.teamName || 'Team';
+    const now = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+    const events = (SCHEDULE || []).filter(g => g.date);
+    const year = events.length ? new Date(events[0].date + 'T00:00:00').getFullYear()
+                               : new Date().getFullYear();
+
+    const lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Mesh//Football Schedule//EN',
+      'PRODID:-//Mesh//Schedule//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:' + team + ' 2024 Schedule',
-      'X-WR-CALDESC:Football schedule for ' + team,
-      'X-WR-TIMEZONE:America/Boise',
-    ].join('\r\n');
+      'X-WR-CALNAME:' + icsEscape(team + ' ' + year + ' Schedule'),
+      'X-WR-CALDESC:' + icsEscape('Schedule for ' + team),
+    ];
 
-    SEASON_EVENTS.forEach((evt, i) => {
-      const prefix = evt.home ? '🏈 ' : '🚌 ';
-      const summary = prefix + team + ' · ' + evt.title;
-      const desc = (evt.home ? 'HOME game' : 'AWAY game') +
-        ' · ' + team + ' Football\\n' +
-        'Kickoff: 7:00 PM\\n' +
-        (evt.home ? 'Bus: N/A (home game)' : 'Bus departure time TBD by coaching staff');
+    events.forEach((g, i) => {
+      const start = new Date(g.date + 'T00:00:00');
+      if (isNaN(start)) return;
+      const t = parseSchedTime(g.time);
+      const loc = schedLocLabel(g);
+      const name = schedEventName(g);
 
-      ics += '\r\nBEGIN:VEVENT';
-      ics += '\r\nUID:mesh-' + i + '-' + evt.date + '@meshapp';
-      ics += '\r\nDTSTAMP:' + now;
-      ics += '\r\nDTSTART;TZID=America/Boise:' + evt.date;
-      ics += '\r\nDTEND;TZID=America/Boise:' + evt.end;
-      ics += '\r\nSUMMARY:' + summary;
-      ics += '\r\nDESCRIPTION:' + desc;
-      ics += '\r\nLOCATION:' + evt.location;
-      ics += '\r\nSTATUS:CONFIRMED';
-      ics += '\r\nEND:VEVENT';
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:mesh-' + (g.id || i) + '-' + g.date + '@meshsports.co');
+      lines.push('DTSTAMP:' + now);
+
+      if (t) {
+        // Floating local time (no TZID/Z): the old code hardcoded
+        // TZID=America/Boise, which is wrong for any program outside Idaho.
+        start.setHours(t.h, t.m, 0, 0);
+        const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // assume 2h
+        const fmt = d => icsStamp(d) + 'T' +
+          String(d.getHours()).padStart(2,'0') +
+          String(d.getMinutes()).padStart(2,'0') + '00';
+        lines.push('DTSTART:' + fmt(start));
+        lines.push('DTEND:' + fmt(end));
+      } else {
+        const next = new Date(start); next.setDate(start.getDate() + 1);
+        lines.push('DTSTART;VALUE=DATE:' + icsStamp(start));
+        lines.push('DTEND;VALUE=DATE:' + icsStamp(next));
+      }
+
+      lines.push('SUMMARY:' + icsEscape(team + ' · ' + name));
+      const descBits = [loc && (loc + ' game'), g.time && ('Start: ' + g.time), g.notes].filter(Boolean);
+      if (descBits.length) lines.push('DESCRIPTION:' + icsEscape(descBits.join('\n')));
+      if (g.location) lines.push('LOCATION:' + icsEscape(g.location));
+      lines.push('STATUS:CONFIRMED');
+      lines.push('END:VEVENT');
     });
 
-    ics += '\r\nEND:VCALENDAR';
-    return ics;
+    lines.push('END:VCALENDAR');
+    return lines.map(icsFold).join('\r\n');
   }
 
   function downloadICS() {
+    const events = (SCHEDULE || []).filter(g => g.date);
+    if (!events.length) { showToast('No games scheduled yet'); return; }
     const ics = buildICS();
-    const team = (obProgram.teamName || 'Nampa-Bulldogs').replace(/\s+/g, '-');
-    const filename = team + '-2024-Schedule.ics';
+    const team = (obProgram.teamName || 'Team').replace(/\s+/g, '-');
+    const year = new Date(events[0].date + 'T00:00:00').getFullYear();
+    const filename = team + '-' + year + '-Schedule.ics';
 
     // Create blob and download
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });

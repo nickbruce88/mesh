@@ -23,11 +23,24 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
-**⚠️ SEPARATE PRE-EXISTING BUG — NOT fixed, needs a decision:** `exportCalendar()` (the 📅 Export button on
-the parent AND player/coach schedule) iterates **`SEASON_EVENTS`, which is a hardcoded EMPTY array**
-(~5834). So Export produces an empty .ics for every role. It should almost certainly iterate `SCHEDULE`.
-It also reads `evt.home` (same nonexistent field as above) and hardcodes "Kickoff: 7:00 PM" / 2024 in the
-calendar name. Left alone to avoid scope creep — flag to the user.
+## SESSION 3c (2026-07-15) — Calendar export actually works now → v39.61
+`exportCalendar`/`buildICS` iterated **`SEASON_EVENTS`, a hardcoded EMPTY array** → every role (coach,
+player, parent) downloaded an **empty .ics**. Rewrote `buildICS` to iterate the real `SCHEDULE`.
+- `SEASON_EVENTS` **deleted**; dead `calExportRole` (assigned, never read) deleted.
+- **Timezone:** old code emitted `DTSTART;TZID=America/Boise` for everyone — wrong for any program outside
+  Idaho. Now emits **floating local time** (no TZID/Z), which calendar apps read in the user's own zone.
+- **All-day events:** entries with no `time` (ICS imports, "Fall Camp begins") now emit
+  `DTSTART;VALUE=DATE` + next-day DTEND instead of a bogus timed event. Timed events assume **2h**.
+- **RFC 5545 correctness the old code lacked:** `icsEscape` (a comma/semicolon in a location or opponent
+  silently corrupted the event), `icsFold` (75-char folding, splits on code points via `Array.from` so a
+  fold can't cut an emoji surrogate pair).
+- Uses `schedLocLabel`/`schedEventName` from v39.60, so home/away/neutral + title-only events are right.
+- Year in the calendar name + filename is derived from the data (was hardcoded 2024); dropped the invented
+  "Kickoff: 7:00 PM" and bus-departure description text. Empty schedule now toasts instead of emitting an
+  empty file. Invalid dates are skipped, not crashed on.
+- Verified in-browser: escaping (`Dodd Field\, Nampa\; Gate B`), all-day vs timed, neutral, notes, bad date
+  skipped, fold round-trips for ASCII + emoji, empty-guard toast, filename `Nampa-Bulldogs-2026-Schedule.ics`.
+- **NOT verified:** actually importing the .ics into Apple/Google Calendar. Worth one real import test.
 
 ## SESSION 3 (2026-07-15) — Parent demo-data cleanup → v39.59
 The PARKED parent cleanup is **DONE (client-side)** but **needs SQL + a live test**.
