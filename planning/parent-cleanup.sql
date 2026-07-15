@@ -59,7 +59,24 @@ $$;
 
 grant execute on function get_my_player() to authenticated;
 
--- Verify (run as a signed-in parent via the app, or impersonate in the editor):
---   select * from get_my_player();
--- Expect: one row per linked player. Zero rows = that parent has no
--- parent_links row (they joined before register_parent shipped — re-join fixes).
+-- ---------- HOW TO VERIFY ----------
+-- DO NOT just run `select * from get_my_player();` in this editor. The SQL
+-- editor connects as the postgres/service role, where auth.uid() is NULL, so
+-- it returns ZERO ROWS even when the function is perfectly correct.
+--
+-- Option A (easiest) — use the app. Sign in as a parent and open
+--   More -> My Player. That screen is backed by this RPC and nothing else.
+--   For raw rows, in the app's browser console:  await db.rpc('get_my_player')
+--
+-- Option B — impersonate a parent here. `set local` only lives for the
+--   transaction, so the begin/rollback is required:
+--     begin;
+--       set local role authenticated;
+--       set local request.jwt.claims = '{"sub":"<parent-uuid>"}';
+--       select * from get_my_player();
+--     rollback;
+--   Find the uuid with: select id, name from profiles where role = 'parent';
+--
+-- Expect: one row per linked player. Zero rows (when properly impersonated)
+-- = that parent has no parent_links row — they joined before register_parent
+-- shipped; re-joining backfills it.
