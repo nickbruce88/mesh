@@ -33,11 +33,26 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   push notifications still deliver, so legitimate callers aren't rejected. Rollback if ever needed:
   `git show HEAD~1:supabase/functions/send-notification/index.ts`.
 
-**TOP REMAINING SECURITY ITEM (not started):** the broad name-escaping sweep — ~18 raw `p.name`/name renders
-into innerHTML (roster 16471, attendance 14291, perf pickers 7196/7243, depth chart 13289, …). Player
-self-signup names reach coach-viewed screens ⇒ same stored-XSS class as A. Mixed HTML-text vs JS-attribute
-contexts (7196/16230 put the name inside `onclick='…'` — needs JS-string escaping, not `_esc`), so it's a
-careful per-site pass, not a blind replace.
+**BROAD XSS NAME-ESCAPING SWEEP — DONE (v39.69 batch 1 + v39.70 batch 2), not yet pushed.**
+- Added `_escAttr` next to `_esc` (12492) for JS-string-in-attribute contexts (`onclick="f('${_escAttr(x)}')"`):
+  JS-escape then HTML-escape. Verified: a breakout payload doesn't execute AND the handler gets the exact value.
+- **Batch 1 (v39.69) — exploitable** (attacker=player/parent/assistant → head-coach/parent session): player
+  name + initials across parent My Player, roster, attendance, perf (all views), depth chart, practice cells,
+  player-picker options, player playbook/standing, and the `addNotif` "submitted stats" (renders HTML);
+  parent name/phone/email + parent-note author in the coach player profile; the 4 inline-handler sites via
+  `_escAttr` (selectLogPlayer/openLogSessionForPlayer/openPeriodNote).
+- **Batch 2 (v39.70) — coach-authored defense-in-depth** (31 sites via a count-verified batch script,
+  scratchpad/esc-batch2.js): schedule opponents/titles, drills, playbook folders/plays, group names,
+  inventory (name/brand across list/profile/assign/checkout), practice blocks/periods, staff-list coach name
+  (was only escaping `<`), doc/file names, roster-import preview + match names, home greeting.
+- Verified in-browser end-to-end: malicious player through `renderCoachRoster` is inert (onerror never fires,
+  no live element); normal name renders correctly + unbroken; page loads with no console errors.
+- Already-safe, confirmed: `renderMessageBubble` (messaging) uses `_esc`; `showToast` uses textContent.
+- **Left as-is (not XSS):** two `value="${...}"` input sites (edit-profile-name, event-name) quote-escape only
+  — attribute-value context, no breakout possible; a stray `&` is cosmetic, not a vector.
+- **NOT re-verified on prod yet** (batches are committed, not pushed). After push: spot-check that normal
+  rosters/schedules/inventory still display correctly (the risk of an escaping sweep is a broken render, not
+  a security hole).
 
 - **A. Stored XSS (FIXED in index.html, live on push).** `renderMemberList` (~12856) now `_esc()`s
   `m.name`, `m.initials`, `m.role`. Verified in-browser: `<img src=x onerror=…>` renders as inert text,
