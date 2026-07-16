@@ -23,6 +23,55 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 4b (2026-07-15) — Forgiving roster importer → v39.66
+Goal (user): "a coach can upload an existing document they already have and have it accepted and
+understood 9 times out of 10". **No SQL needed.**
+
+**Baseline measured before touching anything — 1 of 7 realistic files worked:**
+| file | before |
+|---|---|
+| clean `name,number,position` | ✅ |
+| `"Reed, Marcus",22,WR` (quoted) | ⚠️ **silently imported garbage**: name="Reed" num="Marcus" pos="22" |
+| First/Last columns | ❌ rejected |
+| Excel/Sheets paste (TAB) | ❌ rejected |
+| title row above header | ❌ rejected |
+| `Player, Jersey #, Pos., Grad Year` | ⚠️ worked but dropped year |
+| semicolon delimited | ❌ rejected |
+Root cause: `line.split(',')` on line 1 with exact header matches.
+
+**New pipeline** (all in index.html, ~8285–8700): bytes/text → **grid** → header row → column map → rows.
+- `parseDelimited(text, delim)` — RFC 4180: quoted fields, `""` escapes, delimiters/newlines inside
+  quotes, BOM + CRLF. **Kills the silent-corruption case.**
+- `sniffDelimiter` — `, \t ; |`, scored by column count then consistency. Excel paste = TAB, so this is
+  what makes the paste box actually work.
+- `detectHeaderRow` — scans the first 15 rows, picks the one with the most recognisable headers (needs 2+),
+  so title rows / blank lines / notes above the header stop breaking it.
+- `ROSTER_FIELDS` + `normHeader`/`scoreHeader`/`bestFieldFor`/`autoMapColumns` — synonym matching,
+  exact(100) > prefix(70) > contains(50), so "parent name" wins parent_name over name. Each column picks
+  its best field; each field keeps its best column.
+- `fixLastFirst` — "Reed, Marcus" → "Marcus Reed"; First/Last columns joined when there's no combined name.
+- `normalizeYear` — now also maps **graduation year → class** ("Grad Year 2027"/"Class of 2029" →
+  Senior/Sophomore) using season-end = June+ ⇒ next spring. Previously "2027" was stored verbatim, which
+  isn't a valid year for `defaultTeamsForYear`.
+- **`.xlsx` via `parseXlsxGrid`** — JSZip was ALREADY loaded (playbook export), and xlsx is a zip of XML, so
+  **no new dependency**. Handles sharedStrings, inlineStr, numeric cells and **sparse rows** (a skipped
+  column must not shift later cells left — verified). Reads `xl/worksheets/sheet1.xml`.
+- **Mapping UI** (`rosterMappingUI`/`setRosterCol`/`setRosterHeaderRow`) — a `<details>` in the preview with
+  a dropdown per field + a header-row picker, auto-filled but overridable. **This is the actual 9/10
+  guarantee** — auto-detect will always miss something; this makes a miss recoverable instead of fatal.
+- State: `_rosterGrid`/`_rosterHeaderIdx`/`_rosterColMap`. The grid is the source of truth because .xlsx is
+  binary and can't round-trip through the paste textarea like text did.
+- Modal: accepts `.csv,.tsv,.txt,.xlsx`; paste box previews on input (was: cleared the preview).
+
+**Verified in-browser:** all 14 text cases pass (incl. escaped quotes, ragged rows, BOM/CRLF, "Uniform No.",
+"Class of 2029"); a real .xlsx built with JSZip parses incl. sparse row + inline strings; the rescue path
+(unmatchable headers → error + mapping UI → one dropdown recovers it); First/Last rescue; TDZ check on
+`openRosterImport`. **NOT verified: a real coach's real file** — that's the only true test.
+
+**Depth chart:** there is NO separate depth-chart importer — the chart is derived from players
+(`buildDCFromPlayers` uses pos/posOff/posDef/posST), so improving the roster importer IS the depth-chart
+import. Combined with v39.65 (which added the position columns), imported off/def/st now persist.
+
 ## SESSION 4 (2026-07-15) — Coach player-edit saved NOTHING → v39.65
 **⚠️ RUN `planning/player-columns.sql` BEFORE (or with) DEPLOYING v39.65.** The client now writes
 `position_off/position_def/position_st`; until those columns exist the update still fails (it will at

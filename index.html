@@ -3699,14 +3699,14 @@
       <!-- File upload -->
       <div id="roster-upload-zone" style="border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:14px;cursor:pointer;transition:border-color 0.15s" onclick="document.getElementById('roster-csv-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--team-primary)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';handleRosterCSVDrop(event)">
         <div style="font-size:24px;margin-bottom:6px">📄</div>
-        <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload CSV</div>
-        <div style="font-size:12px;color:var(--fg-3);margin-top:4px">or drag and drop a .csv file</div>
-        <input type="file" id="roster-csv-input" accept=".csv" style="display:none" onchange="handleRosterCSV(event)">
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload your roster</div>
+        <div style="font-size:12px;color:var(--fg-3);margin-top:4px">or drag and drop — Excel (.xlsx), CSV, or TSV</div>
+        <input type="file" id="roster-csv-input" accept=".csv,.tsv,.txt,.xlsx" style="display:none" onchange="handleRosterCSV(event)">
       </div>
 
-      <div style="text-align:center;color:var(--fg-3);font-size:12px;margin-bottom:14px">— or paste CSV data directly —</div>
+      <div style="text-align:center;color:var(--fg-3);font-size:12px;margin-bottom:14px">— or paste straight from Excel or Google Sheets —</div>
 
-      <textarea id="roster-csv-paste" placeholder="Paste CSV data here..." style="width:100%;height:100px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical" oninput="rosterImportParsed=[];document.getElementById('roster-import-preview').style.display='none'"></textarea>
+      <textarea id="roster-csv-paste" placeholder="Paste your roster here — any common column names work" style="width:100%;height:100px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:12px;font-family:monospace;resize:vertical" oninput="previewRosterCSV()"></textarea>
 
       <div id="roster-import-preview" style="display:none;margin-top:12px"></div>
 
@@ -5250,7 +5250,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.65</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.66</div>
   </div>
 </div>
 
@@ -5261,7 +5261,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.65';
+  const APP_VERSION = 'v39.66';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -8239,6 +8239,15 @@
     document.getElementById('roster-import-preview').style.display = 'none';
     document.getElementById('roster-csv-paste').value = '';
     rosterImportParsed = [];
+    // Reset importer state + the upload zone (it keeps the last filename otherwise)
+    _rosterGrid = []; _rosterHeaderIdx = -1; _rosterColMap = {};
+    const zone = document.getElementById('roster-upload-zone');
+    if (zone) zone.innerHTML = `<div style="font-size:24px;margin-bottom:6px">📄</div>
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">Click to upload your roster</div>
+        <div style="font-size:12px;color:var(--fg-3);margin-top:4px">or drag and drop — Excel (.xlsx), CSV, or TSV</div>
+        <input type="file" id="roster-csv-input" accept=".csv,.tsv,.txt,.xlsx" style="display:none" onchange="handleRosterCSV(event)">`;
+    const btn = document.getElementById('roster-import-btn');
+    if (btn) { btn.textContent = 'Import players'; btn.style.background = ''; }
   }
 
   function closeRosterImport(e) {
@@ -8259,115 +8268,409 @@
     event.target.value = '';
   }
 
-  function loadRosterFile(file) {
-    // Update upload zone to show filename
+  function setRosterZone(file, status) {
     const zone = document.getElementById('roster-upload-zone');
-    if (zone) zone.innerHTML = `<div style="font-size:20px;margin-bottom:6px">✅</div><div style="font-size:13px;font-weight:600;color:var(--fg)">${file.name}</div><div style="font-size:12px;color:var(--fg-3);margin-top:4px">Parsing…</div><input type="file" id="roster-csv-input" accept=".csv" style="display:none" onchange="handleRosterCSV(event)">`;
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('roster-csv-paste').value = e.target.result;
-      previewRosterCSV();
+    if (!zone) return;
+    zone.innerHTML = `<div style="font-size:20px;margin-bottom:6px">✅</div>
+      <div style="font-size:13px;font-weight:600;color:var(--fg)">${escHtml(file.name)}</div>
+      <div style="font-size:12px;color:var(--fg-3);margin-top:4px">${escHtml(status)}</div>
+      <input type="file" id="roster-csv-input" accept=".csv,.tsv,.txt,.xlsx" style="display:none" onchange="handleRosterCSV(event)">`;
+  }
+
+  // A .xlsx is a zip of XML — JSZip is already loaded (used by the playbook
+  // export), so Excel files need no extra dependency.
+  async function parseXlsxGrid(file) {
+    if (typeof JSZip === 'undefined') throw new Error('JSZip not loaded');
+    const zip = await JSZip.loadAsync(file);
+
+    // Shared strings: most text cells are an index into this table.
+    let shared = [];
+    const ssFile = zip.file('xl/sharedStrings.xml');
+    if (ssFile) {
+      const doc = new DOMParser().parseFromString(await ssFile.async('string'), 'application/xml');
+      shared = [...doc.getElementsByTagName('si')].map(si =>
+        [...si.getElementsByTagName('t')].map(t => t.textContent).join(''));
+    }
+
+    // First worksheet by workbook order where we can resolve it, else sheet1.
+    let sheetFile = zip.file('xl/worksheets/sheet1.xml');
+    if (!sheetFile) {
+      const sheets = zip.file(/^xl\/worksheets\/.*\.xml$/);
+      if (!sheets || !sheets.length) throw new Error('No worksheet found in this .xlsx');
+      sheetFile = sheets[0];
+    }
+    const doc = new DOMParser().parseFromString(await sheetFile.async('string'), 'application/xml');
+
+    const colIdx = ref => {
+      const m = /^([A-Z]+)/.exec(ref || '');
+      if (!m) return 0;
+      let n = 0;
+      for (const ch of m[1]) n = n * 26 + (ch.charCodeAt(0) - 64);
+      return n - 1;
     };
-    reader.readAsText(file);
+
+    const grid = [];
+    [...doc.getElementsByTagName('row')].forEach(r => {
+      const cells = [];
+      [...r.getElementsByTagName('c')].forEach(c => {
+        const i = colIdx(c.getAttribute('r'));
+        const t = c.getAttribute('t');
+        let v = '';
+        if (t === 'inlineStr') {
+          v = [...c.getElementsByTagName('t')].map(x => x.textContent).join('');
+        } else {
+          const vEl = c.getElementsByTagName('v')[0];
+          v = vEl ? vEl.textContent : '';
+          if (t === 's') v = shared[parseInt(v, 10)] ?? '';
+        }
+        cells[i] = String(v).trim();
+      });
+      for (let i = 0; i < cells.length; i++) if (cells[i] === undefined) cells[i] = '';
+      grid.push(cells);
+    });
+    return grid.filter(r => r.some(c => String(c).trim() !== ''));
+  }
+
+  async function loadRosterFile(file) {
+    setRosterZone(file, 'Parsing…');
+    const isXlsx = /\.xlsx$/i.test(file.name);
+    try {
+      if (isXlsx) {
+        const grid = await parseXlsxGrid(file);
+        // Excel can't round-trip through the paste box — feed the grid directly.
+        document.getElementById('roster-csv-paste').value = '';
+        _rosterGrid = grid;
+        setRosterZone(file, `${grid.length} rows read`);
+        prepareRosterPreview();
+      } else {
+        const text = await file.text();
+        document.getElementById('roster-csv-paste').value = text;
+        setRosterZone(file, 'Loaded');
+        previewRosterCSV();
+      }
+    } catch (e) {
+      console.error('[Roster] import parse error:', e);
+      setRosterZone(file, 'Could not read this file');
+      const preview = document.getElementById('roster-import-preview');
+      if (preview) {
+        preview.style.display = 'block';
+        preview.innerHTML = `<div style="background:rgba(255,68,68,0.1);border:1px solid var(--red);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red)">⚠️ Could not read <b>${escHtml(file.name)}</b>. ${escHtml(e.message || '')}<br>If it's an Excel file, try File → Save As → CSV.</div>`;
+      }
+    }
   }
 
   function normalizeYear(raw) {
     const v = (raw || '').trim().toLowerCase().replace(/[^a-z0-9]/g,'');
-    if (['freshman','fr','9','frosh','fresh'].includes(v)) return 'Freshman';
-    if (['sophomore','soph','sophmore','sophmor','so','10'].includes(v)) return 'Sophomore';
-    if (['junior','jr','11'].includes(v)) return 'Junior';
-    if (['senior','sr','12'].includes(v)) return 'Senior';
+    if (['freshman','fr','9','frosh','fresh','9th'].includes(v)) return 'Freshman';
+    if (['sophomore','soph','sophmore','sophmor','so','10','10th'].includes(v)) return 'Sophomore';
+    if (['junior','jr','11','11th'].includes(v)) return 'Junior';
+    if (['senior','sr','12','12th'].includes(v)) return 'Senior';
+    // Graduation year ("Grad Year: 2027", "Class of 2028") -> class standing.
+    // A season starting in June 20NN graduates its seniors the following spring.
+    const gy = v.match(/(20\d{2})/);
+    if (gy) {
+      const now = new Date();
+      const seasonEnd = now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear();
+      const cls = ['Senior','Junior','Sophomore','Freshman'][parseInt(gy[1],10) - seasonEnd];
+      if (cls) return cls;
+    }
     // Title-case fallback
     if (raw) return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     return raw;
   }
 
-  function parseRosterCSV(text) {
-    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
-    if (lines.length < 2) return [];
+  // ===== ROSTER IMPORT — forgiving parser =====
+  // Goal: a coach uploads whatever roster document they already have and it just
+  // works. The old parser did `line.split(',')` on line 1 with exact header
+  // matches, which meant a quoted "Reed, Marcus" imported as name="Reed"
+  // num="Marcus" (silent corruption), and an Excel paste (TAB-separated),
+  // First/Last columns, or a title row above the header all failed outright.
+  //
+  // Pipeline: bytes/text -> grid (rows of cells) -> find header row ->
+  // auto-map columns -> build player rows. Every step is overridable by the
+  // coach in the mapping UI, which is the real guarantee — auto-detection will
+  // always miss something.
 
-    // Parse header
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z_]/g,''));
-    const colMap = {
-      name: headers.findIndex(h => h === 'name' || h === 'fullname' || h === 'player'),
-      num: headers.findIndex(h => h === 'number' || h === 'num' || h === 'jersey' || h === '#'),
-      pos: headers.findIndex(h => h === 'position' || h === 'pos'),
-      posOff: headers.findIndex(h => h === 'off_position' || h === 'offense' || h === 'off_pos' || h === 'offpos'),
-      posDef: headers.findIndex(h => h === 'def_position' || h === 'defense' || h === 'def_pos' || h === 'defpos'),
-      posST: headers.findIndex(h => h === 'st_position' || h === 'special_teams' || h === 'st_pos' || h === 'stpos'),
-      year: headers.findIndex(h => h === 'year' || h === 'grade' || h === 'class'),
-      height: headers.findIndex(h => h === 'height' || h === 'ht'),
-      weight: headers.findIndex(h => h === 'weight' || h === 'wt' || h === 'lbs'),
-      gpa: headers.findIndex(h => h === 'gpa'),
-      parent_name: headers.findIndex(h => h.includes('parent') && h.includes('name')),
-      parent_phone: headers.findIndex(h => h.includes('phone') || h.includes('cell')),
-      parent_email: headers.findIndex(h => h.includes('email')),
+  const ROSTER_FIELDS = [
+    { key:'name',   label:'Full name', syn:['name','fullname','playername','player','athlete','athletename','studentname','student'] },
+    { key:'first',  label:'First name', syn:['firstname','first','fname','givenname','given'] },
+    { key:'last',   label:'Last name',  syn:['lastname','last','lname','surname','familyname'] },
+    { key:'num',    label:'Jersey #',   syn:['number','num','jersey','jerseynumber','jerseyno','uniform','uniformnumber','no','shirt'] },
+    { key:'pos',    label:'Position',   syn:['position','pos','primaryposition','positions'] },
+    { key:'posOff', label:'Offense',    syn:['offposition','offensiveposition','offense','offpos','offensive','off'] },
+    { key:'posDef', label:'Defense',    syn:['defposition','defensiveposition','defense','defpos','defensive','def'] },
+    { key:'posST',  label:'Special teams', syn:['stposition','specialteams','specialteam','stpos','st'] },
+    { key:'year',   label:'Year',       syn:['year','grade','class','gradyear','graduationyear','gradelevel','classof','level'] },
+    { key:'height', label:'Height',     syn:['height','ht'] },
+    { key:'weight', label:'Weight',     syn:['weight','wt','lbs','pounds'] },
+    { key:'gpa',    label:'GPA',        syn:['gpa','gradepointaverage'] },
+    { key:'parent_name',  label:'Parent name',  syn:['parentname','guardianname','parentguardian','parent','guardian','mothername','fathername','emergencycontact'] },
+    { key:'parent_phone', label:'Parent phone', syn:['parentphone','guardianphone','phone','cell','cellphone','mobile','phonenumber','contactphone'] },
+    { key:'parent_email', label:'Parent email', syn:['parentemail','guardianemail','email','emailaddress','contactemail'] },
+  ];
+
+  function normHeader(h) { return String(h == null ? '' : h).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+  // How strongly one header cell matches one field. Exact beats prefix beats contains,
+  // so a "parent name" column scores 100 for parent_name and only 50 for name.
+  function scoreHeader(norm, field) {
+    if (!norm) return 0;
+    const nd = norm.replace(/[0-9]/g, ''); // "classof2027" -> "classof"
+    for (const s of field.syn) if (norm === s || nd === s) return 100;
+    for (const s of field.syn) if (norm.startsWith(s) || nd.startsWith(s)) return 70;
+    for (const s of field.syn) if (norm.includes(s) || nd.includes(s)) return 50;
+    return 0;
+  }
+
+  function bestFieldFor(norm) {
+    let best = null, bestScore = 0;
+    for (const f of ROSTER_FIELDS) {
+      const s = scoreHeader(norm, f);
+      if (s > bestScore) { bestScore = s; best = f; }
+    }
+    return bestScore >= 50 ? { field: best, score: bestScore } : null;
+  }
+
+  // RFC 4180: honours quoted fields, "" escapes, and delimiters/newlines inside quotes.
+  function parseDelimited(text, delim) {
+    const s = String(text || '').replace(/^﻿/, ''); // strip BOM
+    const rows = [];
+    let row = [], field = '', inQ = false;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (inQ) {
+        if (c === '"') {
+          if (s[i + 1] === '"') { field += '"'; i++; }
+          else inQ = false;
+        } else field += c;
+      } else if (c === '"') inQ = true;
+      else if (c === delim) { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+    if (field !== '' || row.length) { row.push(field); rows.push(row); }
+    return rows
+      .map(r => r.map(c => String(c).trim()))
+      .filter(r => r.some(c => c !== ''));
+  }
+
+  // Excel/Sheets copy-paste is TAB separated; some locales export with ';'.
+  // Pick the delimiter that yields the most columns, most consistently.
+  function sniffDelimiter(text) {
+    const sample = String(text || '').split(/\r?\n/).filter(l => l.trim()).slice(0, 10).join('\n');
+    let best = ',', bestScore = -1;
+    for (const d of [',', '\t', ';', '|']) {
+      const rows = parseDelimited(sample, d);
+      if (!rows.length) continue;
+      const counts = rows.map(r => r.length);
+      const modal = counts.sort((a, b) =>
+        counts.filter(x => x === a).length - counts.filter(x => x === b).length).pop();
+      if (!modal || modal < 2) continue;
+      const consistent = counts.filter(c => c === modal).length;
+      const score = modal * 10 + consistent; // favour more columns, then consistency
+      if (score > bestScore) { bestScore = score; best = d; }
+    }
+    return best;
+  }
+
+  // Real documents have title rows, blank lines and notes above the header.
+  // Scan the first 15 rows and take whichever looks most like a header.
+  function detectHeaderRow(rows) {
+    let bestIdx = -1, bestScore = 1; // need 2+ recognisable headers
+    const limit = Math.min(rows.length, 15);
+    for (let i = 0; i < limit; i++) {
+      const score = rows[i].reduce((acc, cell) => acc + (bestFieldFor(normHeader(cell)) ? 1 : 0), 0);
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+    }
+    return bestIdx;
+  }
+
+  // Assign each column to its best field; a field keeps its highest-scoring column.
+  function autoMapColumns(headerRow) {
+    const map = {};
+    const scores = {};
+    headerRow.forEach((cell, i) => {
+      const hit = bestFieldFor(normHeader(cell));
+      if (!hit) return;
+      const k = hit.field.key;
+      if (scores[k] === undefined || hit.score > scores[k]) { scores[k] = hit.score; map[k] = i; }
+    });
+    return map;
+  }
+
+  // "Reed, Marcus" in a single name column -> "Marcus Reed".
+  function fixLastFirst(v) {
+    const s = String(v || '').trim();
+    if (!s.includes(',')) return s;
+    const idx = s.indexOf(',');
+    const last = s.slice(0, idx).trim();
+    const rest = s.slice(idx + 1).trim();
+    if (!last || !rest) return s.replace(',', ' ').trim();
+    return rest + ' ' + last;
+  }
+
+  function buildRosterRows(grid, headerIdx, colMap) {
+    const body = grid.slice(headerIdx + 1);
+    const get = (cols, key) => {
+      const i = colMap[key];
+      return (i === undefined || i < 0) ? '' : String(cols[i] == null ? '' : cols[i]).trim();
     };
-
-    if (colMap.name === -1) return null; // no name column
-
-    return lines.slice(1).map(line => {
-      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
-      const get = (idx) => idx !== -1 ? cols[idx] || '' : '';
+    return body.map(cols => {
+      let name = get(cols, 'name');
+      if (name) name = fixLastFirst(name);
+      else {
+        const f = get(cols, 'first'), l = get(cols, 'last');
+        name = [f, l].filter(Boolean).join(' ').trim();
+      }
+      const posOff = get(cols, 'posOff').toUpperCase();
+      const posDef = get(cols, 'posDef').toUpperCase();
+      const posST  = get(cols, 'posST').toUpperCase();
       return {
-        name: get(colMap.name),
-        num: (get(colMap.num)||'').trim().replace(/^#+/,''), // strip # on import, formatNum adds it on display
-        pos: (get(colMap.posOff) || get(colMap.posDef) || get(colMap.pos)).split('/')[0].trim().toUpperCase(),
-        posOff: get(colMap.posOff).toUpperCase(),
-        posDef: get(colMap.posDef).toUpperCase(),
-        posST: get(colMap.posST).toUpperCase(),
-        year: normalizeYear(get(colMap.year)),
-        height: get(colMap.height),
-        weight: get(colMap.weight),
-        gpa: get(colMap.gpa),
-        parent_name: get(colMap.parent_name),
-        parent_phone: get(colMap.parent_phone),
-        parent_email: get(colMap.parent_email),
+        name,
+        num: get(cols, 'num').replace(/^#+/, ''), // formatNum re-adds the #
+        pos: (posOff || posDef || get(cols, 'pos')).split('/')[0].trim().toUpperCase(),
+        posOff, posDef, posST,
+        year: normalizeYear(get(cols, 'year')),
+        height: get(cols, 'height'),
+        weight: get(cols, 'weight'),
+        gpa: get(cols, 'gpa'),
+        parent_name: get(cols, 'parent_name'),
+        parent_phone: get(cols, 'parent_phone'),
+        parent_email: get(cols, 'parent_email'),
       };
     }).filter(p => p.name);
   }
 
+  function rosterMapHasName(colMap) {
+    return (colMap.name >= 0 && colMap.name !== undefined) ||
+           ((colMap.first >= 0 && colMap.first !== undefined) || (colMap.last >= 0 && colMap.last !== undefined));
+  }
+
+  // Kept for callers/tests: text in, player rows out (null = couldn't find a name).
+  function parseRosterCSV(text) {
+    const grid = parseDelimited(text, sniffDelimiter(text));
+    if (grid.length < 2) return [];
+    const headerIdx = detectHeaderRow(grid);
+    if (headerIdx === -1) return null;
+    const colMap = autoMapColumns(grid[headerIdx]);
+    if (!rosterMapHasName(colMap)) return null;
+    return buildRosterRows(grid, headerIdx, colMap);
+  }
+
+  // Import state: the grid is the source of truth (text AND .xlsx both feed it),
+  // and the coach can re-point any column via the mapping UI.
+  let _rosterGrid = [];
+  let _rosterHeaderIdx = -1;
+  let _rosterColMap = {};
+
+  // Entry point for the paste box / text files.
   function previewRosterCSV() {
     const text = document.getElementById('roster-csv-paste').value.trim();
+    if (!text) {
+      _rosterGrid = [];
+      const preview = document.getElementById('roster-import-preview');
+      if (preview) preview.style.display = 'none';
+      rosterImportParsed = [];
+      return;
+    }
+    _rosterGrid = parseDelimited(text, sniffDelimiter(text));
+    prepareRosterPreview();
+  }
+
+  // Auto-detect header + columns for the current grid, then render.
+  function prepareRosterPreview() {
+    _rosterHeaderIdx = detectHeaderRow(_rosterGrid);
+    if (_rosterHeaderIdx === -1) _rosterHeaderIdx = 0; // fall back; mapping UI can rescue it
+    _rosterColMap = autoMapColumns(_rosterGrid[_rosterHeaderIdx] || []);
+    renderRosterPreview();
+  }
+
+  function setRosterCol(key, idx) {
+    const i = parseInt(idx, 10);
+    if (i < 0) delete _rosterColMap[key];
+    else _rosterColMap[key] = i;
+    renderRosterPreview();
+  }
+
+  function setRosterHeaderRow(idx) {
+    _rosterHeaderIdx = parseInt(idx, 10);
+    _rosterColMap = autoMapColumns(_rosterGrid[_rosterHeaderIdx] || []);
+    renderRosterPreview();
+  }
+
+  function rosterMappingUI() {
+    const headers = _rosterGrid[_rosterHeaderIdx] || [];
+    const colOpts = (sel) =>
+      `<option value="-1">— none —</option>` +
+      headers.map((h, i) =>
+        `<option value="${i}"${sel === i ? ' selected' : ''}>${escHtml(String(h || '').trim() || 'Column ' + (i + 1))}</option>`
+      ).join('');
+
+    const headerRowOpts = _rosterGrid.slice(0, 15).map((r, i) =>
+      `<option value="${i}"${i === _rosterHeaderIdx ? ' selected' : ''}>Row ${i + 1}: ${escHtml(r.slice(0, 4).join(', ').slice(0, 40))}</option>`
+    ).join('');
+
+    return `
+      <details style="margin-bottom:10px;background:var(--bg-3);border-radius:var(--radius-sm);padding:8px 10px">
+        <summary style="font-size:12px;font-weight:600;color:var(--fg);cursor:pointer">Columns — auto-detected. Tap to fix any that are wrong.</summary>
+        <div style="margin-top:8px">
+          <label style="display:block;font-size:11px;color:var(--fg-3);margin-bottom:8px">Header row
+            <select onchange="setRosterHeaderRow(this.value)" style="width:100%;margin-top:3px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:5px;color:var(--fg);font-size:12px;font-family:var(--font)">${headerRowOpts}</select>
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            ${ROSTER_FIELDS.map(f => `
+              <label style="font-size:11px;color:var(--fg-3)">${escHtml(f.label)}
+                <select onchange="setRosterCol('${f.key}', this.value)" style="width:100%;margin-top:2px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:5px;color:var(--fg);font-size:12px;font-family:var(--font)">
+                  ${colOpts(_rosterColMap[f.key] === undefined ? -1 : _rosterColMap[f.key])}
+                </select>
+              </label>`).join('')}
+          </div>
+        </div>
+      </details>`;
+  }
+
+  function renderRosterPreview() {
     const preview = document.getElementById('roster-import-preview');
     const importBtn = document.getElementById('roster-import-btn');
-    if (!text) { preview.style.display = 'none'; return; }
+    if (!preview) return;
+    preview.style.display = 'block';
 
-    const parsed = parseRosterCSV(text);
-    if (parsed === null) {
-      preview.style.display = 'block';
-      preview.innerHTML = '<div style="background:rgba(255,68,68,0.1);border:1px solid var(--red);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red)">⚠️ Could not find a "name" column. Check your CSV headers.</div>';
-      return;
-    }
-    if (!parsed.length) {
-      preview.style.display = 'block';
-      preview.innerHTML = '<div style="background:rgba(255,68,68,0.1);border:1px solid var(--red);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red)">⚠️ No player rows found. Make sure your CSV has data below the header row.</div>';
-      return;
-    }
+    const err = (msg) => {
+      rosterImportParsed = [];
+      preview.innerHTML =
+        `<div style="background:rgba(255,68,68,0.1);border:1px solid var(--red);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--red);margin-bottom:10px">⚠️ ${msg}</div>` +
+        (_rosterGrid.length ? rosterMappingUI() : '');
+      if (importBtn) { importBtn.textContent = 'Import players'; importBtn.style.background = ''; }
+    };
+
+    if (_rosterGrid.length < 2) return err('Need a header row and at least one player row.');
+    if (!rosterMapHasName(_rosterColMap))
+      return err('Couldn\'t tell which column holds the player name. Set <b>Full name</b> (or First + Last) below.');
+
+    const parsed = buildRosterRows(_rosterGrid, _rosterHeaderIdx, _rosterColMap);
+    if (!parsed.length) return err('No player rows found below the header row.');
 
     rosterImportParsed = parsed;
-
-    // Count how many have positions
     const withPos = parsed.filter(p => p.pos).length;
     const withParent = parsed.filter(p => p.parent_name).length;
+    const withYear = parsed.filter(p => p.year).length;
 
-    preview.style.display = 'block';
     preview.innerHTML = `
       <div style="background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px">
         <div style="font-size:13px;font-weight:700;color:#39ff14;margin-bottom:2px">✓ ${parsed.length} players ready to import</div>
-        <div style="font-size:11px;color:var(--fg-3)">${withPos} with positions · ${withParent} with parent info</div>
+        <div style="font-size:11px;color:var(--fg-3)">${withPos} with positions · ${withYear} with year · ${withParent} with parent info</div>
       </div>
+      ${rosterMappingUI()}
       <div style="background:var(--bg-3);border-radius:var(--radius-sm);overflow:hidden;max-height:180px;overflow-y:auto">
         ${parsed.slice(0, 50).map(p => `
           <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);font-size:12px;align-items:center">
-            <div style="font-weight:600;color:var(--fg)">${p.name}</div>
-            <div style="color:var(--fg-3)">${p.posOff || p.pos || '—'}</div>
-            <div style="color:var(--fg-3)">#${p.num || '—'}</div>
+            <div style="font-weight:600;color:var(--fg)">${escHtml(p.name)}</div>
+            <div style="color:var(--fg-3)">${escHtml(p.posOff || p.pos || '—')}</div>
+            <div style="color:var(--fg-3)">#${escHtml(p.num || '—')}</div>
           </div>`).join('')}
         ${parsed.length > 50 ? `<div style="font-size:11px;color:var(--fg-3);padding:8px 12px">…and ${parsed.length - 50} more</div>` : ''}
       </div>`;
 
-    // Update import button to show count and highlight
     if (importBtn) {
       importBtn.textContent = `Import ${parsed.length} players →`;
       importBtn.style.background = 'var(--team-primary)';
