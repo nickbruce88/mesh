@@ -3637,21 +3637,21 @@
             <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
             <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('offense')">📁 New folder</button>
           </div>
-          <div id="pb-offense-content"></div>
+          <div id="pb-offense-content-inline"></div>
         </div>
         <div class="pb-unit-section" id="pb-defense-inline">
           <div class="pb-action-row" id="pb-defense-actions-inline">
             <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
             <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('defense')">📁 New folder</button>
           </div>
-          <div id="pb-defense-content"></div>
+          <div id="pb-defense-content-inline"></div>
         </div>
         <div class="pb-unit-section" id="pb-special-inline">
           <div class="pb-action-row" id="pb-special-actions-inline">
             <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
             <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('special')">📁 New folder</button>
           </div>
-          <div id="pb-special-content"></div>
+          <div id="pb-special-content-inline"></div>
         </div>
       </div>
 
@@ -5252,7 +5252,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.72</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.73</div>
   </div>
 </div>
 
@@ -5263,7 +5263,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.72';
+  const APP_VERSION = 'v39.73';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5764,6 +5764,9 @@
     }
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
+    // Player "More" (My Info) on MOBILE — the isDesktop branch above renders it on
+    // desktop; mobile has no sidebar path, so without this the tab is blank on phones.
+    if (!isDesktop() && role === 'player' && tab === 'more') setTimeout(() => renderMyInfoPage(), 50);
     // Messages — load the caller's real threads (all roles); start on the inbox view.
     if (tab === 'messages') { _showArchived = false; loadThreadList(role); }
     // Player My Info — rendered via 'more' tab hook above
@@ -10072,22 +10075,16 @@
     // on this first session (launchApp only sets _sessionUser on a later reload).
     let u={}; try { u = JSON.parse(localStorage.getItem('mesh_user') || '{}'); } catch(e) {}
     if (u && u.name) _sessionUser = { name: u.name, role: u.role || role };
-    if (role === 'coach') {
-      // Assistant coach: launch through launchApp so the real roster/schedule/etc. load and
-      // per-feature permissions apply immediately. login() alone loads NO Supabase data, which
-      // left a freshly-joined assistant looking at an empty roster until they reloaded.
-      const pid = localStorage.getItem('mesh_joining_program_id') || localStorage.getItem('mesh_program_id') || null;
-      const nm = (document.getElementById('join-program-name')?.textContent || '').trim();
-      if (nm) obProgram.teamName = obProgram.teamName || nm;
-      launchApp('coach', { name: u.name, role: u.role || 'coach' }, pid);
-      return;
-    }
-    login(role);
-    if (role === 'player') {
-      getValidProgramId().then(id => {
-        if (id) subscribeToPlayerMessages(id);
-      });
-    }
+    // EVERY role launches through launchApp so the real roster/schedule/announcements/
+    // threads/stat-categories load and (for coaches) permissions apply immediately.
+    // Previously only coach did this; player/parent used login(), which loads NO
+    // Supabase data — so a freshly-joined player/parent saw an empty app (no schedule,
+    // no messages, "stat categories not loaded") until they manually reloaded. launchApp
+    // also persists mesh_program_id and subscribes to messages for all roles.
+    const pid = localStorage.getItem('mesh_joining_program_id') || localStorage.getItem('mesh_program_id') || null;
+    const nm = (document.getElementById('join-program-name')?.textContent || '').trim();
+    if (nm) obProgram.teamName = obProgram.teamName || nm;
+    launchApp(role, { name: u.name, role: u.role || role }, pid);
   }
 
   function login(role) {
@@ -17039,6 +17036,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Clear invalid stored ID
     if (storedId) localStorage.removeItem('mesh_program_id');
 
+    // A just-joined player/parent may only have the joining id yet (the owner_id
+    // lookup below only resolves for coaches, who own their program).
+    const joiningId = localStorage.getItem('mesh_joining_program_id');
+    if (joiningId && joiningId.includes('-')) return joiningId;
+
     // Try to get from live Supabase session
     try {
       const { data: sess } = await db.auth.getSession();
@@ -18520,32 +18522,38 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const container = document.getElementById('player-pb-plays');
     if (!container) return;
 
-    // Get plays for this unit from PB_DATA
-    const folders = (window.PB_DATA && window.PB_DATA[unit]) ? window.PB_DATA[unit] : [];
-    const allPlays = folders.flatMap ? folders.flatMap(f => f.plays || []) : [];
+    // Real shape (same as the coach side): PB_DATA[unit] = { folders:[{id,name}],
+    // plays:[{id,title,imageUrl,folderId,…}] }. The old code read window.PB_DATA
+    // (never assigned) and expected each folder to carry its own plays with
+    // name/diagram fields — none of which is true — so the player playbook was
+    // ALWAYS "No plays yet" even when the coach had published plays.
+    const { folders = [], plays = [] } = (PB_DATA && PB_DATA[unit]) || {};
 
-    if (!allPlays.length) {
+    if (!plays.length) {
       container.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--fg-3)">
         <div style="font-size:36px;margin-bottom:12px">📓</div>
         <div style="font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px">No plays yet</div>
-        <div style="font-size:13px">Your coaches haven't added any ${unit} plays yet.</div>
+        <div style="font-size:13px">Your coaches haven't added any ${_esc(unit)} plays yet.</div>
       </div>`;
       return;
     }
 
-    container.innerHTML = folders.map(folder => `
+    const card = play => `
+      <div class="card" style="padding:12px;text-align:center">
+        ${play.imageUrl ? `<img src="${play.imageUrl}" style="width:100%;border-radius:6px;margin-bottom:8px;max-height:100px;object-fit:contain" loading="lazy">` :
+          `<div style="height:80px;background:var(--bg-3);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>`}
+        <div style="font-size:12px;font-weight:600;color:var(--fg)">${_esc(play.title||'Play')}</div>
+      </div>`;
+    const section = (label, ps) => ps.length ? `
       <div style="margin-bottom:20px">
-        <div class="section-label">${_esc(folder.name||'Plays')}</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
-          ${(folder.plays||[]).map(play => `
-            <div class="card" style="padding:12px;text-align:center">
-              ${play.diagram ? `<img src="${play.diagram}" style="width:100%;border-radius:6px;margin-bottom:8px;max-height:100px;object-fit:contain">` :
-                `<div style="height:80px;background:var(--bg-3);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>`}
-              <div style="font-size:12px;font-weight:600;color:var(--fg)">${_esc(play.name||'Play')}</div>
-              ${play.formation ? `<div style="font-size:11px;color:var(--fg-3)">${play.formation}</div>` : ''}
-            </div>`).join('')}
-        </div>
-      </div>`).join('');
+        <div class="section-label">${_esc(label)}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">${ps.map(card).join('')}</div>
+      </div>` : '';
+
+    // Loose plays first, then one section per folder.
+    let html = section('Plays', plays.filter(p => !p.folderId));
+    folders.forEach(f => { html += section(f.name || 'Folder', plays.filter(p => p.folderId === f.id)); });
+    container.innerHTML = html;
   }
 
   // Also hide playbook body when switching to myinfo
@@ -18715,6 +18723,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const existing = document.getElementById('submit-stats-overlay');
     if (existing) existing.remove();
     const overlay = document.createElement('div');
+    overlay.id = 'submit-stats-overlay'; // was never set → the input query + ✕ + remove all no-op'd, so submit always said "Enter at least one stat"
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
 
@@ -20725,8 +20734,15 @@ Jersey|RushingNum|RushingYards|RushingTDNum
 
   function renderPbUnit(unit) {
     const { folders, plays } = PB_DATA[unit];
-    const content = document.getElementById('pb-' + unit + '-content');
-    if (!content) return;
+    // Two containers share this content: the mobile overlay (`pb-<unit>-content`)
+    // and the desktop coach inline section (`pb-<unit>-content-inline`). Only one
+    // is visible at a time; writing both avoids the old duplicate-id bug where
+    // getElementById always hit the inline one, leaving the mobile overlay blank.
+    const targets = [
+      document.getElementById('pb-' + unit + '-content'),
+      document.getElementById('pb-' + unit + '-content-inline'),
+    ].filter(Boolean);
+    if (!targets.length) return;
     let html = '';
     folders.forEach(folder => {
       const fp = plays.filter(p => p.folderId === folder.id);
@@ -20763,7 +20779,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
         <div style="font-size:13px">Mesh Play Designer is coming soon — draw, animate, and share plays directly in the app.</div>
       </div>`;
     }
-    content.innerHTML = html;
+    targets.forEach(el => el.innerHTML = html);
   }
 
   function pbPlayCardHtml(play, inFolderSelMode) {
@@ -20821,8 +20837,9 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     const { plays } = PB_DATA[pbCurrentUnit];
     // Top-level Edit: select all uncategorized plays only
     plays.filter(p => !p.folderId).forEach(p => pbSelectedIds.add(p.id));
-    const lbl = document.getElementById('pb-select-label');
-    if (lbl) lbl.textContent = pbSelectedIds.size + ' selected';
+    // Both the overlay and inline bars carry .pb-select-bar-label (duplicate id) —
+    // update all so the mobile overlay counter isn't stuck at "0 selected".
+    document.querySelectorAll('.pb-select-bar-label').forEach(lbl => lbl.textContent = pbSelectedIds.size + ' selected');
     renderPbUnit(pbCurrentUnit);
   }
 
@@ -20839,8 +20856,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       const b = document.getElementById(id);
       if (b) b.classList.toggle('active', pbSelectMode);
     });
-    const l = document.getElementById('pb-select-label');
-    if (l) l.textContent = '0 selected';
+    document.querySelectorAll('.pb-select-bar-label').forEach(l => l.textContent = '0 selected');
     renderPbUnit(pbCurrentUnit);
     // Close all folders when entering top-level edit mode
     if (pbSelectMode) {
@@ -20860,9 +20876,8 @@ Jersey|RushingNum|RushingYards|RushingTDNum
         pbSelectedIds.add(playId);
         if (pbFolderSelectMode) pbFolderSelected.add(playId);
       }
-      // Update label
-      const lbl = document.getElementById('pb-select-label');
-      if (lbl) lbl.textContent = pbSelectedIds.size + ' selected';
+      // Update label (both overlay + inline share the class)
+      document.querySelectorAll('.pb-select-bar-label').forEach(lbl => lbl.textContent = pbSelectedIds.size + ' selected');
       if (pbFolderSelectMode) {
         const flbl = document.getElementById('pbfsl-' + pbFolderSelectMode);
         if (flbl) flbl.textContent = pbSelectedIds.size + ' selected';

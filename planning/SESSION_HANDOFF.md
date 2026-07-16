@@ -23,6 +23,33 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 6 (2026-07-16) — Silently-broken mobile/player features → v39.73
+All from the audit's "broken features" tier. Client-side, no SQL. Verified in-browser.
+1. **Playbook blank on mobile (coach AND player).** `pb-{unit}-content` was duplicated between the desktop
+   inline `more-playbook` section and the mobile overlay; `renderPbUnit` `getElementById` hit the inline
+   (first) one, so the overlay stayed empty. Renamed the inline divs → `pb-{unit}-content-inline` and made
+   `renderPbUnit` write to BOTH (only one is visible at a time). Also fixed the sibling `pb-select-label`
+   duplicate (the "N selected" counter read 0 on mobile) — the 3 writers now update all
+   `.pb-select-bar-label` elements instead of the first by id.
+2. **Player "More" tab blank on mobile.** `renderMyInfoPage()` was only called inside `showTab`'s
+   `if (isDesktop())` branch; `#player-myinfo-page` ships empty, so phones showed a white screen. Added a
+   `!isDesktop() && role==='player' && tab==='more'` render hook.
+3. **Player "Submit stats" always failed.** `openSubmitStats` never set `overlay.id='submit-stats-overlay'`
+   (the coach twin does), so the input query + ✕ + remove all no-op'd and submit always said "Enter at least
+   one stat". Added the id.
+4. **Player playbook always "No plays yet".** `switchPlayerPbUnit` read `window.PB_DATA` (never assigned —
+   `PB_DATA` is a top-level `let`) and assumed the wrong shape (folders holding their own plays, fields
+   name/diagram). Rewrote against the real shape `PB_DATA[unit] = {folders, plays}` with plays carrying
+   `title`/`imageUrl`/`folderId`; renders loose plays + one section per folder, escaped.
+5. **Freshly-joined player/parent saw an empty app until reload.** `joinGoToApp` routed only `role==='coach'`
+   through `launchApp` (which loads roster/schedule/announcements/threads/stat-categories + persists
+   mesh_program_id + subscribes to messages); player/parent fell through to `login()`, which loads nothing.
+   Unified: ALL roles now go through `launchApp`. Also added `mesh_joining_program_id` as a fallback in
+   `getValidProgramId` (the owner_id lookup only resolves for coaches).
+Verified: both playbook containers fill; player More renders on mobile; submit-stats overlay has its id +
+queryable inputs; player playbook shows real plays (and empty state for an empty unit); joinGoToApp routes
+to launchApp with the right pid.
+
 ## SESSION 5c (2026-07-16) — Pre-launch hardening → v39.71–72
 - **parent_links RLS** (`planning/parent-links-rls.sql`, RAN by user): it was the only public table with
   RLS off. Enabled + self-select policy. All access is via register_parent/get_my_player SECURITY DEFINER
