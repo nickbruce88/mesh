@@ -3997,8 +3997,6 @@
   <div id="tab-parent-home" class="scroll-content" style="display:none">
     <div class="greeting">Hi, <span id="parent-home-name">Family</span> 👋</div>
     <div class="sub-greeting" id="parent-home-sub"></div>
-    <div id="parent-next-game" style="display:none"></div>
-
     <div class="section-label">This week</div>
     <div id="parent-week-events" style="margin-bottom:16px"></div>
 
@@ -4022,9 +4020,9 @@
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn-sm" onclick="exportCalendar('parent')">📅 Export</button>
-        <div class="sched-view-toggle">
-          <button class="sched-view-btn active" id="parent-view-list" onclick="setSchedView('parent','list',this)">List</button>
-          <button class="sched-view-btn" id="parent-view-cal" onclick="setSchedView('parent','cal',this)">Calendar</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm active-btn" id="parent-view-list" onclick="setSchedView('parent','list',this)" style="background:var(--team-primary);color:var(--team-primary-text)">List</button>
+          <button class="btn-sm" id="parent-view-cal" onclick="setSchedView('parent','cal',this)">Calendar</button>
         </div>
       </div>
     </div>
@@ -5257,7 +5255,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.61</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.62</div>
   </div>
 </div>
 
@@ -5268,7 +5266,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.61';
+  const APP_VERSION = 'v39.62';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5428,8 +5426,7 @@
   }
 
   // Schedule view toggle — shared by player and parent; `role` selects the element set.
-  // Player buttons show "active" via inline colors, parent buttons via an .active class,
-  // so set both and let whichever the markup uses win.
+  // Both roles use the same `btn-sm` + `.active-btn` + inline team colors format.
   function setSchedView(role, view, btn) {
     const listEl = document.getElementById(role + '-sched-list');
     const calEl = document.getElementById(role + '-sched-cal');
@@ -5443,15 +5440,22 @@
     }
     [[listBtn, showList], [calBtn, !showList]].forEach(([el, on]) => {
       if (!el) return;
-      el.classList.toggle('active', on);
+      el.classList.toggle('active-btn', on);
       el.style.background = on ? 'var(--team-primary)' : '';
       el.style.color = on ? 'var(--team-primary-text)' : '';
     });
-    // Render list lazily on first switch
-    if (showList && listEl && !listEl.innerHTML.trim()) renderRoleSchedule(role);
+    if (showList) renderRoleSchedule(role);
   }
 
   function setPlayerSchedView(view, btn) { setSchedView('player', view, btn); }
+
+  // Schedule list shows upcoming only by default; this reveals past results.
+  // Only one role's schedule is on screen at a time, so a single flag is enough.
+  let _schedShowPast = false;
+  function toggleSchedPast(role) {
+    _schedShowPast = !_schedShowPast;
+    renderRoleSchedule(role);
+  }
 
   // NOTE: named renderRoleSchedule, NOT renderSchedule — a coach-side
   // renderSchedule() already exists further down and would clobber this one
@@ -5475,15 +5479,37 @@
     if (calEl) renderCalendar(calEl);
     // Group events by date
     const today = new Date(); today.setHours(0,0,0,0);
+    const isPastDate = d => d !== 'undated' && new Date(d + 'T00:00:00') < today;
+
+    // Default to upcoming only — the list used to open on the season's earliest
+    // event (June). Past results stay one click away behind "Show past".
+    const pastCount = new Set(
+      (SCHEDULE || []).filter(g => g.date && isPastDate(g.date)).map(g => g.date)
+    ).size;
+    const visible = (SCHEDULE || []).filter(g => _schedShowPast || !isPastDate(g.date || 'undated'));
+
     const grouped = {};
     const dateOrder = [];
-    SCHEDULE.forEach(g => {
+    visible.forEach(g => {
       const d = g.date || 'undated';
       if (!grouped[d]) { grouped[d] = []; dateOrder.push(d); }
       grouped[d].push(g);
     });
+    dateOrder.sort((a, b) => a === 'undated' ? 1 : b === 'undated' ? -1 : a.localeCompare(b));
 
-    listEl.innerHTML = dateOrder.map(dateStr => {
+    const pastToggle = pastCount
+      ? `<div onclick="toggleSchedPast('${role}')" style="text-align:center;padding:8px;margin-bottom:10px;color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer">
+           ${_schedShowPast ? '▴ Hide past results' : `▾ Show past results (${pastCount})`}
+         </div>`
+      : '';
+
+    if (!dateOrder.length) {
+      listEl.innerHTML = pastToggle +
+        '<div style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">Nothing upcoming on the schedule.</div>';
+      return;
+    }
+
+    listEl.innerHTML = pastToggle + dateOrder.map(dateStr => {
       const events = grouped[dateStr];
       const gDate = dateStr !== 'undated' ? new Date(dateStr + 'T00:00:00') : null;
       const mon = gDate ? gDate.toLocaleString('en',{month:'short'}).toUpperCase() : '—';
@@ -5554,25 +5580,50 @@
     return g.opponent ? prefix + g.opponent : (g.title || 'Event');
   }
 
-  // One compact row for the parent home dashboard lists.
-  function parentEventRow(g, today) {
-    const d = new Date(g.date + 'T00:00:00');
+  // ONE tile per DAY on the parent home dashboard — every event that day is
+  // stacked inside that single tile (7 days = at most 7 tiles).
+  // Today's tile is filled in team colour rather than merely outlined.
+  function parentDayTile(dateStr, events, today) {
+    const d = new Date(dateStr + 'T00:00:00');
     const isToday = d.toDateString() === today.toDateString();
-    const loc = schedLocLabel(g);
-    const meta = [loc, g.time, g.location].filter(Boolean).join(' · ');
-    const ha = (g.homeAway || '').toLowerCase();
-    return `<div class="sched-item ${isToday ? 'upcoming' : ''}" style="margin-bottom:6px${isToday ? ';border-color:var(--team-primary);border-left-width:3px' : ''}">
+
+    const rows = events.map((g, i) => {
+      const meta = [schedLocLabel(g), g.time, g.location].filter(Boolean).join(' · ');
+      const hasScore = g.scoreUs !== undefined && g.scoreThem !== undefined;
+      const isWin = hasScore && g.scoreUs > g.scoreThem;
+      return `<div style="${i ? 'margin-top:8px;padding-top:8px;border-top:1px solid var(--border);' : ''}display:flex;align-items:center;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="sched-name"${isToday ? ' style="color:var(--team-primary)"' : ''}>${schedEventName(g)}</div>
+          <div class="sched-meta">${meta || '&nbsp;'}</div>
+        </div>
+        ${hasScore ? `<div class="sched-score"><div class="score-result ${isWin?'win':'loss'}">${isWin?'W':'L'}</div><div class="score-nums">${g.scoreUs}–${g.scoreThem}</div></div>` : ''}
+      </div>`;
+    }).join('');
+
+    const todayStyle = isToday
+      ? 'background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);'
+      : '';
+
+    return `<div class="sched-item" style="${todayStyle}margin-bottom:6px;align-items:flex-start">
       <div class="sched-date-col" style="flex-shrink:0;width:40px">
-        <div class="sched-day-label">${d.toLocaleString('en',{weekday:'short'}).toUpperCase()}</div>
+        <div class="sched-day-label"${isToday ? ' style="color:var(--team-primary)"' : ''}>${d.toLocaleString('en',{weekday:'short'}).toUpperCase()}</div>
         <div class="sched-day-num${isToday ? ' sched-today' : ''}">${d.getDate()}</div>
       </div>
-      <div class="sched-info">
-        <div class="sched-name"${isToday ? ' style="color:var(--team-primary)"' : ''}>${isToday ? '🏈 ' : ''}${schedEventName(g)}</div>
-        <div class="sched-meta">${meta || '&nbsp;'}</div>
-      </div>
-      ${isToday ? '<span class="pill pill-green">TODAY</span>'
-                : (ha ? `<span class="pill ${ha === 'home' ? 'pill-green' : 'pill-gray'}">${loc.toUpperCase()}</span>` : '')}
+      <div style="flex:1;min-width:0">${rows}</div>
+      ${isToday ? '<span class="pill pill-green" style="flex-shrink:0">TODAY</span>' : ''}
     </div>`;
+  }
+
+  // Group events into [{date, events}] ordered by date.
+  function groupEventsByDay(events) {
+    const map = {};
+    const order = [];
+    events.forEach(g => {
+      if (!map[g.date]) { map[g.date] = []; order.push(g.date); }
+      map[g.date].push(g);
+    });
+    order.sort((a, b) => a.localeCompare(b));
+    return order.map(date => ({ date, events: map[date] }));
   }
 
   function renderParentHome() {
@@ -5583,56 +5634,45 @@
     if (subEl) subEl.textContent = teamName + ' · ' + (new Date().getFullYear()) + ' Season';
 
     const today = new Date(); today.setHours(0,0,0,0);
-    // "This week" = today through the end of the current week (Sunday).
-    const dow = today.getDay(); // 0 = Sunday
-    const weekEnd = new Date(today);
-    weekEnd.setDate(today.getDate() + (dow === 0 ? 0 : 7 - dow));
+    // "This week" = the current CALENDAR week, Sunday through Saturday —
+    // including days earlier this week that have already happened.
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay()); // getDay(): 0 = Sunday
+    weekStart.setHours(0,0,0,0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23,59,59,999);
 
-    const upcomingAll = (SCHEDULE || [])
-      .filter(g => g.date && new Date(g.date + 'T00:00:00') >= today)
+    const dated = (SCHEDULE || [])
+      .filter(g => g.date && !isNaN(new Date(g.date + 'T00:00:00')))
       .sort((a,b) => a.date.localeCompare(b.date));
-    const thisWeek = upcomingAll.filter(g => new Date(g.date + 'T00:00:00') <= weekEnd);
-    const later = upcomingAll.filter(g => new Date(g.date + 'T00:00:00') > weekEnd);
+    const thisWeek = dated.filter(g => {
+      const d = new Date(g.date + 'T00:00:00');
+      return d >= weekStart && d <= weekEnd;
+    });
+    const later = dated.filter(g => new Date(g.date + 'T00:00:00') > weekEnd);
 
-    // Next-game banner
-    const box = document.getElementById('parent-next-game');
-    if (box) {
-      const next = upcomingAll[0];
-      if (!next) { box.style.display = 'none'; box.innerHTML = ''; }
-      else {
-        const d = new Date(next.date + 'T00:00:00');
-        const when = d.toLocaleDateString('en', { weekday:'long', month:'short', day:'numeric' });
-        const isToday = d.toDateString() === today.toDateString();
-        const bits = [schedLocLabel(next), next.time, next.location].filter(Boolean).join(' · ');
-        box.style.cssText = 'background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px';
-        box.innerHTML = `<div style="font-size:24px">🏈</div>
-          <div style="font-size:13px;color:var(--gray-1);line-height:1.4">
-            <span style="color:var(--team-primary);font-weight:600">${isToday ? 'Today' : 'Next'}: ${when} · ${schedEventName(next)}</span>
-            ${bits ? '<br>' + bits : ''}
-          </div>`;
-      }
-    }
-
-    // This week
+    // This week — one tile per day
     const weekEl = document.getElementById('parent-week-events');
     if (weekEl) {
-      weekEl.innerHTML = thisWeek.length
-        ? thisWeek.map(g => parentEventRow(g, today)).join('')
-        : `<div style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px">Nothing else scheduled this week.</div>`;
+      const days = groupEventsByDay(thisWeek);
+      weekEl.innerHTML = days.length
+        ? days.map(d => parentDayTile(d.date, d.events, today)).join('')
+        : `<div style="text-align:center;padding:20px;color:var(--fg-3);font-size:13px">Nothing scheduled this week.</div>`;
     }
 
-    // Coming up — everything after this week, capped so Home stays a dashboard.
+    // Coming up — everything after this week, one tile per day, capped so Home
+    // stays a dashboard rather than a second schedule.
     const upWrap = document.getElementById('parent-upcoming-wrap');
     const upEl = document.getElementById('parent-upcoming-events');
     if (upWrap && upEl) {
-      const CAP = 5;
-      if (!later.length) { upWrap.style.display = 'none'; upEl.innerHTML = ''; }
+      const CAP_DAYS = 5;
+      const days = groupEventsByDay(later);
+      if (!days.length) { upWrap.style.display = 'none'; upEl.innerHTML = ''; }
       else {
         upWrap.style.display = 'block';
-        const shown = later.slice(0, CAP);
-        upEl.innerHTML = shown.map(g => parentEventRow(g, today)).join('')
-          + (later.length > CAP
+        upEl.innerHTML = days.slice(0, CAP_DAYS).map(d => parentDayTile(d.date, d.events, today)).join('')
+          + (days.length > CAP_DAYS
               ? `<div onclick="showTab('parent','schedule')" style="text-align:center;padding:10px;color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer">View all ${later.length} upcoming events ›</div>`
               : '');
       }
@@ -20909,6 +20949,10 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       populatePlayerHome(); // roster is already loaded by this point
     } else if (appRole === 'parent') {
       renderAnnouncements('parent');
+      // Home renders during buildNav/showTab, BEFORE the awaits above resolve, so
+      // SCHEDULE was still empty then — This week/Coming up came up blank until you
+      // visited Schedule and came back. Re-render now that the data is in.
+      renderParentHome();
     } else {
       renderAnnouncements('coach');
       const activePl = document.getElementById('home-active-players');

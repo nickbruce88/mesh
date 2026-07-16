@@ -23,6 +23,31 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 3d (2026-07-15) — Parent schedule + home dashboard rework → v39.62
+All user-requested after live-testing v39.61.
+- **Schedule list "stuck in June"** — it rendered the WHOLE season from the earliest event. Now defaults to
+  **upcoming only**, with a **"▾ Show past results (N)"** toggle inside the list (`_schedShowPast` +
+  `toggleSchedPast(role)`). User picked toggle over hard-hiding so W–L history stays reachable.
+  **Applied to BOTH parent and player** (shared `renderRoleSchedule`) — the player list had the same bug.
+  NOTE: the *calendar* view was never stuck; it correctly inits to the current month (`schedCalMonth`).
+- **List/Calendar buttons** — parent used `.sched-view-toggle`/`.sched-view-btn`, which have **NO CSS
+  anywhere** (that's why they looked wrong). Now the player's `btn-sm` + `.active-btn` + inline team
+  colours. `setSchedView` toggles `active-btn` (was the unstyled `active`).
+- **Home "Coming up" was empty until you visited Schedule and came back** — `launchApp` renders Home via
+  buildNav/showTab BEFORE `await loadScheduleFromSupabase(...)` resolves, and the parent branch (unlike
+  coach's `updateNextGame`) never re-rendered. Added `renderParentHome()` to the parent branch after the
+  loads.
+- **Today was listed twice** — the `#parent-next-game` banner AND a This-week row. Banner **deleted**;
+  today now appears only in This week, **filled** in team colour (`--team-primary-glow-sm` +
+  `--team-primary-glow`) rather than outlined, with a TODAY pill.
+- **"This week" is now the calendar week, Sun–Sat** (was today→Sunday), and **includes earlier days of the
+  current week** that already happened — per user: "anything from Sun-Sat".
+- **One tile per DAY, not per event** — `parentDayTile(dateStr, events, today)` + `groupEventsByDay()`.
+  All of a day's events stack inside one tile (7 days ⇒ max 7 tiles). Applies to This week AND Coming up.
+  `parentEventRow` deleted. Coming up caps at **5 DAYS** (was 5 events) + "View all N upcoming events ›".
+- Verified in-browser with injected data: last week excluded, Sunday-this-week included, 2 events today =
+  1 filled tile, 2 events on one future day = 1 tile, cap + link, both roles' list toggles, buttons match.
+
 ## SESSION 3c (2026-07-15) — Calendar export actually works now → v39.61
 `exportCalendar`/`buildICS` iterated **`SEASON_EVENTS`, a hardcoded EMPTY array** → every role (coach,
 player, parent) downloaded an **empty .ics**. Rewrote `buildICS` to iterate the real `SCHEDULE`.
