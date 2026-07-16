@@ -5250,7 +5250,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.68</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.69</div>
   </div>
 </div>
 
@@ -5261,7 +5261,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.68';
+  const APP_VERSION = 'v39.69';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5682,7 +5682,7 @@
       <div class="player-hero" style="margin-bottom:16px">
         <div class="player-jersey">${p.num ? '#' + p.num : initials}</div>
         <div>
-          <div class="player-name">${p.name || '—'}</div>
+          <div class="player-name">${_esc(p.name || '—')}</div>
           <div class="player-pos">${val(p.pos)}</div>
           <div style="margin-top:6px"><span class="pill pill-green">${val(p.status) === '—' ? 'Active' : p.status}</span></div>
         </div>
@@ -6338,10 +6338,10 @@
       row.id = `att-row-${p.id}`;
       row.innerHTML = `
         <div style="width:34px;height:34px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">
-          ${(p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
+          ${_esc((p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase())}
         </div>
         <div class="att-player-info">
-          <div class="att-player-name">${p.name||'—'}</div>
+          <div class="att-player-name">${_esc(p.name||'—')}</div>
           <div class="att-player-meta">${posLine || '—'} · ${p.year||'—'} · ${p.num||'—'}</div>
         </div>
         <div class="att-pills">
@@ -6971,15 +6971,15 @@
       return `<div class="perf-byplayer-card" onclick="openPlayerHistory('${p.id}')" style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:${hasData?'12px':'0'}">
           <div style="width:36px;height:36px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">
-            ${(p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
+            ${_esc((p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase())}
           </div>
           <div>
-            <div style="font-size:14px;font-weight:600">${p.name}</div>
+            <div style="font-size:14px;font-weight:600">${_esc(p.name)}</div>
             <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'}</div>
           </div>
           <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
             ${hasData?'<span style="font-size:11px;color:var(--fg-3)">'+records.length+' records ›</span>':''}
-            <button onclick="event.stopPropagation();openLogSessionForPlayer('${p.id}','${(p.name||'').replace(/'/g,"\\'")}')" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;color:var(--fg);cursor:pointer">+ Log</button>
+            <button onclick="event.stopPropagation();openLogSessionForPlayer('${p.id}','${_escAttr(p.name)}')" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;color:var(--fg);cursor:pointer">+ Log</button>
           </div>
         </div>
         ${hasData ? `<div style="display:flex;flex-wrap:wrap;gap:8px">
@@ -7062,17 +7062,17 @@
       <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
           <div style="width:38px;height:38px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">
-            ${(p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
+            ${_esc((p.name||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase())}
           </div>
           <div style="flex:1">
-            <div style="font-size:17px;font-weight:700">${p.name}</div>
+            <div style="font-size:17px;font-weight:700">${_esc(p.name)}</div>
             <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'} · session history</div>
           </div>
           <div onclick="document.getElementById('perf-history-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
         </div>
         <div style="font-size:11px;color:var(--fg-3);margin:10px 0 14px">▲ improvement vs. previous session · ▼ regression</div>
         ${bodyHtml}
-        <button onclick="event.stopPropagation();document.getElementById('perf-history-overlay').remove();openLogSessionForPlayer('${p.id}','${(p.name||'').replace(/'/g,"\\'")}')" class="btn-primary" style="width:100%;font-size:14px;margin-top:6px">+ Log new session</button>
+        <button onclick="event.stopPropagation();document.getElementById('perf-history-overlay').remove();openLogSessionForPlayer('${p.id}','${_escAttr(p.name)}')" class="btn-primary" style="width:100%;font-size:14px;margin-top:6px">+ Log new session</button>
       </div>`;
     document.body.appendChild(overlay);
   }
@@ -7193,7 +7193,7 @@
     );
     if (!players.length){ results.innerHTML='<div style="padding:8px 10px;font-size:13px;color:var(--fg-3)">No players found</div>'; results.style.display='block'; return; }
     results.innerHTML = players.slice(0,50).map(p =>
-      `<div onclick="selectLogPlayer('${p.id}','${(p.name||'').replace(/'/g,"\\'")}','${p.pos||'—'}','${p.num||'—'}')" style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${p.name} <span style="color:var(--fg-3)">— ${p.pos||'—'} #${p.num||'—'}</span></div>`
+      `<div onclick="selectLogPlayer('${p.id}','${_escAttr(p.name)}','${_escAttr(p.pos||'—')}','${_escAttr(p.num||'—')}')" style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${_esc(p.name)} <span style="color:var(--fg-3)">— ${_esc(p.pos||'—')} #${_esc(p.num||'—')}</span></div>`
     ).join('');
     results.style.display='block';
   }
@@ -7240,7 +7240,7 @@
           ${players.length ? players.map(p=>`
             <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border)">
               <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_esc(p.name)}</div>
                 <div style="font-size:11px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'}</div>
               </div>
               <input type="number" data-bulk-player="${p.id}" class="input-field bulk-val" placeholder="—" style="width:88px" step="0.01">
@@ -12489,6 +12489,10 @@
     return 'Me';
   }
   function _esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  // Safe to drop a user string into a JS string literal that itself sits inside a
+  // double-quoted HTML attribute, e.g. onclick="f('${_escAttr(name)}')". JS-escape
+  // first (backslash, quotes), then HTML-escape the result for the attribute.
+  function _escAttr(s){ return _esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")); }
 
   function threadAvatar(t){
     if (t.kind === 'broadcast') {
@@ -13286,7 +13290,7 @@
           row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)';
           row.innerHTML = `
             <div style="font-size:11px;font-weight:700;color:${color};min-width:36px">${p.pos||'—'}</div>
-            <div style="font-size:13px;font-weight:600;color:var(--fg);flex:1">${p.name} <span style="color:var(--fg-3);font-weight:400">${p.num||'—'}</span></div>`;
+            <div style="font-size:13px;font-weight:600;color:var(--fg);flex:1">${_esc(p.name)} <span style="color:var(--fg-3);font-weight:400">${_esc(p.num||'—')}</span></div>`;
           const sel = document.createElement('select');
           sel.style.cssText = 'background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:11px;color:var(--fg);font-family:var(--font);cursor:pointer';
           TEAM_GROUPS.forEach(g => {
@@ -13916,7 +13920,7 @@
           setTimeout(() => {
             Object.values(byPlayerGame).forEach(s => {
               const player = PLAYERS.find(p => p.db_id === s.player_id || p.id === s.player_id);
-              addNotif(`📊 <span>${player?.name || 'A player'}</span> submitted stats for ${s.opponent || 'a game'} — awaiting approval.`, () => {
+              addNotif(`📊 <span>${_esc(player?.name || 'A player')}</span> submitted stats for ${_esc(s.opponent || 'a game')} — awaiting approval.`, () => {
                 showTab('coach', 'more');
                 setTimeout(() => showMoreSection('performance'), 50);
               });
@@ -14288,7 +14292,7 @@
       row.innerHTML = `
         <div class="roster-num" style="width:36px;height:36px;font-size:12px">${p.num}</div>
         <div style="flex:1">
-          <div style="font-size:14px;font-weight:600">${p.name}</div>
+          <div style="font-size:14px;font-weight:600">${_esc(p.name)}</div>
           <div style="font-size:12px;color:var(--gray-2)">${p.pos} · ${p.year}</div>
         </div>
         <div class="btn-sm">Select</div>`;
@@ -14950,7 +14954,7 @@ ${printBtnHtml}
             <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">PLAYER</div>
             <select id="css-player" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
               <option value="">Select a player...</option>
-              ${PLAYERS.map(p => `<option value="${p.db_id||p.id}">${p.name}${p.position?' · '+p.position:''}</option>`).join('')}
+              ${PLAYERS.map(p => `<option value="${p.db_id||p.id}">${_esc(p.name)}${p.position?' · '+_esc(p.position):''}</option>`).join('')}
             </select>
           </div>
           <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
@@ -16227,13 +16231,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       row.addEventListener('drop', dragDrop);
       row.addEventListener('dragend', dragEnd);
 
-      const timeCell = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${p.id}','${p.start}','${p.name}')">
+      const timeCell = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${p.id}','${_escAttr(p.start)}','${_escAttr(p.name)}')">
         <div class="gt-time">${p.start}</div><div class="gt-dur">${p.duration} min</div><div class="gt-num">${p.id}</div>
       </div>`;
 
       let bodyCell;
       if (isSpan) {
-        bodyCell = `<div class="grid-cell cell-span left-align"><div class="cell-activity">${p.name}</div></div>`;
+        bodyCell = `<div class="grid-cell cell-span left-align"><div class="cell-activity">${_esc(p.name)}</div></div>`;
       } else {
         const cells = COLS.map(col =>
           `<div class="grid-cell active-cell" data-col="${col}" onclick="openCellNote('${p.id}','${col}','Coach','${p.cells[col]||''}')">
@@ -16468,7 +16472,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       div.innerHTML = `
         <div class="roster-num">${formatNum(p.num)}</div>
         <div class="roster-info">
-          <div class="roster-name">${p.name}</div>
+          <div class="roster-name">${_esc(p.name)}</div>
           <div class="roster-sub">${p.pos} · ${p.year}${p.unit && p.unit !== 'null' ? ' · ' + p.unit : ''}${noteCount > 0 ? ' · ' + noteCount + ' note' + (noteCount>1?'s':'') : ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
@@ -16673,11 +16677,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     // Contacts
     document.getElementById('pp-contacts-list').innerHTML = `
-      <div class="pp-info-row"><span class="pp-info-label">Parent / Guardian</span><span class="pp-info-value">${player.parent}</span></div>
-      <div class="pp-info-row"><span class="pp-info-label">Phone</span><span class="pp-info-value" style="color:var(--team-primary)">${player.parentPhone}</span></div>
-      <div class="pp-info-row"><span class="pp-info-label">Email</span><span class="pp-info-value" style="color:var(--team-primary);font-size:11px">${player.parentEmail}</span></div>`;
+      <div class="pp-info-row"><span class="pp-info-label">Parent / Guardian</span><span class="pp-info-value">${_esc(player.parent)}</span></div>
+      <div class="pp-info-row"><span class="pp-info-label">Phone</span><span class="pp-info-value" style="color:var(--team-primary)">${_esc(player.parentPhone)}</span></div>
+      <div class="pp-info-row"><span class="pp-info-label">Email</span><span class="pp-info-value" style="color:var(--team-primary);font-size:11px">${_esc(player.parentEmail)}</span></div>`;
     document.getElementById('pp-comms-list').innerHTML = `
-      <div class="pp-note-card"><div class="pp-note-head"><span class="pp-note-author">${player.parent}</span><span class="pp-note-date">Oct 12</span></div><div class="pp-note-text">Reached out via app message regarding Friday game schedule. Confirmed kickoff time and bus departure.</div><span class="pp-note-tag parent">Parent contact</span></div>`;
+      <div class="pp-note-card"><div class="pp-note-head"><span class="pp-note-author">${_esc(player.parent)}</span><span class="pp-note-date">Oct 12</span></div><div class="pp-note-text">Reached out via app message regarding Friday game schedule. Confirmed kickoff time and bus departure.</div><span class="pp-note-tag parent">Parent contact</span></div>`;
 
     // Reset to overview tab
     showPPTab('overview');
@@ -17485,7 +17489,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       row.className = 'assign-roster-row';
       row.innerHTML = `
         <div class="roster-num" style="width:36px;height:36px;font-size:12px">${p.num}</div>
-        <div style="flex:1"><div style="font-size:14px;font-weight:600">${p.name}</div><div style="font-size:12px;color:var(--gray-2)">${p.pos} · ${p.year}</div></div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600">${_esc(p.name)}</div><div style="font-size:12px;color:var(--gray-2)">${p.pos} · ${p.year}</div></div>
         <div class="btn-sm">Assign</div>`;
       row.onclick = () => confirmAssign(p.name);
       list.appendChild(row);
@@ -18431,7 +18435,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
             return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);${isMe?'background:var(--team-primary-glow-sm);':''}" >
               <div style="font-size:16px;width:28px;text-align:center">${medal}</div>
               <div style="flex:1;font-size:13px;font-weight:${isMe?'700':'500'};color:${isMe?'var(--team-primary)':'var(--fg)'}">
-                ${p?.name||'Player'}${isMe?' (You)':''}
+                ${_esc(p?.name||'Player')}${isMe?' (You)':''}
               </div>
               <div style="font-size:14px;font-weight:700;color:var(--fg)">${r.value}${c.unit?' '+c.unit:''}</div>
             </div>`;
@@ -19487,7 +19491,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
           <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">PLAYER</div>
           <select id="log-stats-player" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
             <option value="">Select a player...</option>
-            ${players.map(p => `<option value="${p.id||p.db_id}">${p.name} — ${p.pos||''} ${p.num||''}</option>`).join('')}
+            ${players.map(p => `<option value="${p.id||p.db_id}">${_esc(p.name)} — ${_esc(p.pos||'')} ${_esc(p.num||'')}</option>`).join('')}
           </select>
         </div>
 
@@ -19564,7 +19568,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       }).join(' · ');
       return `<div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius);padding:12px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div style="font-size:13px;font-weight:700">${player?.name || 'Player'}</div>
+          <div style="font-size:13px;font-weight:700">${_esc(player?.name || 'Player')}</div>
           <div style="font-size:11px;color:var(--fg-3)">${g.opponent || ''} · ${g.game_date || ''}</div>
         </div>
         <div style="font-size:12px;color:var(--fg-2);margin-bottom:10px">${statLine}</div>
@@ -19593,7 +19597,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       ${Object.entries(byPlayer).map(([pid, stats]) => {
         const player = PLAYERS.find(p => (p.id||p.db_id) === pid);
         return `<div style="background:rgba(255,184,0,0.08);border:1px solid rgba(255,184,0,0.2);border-radius:var(--radius);padding:10px;margin-bottom:8px">
-          <div style="font-size:13px;font-weight:600;margin-bottom:8px">${player?.name||'Player'}</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px">${_esc(player?.name||'Player')}</div>
           <div style="font-size:12px;color:var(--fg-2);margin-bottom:8px">${stats.map(s => {
             const cat = STAT_CATEGORIES.find(c => c.key === s.category);
             return `${cat?.label||s.category}: ${s.value}`;
