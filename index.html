@@ -5250,7 +5250,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.64</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.65</div>
   </div>
 </div>
 
@@ -5261,7 +5261,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.64';
+  const APP_VERSION = 'v39.65';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -8412,6 +8412,9 @@
           const row = {
             program_id: programId,
             name: p.name, num: p.num, pos: p.pos, year: p.year,
+            // The importer maps off_position/def_position/st_position headers and
+            // the depth chart reads them — they just were never persisted.
+            position_off: p.posOff || '', position_def: p.posDef || '', position_st: p.posST || '',
             height: p.height, weight: p.weight, gpa: p.gpa,
             parent_name: p.parent, parent_phone: p.parentPhone, parent_email: p.parentEmail,
             role: 'player', status: 'Active',
@@ -8428,6 +8431,7 @@
             const { data: updated } = await db.from('players')
               .update({
                 num: row.num, pos: row.pos, year: row.year,
+                position_off: row.position_off, position_def: row.position_def, position_st: row.position_st,
                 height: row.height, weight: row.weight, gpa: row.gpa,
                 parent_name: row.parent_name, parent_phone: row.parent_phone, parent_email: row.parent_email,
               })
@@ -8526,6 +8530,7 @@
         const { data, error } = await db.from('players').insert([{
           program_id: programId,
           name: row.name, num: row.num, pos: row.pos, year: row.year,
+          position_off: row.posOff, position_def: row.posDef, position_st: row.posST,
           height: row.height, weight: row.weight,
           parent_name: row.parent, parent_phone: row.parentPhone, parent_email: row.parentEmail,
           role: 'player', status: 'Active',
@@ -9959,6 +9964,12 @@
           existing.db_id = p.id;
           existing.disciplinaryStatus = p.disciplinary_status || 'green';
           existing.group = p.group_name || existing.group || '';
+          // nickname + the off/def/st positions the depth chart reads. These were
+          // never loaded back, so they vanished on reload even once saved.
+          existing.nickname = p.nickname || existing.nickname || '';
+          existing.posOff = p.position_off || existing.posOff || '';
+          existing.posDef = p.position_def || existing.posDef || '';
+          existing.posST  = p.position_st  || existing.posST  || '';
           // Merge notes from Supabase if available
           try {
             if (p.notes_data) existing.notes = JSON.parse(p.notes_data) || existing.notes;
@@ -9968,7 +9979,8 @@
         } else {
           const newPlayer = {
             id: p.id, db_id: p.id,
-            name: p.name, num: p.num, pos: p.pos,
+            name: p.name, nickname: p.nickname || '', num: p.num, pos: p.pos,
+            posOff: p.position_off || '', posDef: p.position_def || '', posST: p.position_st || '',
             year: p.year || '', height: p.height || '', weight: p.weight || '',
             gpa: p.gpa || '—', status: p.status || 'Active',
             group: (p.group_name && p.group_name !== 'null') ? p.group_name : '',
@@ -16194,17 +16206,41 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     renderCoachRoster();
     openPlayerProfile(player.name); // refresh the card
 
-    // Save to Supabase
-    const programId = localStorage.getItem('mesh_program_id');
-    if (programId) {
-      try {
-        await db.from('players').update({
-          name: player.name, nickname: player.nickname, number: player.num,
-          position: player.pos, position_off: player.posOff, position_def: player.posDef,
-          position_st: player.posST, year: player.year, height: player.height,
-          weight: player.weight, gpa: player.gpa
-        }).eq('id', playerId);
-      } catch(e) { console.warn('Player save error:', e); }
+    // Save to Supabase.
+    // The real columns are num/pos/nickname (+ position_off/def/st, added in
+    // planning/player-columns.sql) — this used to write `number`/`position`/
+    // `position_off…` before those existed, and PostgREST rejects the WHOLE
+    // statement on one unknown column, so NOTHING saved, not even the name.
+    // The error was never checked (supabase-js returns {error}, it doesn't
+    // throw) and the success toast fired regardless.
+    // Prefer db_id — `playerId` is the local id, which for a not-yet-synced
+    // player ('local_…'/'p…') would match zero rows. Same real-vs-local id test
+    // the attendance sync uses.
+    const dbId = player.db_id || playerId;
+    const isRealId = dbId && String(dbId).includes('-') && !String(dbId).startsWith('local_');
+    if (!isRealId) {
+      // Local-only player that never reached Supabase — don't pretend it saved.
+      showToast('Saved on this device — not yet synced');
+      return;
+    }
+    const { error } = await db.from('players').update({
+      name: player.name,
+      nickname: player.nickname,
+      num: player.num,
+      pos: player.pos,
+      position_off: player.posOff,
+      position_def: player.posDef,
+      position_st: player.posST,
+      year: player.year,
+      height: player.height,
+      weight: player.weight,
+      gpa: player.gpa
+    }).eq('id', dbId);
+
+    if (error) {
+      console.error('[Roster] savePlayerEdit error:', error);
+      showToast('Could not save — changes may be lost on reload');
+      return;
     }
     showToast('Player updated ✓');
   }

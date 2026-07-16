@@ -23,6 +23,41 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 4 (2026-07-15) — Coach player-edit saved NOTHING → v39.65
+**⚠️ RUN `planning/player-columns.sql` BEFORE (or with) DEPLOYING v39.65.** The client now writes
+`position_off/position_def/position_st`; until those columns exist the update still fails (it will at
+least TOAST the failure now instead of lying).
+
+**The bug:** `savePlayerEdit` wrote `number`, `position`, `position_off`, `position_def`, `position_st`.
+Verified against `information_schema`: the real columns are **`num`, `pos`, `nickname`, `unit`** — none of
+those five existed. PostgREST rejects the WHOLE statement on one unknown column, so **editing a player
+saved nothing at all** — not the name, year, height, weight or GPA either. And it was invisible:
+supabase-js returns `{error}` rather than throwing, the call never destructured `error` (so the `try/catch`
+was decorative), and `showToast('Player updated ✓')` fired unconditionally after the local object was
+already mutated. Coach edits → UI updates → success toast → gone on reload.
+
+**Also found: posOff/posDef/posST NEVER persisted anywhere.** They drive the depth chart
+(`buildDCFromPlayers` ~6215/6300), the CSV importer maps `off_position/def_position/st_position` headers
+(~8295), and both add-player forms collect them — but no column existed and NO write path sent them. A
+coach imported off/def/st positions, the depth chart looked right, and the data vanished on reload (the
+chart silently fell back to the single `pos`). `nickname` had a column but the roster loader never selected
+it back, so it was lost too.
+
+**Fixed (v39.65):**
+- `planning/player-columns.sql` — adds `position_off`, `position_def`, `position_st` (idempotent).
+- `savePlayerEdit`: correct columns; **checks `error`** and toasts the truth; uses `player.db_id` (was the
+  local `playerId`, which matches zero rows for a not-yet-synced player); local-only players now say
+  "Saved on this device — not yet synced" instead of claiming a save.
+- Roster loader now reads back `nickname` + `position_off/def/st` (both the new-player and existing-player
+  branches).
+- Manual add (~8533) + CSV import insert (~8417) and merge-update (~8434) now persist the positions.
+- Verified in-browser with a stubbed `db.from`: exact payload = the 11 real columns, `.eq('id', uuid)`;
+  DB error → failure toast, no false success; local-only → no DB call.
+
+**Still swallowing errors (NOT fixed, same latent pattern, correct column names so they likely work):**
+delete (~16235), the two discipline saves (~16528/~16644), the CSV import writes (~8428/~8442). They'd all
+fail silently under RLS. `unit` is an ORPHAN column — exists on `players`, read/written by nothing.
+
 ## SESSION 3f (2026-07-15) — Calendar is the default schedule view → v39.64
 User: "set the default calendar view for all roles that have a schedule tab to be calendar instead of list".
 - **Parent only actually changed.** Audit of the three roles:
