@@ -1,5 +1,22 @@
 # Mesh — Session Handoff
-_Last updated: 2026-07-15 (session 3). Read this first when resuming._
+_Last updated: 2026-07-16 (session 6d). Read this first when resuming._
+
+## ⛔ PARKED — BUILD BEFORE ONBOARDING ANY UNDER-13 PLAYER (post-beta)
+**Verifiable parental-consent gate (COPPA).** The live TOS + Privacy Policy now state the beta is **13+ only**
+and that we do **not** collect under-13 data. That is the ONLY thing keeping us out of COPPA's verifiable-consent
+requirement right now — we're compliant by *not collecting*, not by having a mechanism.
+
+Before the real app enables under-13 use (e.g. middle-school feeder programs), you MUST build:
+- A real **verifiable parental-consent flow** (COPPA §6502) that runs BEFORE any personal info is collected
+  from a child under 13 — coach-entered roster data counts as collection.
+- COPPA **direct-notice** text to parents (what we collect, how it's used, their right to review/refuse/delete),
+  lawyer-reviewed alongside the flow.
+- Then update privacy §5 / terms §3 to remove the "13+ only during beta" limitation.
+
+The Privacy Policy already *promises* this ("if we later enable Mesh for children under 13, we will first obtain
+verifiable parental consent") — so shipping under-13 support without it would contradict our own live policy.
+Docs pushed at commit b133122 (2026-07-16). This item was deferred deliberately by the founder; do not treat
+it as beta-blocking.
 
 ## SESSION 3b (2026-07-15) — Parent Home events + Playbook removal → v39.60
 User-requested after v39.59 went live and My Player was confirmed pulling real data.
