@@ -23,6 +23,20 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 3f (2026-07-15) — Calendar is the default schedule view → v39.64
+User: "set the default calendar view for all roles that have a schedule tab to be calendar instead of list".
+- **Parent only actually changed.** Audit of the three roles:
+  - **coach** — schedule (`more-schedule`) is **calendar-only**; no list view, no toggle. `renderSchedule()`
+    literally comments "Always render calendar view now". Nothing to change.
+  - **player** — already defaulted to Calendar. Nothing to change.
+  - **parent** — defaulted to List. Flipped: `parent-sched-cal` no longer `display:none`,
+    `parent-sched-list` is now `display:none`, and `active-btn` + inline team colours moved from
+    `parent-view-list` to `parent-view-cal`. Now matches the player exactly.
+- Defaults live in the MARKUP (`display` + `active-btn`); `renderRoleSchedule` populates both views but
+  never touches `display`, so flipping the markup is the whole change. `setSchedView` handles switching.
+- Verified in-browser for parent AND player: calendar visible + active by default, list hidden, toggle
+  round-trips both ways.
+
 ## SESSION 3e (2026-07-15) — Parent Home = this week only → v39.63
 User: "totally get rid of the Coming up section... Only show what is happening this week on the home page."
 - **"Coming up" section REMOVED** (markup + render code + the 5-day cap + the "View all N" link).

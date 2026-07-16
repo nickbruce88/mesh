@@ -4016,13 +4016,13 @@
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <button class="btn-sm" onclick="exportCalendar('parent')">📅 Export</button>
         <div style="display:flex;gap:6px">
-          <button class="btn-sm active-btn" id="parent-view-list" onclick="setSchedView('parent','list',this)" style="background:var(--team-primary);color:var(--team-primary-text)">List</button>
-          <button class="btn-sm" id="parent-view-cal" onclick="setSchedView('parent','cal',this)">Calendar</button>
+          <button class="btn-sm" id="parent-view-list" onclick="setSchedView('parent','list',this)">List</button>
+          <button class="btn-sm active-btn" id="parent-view-cal" onclick="setSchedView('parent','cal',this)" style="background:var(--team-primary);color:var(--team-primary-text)">Calendar</button>
         </div>
       </div>
     </div>
-    <div id="parent-sched-cal" style="display:none;margin-top:14px"></div>
-    <div id="parent-sched-list" style="margin-top:0"></div><!-- end parent-sched-list -->
+    <div id="parent-sched-cal" style="margin-top:14px"></div>
+    <div id="parent-sched-list" style="margin-top:14px;display:none"></div><!-- end parent-sched-list -->
   </div><!-- end tab-parent-schedule -->
 
   <!-- Parent Messages -->
@@ -5250,7 +5250,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.63</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.64</div>
   </div>
 </div>
 
@@ -5261,7 +5261,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.63';
+  const APP_VERSION = 'v39.64';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
