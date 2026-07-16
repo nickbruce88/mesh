@@ -23,6 +23,25 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 6b (2026-07-16) — "Lying writes" swept → v39.74
+The audit's systemic finding: `try { await db.from(x).update(y) } catch(e){}` catches nothing (supabase-js
+returns `{error}`, doesn't throw), so a failed write was invisible and usually followed by a "✓" toast.
+Fixed ~18 sites — each now checks `error` and, on failure, surfaces a warning instead of a false success.
+Verified in-browser (stubbed db): failure → warning toast; success → normal; no load errors.
+- **Immediate-toast (gated inline):** 3 performance writes (log/bulk/import), game_stats approve + reject.
+- **Flag-then-toast (write result changes the later success toast):** save note, disciplinary status,
+  inventory saveItem (both update + insert branches), inventory return, inventory assign ×2, coach-name
+  (saveEditProfile).
+- **Player delete:** the "removed" toast used to fire BEFORE the delete; now gated on the result, and the
+  broken `!startsWith('p')` local-id guard replaced with the real uuid test (it let `local_…` ids through
+  → errored on the uuid column).
+- **Blob-save helpers (warn on failure):** saveScheduleToSupabase, annSave, docSaveToSupabase,
+  saveDrillsToStorage, pbSaveToSupabase — each now toasts "⚠️ … may not have saved" on error.
+- **Fire-and-forget:** the depth-chart group drag (`group_name` update `.then(()=>{})`) now checks
+  `{error}` and warns.
+- **Left as-is (deliberately):** sidebar_font null-reset (cosmetic background) and avatar photo-remove
+  (minor, already logs). The remaining ~37 `catch(e){console…}` blocks are reads/JSON-parses, not writes.
+
 ## SESSION 6 (2026-07-16) — Silently-broken mobile/player features → v39.73
 All from the audit's "broken features" tier. Client-side, no SQL. Verified in-browser.
 1. **Playbook blank on mobile (coach AND player).** `pb-{unit}-content` was duplicated between the desktop

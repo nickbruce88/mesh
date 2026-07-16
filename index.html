@@ -5252,7 +5252,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.73</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.74</div>
   </div>
 </div>
 
@@ -5263,7 +5263,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.73';
+  const APP_VERSION = 'v39.74';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -7178,15 +7178,13 @@
 
     if (!rows.length) { showToast('Enter at least one value'); return; }
 
-    try {
-      await db.from('performance').insert(rows);
-      showToast('Session logged ✓');
-      document.getElementById('log-session-overlay')?.remove();
-      await loadPerfData();
-    } catch(e) {
-      console.error('Save perf error:', e);
-      showToast('Error saving — try again');
-    }
+    // supabase-js returns {error}; it does not throw, so the old try/catch caught
+    // nothing and "logged ✓" fired even when the insert failed.
+    const { error } = await db.from('performance').insert(rows);
+    if (error) { console.error('Save perf error:', error); showToast('Could not save — check your connection and try again'); return; }
+    showToast('Session logged ✓');
+    document.getElementById('log-session-overlay')?.remove();
+    await loadPerfData();
   }
 
   // ===== LOG SESSION — searchable player picker =====
@@ -7280,12 +7278,11 @@
       }
     });
     if(!rows.length){ showToast('Enter at least one value'); return; }
-    try{
-      await db.from('performance').insert(rows);
-      showToast(rows.length+' entries saved ✓');
-      document.getElementById('bulk-entry-overlay')?.remove();
-      await loadPerfData();
-    }catch(e){ console.error('Bulk save error:',e); showToast('Error saving — try again'); }
+    const { error } = await db.from('performance').insert(rows);
+    if (error) { console.error('Bulk save error:', error); showToast('Could not save — check your connection and try again'); return; }
+    showToast(rows.length+' entries saved ✓');
+    document.getElementById('bulk-entry-overlay')?.remove();
+    await loadPerfData();
   }
 
   // ===== PERFORMANCE IMPORT (CSV) =====
@@ -7431,12 +7428,11 @@
     if(!programId) return;
     if(!perfImportRows.length){ showToast('Nothing to import — check your data'); return; }
     const rows=perfImportRows.map(r=>({...r, program_id:programId}));
-    try{
-      await db.from('performance').insert(rows);
-      showToast(rows.length+' records imported ✓');
-      document.getElementById('perf-import-overlay')?.remove();
-      await loadPerfData();
-    }catch(e){ console.error('Perf import error:',e); showToast('Error importing — try again'); }
+    const { error } = await db.from('performance').insert(rows);
+    if (error) { console.error('Perf import error:', error); showToast('Could not import — check your connection and try again'); return; }
+    showToast(rows.length+' records imported ✓');
+    document.getElementById('perf-import-overlay')?.remove();
+    await loadPerfData();
   }
 
   // ===== IMPORT MENU =====
@@ -12249,14 +12245,16 @@
     let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
     user.name=name;
     localStorage.setItem('mesh_user',JSON.stringify(user));
-    try{
-      const pid=localStorage.getItem('mesh_program_id');
-      if(pid && window.db){ await db.from('programs').update({coach_name:name}).eq('id',pid); }
-    }catch(e){ console.warn('coach name sync skipped',e); }
+    let _profErr = null;
+    const pid=localStorage.getItem('mesh_program_id');
+    if(pid && window.db){
+      const { error } = await db.from('programs').update({coach_name:name}).eq('id',pid);
+      if (error) { console.error('coach name sync error', error); _profErr = error; }
+    }
     const sn=document.getElementById('sidebar-user-name'); if(sn) sn.textContent=name;
     refreshAllUserAvatars();
     document.getElementById('edit-profile-overlay')?.remove();
-    showToast('Profile updated ✓');
+    showToast(_profErr ? '⚠️ Saved on this device — sync failed; may revert on reload' : 'Profile updated ✓');
   }
 
   // ===== NOTIFICATION SETTINGS =====
@@ -13346,7 +13344,8 @@
       p.group = groupName === 'Unassigned' ? '' : groupName;
       if (p.db_id) {
         getValidProgramId().then(id => {
-          if (id) db.from('players').update({ group_name: p.group }).eq('id', p.db_id).then(() => {});
+          if (id) db.from('players').update({ group_name: p.group }).eq('id', p.db_id)
+            .then(({ error }) => { if (error) { console.error('Group save error:', error); showToast('⚠️ Group change may not have saved — check your connection'); } });
         });
       }
       syncGroupViews();
@@ -13908,10 +13907,8 @@
   async function saveScheduleToSupabase() {
     const programId = await getValidProgramId();
     if (!programId) return;
-    try {
-      await db.from('programs').update({ schedule: SCHEDULE }).eq('id', programId);
-      console.log('Schedule saved to Supabase');
-    } catch(e) { console.error('Schedule save error:', e); }
+    const { error } = await db.from('programs').update({ schedule: SCHEDULE }).eq('id', programId);
+    if (error) { console.error('Schedule save error:', error); showToast('⚠️ Schedule may not have saved — check your connection'); }
   }
 
   let _pendingStatsNotified = false;
@@ -13983,14 +13980,16 @@
 
   async function approveGameStat(statId) {
     if(!requireEdit('performance'))return;
-    await db.from('game_stats').update({ status: 'approved' }).eq('id', statId);
+    const { error } = await db.from('game_stats').update({ status: 'approved' }).eq('id', statId);
+    if (error) { console.error('Approve stat error:', error); showToast('Could not approve — check your connection'); return; }
     const pid = obProgram?.id || localStorage.getItem('mesh_program_id');
     if (pid) await loadGameStats(pid);
   }
 
   async function rejectGameStat(statId) {
     if(!requireEdit('performance'))return;
-    await db.from('game_stats').update({ status: 'rejected' }).eq('id', statId);
+    const { error } = await db.from('game_stats').update({ status: 'rejected' }).eq('id', statId);
+    if (error) { console.error('Reject stat error:', error); showToast('Could not reject — check your connection'); return; }
     const pid = obProgram?.id || localStorage.getItem('mesh_program_id');
     if (pid) await loadGameStats(pid);
   }
@@ -15253,9 +15252,8 @@ ${printBtnHtml}
   async function annSave() {
     const programId = await getValidProgramId();
     if (!programId) return;
-    try {
-      await db.from('programs').update({ announcements_data: JSON.stringify(ANNOUNCEMENTS) }).eq('id', programId);
-    } catch(e) { console.warn('Ann save error:', e); }
+    const { error } = await db.from('programs').update({ announcements_data: JSON.stringify(ANNOUNCEMENTS) }).eq('id', programId);
+    if (error) { console.error('Ann save error:', error); showToast('⚠️ Announcement may not have saved — check your connection'); }
   }
 
   async function annLoad() {
@@ -15517,9 +15515,8 @@ ${printBtnHtml}
     if(!requireEdit('docs'))return;
     const programId = localStorage.getItem('mesh_program_id');
     if (!programId) return;
-    try {
-      await db.from('programs').update({ documents_data: JSON.stringify(DOC_DATA) }).eq('id', programId);
-    } catch(e) { console.warn('Docs save error:', e); }
+    const { error } = await db.from('programs').update({ documents_data: JSON.stringify(DOC_DATA) }).eq('id', programId);
+    if (error) { console.error('Docs save error:', error); showToast('⚠️ Change may not have saved — check your connection'); }
   }
 
   async function docLoadFromSupabase() {
@@ -16599,17 +16596,18 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Close profile overlay
     closePlayerProfile();
     renderCoachRoster();
-    showToast(`${name} removed`);
 
-    // Delete from Supabase in background
-    if (dbId && !dbId.startsWith('p')) {
-      try {
-        await db.from('players').delete().eq('id', dbId);
-        console.log('Player deleted from Supabase:', name);
-      } catch(e) {
-        console.error('Error deleting player:', e);
-        showToast('Could not delete from database');
-      }
+    // Delete from Supabase. Real ids are uuids; local ids ('local_…'/'p…') never
+    // reached the DB. (The old !startsWith('p') guard let 'local_…' through, then
+    // hit the uuid column and errored.) supabase-js returns {error}, doesn't throw,
+    // and the "removed" toast used to fire BEFORE the delete was even attempted.
+    const isRealId = dbId && String(dbId).includes('-') && !String(dbId).startsWith('local_');
+    if (isRealId) {
+      const { error } = await db.from('players').delete().eq('id', dbId);
+      if (error) { console.error('Error deleting player:', error); showToast('⚠️ Removed here, but the database delete failed — they may reappear on reload'); }
+      else showToast(`${name} removed`);
+    } else {
+      showToast(`${name} removed`);
     }
 
     // Rebuild depth chart
@@ -16895,15 +16893,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     }
 
     // Save to Supabase — notes arrays + disciplinary status
+    let _noteSaveErr = null;
     if (player.db_id) {
-      try {
-        await db.from('players').update({
-          disciplinary_status: player.disciplinaryStatus || 'green',
-          notes_data: JSON.stringify(player.notes || []),
-          discipline_data: JSON.stringify(player.discipline || []),
-          academic_data: JSON.stringify(player.academic || [])
-        }).eq('id', player.db_id);
-      } catch(e) { console.error('Note save error:', e); }
+      const { error } = await db.from('players').update({
+        disciplinary_status: player.disciplinaryStatus || 'green',
+        notes_data: JSON.stringify(player.notes || []),
+        discipline_data: JSON.stringify(player.discipline || []),
+        academic_data: JSON.stringify(player.academic || [])
+      }).eq('id', player.db_id);
+      if (error) { console.error('Note save error:', error); _noteSaveErr = error; }
     }
 
 
@@ -16912,7 +16910,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     renderPPDiscipline(player);
     renderPPAcademic(player);
     renderCoachRoster();
-    showToast('Note saved ✓');
+    showToast(_noteSaveErr ? '⚠️ Saved on this device — sync failed; may be lost on reload' : 'Note saved ✓');
   }
 
   // ===== DISCIPLINARY STATUS =====
@@ -17011,19 +17009,16 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     renderPPDiscipline(player);
     renderCoachRoster();
 
+    let _discSaveErr = null;
     if (player.db_id) {
-      try {
-        await db.from('players').update({
-          disciplinary_status: newKey,
-          discipline_data: JSON.stringify(player.discipline || [])
-        }).eq('id', player.db_id);
-        // Clear localStorage fallback since we have Supabase
-      } catch(e) { console.error('Disc status save error:', e); }
-    } else {
-      // disc status saved to Supabase only
+      const { error } = await db.from('players').update({
+        disciplinary_status: newKey,
+        discipline_data: JSON.stringify(player.discipline || [])
+      }).eq('id', player.db_id);
+      if (error) { console.error('Disc status save error:', error); _discSaveErr = error; }
     }
 
-    showToast('Status updated — note logged ✓');
+    showToast(_discSaveErr ? '⚠️ Saved on this device — sync failed; may be lost on reload' : 'Status updated — note logged ✓');
     window._pendingDiscChange = null;
   }
 
@@ -17267,6 +17262,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     console.log('saveItem — validProgramId:', validProgramId);
 
+    let _invSaveErr = null;
     if (editingItemId) {
       // Update existing item
       const item = INVENTORY.find(i => i.id === editingItemId);
@@ -17280,12 +17276,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
         // Update in Supabase if we have a DB id
         if (item.db_id && validProgramId) {
-          try {
-            await db.from('inventory').update({
-              name: item.name, category: item.category, brand: item.brand,
-              size: item.size, condition: item.condition, qty: item.qty
-            }).eq('id', item.db_id);
-          } catch(e) { console.error('Inventory update error:', e); }
+          const { error } = await db.from('inventory').update({
+            name: item.name, category: item.category, brand: item.brand,
+            size: item.size, condition: item.condition, qty: item.qty
+          }).eq('id', item.db_id);
+          if (error) { console.error('Inventory update error:', error); _invSaveErr = error; }
         }
       }
     } else {
@@ -17309,8 +17304,9 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
             condition: newItem.condition, qty: newItem.qty,
             item_id: itemId, assigned_to: null
           }).select().single();
-          if (!error && data) newItem.db_id = data.id;
-        } catch(e) { console.error('Inventory insert error:', e); }
+          if (error) { console.error('Inventory insert error:', error); _invSaveErr = error; }
+          else if (data) newItem.db_id = data.id;
+        } catch(e) { console.error('Inventory insert error:', e); _invSaveErr = e; }
       }
 
       INVENTORY.push(newItem);
@@ -17318,7 +17314,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     closeAddItem();
     renderInventory();
-    showToast((editingItemId ? 'Item updated' : 'Item added') + ' ✓');
+    showToast(_invSaveErr ? '⚠️ Saved on this device — sync failed; may be lost on reload' : (editingItemId ? 'Item updated' : 'Item added') + ' ✓');
   }
 
   // ===== ITEM DETAIL =====
@@ -17384,13 +17380,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     item.assignedTo = null;
 
     // Update in Supabase
+    let _retErr = null;
     if (item.db_id) {
-      try {
-        await db.from('inventory').update({ assigned_to: null }).eq('id', item.db_id);
-      } catch(e) { console.error('Return item error:', e); }
+      const { error } = await db.from('inventory').update({ assigned_to: null }).eq('id', item.db_id);
+      if (error) { console.error('Return item error:', error); _retErr = error; }
     }
 
-    showToast(`${item.name} returned by ${playerName} ✓`);
+    showToast(_retErr ? '⚠️ Updated here, but the database sync failed — may revert on reload' : `${item.name} returned by ${playerName} ✓`);
     closeItemDetail();
     renderInventory();
     if (currentPlayerId) renderPPEquipment(PLAYERS.find(p => p.id === currentPlayerId));
@@ -17485,14 +17481,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const item = INVENTORY.find(i => i.id === itemId);
     if (!item) return;
     item.assignedTo = playerName;
+    let _assignErr = null;
     if (item.db_id) {
-      try { await db.from('inventory').update({ assigned_to: playerName }).eq('id', item.db_id); }
-      catch(e) { console.error('Assign from profile error:', e); }
+      const { error } = await db.from('inventory').update({ assigned_to: playerName }).eq('id', item.db_id);
+      if (error) { console.error('Assign from profile error:', error); _assignErr = error; }
     }
     closeAssignItemPick();
     renderInventory();
     renderPPEquipment(PLAYERS.find(p => p.id === currentPlayerId));
-    showToast(`${item.name} assigned to ${playerName} ✓`);
+    showToast(_assignErr ? '⚠️ Assigned here, but the database sync failed — may revert on reload' : `${item.name} assigned to ${playerName} ✓`);
   }
 
   function closeAssignItem() {
@@ -17522,14 +17519,15 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const item = INVENTORY.find(i => i.id === currentItemId);
     if (!item) return;
     item.assignedTo = playerName;
+    let _assignErr = null;
     if (item.db_id) {
-      try { await db.from('inventory').update({ assigned_to: playerName }).eq('id', item.db_id); }
-      catch(e) { console.error('Assign item error:', e); }
+      const { error } = await db.from('inventory').update({ assigned_to: playerName }).eq('id', item.db_id);
+      if (error) { console.error('Assign item error:', error); _assignErr = error; }
     }
     closeAssignItem();
     closeItemDetail();
     renderInventory();
-    showToast(`${item.name} assigned to ${playerName} ✓`);
+    showToast(_assignErr ? '⚠️ Assigned here, but the database sync failed — may revert on reload' : `${item.name} assigned to ${playerName} ✓`);
     if (currentPlayerId) renderPPEquipment(PLAYERS.find(p => p.id === currentPlayerId));
   }
 
@@ -20165,9 +20163,8 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     // Sync to Supabase in background
     const programId = localStorage.getItem('mesh_program_id');
     if (!programId) return;
-    try {
-      await db.from('programs').update({ drills_data: JSON.stringify(DRILLS) }).eq('id', programId);
-    } catch(e) { console.warn('Drill save error:', e); }
+    const { error } = await db.from('programs').update({ drills_data: JSON.stringify(DRILLS) }).eq('id', programId);
+    if (error) { console.error('Drill save error:', error); showToast('⚠️ Change may not have saved — check your connection'); }
   }
 
   // DRILLS loaded from Supabase on session restore
@@ -20656,9 +20653,8 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     if(!requireEdit('playbook'))return;
     const programId = localStorage.getItem('mesh_program_id');
     if (!programId) return;
-    try {
-      await db.from('programs').update({ playbook_data: JSON.stringify(PB_DATA) }).eq('id', programId);
-    } catch(e) { console.warn('Playbook save error:', e); }
+    const { error } = await db.from('programs').update({ playbook_data: JSON.stringify(PB_DATA) }).eq('id', programId);
+    if (error) { console.error('Playbook save error:', error); showToast('⚠️ Change may not have saved — check your connection'); }
   }
 
   async function pbLoadFromSupabase() {
