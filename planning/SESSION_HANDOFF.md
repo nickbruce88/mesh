@@ -23,6 +23,24 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 6c (2026-07-16) — Small-stuff cleanup → v39.75 (AUDIT COMPLETE)
+The last of the 17 audit findings. All verified in-browser.
+- **`##12` jersey** (my v39.59 bug): parent My Player rendered `'#' + p.num`, but `num` is stored WITH the
+  `#` on some paths (join/manual add) and without on others (CSV). Both parent sites now use `formatNum()`,
+  which strips any existing `#` then adds one — so it's `#22` regardless of source.
+- **"Active players" count**: filtered `p.active !== false`, but no loader sets `active` (the column is
+  `status`), so it counted the whole roster. Now counts `(p.status||'Active')==='Active'`.
+- **Note attribution "Coach"**: the main note-save already used the real name (`user.name`) into `author`
+  (notes) / `coach` (discipline). Two bugs: (a) the disc-status-change note used `mesh_user_name` (never
+  written) → now `_myName()`; (b) the player-facing note display read only `n.coach` → now
+  `n.coach || n.author` (and escaped), so general notes show the author instead of the literal "Coach".
+- **Inert notification toggles**: practice/games/roster had toggles but no producer ever sent those
+  categories. Removed from `NOTIF_OPTIONS`; only `messages` (which gates both bell + push) remains.
+
+**🎉 FULL AUDIT COMPLETE.** All 17 findings across signup, security (messaging authz + XSS sweep + RLS +
+dev-bypass + passwords + headers), silently-broken mobile features, lying writes, and small stuff are done.
+Everything through v39.74 is pushed/live; v39.75 is committed, pending push.
+
 ## SESSION 6b (2026-07-16) — "Lying writes" swept → v39.74
 The audit's systemic finding: `try { await db.from(x).update(y) } catch(e){}` catches nothing (supabase-js
 returns `{error}`, doesn't throw), so a failed write was invisible and usually followed by a "✓" toast.
