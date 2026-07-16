@@ -101,6 +101,46 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // ---------- AUTHORIZE THE CALLER ----------
+    // verify_jwt is on, so the caller is *some* logged-in Mesh user — but that alone
+    // let anyone push arbitrary title/body to ANY program's users and spoof a sender.
+    // Resolve who they are and confirm they belong to program_id (and, for a DM,
+    // that they're a participant of thread_id).
+    const cors = { 'Access-Control-Allow-Origin': '*' };
+    const authHeader = req.headers.get('Authorization') || '';
+    const callerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!callerToken) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors });
+    }
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: `Bearer ${callerToken}` } } }
+    );
+    const { data: { user: caller }, error: callerErr } = await authClient.auth.getUser();
+    if (callerErr || !caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: cors });
+    }
+    // Caller must belong to the program they're pushing to (checked with the
+    // service role so RLS on profiles/players doesn't hide the row).
+    const [{ data: prof }, { data: plyr }] = await Promise.all([
+      db.from('profiles').select('program_id').eq('id', caller.id).maybeSingle(),
+      db.from('players').select('program_id').eq('auth_uid', caller.id).maybeSingle(),
+    ]);
+    const callerProgram = prof?.program_id || plyr?.program_id || null;
+    if (!callerProgram || callerProgram !== program_id) {
+      return new Response(JSON.stringify({ error: 'Forbidden: not a member of this program' }), { status: 403, headers: cors });
+    }
+    // For a thread-scoped send (a DM), the caller must be a participant of that thread.
+    if (thread_id) {
+      const { data: part } = await db
+        .from('thread_participants').select('user_id')
+        .eq('thread_id', thread_id).eq('user_id', caller.id).maybeSingle();
+      if (!part) {
+        return new Response(JSON.stringify({ error: 'Forbidden: not a participant of this thread' }), { status: 403, headers: cors });
+      }
+    }
+
     // Fetch push subscriptions for this program.
     // If specific user ids are given (a DM), target ONLY those users; otherwise fall back to roles.
     let q = db

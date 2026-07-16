@@ -23,6 +23,35 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 5b (2026-07-15) — Security batch (findings A–D) → v39.68
+**⚠️ TWO OUT-OF-BAND STEPS REQUIRED — the git push alone does NOT close 3 of the 4:**
+1. **Run `planning/security-fixes.sql`** in the Supabase SQL editor (fixes the cross-program leak + witness rule).
+2. **Redeploy the `send-notification` edge function** (`supabase functions deploy send-notification`).
+The XSS fix ships with the push; the other three do not.
+
+- **A. Stored XSS (FIXED in index.html, live on push).** `renderMemberList` (~12856) now `_esc()`s
+  `m.name`, `m.initials`, `m.role`. Verified in-browser: `<img src=x onerror=…>` renders as inert text,
+  onerror never fires, no live `<img>`. **⚠️ BROADER SURFACE NOT YET FIXED:** ~18 other sites interpolate
+  `p.name` raw into innerHTML (roster list 16471, attendance 14291, perf pickers 7196/7243, depth chart
+  13289, etc.). Player self-signup names flow into coach-viewed renders, so a player named `<img onerror>`
+  fires in the head coach's session. Mixed HTML-text vs JS-attribute contexts (e.g. 7196/16230 put the name
+  inside an `onclick='…'` string — needs JS-string escaping, not `_esc`), so it's a careful per-site sweep,
+  not a blind replace. **Top security follow-up.**
+- **B. Cross-program broadcast leak (SQL — run security-fixes.sql).** `list_my_threads` filtered on the
+  caller-supplied `p_program_id` with no `my_program_id()` guard; SECURITY DEFINER ⇒ bypassed RLS. Added the
+  same up-front guard `create_thread` already had. Same one-line program guard added to the broadcast branch
+  of `thread_members` + `thread_participant_ids`.
+- **C. Witness/two-adult rule (SQL — run security-fixes.sql).** `create_thread` now enforces, server-side,
+  the EXACT rule from client `validateNG`: if a thread includes any player, it must have ≥2 coaches OR
+  (≥1 coach AND ≥1 parent). Evaluated over creator + participants + witnesses. A bare `[coach, player]` dm
+  now raises. Broadcasts (no participants) pass trivially.
+- **D. Edge function authorized nobody (TS — redeploy send-notification).** Added caller authorization:
+  extract the bearer JWT, `authClient.auth.getUser()`, confirm the caller's program (via profiles/players,
+  service-role lookup) == `program_id`, and for a `thread_id` send confirm the caller is a participant.
+  Verified the client sends `Authorization: Bearer <access_token>` (sendPushNotification ~5336), so this is
+  compatible with all 3 call sites (2 message paths + announcements). Could NOT run deno typecheck here
+  (not installed) — braces balance, logic tokens present; the deploy will typecheck.
+
 ## SESSION 5 (2026-07-15) — FULL APP AUDIT + signup blocker fix → v39.67
 User asked for a complete scrape of every role/tab/button. Ran 5 parallel audit agents (coach, player,
 data layer, messaging, auth/infra) + mechanical scans. **Every finding below was re-verified by hand** —

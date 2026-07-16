@@ -5250,7 +5250,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.67</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.68</div>
   </div>
 </div>
 
@@ -5261,7 +5261,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.67';
+  const APP_VERSION = 'v39.68';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12861,10 +12861,14 @@
       const row = document.createElement('div');
       row.className = 'member-row';
       const isChecked = selectedSet.has(m.id);
+      // m.name is free-text from create_profile → MUST be escaped (stored XSS
+      // otherwise: a member named <img src=x onerror=…> runs in the head coach's
+      // session here). initials are name-derived so escape them too; color/role
+      // are server-controlled enum/CSS values and id is a DB uuid.
       row.innerHTML = `
-        <div class="member-avatar" style="background:${m.color}22;color:${m.color}">${m.initials}</div>
-        <div class="member-name">${m.name}</div>
-        <span class="member-role-tag ${m.role}">${m.role}</span>
+        <div class="member-avatar" style="background:${m.color}22;color:${m.color}">${_esc(m.initials)}</div>
+        <div class="member-name">${_esc(m.name)}</div>
+        <span class="member-role-tag ${m.role}">${_esc(m.role)}</span>
         <div class="member-check ${isChecked ? 'checked' : ''}" onclick="toggleNGMember('${m.id}','${containerId}')">${isChecked ? '✓' : ''}</div>`;
       container.appendChild(row);
     });
