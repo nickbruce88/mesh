@@ -2425,7 +2425,12 @@
       <div class="ob-field-label">Email address *</div>
       <input class="input-field" id="join-account-email" placeholder="you@example.com" type="email" style="margin-bottom:12px">
       <div class="ob-field-label">Password *</div>
-      <input class="input-field" id="join-account-password" placeholder="At least 6 characters" type="password" style="margin-bottom:8px">
+      <input class="input-field" id="join-account-password" placeholder="At least 12 characters" type="password" style="margin-bottom:6px" autocomplete="new-password" oninput="checkJoinPasswordStrength(this.value)">
+      <div id="join-pw-reqs" style="font-size:11px;color:var(--fg-3);margin-bottom:10px;line-height:1.6">
+        <span id="joinpw-length">○ 12+ characters</span> · <span id="joinpw-upper">○ uppercase</span> · <span id="joinpw-number">○ number</span> · <span id="joinpw-special">○ symbol</span>
+      </div>
+      <div class="ob-field-label">Re-enter password *</div>
+      <input class="input-field" id="join-account-password-confirm" placeholder="Re-enter password" type="password" style="margin-bottom:8px" autocomplete="new-password">
       <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="join-account-error"></div>
       <button class="btn-primary" onclick="submitJoinAccount()">Next →</button>
     </div>
@@ -5247,7 +5252,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.71</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.72</div>
   </div>
 </div>
 
@@ -5258,7 +5263,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.71';
+  const APP_VERSION = 'v39.72';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9243,6 +9248,20 @@
     return { hasLength, hasUpper, hasNumber, hasSpecial, score };
   }
 
+  // Same rules as the coach signup, driving the join form's own indicator ids.
+  function checkJoinPasswordStrength(pw) {
+    const s = { hasLength: pw.length >= 12, hasUpper: /[A-Z]/.test(pw), hasNumber: /[0-9]/.test(pw), hasSpecial: /[^A-Za-z0-9]/.test(pw) };
+    const set = (id, met) => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = (met ? '✓ ' : '○ ') + el.textContent.slice(2); el.style.color = met ? 'var(--green)' : 'var(--fg-3)'; }
+    };
+    set('joinpw-length',  s.hasLength);
+    set('joinpw-upper',   s.hasUpper);
+    set('joinpw-number',  s.hasNumber);
+    set('joinpw-special', s.hasSpecial);
+    return s;
+  }
+
   async function createAccount() {
     const email   = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
@@ -9829,11 +9848,19 @@
   async function submitJoinAccount() {
     const email = document.getElementById('join-account-email').value.trim();
     const password = document.getElementById('join-account-password').value;
+    const confirm = document.getElementById('join-account-password-confirm').value;
     const errEl = document.getElementById('join-account-error');
     errEl.textContent = '';
 
     if (!email) { errEl.textContent = 'Please enter your email address.'; return; }
-    if (!password || password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+    if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
+    // Same requirements as the coach signup.
+    const strength = checkJoinPasswordStrength(password);
+    if (!strength.hasLength)  { errEl.textContent = 'Password must be at least 12 characters.'; return; }
+    if (!strength.hasUpper)   { errEl.textContent = 'Password must include an uppercase letter.'; return; }
+    if (!strength.hasNumber)  { errEl.textContent = 'Password must include a number.'; return; }
+    if (!strength.hasSpecial) { errEl.textContent = 'Password must include a special character (!@#$%^&*).'; return; }
+    if (password !== confirm) { errEl.textContent = 'Passwords don\'t match.'; return; }
 
     const btn = event.target;
     btn.textContent = 'Creating account…';

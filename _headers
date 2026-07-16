@@ -1,0 +1,40 @@
+# Cloudflare Pages security headers. Applies to every route.
+# Docs: https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  # Force HTTPS for 2 years (Cloudflare already serves HTTPS; this stops downgrade).
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  # Stop the browser from MIME-sniffing a response into something executable.
+  X-Content-Type-Options: nosniff
+  # Clickjacking: the app may not be framed by other sites.
+  X-Frame-Options: SAMEORIGIN
+  # Don't leak full URLs (which can contain ids) to other origins.
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Turn off device APIs the app doesn't use. CAMERA IS LEFT ENABLED on purpose —
+  # the equipment QR scanner (jsQR) needs it. Do not add camera=() here.
+  Permissions-Policy: microphone=(), geolocation=(), payment=(), usb=()
+
+# ------------------------------------------------------------------
+# Content-Security-Policy — NOT enabled yet. A missing origin here breaks the
+# live app silently, and the origins below need to be verified against every
+# feature (QR camera, PDF viewer, web push, Supabase realtime, storage images)
+# before turning it on. To enable: move a CSP line up into the /* block above
+# and TEST every feature on a preview deploy first.
+#
+# Starting point (origins seen in index.html as of v39.72):
+#   Content-Security-Policy:
+#     default-src 'self';
+#     script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com;
+#     style-src 'self' 'unsafe-inline';
+#     img-src 'self' data: blob: https://zsjxauwwqyyhgxzgnfoj.supabase.co;
+#     connect-src 'self' https://zsjxauwwqyyhgxzgnfoj.supabase.co wss://zsjxauwwqyyhgxzgnfoj.supabase.co;
+#     worker-src 'self';
+#     frame-ancestors 'none';
+#     object-src 'none';
+#     base-uri 'none'
+#
+# Note: 'unsafe-inline' is required because the app uses inline onclick handlers
+# and inline styles throughout. Removing it (the strongest XSS defense) would
+# need those refactored first; until then the escaping sweep (v39.68–70) is the
+# primary XSS defense and this CSP mainly restricts which external origins can
+# be contacted.

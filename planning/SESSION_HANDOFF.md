@@ -23,6 +23,24 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 5c (2026-07-16) — Pre-launch hardening → v39.71–72
+- **parent_links RLS** (`planning/parent-links-rls.sql`, RAN by user): it was the only public table with
+  RLS off. Enabled + self-select policy. All access is via register_parent/get_my_player SECURITY DEFINER
+  RPCs (bypass RLS), client never queries it directly, so nothing broke. **RLS now complete on all tables.**
+- **Dev-bypass removed** (v39.71): the "⚡ Dev bypass" landing link + `devBypass()` faked a no-auth coach
+  session. Gone. (User has real test accounts for all roles.)
+- **Join signup password parity** (v39.72): the player/parent/assistant join flow (`submitJoinAccount`) only
+  required **6 chars, no confirm field** — much weaker than the coach `createAccount` (12/upper/number/
+  special + confirm). Brought to parity: added `join-account-password-confirm` field + a live requirements
+  meter + `checkJoinPasswordStrength()`, and `submitJoinAccount` now enforces the same 4 rules + match.
+  Verified in-browser: all 6 cases (too-short/no-upper/no-number/no-special/mismatch/strong-match) behave.
+- **`_headers`** (Cloudflare Pages, takes effect on deploy): HSTS, nosniff, X-Frame-Options SAMEORIGIN,
+  Referrer-Policy, conservative Permissions-Policy (**camera left ENABLED — QR scanner needs it**). A CSP is
+  written but COMMENTED OUT — a missing origin breaks the live app; must be tested on a preview first.
+- **Git-history secret scan: CLEAN** — only `Deno.env.get(...)` references, no literal secrets committed.
+- **STILL PENDING (user/dashboard):** Supabase leaked-password protection toggle (Auth settings); the
+  minors/guardian-consent gap (terms promise a gate the join flow doesn't implement — legal review).
+
 ## SESSION 5b (2026-07-15) — Security batch (findings A–D) → v39.68
 **STATUS (2026-07-16): ALL FOUR APPLIED AND VERIFIED IN PROD (v39.68).**
 - A (XSS) — verified live: `<img onerror>` renders inert.
