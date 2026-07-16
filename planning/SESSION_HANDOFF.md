@@ -23,6 +23,15 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 3e (2026-07-15) — Parent Home = this week only → v39.63
+User: "totally get rid of the Coming up section... Only show what is happening this week on the home page."
+- **"Coming up" section REMOVED** (markup + render code + the 5-day cap + the "View all N" link).
+  Parent Home is now exactly two sections: **This week** (Sun–Sat, one tile per day, today filled in team
+  colour) and **Announcements**. Anything beyond this week lives on the Schedule tab only.
+- `parentDayTile` / `groupEventsByDay` / the Sun–Sat window are unchanged and still in use.
+- Verified: next-week and far-future events no longer appear on Home; today's tile still filled with both
+  of its events stacked; empty state falls back to "Nothing scheduled this week."
+
 ## SESSION 3d (2026-07-15) — Parent schedule + home dashboard rework → v39.62
 All user-requested after live-testing v39.61.
 - **Schedule list "stuck in June"** — it rendered the WHOLE season from the earliest event. Now defaults to
