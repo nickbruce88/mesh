@@ -23,6 +23,105 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   excluded, TODAY pill, practice rows (no homeAway) render with no pill, cap + "View all 6" link works,
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
+## SESSION 5 (2026-07-15) — FULL APP AUDIT + signup blocker fix → v39.67
+User asked for a complete scrape of every role/tab/button. Ran 5 parallel audit agents (coach, player,
+data layer, messaging, auth/infra) + mechanical scans. **Every finding below was re-verified by hand** —
+several agent claims were WRONG (one said "no missing handlers" when `closeAddItemSheet` is undefined) and
+two of my own scans produced false positives (`locked-banner` is created via `el.id=`, not markup;
+`switchPlayerPerfView` looked like a null-deref but is dead code). Treat unverified claims with suspicion.
+
+### FIXED in v39.67
+1. **🚨 NEW HEAD COACHES COULD NOT CREATE A PROGRAM — the whole `screen-setup` wizard was unreachable.**
+   `showCoachOnboarding()` (~9504) had **ZERO callers**; `showScreen('screen-setup')` appears only inside it.
+   Real path was: "Set up my program" → beta code → create account → verify email → "Go to sign in" →
+   `signIn` → `resolveUserSession` finds no players row / no `programs.owner_id` / no profile → returns
+   false → **"Account not found."** Dead end, forever. (Existing programs predate this or came via the
+   hidden `devBypass()` at 2242, which fakes a program in localStorage — that's why it went unnoticed.)
+   **Fix:** new `routeUnresolvedUser()` — an authenticated user that `resolveUserSession` can't place, who
+   has a `mesh_beta_code` (set ONLY by `verifyBetaCode`, i.e. only the coach path, and consumed once a
+   program exists) is a coach mid-signup → `showCoachOnboarding()`. Wired into BOTH `signIn` (~9338) and
+   `checkExistingSession` (~9444, for a coach returning after email verification). No beta code → the old
+   error still shows. Verified both branches in-browser.
+2. **Every page load ran `launchApp` TWICE.** `checkExistingSession` was registered on DOMContentLoaded at
+   BOTH ~9510 and ~21309; the script is inline at end-of-body so `readyState==='loading'` and both fired →
+   two full data-load chains, two `subscribeToPush`, two racing realtime channels. Removed the ~9510 one;
+   the ~21309 (readyState-guarded) registration is now the only one.
+3. **Onboarding showed a join code that was never persisted.** Duplicate `generateJoinCode`: the legacy
+   single-code version was declared LAST and clobbered the three-code version, so step 2 displayed
+   `NAMP-26-XYZ` while `saveProgram` minted three unrelated codes. Any coach who copied the step-2 code
+   handed out a dead code. Deleted the legacy `generateJoinCode` + duplicate `copyJoinCode`; relabelled the
+   step-2 box ("Your coach join code — separate player & parent codes come next"). Now `saveProgram`'s
+   `if (!obProgram.coachCode)` guard is false, so the code shown IS the code persisted. Verified.
+
+### VERIFIED, NOT YET FIXED — ranked
+**SECURITY**
+- **Stored XSS → head coach's session.** `renderMemberList` (~12854) interpolates `${m.name}` raw into
+  innerHTML; the adjacent pickers (12941, 13031) correctly use `_esc()`. Names are free text from
+  `create_profile`. Assistant joins as `<img src=x onerror=...>` → head coach opens Messages → New Group →
+  runs with their Supabase token in scope. **Fix: `_esc(m.name)` + `_esc(m.role)`.**
+- **`send-notification` edge fn authorizes NOBODY.** Reads `program_id`/`target_user_ids` from the request
+  body, queries with the SERVICE ROLE key, never decodes the caller's JWT or checks program membership.
+  Any logged-in user can push arbitrary title/body to ANY program's users. (`verify_jwt` only proves they're
+  *some* user.) **Fix: decode the JWT, verify caller ∈ program_id, and for `thread_id` verify participation.**
+- **Two-adult/witness rule has NO server backing.** `create_thread` (phase3-messaging.sql) validates program
+  membership but nothing about `p_kind` or the participant mix — it will create `kind:'dm'` with exactly
+  [coach, player] and no witness, while the UI still shows the "visible to coaching staff and documented"
+  banner. Core child-safety guardrail, client-side only. **Fix: validate in the RPC.**
+- **Cross-program broadcast leak.** `list_my_threads` (phase3b-notifications.sql:83-90) filters on the
+  CALLER-SUPPLIED `p_program_id`; its broadcast branch checks only `my_role() = any(t.audience_roles)`,
+  never `my_program_id() = p_program_id`. SECURITY DEFINER ⇒ bypasses RLS. `create_thread` HAS this guard;
+  this one missed it. Leaks last message body + sender of every broadcast in a target program. The UUID is
+  easy to get — `loadProgramByCode` returns it from a join code. Same gap in `thread_members` /
+  `thread_participant_ids` (phase3-messaging.sql:167,187), low impact today (broadcast threads have no
+  participant rows). **Fix: add the guard to all three.**
+
+**BROKEN FEATURES (silent)**
+- **Playbook blank on mobile (coach AND player)** — `pb-offense/defense/special-content` + `pb-select-label`
+  are duplicated between the coach inline section (~3638) and the overlay (~5152); `renderPbUnit` (~20692)
+  `getElementById` returns the FIRST → renders into the hidden desktop section. Proven with a sentinel.
+- **Player "More" tab blank on mobile** — `renderMyInfoPage()` is only called inside `if (isDesktop())`
+  (~5741); `#player-myinfo-page` ships empty. Phone → white screen. Depth chart + playbook are also
+  desktop-sidebar-only for players.
+- **Player playbook always "No plays yet"** — `switchPlayerPbUnit` (~18488) reads `window.PB_DATA`, but
+  `PB_DATA` is a `let` (20581) and never becomes a window property. (Second bug stacked: `PB_DATA[unit]` is
+  `{folders,plays}`, not an array.)
+- **Player stat submission fully broken** — `openSubmitStats` never sets `overlay.id='submit-stats-overlay'`
+  (the coach twin does, 14926), so the input query finds nothing → always "Enter at least one stat"; ✕ throws.
+- **Freshly-joined player/parent get an empty app until reload** — `joinGoToApp` routes only `role==='coach'`
+  through `launchApp`; others get `login()` which loads no Supabase data. Also `getValidProgramId()` never
+  checks `mesh_joining_program_id`, so a new player gets no realtime subscription all session.
+- `closeAddItemSheet` is undefined (~4724) → inventory add-item sheet can't be dismissed by tapping the
+  backdrop. Real fn is `closeAddItem`.
+
+**SILENT DATA LOSS — one systemic cause (~15 sites)**
+`supabase-js` returns `{data,error}`; it does NOT throw ⇒ `try { await db.from(x).update(y) } catch(e){}`
+catches NOTHING and those catch blocks are dead. Nearly all are followed by an UNCONDITIONAL success toast.
+Verified: player delete (toast fires BEFORE the delete is even attempted; its `!dbId.startsWith('p')` guard
+also misses `local_…` ids), notes save, disciplinary status, all 3 performance writes, inventory assign,
+schedule saves, practice templates, depth-chart group drag (`.then(()=>{})` explicitly discards the error),
+docs/drills/playbook, roster CSV import (toast fires before the sync loop). **Fix: `const { error } = await …`
++ gate the toast.**
+- `saveEditProfile` (~12229) writes the name to `programs.coach_name` for EVERY role with no role check, and
+  `profiles.name` is never written anywhere → directory keeps stale names.
+- Inventory CSV import never `.select()`s, so items keep local ids → every later assign/edit no-ops.
+- Player avatar upload: players have no `profiles` row (only `create_profile`/`register_parent` make one),
+  so `profiles.update({photo_url})` matches 0 rows; `profErr` is captured but never checked → "Photo saved ✓".
+
+**MISLEADING / MINOR**
+- **`##12` jersey on parent My Player (MY bug, v39.59)** — renders `'#' + p.num`, but the join flow stores
+  num WITH the '#' (~9895) while the CSV path strips it. Use the existing `formatNum()` helper (~20587).
+- 3 of 4 notification categories (practice/games/roster) are inert — nothing passes `category` except the two
+  message paths, so the toggles persist and are read by nobody.
+- Coach home "Active players" counts everyone — filters `p.active !== false` but no loader sets `active`
+  (the column is `status`).
+- Note attribution always renders the literal "Coach" — `mesh_user_name` is read (~16970) but never written;
+  My Info reads `n.coach` but `savePlayerNote` writes `author`.
+- `terms.html:142` promises a guardian-approval gate for minors that the join flow does not implement.
+- `sw.js` references `/icon-192.png`, which isn't in the repo.
+- Dead code: `toggleScriptVisibility` (both copies, winner is a no-op), `switchPlayerPerfView`,
+  `renderPlayerStanding`, `renderPlayerGroup`, `showCoachOnboarding`'s old caller, orphan `unit` column.
+- `setAttSession`/`copyCode`/`closeActionSheet` duplicates are benign (identical or harmless).
+
 ## SESSION 4b (2026-07-15) — Forgiving roster importer → v39.66
 Goal (user): "a coach can upload an existing document they already have and have it accepted and
 understood 9 times out of 10". **No SQL needed.**

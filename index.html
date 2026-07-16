@@ -2286,9 +2286,9 @@
       <div class="ob-field-label">Team / Program name</div>
       <input class="input-field" id="ob-team-name" placeholder="Nampa Bulldogs" style="margin-bottom:24px">
       <div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius);padding:16px;margin-bottom:24px;text-align:center">
-        <div style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Your program join code</div>
+        <div style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Your coach join code</div>
         <div style="font-size:32px;font-weight:800;letter-spacing:0.12em;color:var(--team-primary);font-family:monospace" id="ob-join-code">——</div>
-        <div style="font-size:12px;color:var(--gray-3);margin-top:8px">Players and parents use this code to join</div>
+        <div style="font-size:12px;color:var(--gray-3);margin-top:8px">For assistant coaches — separate player &amp; parent codes come next</div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn-primary" onclick="obBack(1)" style="flex:1;background:var(--black-3);border:1px solid var(--black-4);color:var(--white)">← Back</button>
@@ -5250,7 +5250,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.66</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.67</div>
   </div>
 </div>
 
@@ -5261,7 +5261,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.66';
+  const APP_VERSION = 'v39.67';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9336,7 +9336,7 @@
       console.log('Auth UID:', uid);
       // Let resolveUserSession handle everything from here
       const resolved = await resolveUserSession(uid);
-      if (!resolved) {
+      if (!resolved && !routeUnresolvedUser()) {
         errEl.textContent = 'Account not found. Please check your credentials or join a program using a code.';
       }
     } catch(e) {
@@ -9441,7 +9441,11 @@
       }
       const uid = data.session.user.id;
       console.log('[Session] Active session found, uid:', uid);
-      return await resolveUserSession(uid);
+      const resolved = await resolveUserSession(uid);
+      // A coach who verified their email and came back still has a live session but
+      // no program — resume onboarding instead of dropping them to the landing screen.
+      if (!resolved) routeUnresolvedUser();
+      return resolved;
     } catch(e) {
       console.warn('[Session] Check error:', e);
       return false;
@@ -9506,10 +9510,27 @@
     obGoToStep(1);
   }
 
-  // Check for existing Supabase session on page load — auto-login returning users
-  window.addEventListener('DOMContentLoaded', () => {
-    checkExistingSession();
-  });
+  // An authenticated user that resolveUserSession can't place has an auth account
+  // but no program/profile yet. Until v39.67 that was a DEAD END: showCoachOnboarding
+  // had NO callers, so a new head coach went beta code -> create account -> verify
+  // email -> sign in -> "Account not found" forever, and the whole screen-setup
+  // wizard was unreachable. `mesh_beta_code` is set only by verifyBetaCode, i.e.
+  // only on the coach path, and is consumed once a program exists — so its presence
+  // means "a coach who hasn't created their program yet". Send them to the wizard.
+  // Returns true if it routed somewhere.
+  function routeUnresolvedUser() {
+    let betaCode = '';
+    try { betaCode = localStorage.getItem('mesh_beta_code') || ''; } catch(e) {}
+    if (!betaCode) return false;
+    console.log('[Session] Authenticated coach with no program — resuming onboarding');
+    showCoachOnboarding();
+    return true;
+  }
+
+  // NOTE: session check is registered ONCE, at the bottom of this script
+  // (readyState-guarded). A second registration here made every page load run
+  // checkExistingSession -> resolveUserSession -> launchApp TWICE: two full data
+  // load chains, two subscribeToPush, two racing realtime channels.
 
   function obGoToStep(n) {
     document.querySelectorAll('#screen-setup .ob-step').forEach(s => s.classList.remove('active'));
@@ -9573,25 +9594,14 @@
     obProgram.role = role;
   }
 
-  function generateJoinCode() {
-    const school = document.getElementById('ob-school-name').value.trim();
-    if (!school) { document.getElementById('ob-join-code').textContent = '——'; return; }
-    const letters = school.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4);
-    const year = String(new Date().getFullYear()).slice(-2);
-    // Add 3 random alphanumeric chars to ensure uniqueness
-    const rand = Math.random().toString(36).toUpperCase().slice(2, 5);
-    const code = letters + '-' + year + '-' + rand;
-    obProgram.joinCode = code;
-    document.getElementById('ob-join-code').textContent = code;
-  }
+  // (Legacy single-code generateJoinCode removed in v39.67 — it was declared AFTER
+  // the three-code version and silently clobbered it, so onboarding step 2 showed a
+  // school-derived code that was never persisted. saveProgram then minted three
+  // unrelated codes. Any coach who copied the step-2 code handed out a dead code.
+  // The three-code version at ~9467 is now the only one.)
 
-  function copyJoinCode() {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(obProgram.joinCode).then(() => showToast('Join code copied ✓'));
-    } else {
-      showToast('Code: ' + obProgram.joinCode);
-    }
-  }
+  // (Duplicate copyJoinCode removed in v39.67 — same clobber pattern. The version
+  // at ~9487 copies from the rendered coach-code element and is the only one now.)
 
   async function saveProgram() {
     const uid = localStorage.getItem('mesh_auth_uid') || '';
