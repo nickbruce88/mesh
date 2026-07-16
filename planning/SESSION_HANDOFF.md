@@ -24,10 +24,13 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
 ## SESSION 5b (2026-07-15) — Security batch (findings A–D) → v39.68
-**⚠️ TWO OUT-OF-BAND STEPS REQUIRED — the git push alone does NOT close 3 of the 4:**
-1. **Run `planning/security-fixes.sql`** in the Supabase SQL editor (fixes the cross-program leak + witness rule).
-2. **Redeploy the `send-notification` edge function** (`supabase functions deploy send-notification`).
-The XSS fix ships with the push; the other three do not.
+**STATUS (2026-07-16):** A = live+verified on prod (v39.68). B + C = SQL RAN by user. D = edge fn DEPLOYED
+(`supabase functions deploy send-notification --project-ref zsjxauwwqyyhgxzgnfoj` — needed the explicit
+`--project-ref`; the `.temp` link isn't auto-detected, no config.toml). **ALL FOUR now applied in prod.**
+**STILL TO VERIFY BY USER:** (1) send a real message/announcement → confirm a push still arrives (D built
+clean but the auth logic was never runtime-tested; rollback = `git show HEAD~1:supabase/functions/
+send-notification/index.ts`); (2) run the console snippets at the bottom of `security-fixes.sql` to confirm
+B/C enforce (cross-program `list_my_threads` and bare coach+player `create_thread` should both error).
 
 - **A. Stored XSS (FIXED in index.html, live on push).** `renderMemberList` (~12856) now `_esc()`s
   `m.name`, `m.initials`, `m.role`. Verified in-browser: `<img src=x onerror=…>` renders as inert text,
