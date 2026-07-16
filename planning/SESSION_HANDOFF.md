@@ -24,13 +24,20 @@ User-requested after v39.59 went live and My Player was confirmed pulling real d
   Home/Away/Neutral now all correct in the schedule list, desktop sidebar sections activate.
 
 ## SESSION 5b (2026-07-15) — Security batch (findings A–D) → v39.68
-**STATUS (2026-07-16):** A = live+verified on prod (v39.68). B + C = SQL RAN by user. D = edge fn DEPLOYED
-(`supabase functions deploy send-notification --project-ref zsjxauwwqyyhgxzgnfoj` — needed the explicit
-`--project-ref`; the `.temp` link isn't auto-detected, no config.toml). **ALL FOUR now applied in prod.**
-**STILL TO VERIFY BY USER:** (1) send a real message/announcement → confirm a push still arrives (D built
-clean but the auth logic was never runtime-tested; rollback = `git show HEAD~1:supabase/functions/
-send-notification/index.ts`); (2) run the console snippets at the bottom of `security-fixes.sql` to confirm
-B/C enforce (cross-program `list_my_threads` and bare coach+player `create_thread` should both error).
+**STATUS (2026-07-16): ALL FOUR APPLIED AND VERIFIED IN PROD (v39.68).**
+- A (XSS) — verified live: `<img onerror>` renders inert.
+- B (cross-program leak) — verified: own program returns threads; foreign program → "Not a member of this program".
+- C (witness rule) — verified: bare coach+player `create_thread` → "must also include a second coach or a parent" (no junk thread created — it rolls back).
+- D (edge-fn authz) — DEPLOYED (`supabase functions deploy send-notification --project-ref zsjxauwwqyyhgxzgnfoj`
+  — needs the explicit `--project-ref`; `.temp` link isn't auto-detected, no config.toml) AND verified: real
+  push notifications still deliver, so legitimate callers aren't rejected. Rollback if ever needed:
+  `git show HEAD~1:supabase/functions/send-notification/index.ts`.
+
+**TOP REMAINING SECURITY ITEM (not started):** the broad name-escaping sweep — ~18 raw `p.name`/name renders
+into innerHTML (roster 16471, attendance 14291, perf pickers 7196/7243, depth chart 13289, …). Player
+self-signup names reach coach-viewed screens ⇒ same stored-XSS class as A. Mixed HTML-text vs JS-attribute
+contexts (7196/16230 put the name inside `onclick='…'` — needs JS-string escaping, not `_esc`), so it's a
+careful per-site pass, not a blind replace.
 
 - **A. Stored XSS (FIXED in index.html, live on push).** `renderMemberList` (~12856) now `_esc()`s
   `m.name`, `m.initials`, `m.role`. Verified in-browser: `<img src=x onerror=…>` renders as inert text,
