@@ -5250,7 +5250,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.69</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.70</div>
   </div>
 </div>
 
@@ -5261,7 +5261,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.69';
+  const APP_VERSION = 'v39.70';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -7971,7 +7971,7 @@
       <div class="today-event-row">
         <div class="today-event-tag" style="background:${tagColor(e.tag||'other')}"></div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${e.opponent||e.title||'Event'}</div>
+          <div style="font-size:13px;font-weight:600">${_esc(e.opponent||e.title||'Event')}</div>
           <div style="font-size:11px;color:var(--gray-3)">${e.time ? formatTime(e.time) : ''}${e.location ? ' · '+e.location : ''}</div>
         </div>
         ${e.homeAway ? `<div style="font-size:10px;font-weight:700;color:${e.homeAway==='home'?'var(--green)':'var(--amber)'}">${e.homeAway.toUpperCase()}</div>` : ''}
@@ -10774,7 +10774,7 @@
       const row = document.createElement('div');
       row.style.cssText = 'padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--black-4);-webkit-tap-highlight-color:transparent';
       row.innerHTML = `
-        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${d.title}</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${_esc(d.title)}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           ${d.positions.map(p => `<span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--team-primary-glow-sm);color:var(--team-primary)">${p}</span>`).join('')}
           ${d.tags.map(t => `<span style="font-size:10px;padding:1px 7px;border-radius:20px;background:var(--black-4);color:var(--gray-2)">${t}</span>`).join('')}
@@ -10871,7 +10871,7 @@
     drillSection.innerHTML = `
       <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin:10px 0">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div style="font-size:12px;font-weight:700;color:var(--fg)">🎯 ${drill.title}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--fg)">🎯 ${_esc(drill.title)}</div>
           <div onclick="removeDrillFromCell()" style="font-size:11px;color:var(--red);cursor:pointer">Remove</div>
         </div>
         ${drill.desc ? `<div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${drill.desc}</div>` : ''}
@@ -12388,7 +12388,7 @@
       html+=`<div style="border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
         <div onclick="toggleStaffCard('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer">
           <div style="width:34px;height:34px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${init}</div>
-          <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${(c.name||'Coach').replace(/</g,'&lt;')}</div><div style="font-size:12px;color:var(--fg-3)" id="sa-sub-${c.id}">${enabled} of ${total} features editable</div></div>
+          <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">${_esc(c.name||'Coach')}</div><div style="font-size:12px;color:var(--fg-3)" id="sa-sub-${c.id}">${enabled} of ${total} features editable</div></div>
           <div id="sa-chev-${c.id}" style="font-size:13px;color:var(--fg-3);transition:transform .15s">▸</div>
         </div>
         <div id="sa-body-${c.id}" style="display:none;padding:0 14px 14px">
@@ -14541,7 +14541,7 @@
     const isShared = active.shared !== false; // default shared
     card.innerHTML = `
       <div class="script-card-head">
-        <span class="pill pill-amber">${activeScriptPeriod} · ${active.name || ''}</span>
+        <span class="pill pill-amber">${activeScriptPeriod} · ${_esc(active.name || '')}</span>
         <span class="note-card-time">${plays.length} plays</span>
         <button class="btn-sm" style="margin-left:auto" onclick="openScriptEdit('${activeScriptPeriod}')">Edit</button>
       </div>
@@ -14824,7 +14824,7 @@
       const coach = PRACTICE_COACHES.find(c => c.pos === col);
       // Lighten the group color for the header
       const bg = g ? g.color + '33' : '#eeeeee';
-      return `<th style="background:${bg}">${col}${coach ? `<div style="font-weight:400;font-size:10px;color:#555;margin-top:2px">${coach.name}</div>` : ''}</th>`;
+      return `<th style="background:${bg}">${col}${coach ? `<div style="font-weight:400;font-size:10px;color:#555;margin-top:2px">${_esc(coach.name)}</div>` : ''}</th>`;
     }).join('');
 
     const printBtnHtml = forPrint ? '' : `<div style="margin-bottom:16px;display:flex;gap:10px;align-items:center">
@@ -15098,7 +15098,7 @@ ${printBtnHtml}
     return `<div onclick="openPPStatsFromRoster('${e.pid}')" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-subtle,var(--border));cursor:pointer">
       <div style="width:24px;text-align:center;font-size:13px;flex-shrink:0">${medal}</div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:var(--fg)">${e.name}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">${_esc(e.name)}</div>
         <div style="font-size:11px;color:var(--fg-3)">${e.pos}</div>
       </div>
       <div style="font-size:15px;font-weight:800;color:var(--team-primary)">${e.total}${cat.unit ? ' '+cat.unit : ''}</div>
@@ -15221,7 +15221,7 @@ ${printBtnHtml}
         }).join('');
         return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <div style="font-size:13px;font-weight:700">${g.opponent || 'Game'}</div>
+            <div style="font-size:13px;font-weight:700">${_esc(g.opponent || 'Game')}</div>
             <div style="font-size:11px;color:var(--fg-3)">${g.date || ''}</div>
           </div>
           <div style="font-size:12px;flex-wrap:wrap">${statLine}</div>
@@ -16131,7 +16131,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         </div>
         <div class="simple-divider"></div>
         <div class="simple-info">
-          <div style="font-size:14px;font-weight:600;color:var(--fg)">${block.name || 'Untitled'}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--fg)">${_esc(block.name || 'Untitled')}</div>
           <span class="simple-tag ${block.tag}">${block.tag}</span>
         </div>
         <div class="simple-block-actions">
@@ -16477,7 +16477,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${discStatus !== 'green' ? `<span style="font-size:14px;font-weight:700;color:${discColors[discStatus]};line-height:1" title="${discStatusLabel(discStatus)}">⚠</span>` : ''}
-          ${group ? `<div class="roster-group-dot" style="background:${group.color}" title="${group.name}"></div>` : ''}
+          ${group ? `<div class="roster-group-dot" style="background:${group.color}" title="${_esc(group.name)}"></div>` : ''}
         </div>
         <div class="roster-arrow">›</div>`;
       container.appendChild(div);
@@ -17167,8 +17167,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
             ${INV_CAT_ICONS[item.category]||'📦'}
           </div>
           <div class="inv-item-info">
-            <div class="inv-item-name">${item.name}</div>
-            <div class="inv-item-sub">${item.brand}${item.size ? ' · ' + item.size : ''}</div>
+            <div class="inv-item-name">${_esc(item.name)}</div>
+            <div class="inv-item-sub">${_esc(item.brand)}${item.size ? ' · ' + _esc(item.size) : ''}</div>
             <div class="inv-item-badges">
               <span class="inv-cond-badge ${item.condition}">${item.condition}</span>
               ${item.assignedTo
@@ -17313,7 +17313,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.getElementById('item-detail-body').innerHTML = `
       <div class="card" style="padding:0">
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Category</span><span class="pp-info-value">${item.category}</span></div>
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Brand / Model</span><span class="pp-info-value">${item.brand || '—'}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Brand / Model</span><span class="pp-info-value">${_esc(item.brand || '—')}</span></div>
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Size</span><span class="pp-info-value">${item.size || '—'}</span></div>
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Condition</span><span class="inv-cond-badge ${item.condition}" style="font-size:11px">${item.condition}</span></div>
         <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Item ID</span><span class="pp-info-value" style="font-family:monospace;font-size:11px">${item.id}</span></div>
@@ -17440,8 +17440,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:14px;background:var(--black-3);border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;border:1.5px solid var(--black-4)';
         row.innerHTML = `
           <div style="flex:1">
-            <div style="font-size:14px;font-weight:700">${item.name}</div>
-            <div style="font-size:12px;color:var(--gray-2);margin-top:3px">${item.brand || ''}${item.size ? ' · ' + item.size : ''}</div>
+            <div style="font-size:14px;font-weight:700">${_esc(item.name)}</div>
+            <div style="font-size:12px;color:var(--gray-2);margin-top:3px">${_esc(item.brand || '')}${item.size ? ' · ' + _esc(item.size) : ''}</div>
             <div style="margin-top:6px"><span class="inv-cond-badge ${item.condition}">${item.condition}</span></div>
           </div>
           <div style="font-size:11px;color:var(--gray-3);font-family:monospace">${item.id}</div>
@@ -17566,7 +17566,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         row.className = 'inv-assign-row';
         row.innerHTML = `
           <div>
-            <div style="font-size:13px;font-weight:600">${item.name}</div>
+            <div style="font-size:13px;font-weight:600">${_esc(item.name)}</div>
             <div style="font-size:11px;color:var(--gray-3);margin-top:2px">${item.id} · ${item.condition}</div>
           </div>
           <button class="btn-sm" style="color:var(--red);border-color:var(--red);font-size:11px" onclick="returnItem('${item.id}')">Return</button>`;
@@ -17741,8 +17741,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     modal.innerHTML = `
       <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:20px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
         <div style="text-align:center;font-size:32px;margin-bottom:8px">✅</div>
-        <div style="font-size:16px;font-weight:700;color:var(--fg);text-align:center;margin-bottom:4px">${item.name}</div>
-        <div style="font-size:13px;color:var(--fg-3);text-align:center;margin-bottom:4px">Checked out to <strong style="color:var(--fg)">${player.name}</strong></div>
+        <div style="font-size:16px;font-weight:700;color:var(--fg);text-align:center;margin-bottom:4px">${_esc(item.name)}</div>
+        <div style="font-size:13px;color:var(--fg-3);text-align:center;margin-bottom:4px">Checked out to <strong style="color:var(--fg)">${_esc(player.name)}</strong></div>
         ${prev ? `<div style="font-size:12px;color:var(--amber);text-align:center;margin-bottom:16px">Previously assigned to ${prev}</div>` : '<div style="margin-bottom:16px"></div>'}
         <div style="display:flex;gap:8px">
           <button onclick="this.closest('[style*=inset]').remove();openQRScannerForPlayer()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Scan next</button>
@@ -18085,14 +18085,14 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     label.textContent = `${rows.length} item${rows.length !== 1 ? 's' : ''} ready to import`;
 
     let html = rows.slice(0,6).map(r =>
-      `<div style="font-size:11px;padding:3px 0;color:var(--fg-2);border-bottom:1px solid var(--border)">${r.name}${r.assignedTo ? ' → ' + r.assignedTo : ''} · ${r.category}${r.size ? ' · ' + r.size : ''}</div>`
+      `<div style="font-size:11px;padding:3px 0;color:var(--fg-2);border-bottom:1px solid var(--border)">${_esc(r.name)}${r.assignedTo ? ' → ' + r.assignedTo : ''} · ${r.category}${r.size ? ' · ' + r.size : ''}</div>`
     ).join('') + (rows.length > 6 ? `<div style="font-size:11px;color:var(--fg-3);padding:4px 0">…and ${rows.length-6} more</div>` : '');
 
     // Show skipped column warnings
     if (skipped.length > 0) {
       html += `<div style="margin-top:8px;padding:8px;background:rgba(255,184,0,0.1);border:1px solid var(--amber);border-radius:var(--radius-sm)">
         <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:4px">⚠️ Unrecognized columns — skipped:</div>
-        ${skipped.map(s => `<div style="font-size:11px;color:var(--fg-2);padding:2px 0">"${s.name}" — <span style="color:var(--fg-3)">not a recognized equipment type, data excluded</span></div>`).join('')}
+        ${skipped.map(s => `<div style="font-size:11px;color:var(--fg-2);padding:2px 0">"${_esc(s.name)}" — <span style="color:var(--fg-3)">not a recognized equipment type, data excluded</span></div>`).join('')}
         <div style="font-size:10px;color:var(--fg-3);margin-top:4px">Rename these columns to a supported type (Helmet, Shoulder Pads, Pants, Girdle, Cleats, Jersey, etc.) and re-upload to include them.</div>
       </div>`;
     }
@@ -18517,13 +18517,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     container.innerHTML = folders.map(folder => `
       <div style="margin-bottom:20px">
-        <div class="section-label">${folder.name||'Plays'}</div>
+        <div class="section-label">${_esc(folder.name||'Plays')}</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
           ${(folder.plays||[]).map(play => `
             <div class="card" style="padding:12px;text-align:center">
               ${play.diagram ? `<img src="${play.diagram}" style="width:100%;border-radius:6px;margin-bottom:8px;max-height:100px;object-fit:contain">` :
                 `<div style="height:80px;background:var(--bg-3);border-radius:6px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:24px">📋</div>`}
-              <div style="font-size:12px;font-weight:600;color:var(--fg)">${play.name||'Play'}</div>
+              <div style="font-size:12px;font-weight:600;color:var(--fg)">${_esc(play.name||'Play')}</div>
               ${play.formation ? `<div style="font-size:11px;color:var(--fg-3)">${play.formation}</div>` : ''}
             </div>`).join('')}
         </div>
@@ -18597,7 +18597,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <div style="display:flex;align-items:center;gap:12px">
             <div style="width:40px;height:40px;border-radius:50%;background:${groupColor};flex-shrink:0"></div>
             <div>
-              <div style="font-size:16px;font-weight:700;color:${groupColor}">${playerGroup.name} Group</div>
+              <div style="font-size:16px;font-weight:700;color:${groupColor}">${_esc(playerGroup.name)} Group</div>
               <div style="font-size:12px;color:var(--gray-3);margin-top:2px">Assigned by coaching staff</div>
             </div>
           </div>` :
@@ -18659,7 +18659,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <div class="section-label">Per Game</div>
           ${games.map(g => `<div class="card" style="margin-bottom:8px">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-              <div style="font-size:13px;font-weight:700">${g.opponent||'Game'}</div>
+              <div style="font-size:13px;font-weight:700">${_esc(g.opponent||'Game')}</div>
               <div style="font-size:11px;color:var(--fg-3)">${g.date||''}</div>
             </div>
             ${cats.filter(c => g.stats[c.key]!=null).map(c => `
@@ -18839,11 +18839,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     container.innerHTML = `
       <div style="background:${playerGroup.bg};border:1.5px solid ${playerGroup.color};border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px">
         <div style="font-size:32px;margin-bottom:8px">🏈</div>
-        <div style="font-size:22px;font-weight:800;color:${playerGroup.color};letter-spacing:-0.3px">${playerGroup.name} Group</div>
+        <div style="font-size:22px;font-weight:800;color:${playerGroup.color};letter-spacing:-0.3px">${_esc(playerGroup.name)} Group</div>
         <div style="font-size:13px;color:var(--gray-2);margin-top:6px">Assigned by Coach Waite</div>
       </div>
       <div class="card" style="padding:0">
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Group</span><span class="pp-info-value" style="color:${playerGroup.color};font-weight:700">${playerGroup.name}</span></div>
+        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Group</span><span class="pp-info-value" style="color:${playerGroup.color};font-weight:700">${_esc(playerGroup.name)}</span></div>
         <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Position</span><span class="pp-info-value">Wide Receiver</span></div>
         <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Last updated</span><span class="pp-info-value">Oct 10 by Coach Waite</span></div>
       </div>`;
@@ -18929,7 +18929,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const barsHTML = dayEvents.slice(0, maxShow).map(e => {
         const timeStr = e.time ? formatTime(e.time) : '';
         const label = [e.opponent || e.title || '', timeStr].filter(Boolean).join(' · ');
-        return `<div class="cal-event-bar ${tagClass(e.tag || 'other')}" title="${e.opponent||e.title||''}" onclick="event.stopPropagation();showCalDayDetail('${dateStr}')">
+        return `<div class="cal-event-bar ${tagClass(e.tag || 'other')}" title="${_esc(e.opponent||e.title||'')}" onclick="event.stopPropagation();showCalDayDetail('${dateStr}')">
           ${label}
         </div>`;
       }).join('');
@@ -19376,7 +19376,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       const dz = document.getElementById('mp-dropzone');
       if (dz) dz.innerHTML = `
         <div style="font-size:20px;margin-bottom:4px">✅</div>
-        <div style="font-size:13px;font-weight:600;color:var(--fg)">${file.name}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--fg)">${_esc(file.name)}</div>
         <div style="font-size:11px;color:var(--fg-3);margin-top:2px">${(file.size/1024).toFixed(1)} KB — click Preview to continue</div>`;
       showToast('File loaded — click Preview →');
     };
@@ -19421,7 +19421,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
         </div>
         ${matched.map(r => `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
-            <span style="color:var(--fg)">${r.matched.name} <span style="color:var(--fg-3)">(${r.matched.pos||''} ${r.matched.num||''})</span></span>
+            <span style="color:var(--fg)">${_esc(r.matched.name)} <span style="color:var(--fg-3)">(${r.matched.pos||''} ${r.matched.num||''})</span></span>
             <span style="color:var(--fg-3)">${Object.entries(r.stats).map(([k,v])=>{
               const cat=STAT_CATEGORIES.find(c=>c.key===k); return (cat?.label||k)+': '+v;
             }).join(' · ')}</span>
@@ -19569,7 +19569,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       return `<div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius);padding:12px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <div style="font-size:13px;font-weight:700">${_esc(player?.name || 'Player')}</div>
-          <div style="font-size:11px;color:var(--fg-3)">${g.opponent || ''} · ${g.game_date || ''}</div>
+          <div style="font-size:11px;color:var(--fg-3)">${_esc(g.opponent || '')} · ${g.game_date || ''}</div>
         </div>
         <div style="font-size:12px;color:var(--fg-2);margin-bottom:10px">${statLine}</div>
         <div style="display:flex;gap:8px">
@@ -19662,7 +19662,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="width:4px;border-radius:2px;background:${tagColor(e.tag||'other')};align-self:stretch;flex-shrink:0"></div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:var(--fg)">${e.opponent||e.title||'—'}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--fg)">${_esc(e.opponent||e.title||'—')}</div>
           <div style="font-size:11px;color:var(--fg-3);margin-top:2px">${e.time ? formatTime(e.time) : ''}${e.location ? ' · '+e.location : ''}</div>
           ${e.homeAway ? `<div style="font-size:10px;font-weight:700;color:${e.homeAway==='home'?'var(--green)':'var(--amber)'};margin-top:3px">${e.homeAway.toUpperCase()}</div>` : ''}
         </div>
@@ -20204,7 +20204,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       card.onclick = () => openDrillDetail(d.id);
       card.innerHTML = `
         <div class="drill-card-head">
-          <div class="drill-name">${d.title}</div>
+          <div class="drill-name">${_esc(d.title)}</div>
           ${d.video ? '<span style="font-size:16px">🎬</span>' : ''}
         </div>
         <div class="drill-desc" style="font-size:12.5px;color:var(--gray-2);line-height:1.5;margin-bottom:8px">${d.desc.substring(0,100)}${d.desc.length > 100 ? '…' : ''}</div>
@@ -21252,7 +21252,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       const hour = new Date().getHours();
       const word = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : hour < 21 ? 'Good evening' : 'Hey';
       const greetingEl = document.querySelector('#tab-' + appRole + '-home .greeting');
-      if (greetingEl) greetingEl.innerHTML = `${word}, <span>${user.name}</span> 👋`;
+      if (greetingEl) greetingEl.innerHTML = `${word}, <span>${_esc(user.name)}</span> 👋`;
     }
 
     // Team name displays
