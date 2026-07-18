@@ -5252,7 +5252,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.78</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.79</div>
   </div>
 </div>
 
@@ -5263,7 +5263,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.78';
+  const APP_VERSION = 'v39.79';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -15392,6 +15392,36 @@ ${printBtnHtml}
       try { localStorage.setItem(lastSeenKey, String(Date.now())); } catch(e) {}
     }
 
+    // Assistant/head coaches: notify about NEW coach-audience announcements they did NOT
+    // author (so the poster never bells themselves). Seed the baseline silently the first
+    // time so pre-existing posts don't flood the bell on first login after this shipped.
+    if (currentRole === 'coach') {
+      const lastSeenKey = 'mesh_ann_last_seen_coach';
+      const hadBaseline = localStorage.getItem(lastSeenKey) !== null;
+      const lastSeen = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
+      const myUid = localStorage.getItem('mesh_auth_uid');
+      const urgencyPrefix = { normal: '📣', important: '⚡', urgent: '🚨' };
+      if (hadBaseline) {
+        const newAnns = ANNOUNCEMENTS.filter(a =>
+          (a.postedAt || 0) > lastSeen &&
+          (a.audience || ['coaches']).includes('coaches') &&
+          a.authorUid !== myUid
+        );
+        if (newAnns.length) {
+          setTimeout(() => {
+            newAnns.forEach(a => {
+              const prefix = urgencyPrefix[a.urgency || 'normal'] || '📣';
+              const preview = a.text.length > 60 ? a.text.slice(0, 60) + '…' : a.text;
+              addNotif(prefix + ' New announcement from <span>' + _esc(a.author || 'Coach') + '</span>: "' + _esc(preview) + '"', () => {
+                showTab(currentRole, 'home');
+              });
+            });
+          }, 600);
+        }
+      }
+      try { localStorage.setItem(lastSeenKey, String(Date.now())); } catch(e) {}
+    }
+
     // Backfill avatarUrl for own announcements that are missing it (posted before v39.14)
     const myUid = localStorage.getItem('mesh_auth_uid');
     const needsUrl = ANNOUNCEMENTS.filter(a => a.avatarPath && !a.avatarUrl && a.authorUid === myUid);
@@ -15431,14 +15461,19 @@ ${printBtnHtml}
     let incoming;
     try { incoming = raw ? JSON.parse(raw) : []; } catch(e) { return; }
 
-    // Notify the local player/parent about announcements newer than their last seen.
-    if (currentRole === 'player' || currentRole === 'parent') {
+    // Notify the local user about announcements newer than their last seen — for their
+    // audience group, excluding anything they authored (so the poster never self-bells).
+    // Coaches (head + assistant) are the 'coaches' group; this is what gives an assistant
+    // coach a bell on a live announcement.
+    const roleToGroup = { coach: 'coaches', player: 'players', parent: 'parents' };
+    const group = roleToGroup[currentRole];
+    if (group) {
       const lastSeenKey = 'mesh_ann_last_seen_' + currentRole;
       const lastSeen = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
-      const group = currentRole === 'player' ? 'players' : 'parents';
+      const myUid = localStorage.getItem('mesh_auth_uid');
       const urgencyPrefix = { normal: '📣', important: '⚡', urgent: '🚨' };
       incoming
-        .filter(a => (a.postedAt || 0) > lastSeen && (a.audience || ['coaches']).includes(group))
+        .filter(a => (a.postedAt || 0) > lastSeen && (a.audience || ['coaches']).includes(group) && a.authorUid !== myUid)
         .forEach(a => {
           const prefix = urgencyPrefix[a.urgency || 'normal'] || '📣';
           const preview = a.text.length > 60 ? a.text.slice(0, 60) + '…' : a.text;
