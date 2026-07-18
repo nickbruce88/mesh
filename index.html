@@ -5252,7 +5252,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.76</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.77</div>
   </div>
 </div>
 
@@ -5263,7 +5263,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.76';
+  const APP_VERSION = 'v39.77';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -15304,6 +15304,10 @@ ${printBtnHtml}
   }
   let ANNOUNCEMENTS = [];
   const ANN_SUPABASE_COL = 'announcements_data';
+  // Auto-refresh state: raw blob last seen (to skip no-op re-renders) + poll timer.
+  let _annLastRaw = null;
+  let _annPollTimer = null;
+  let _annVisBound = false;
 
   function annId() { return 'ann_' + Date.now() + '_' + Math.random().toString(36).slice(2,5); }
 
@@ -15320,6 +15324,7 @@ ${printBtnHtml}
     try {
       const { data } = await db.from('programs').select('announcements_data').eq('id', programId).single();
       if (data?.announcements_data) ANNOUNCEMENTS = JSON.parse(data.announcements_data);
+      _annLastRaw = (data && data.announcements_data) || '';
     } catch(e) { console.warn('Ann load error:', e); }
 
     // Backfill postedAt on old announcements that are missing it
@@ -15349,7 +15354,7 @@ ${printBtnHtml}
           newAnns.forEach(a => {
             const prefix = urgencyPrefix[a.urgency || 'normal'] || '📣';
             const preview = a.text.length > 60 ? a.text.slice(0, 60) + '\u2026' : a.text;
-            addNotif(prefix + ' New announcement from <span>' + (a.author || 'Coach') + '</span>: "' + preview + '"', () => {
+            addNotif(prefix + ' New announcement from <span>' + _esc(a.author || 'Coach') + '</span>: "' + _esc(preview) + '"', () => {
               showTab(currentRole, 'home');
             });
           });
@@ -15378,6 +15383,64 @@ ${printBtnHtml}
           if (changed) annSave();
         }
       } catch(e) { console.warn('Ann backfill error:', e); }
+    }
+  }
+
+  // Re-fetch the announcements blob and, if it changed, re-render every role's list and
+  // notify player/parent about anything new. Cheap no-op when nothing changed. This is
+  // what makes a coach's post appear for others without a manual page refresh.
+  async function annRefresh() {
+    const programId = await getValidProgramId();
+    if (!programId) return;
+    let data;
+    try {
+      const res = await db.from('programs').select('announcements_data').eq('id', programId).single();
+      data = res.data;
+    } catch(e) { return; }
+    const raw = (data && data.announcements_data) || '';
+    if (raw === _annLastRaw) return; // unchanged — nothing to do
+    _annLastRaw = raw;
+    let incoming;
+    try { incoming = raw ? JSON.parse(raw) : []; } catch(e) { return; }
+
+    // Notify the local player/parent about announcements newer than their last seen.
+    if (currentRole === 'player' || currentRole === 'parent') {
+      const lastSeenKey = 'mesh_ann_last_seen_' + currentRole;
+      const lastSeen = parseInt(localStorage.getItem(lastSeenKey) || '0', 10);
+      const group = currentRole === 'player' ? 'players' : 'parents';
+      const urgencyPrefix = { normal: '📣', important: '⚡', urgent: '🚨' };
+      incoming
+        .filter(a => (a.postedAt || 0) > lastSeen && (a.audience || ['coaches']).includes(group))
+        .forEach(a => {
+          const prefix = urgencyPrefix[a.urgency || 'normal'] || '📣';
+          const preview = a.text.length > 60 ? a.text.slice(0, 60) + '…' : a.text;
+          addNotif(prefix + ' New announcement from <span>' + _esc(a.author || 'Coach') + '</span>: "' + _esc(preview) + '"', () => {
+            showTab(currentRole, 'home');
+          });
+        });
+      try { localStorage.setItem(lastSeenKey, String(Date.now())); } catch(e) {}
+    }
+
+    ANNOUNCEMENTS = incoming;
+    renderAnnouncements('coach');
+    renderAnnouncements('player');
+    renderAnnouncements('parent');
+  }
+
+  // Poll for announcement changes while the app is open, and refresh instantly whenever
+  // the user returns to the tab/app (covers the common "coach posts, team opens app" case
+  // without waiting for the next poll tick).
+  function startAnnouncementsPolling(programId) {
+    if (!programId || !programId.includes('-')) return;
+    if (_annPollTimer) clearInterval(_annPollTimer);
+    _annPollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') annRefresh();
+    }, 30000);
+    if (!_annVisBound) {
+      _annVisBound = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') annRefresh();
+      });
     }
   }
 
@@ -21361,6 +21424,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     await loadStatCategories(programId);
     subscribeToPlayers(programId);
     subscribeToPlayerMessages(programId); // message-list realtime for ALL roles
+    startAnnouncementsPolling(programId); // auto-refresh announcements for ALL roles
     loadThreadList(appRole); // warm the thread list/_threads so message bells can resolve threads
     loadNotifPrefs();        // sync server-side notification prefs into the local cache
 
