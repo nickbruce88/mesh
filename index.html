@@ -490,7 +490,7 @@
   .notif-overlay.open { display:block; }
 
   /* ===== PROFILE MODAL ===== */
-  #profile-modal-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:90;display:none;align-items:flex-end; }
+  #profile-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:90;display:none;align-items:flex-end; }
   #profile-modal-overlay.open { display:flex; }
   .profile-modal { background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:16px 20px 32px;border-top:1px solid var(--border); }
   .profile-header { display:flex;align-items:center;gap:14px;padding:12px 0 16px;border-bottom:1px solid var(--border);margin-bottom:8px; }
@@ -503,7 +503,11 @@
   .profile-menu-item.danger { color:var(--red); }
 
   /* ===== MESSAGE THREAD VIEW ===== */
-  #msg-thread-overlay { position:absolute;inset:0;background:var(--bg);z-index:70;display:none;flex-direction:column; }
+  /* position:fixed (not absolute) so the full-screen thread tracks the VISIBLE viewport.
+     With position:absolute inside .phone (min-height:100vh), the compose bar landed below
+     the fold on mobile (browser toolbar / long list behind it) — coach had "no reply box".
+     Framed to the phone width; desktop @media below resets this to a relative pane. */
+  #msg-thread-overlay { position:fixed;top:0;bottom:0;left:0;right:0;margin-inline:auto;max-width:420px;background:var(--bg);z-index:70;display:none;flex-direction:column; }
   #msg-thread-overlay.open { display:flex; }
   /* On desktop, overlay is contained within messages tab via relative positioning */
   #msg-thread-overlay.open { display:flex; }
@@ -643,7 +647,7 @@
   .coach-doc-folder { display:none; }
 
   /* ===== NEW DAY MODAL ===== */
-  #new-day-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:80;display:none;align-items:flex-end; }
+  #new-day-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:80;display:none;align-items:flex-end; }
   #new-day-overlay.open { display:flex; }
   .new-day-sheet { background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--border);max-height:92vh;overflow-y:auto; }
   .new-day-step { display:none; }
@@ -691,7 +695,7 @@
   .simple-block { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;transition:border-color 0.15s; }
   .simple-block:active { border-color:var(--team-primary); }
   /* Simple block editor modal */
-  #simple-block-editor { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
+  #simple-block-editor { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
   #simple-block-editor.open { display:flex; }
   @media (min-width:768px) { #simple-block-editor { position:fixed;z-index:400; } }
   .simple-block.editing { border-color:var(--team-primary); }
@@ -1063,6 +1067,8 @@
       #msg-thread-overlay {
         position: relative !important;
         inset: auto !important;
+        max-width: none !important;
+        margin-inline: 0 !important;
         z-index: 1 !important;
         background: var(--bg) !important;
       }
@@ -1557,7 +1563,7 @@
   .pp-group-pill.selected { border-color:var(--fg); }
 
   /* Add note modal */
-  #add-note-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:95;display:none;align-items:center;justify-content:center;padding:24px; }
+  #add-note-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:95;display:none;align-items:center;justify-content:center;padding:24px; }
   #add-note-overlay.open { display:flex; }
   @media (min-width:768px) { #add-note-overlay { position:fixed;z-index:400; } }
   .add-note-sheet { background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--border); }
@@ -1586,7 +1592,7 @@
   .group-safety-badge.warn { background:rgba(255,184,0,0.12);color:var(--amber); }
 
   /* New group modal */
-  #new-group-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center; }
+  #new-group-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center; }
   #new-group-overlay.open { display:flex; }
   .new-group-sheet { background:var(--bg-2);border-radius:16px;width:100%;max-width:480px;padding:12px 20px 32px;border:1px solid var(--border);max-height:88vh;overflow-y:auto; }
   .ng-step { display:none; }
@@ -1606,7 +1612,7 @@
   .ng-validation.pass { background:var(--team-primary-glow-sm);color:var(--team-primary);border:1px solid var(--team-primary-glow);display:block; }
 
   /* Player new message */
-  #player-new-msg-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center; }
+  #player-new-msg-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center; }
   #player-new-msg-overlay.open { display:flex; }
 
   /* ===== DRILL LIBRARY FULL ===== */
@@ -1627,7 +1633,7 @@
   .drill-empty { text-align:center;padding:32px 16px;color:var(--fg-3);font-size:13px; }
 
   /* Add drill modal */
-  #add-drill-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:flex-end; }
+  #add-drill-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:flex-end; }
   #add-drill-overlay.open { display:flex; }
   .add-drill-sheet { background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--border);max-height:92vh;overflow-y:auto; }
   .add-drill-label { font-size:12px;font-weight:600;color:var(--fg-2);margin:12px 0 6px; }
@@ -1718,7 +1724,7 @@
   .pb-select-bar.active { display:flex; }
   .pb-select-bar-label { font-size:13px;font-weight:600;color:var(--fg);flex:1; }
   /* Play detail modal */
-  #pb-detail-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:92;display:none;align-items:center;justify-content:center;padding:20px; }
+  #pb-detail-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:92;display:none;align-items:center;justify-content:center;padding:20px; }
   #pb-detail-overlay.open { display:flex; }
   .pb-detail-modal { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:720px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column; }
   /* Folder edit button */
@@ -1739,9 +1745,9 @@
   .pb-resp-input:focus { outline:none;border-color:var(--team-primary); }
   .pb-resp-del { color:var(--fg-3);font-size:18px;cursor:pointer;flex-shrink:0;padding:4px; }
   /* Modals */
-  #pb-new-folder-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
+  #pb-new-folder-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
   #pb-new-folder-overlay.open { display:flex; }
-  #pb-move-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:96;display:none;align-items:flex-end; }
+  #pb-move-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:96;display:none;align-items:flex-end; }
   #pb-move-overlay.open { display:flex; }
   .pb-move-sheet { background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 40px;max-height:70vh;overflow-y:auto; }
   .pb-move-sheet::-webkit-scrollbar { display:none; }
@@ -1749,7 +1755,7 @@
   .pb-folder-pick:last-child { border-bottom:none; }
   .pb-folder-pick:active { opacity:0.7; }
   /* Link modal */
-  #pb-link-overlay { position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:95;display:none;align-items:center;justify-content:center;padding:24px; }
+  #pb-link-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:95;display:none;align-items:center;justify-content:center;padding:24px; }
   #pb-link-overlay.open { display:flex; }
   /* Add Plays modal */
   #pb-add-plays-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:300;display:none;align-items:center;justify-content:center;padding:24px; }
@@ -3088,6 +3094,24 @@
         <div class="more-menu-arrow">›</div>
       </div>
 
+      <div class="more-menu-item" onclick="showMoreSection('attendance')">
+        <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">🗒️</div>
+        <div>
+          <div class="more-menu-label">Attendance</div>
+          <div class="more-menu-sub">Take & review practice attendance</div>
+        </div>
+        <div class="more-menu-arrow">›</div>
+      </div>
+
+      <div class="more-menu-item" onclick="showMoreSection('performance')">
+        <div class="more-menu-icon" style="background:rgba(52,199,89,0.1)">📈</div>
+        <div>
+          <div class="more-menu-label">Performance</div>
+          <div class="more-menu-sub">Game stats &amp; pending approvals</div>
+        </div>
+        <div class="more-menu-arrow">›</div>
+      </div>
+
       <div class="more-menu-item" onclick="showMoreSection('drills')">
         <div class="more-menu-icon" style="background:rgba(255,180,0,0.1)">📚</div>
         <div>
@@ -3427,7 +3451,6 @@
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Calendar</div>
         <div style="display:flex;gap:6px;margin-left:auto">
-          <button class="btn-sm" onclick="openMaxPrepsImport()">📊 Stats</button>
           <button class="btn-sm" onclick="openImportMenu()">📥 Import</button>
           <button class="btn-sm" onclick="exportCalendar('coach')">📤 Export</button>
         </div>
@@ -4457,7 +4480,7 @@
   </div>
 
   <!-- ===== GROUP MANAGER MODAL ===== -->
-  <div id="group-manager-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:flex-end" onclick="closeGroupManager()">
+  <div id="group-manager-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:flex-end" onclick="closeGroupManager()">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4)" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -4763,7 +4786,7 @@
   </div>
 
   <!-- ===== CSV IMPORT MODAL ===== -->
-  <div id="csv-import-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center;padding:24px" onclick="closeCSVImport()">
+  <div id="csv-import-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:88;display:none;align-items:center;justify-content:center;padding:24px" onclick="closeCSVImport()">
     <div class="ap-modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto">
       <div class="ap-head">
         <div class="ap-title">Import Inventory</div>
@@ -4883,7 +4906,7 @@
   </div>
 
   <!-- ===== ITEM ACTION SHEET (after scan) ===== -->
-  <div id="item-action-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:96;display:none;align-items:flex-end">
+  <div id="item-action-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:96;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4)" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="font-size:16px;font-weight:700;margin-bottom:4px" id="item-action-name">Item</div>
@@ -4896,7 +4919,7 @@
   </div>
 
   <!-- ===== ASSIGN ITEM MODAL ===== -->
-  <div id="assign-item-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:97;display:none;align-items:flex-end">
+  <div id="assign-item-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:97;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4);max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -4910,7 +4933,7 @@
   </div>
 
   <!-- ===== PRINT TAG OVERLAY ===== -->
-  <div id="print-tag-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.8);z-index:98;display:none;align-items:center;justify-content:center;padding:24px">
+  <div id="print-tag-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:98;display:none;align-items:center;justify-content:center;padding:24px">
     <div style="background:white;border-radius:12px;width:220px;padding:20px;text-align:center;color:#000" onclick="event.stopPropagation()">
       <div style="font-size:10px;font-weight:700;color:#333;margin-bottom:4px;letter-spacing:0.05em" id="print-school-name">NAMPA BULLDOGS</div>
       <div style="font-size:13px;font-weight:700;color:#000;margin-bottom:8px" id="print-item-name-tag">Schutt Helmet 1</div>
@@ -4946,7 +4969,7 @@
   </div>
 
   <!-- ===== ASSIGN TO PLAYER — CATEGORY PICKER ===== -->
-  <div id="assign-cat-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:98;display:none;align-items:flex-end">
+  <div id="assign-cat-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:98;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4)" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -4959,7 +4982,7 @@
   </div>
 
   <!-- ===== ASSIGN TO PLAYER — ITEM PICKER ===== -->
-  <div id="assign-item-pick-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:99;display:none;align-items:flex-end">
+  <div id="assign-item-pick-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99;display:none;align-items:flex-end">
     <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4);max-height:75vh;overflow-y:auto" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
@@ -4972,7 +4995,7 @@
   </div>
 
   <!-- ===== CALENDAR EXPORT OVERLAY ===== -->
-  <div id="cal-export-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:92;display:none;align-items:center;justify-content:center;padding:24px">
+  <div id="cal-export-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:92;display:none;align-items:center;justify-content:center;padding:24px">
     <div class="ap-modal" onclick="event.stopPropagation()">
       <div class="ap-head">
         <div class="ap-title">Export to Calendar</div>
@@ -5252,7 +5275,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.83</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.84</div>
   </div>
 </div>
 
@@ -5266,7 +5289,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.83';
+  const APP_VERSION = 'v39.84';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12601,8 +12624,29 @@
     if (t.kind === 'witnessed_dm') return { icon:'🛡️', color:'var(--team-primary)' };
     return { icon:'💬', color:'var(--blue)' };
   }
+  // For 1:1 / witnessed threads, show the OTHER person's name (e.g. "Dan Smith"), not
+  // "Private (witnessed)". The shield avatar already signals it's protected/witnessed, and
+  // the witness is listed in the subtitle once you open the thread. Names come from
+  // thread_members (async) — cached here and filled in by resolveThreadName.
+  const _threadNameCache = {};
   function threadTitle(t){
-    return t.subject || (t.kind === 'witnessed_dm' ? 'Private (witnessed)' : 'Direct message');
+    if (t.subject) return t.subject;
+    if (t.kind === 'witnessed_dm' || t.kind === 'dm') return _threadNameCache[t.id] || 'Direct message';
+    return 'Direct message';
+  }
+  async function resolveThreadName(t, nameEl){
+    if (!t || t.subject || (t.kind !== 'witnessed_dm' && t.kind !== 'dm')) return;
+    if (_threadNameCache[t.id]) { if (nameEl) nameEl.textContent = _threadNameCache[t.id]; return; }
+    try {
+      const { data } = await db.rpc('thread_members', { p_thread: t.id });
+      if (!data) return;
+      const others = data.filter(m => m.user_id !== _myUid());
+      const primary = others.find(m => !m.is_witness) || others[0]; // the person, not the witness
+      if (primary && primary.name) {
+        _threadNameCache[t.id] = primary.name;
+        if (nameEl) nameEl.textContent = primary.name;
+      }
+    } catch(e){}
   }
   function msgListId(role){ return role==='player'?'player-msg-group-list':role==='parent'?'parent-msg-group-list':'coach-msg-group-list'; }
   function msgEmptyId(role){ return role==='player'?'player-msg-empty':role==='parent'?'parent-msg-empty':'coach-msg-empty'; }
@@ -12661,12 +12705,13 @@
       item.innerHTML =
         '<div class="msg-group-avatar" style="background:'+av.color+'22;color:'+av.color+'">'+av.icon+'</div>'+
         '<div class="msg-group-content"><div class="msg-group-header">'+
-        '<div class="msg-group-name">'+_esc(threadTitle(t))+(t.muted?' <span style="color:var(--fg-3)">🔕</span>':'')+'</div>'+
+        '<div class="msg-group-name"><span class="mgn-text" id="mgn-'+t.id+'">'+_esc(threadTitle(t))+'</span>'+(t.muted?' <span style="color:var(--fg-3)">🔕</span>':'')+'</div>'+
         '<div class="inbox-time">'+when+'</div></div>'+
         '<div class="msg-group-preview" id="mgp-'+t.id+'">'+_esc(preview)+'</div></div>'+
         '<div class="unread-dot" id="mgu-'+t.id+'" style="opacity:0"></div>';
       item.onclick = () => openThread(t.id);
       list.appendChild(item);
+      resolveThreadName(t, document.getElementById('mgn-' + t.id)); // fill in the real name for DM/witnessed threads
     });
 
     if (_showArchived && shown.length === 0) {
@@ -12780,6 +12825,7 @@
     const body    = document.getElementById(ids.body);
     const av = threadAvatar(t);
     if (titleEl) titleEl.textContent = threadTitle(t);
+    resolveThreadName(t, titleEl); // DM/witnessed → show the person's name in the header too
     if (avEl) { avEl.className = 'thread-avatar'; avEl.style.background=''; avEl.style.color=''; avEl.textContent = av.icon; }
     loadThreadSubtitle(t, subEl);
     updateThreadMuteBtn();
@@ -16975,15 +17021,20 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       return;
     }
     player.discipline.forEach(d => {
+      // Two shapes exist: incident entries {incident, consequence, status, coach} and
+      // status-change logs {text, author}. Fall back across both so neither renders
+      // "undefined", and escape (coach-entered free text).
+      const who = d.coach || d.author || 'Coach';
+      const title = d.incident || d.text || '';
       const div = document.createElement('div');
       div.className = 'pp-disc-row';
       div.innerHTML = `<div class="pp-disc-icon">⚠️</div>
         <div class="pp-disc-content">
-          <div class="pp-disc-incident">${d.incident}</div>
-          <div class="pp-disc-meta">${d.date} · Logged by ${d.coach}</div>
-          <div class="pp-disc-consequence">${d.consequence}</div>
+          <div class="pp-disc-incident">${_esc(title)}</div>
+          <div class="pp-disc-meta">${_esc(d.date || '')} · Logged by ${_esc(who)}</div>
+          ${d.consequence ? `<div class="pp-disc-consequence">${_esc(d.consequence)}</div>` : ''}
         </div>
-        <div class="pp-disc-status ${d.status}">${d.status}</div>`;
+        ${d.status ? `<div class="pp-disc-status ${_esc(d.status)}">${_esc(d.status)}</div>` : ''}`;
       list.appendChild(div);
     });
   }
@@ -17182,7 +17233,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     const modal = document.createElement('div');
     modal.id = 'disc-note-modal';
-    modal.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end;justify-content:center';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end;justify-content:center';
     modal.innerHTML = `
       <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:520px;padding:20px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
         <div style="font-size:16px;font-weight:700;color:var(--fg);margin-bottom:4px">Change status to "${statusLabel}"</div>
@@ -17223,7 +17274,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const changeNote = {
       type: 'discipline',
       text: `Status changed to ${statusLabel}: ${note}`,
-      author: _myName() || 'Coach', // mesh_user_name was never written → always 'Coach'
+      author: _myName() || 'Coach',
+      coach: _myName() || 'Coach', // also set `coach` — the discipline list reads that field
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }),
     };
     if (!player.discipline) player.discipline = [];
@@ -17980,7 +18032,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     // Show confirmation bottom sheet
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end';
     modal.innerHTML = `
       <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:20px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
         <div style="text-align:center;font-size:32px;margin-bottom:8px">✅</div>
