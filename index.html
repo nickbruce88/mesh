@@ -5252,7 +5252,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.75</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.76</div>
   </div>
 </div>
 
@@ -5263,7 +5263,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.75';
+  const APP_VERSION = 'v39.76';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5764,6 +5764,12 @@
     }
     // Player depth chart — show the depth section directly
     if (role === 'player' && tab === 'depth') setTimeout(() => showPlayerSection('depth'), 50);
+    // Mobile "More": tapping the More tab should always land back on the menu list,
+    // not whatever sub-section was last left open. (Desktop opens a default section above.)
+    if (!isDesktop() && tab === 'more') {
+      if (role === 'coach') backToMoreMenu();
+      else if (role === 'parent') backToParentMenu();
+    }
     // Player "More" (My Info) on MOBILE — the isDesktop branch above renders it on
     // desktop; mobile has no sidebar path, so without this the tab is blank on phones.
     if (!isDesktop() && role === 'player' && tab === 'more') setTimeout(() => renderMyInfoPage(), 50);
@@ -5773,6 +5779,58 @@
     // Re-apply per-feature edit gating after the tab (and its dynamic controls) render.
     if (role === 'coach') setTimeout(applyPermissionState, 80);
   }
+
+  // ===== Mobile in-app Back / swipe-back (browser history integration) =====
+  // The app is a single page and never used the History API, so the browser Back arrow
+  // was dead and iOS/Android edge-swipe did nothing. We seed one history entry, then on
+  // each Back press unwind ONE level of app UI and re-arm — so Back walks back out the
+  // same way the on-screen back arrows do, instead of leaving the app on the first press.
+  (function initMeshBack(){
+    // Known full-screen sheets that use style.display (not the .open class); close them
+    // via their real closers so cleanup runs (e.g. stopping the QR camera stream).
+    function sheetClosers(){
+      return [
+        ['qr-scanner-overlay', closeQRScanner],
+        ['item-action-overlay', closeItemAction],
+        ['assign-item-overlay', closeAssignItem],
+        ['print-tag-overlay', closePrintTag],
+      ];
+    }
+    function arm(){ try { history.pushState({ mesh: true }, ''); } catch(e){} }
+    function topOpenOverlay(){
+      // Modals toggle the .open class, but so do expandable list items (doc/playbook
+      // folders). Scope to real overlays by id suffix so Back doesn't collapse a folder.
+      // Check computed display (not offsetParent — that is null for position:fixed).
+      const open = Array.prototype.slice.call(document.querySelectorAll('.open'))
+        .filter(el => /-(overlay|editor|modal)$/.test(el.id) && getComputedStyle(el).display !== 'none');
+      return open.length ? open[open.length - 1] : null;
+    }
+    function meshHandleBack(){
+      // 0) Display-based full-screen sheets (QR scanner + inventory action sheets).
+      const sheets = sheetClosers();
+      for (let i = sheets.length - 1; i >= 0; i--){
+        const el = document.getElementById(sheets[i][0]);
+        if (el && getComputedStyle(el).display !== 'none'){
+          try { sheets[i][1](); } catch(e){ el.style.display = 'none'; }
+          return true;
+        }
+      }
+      // 1) Top-most .open modal / the full-screen player card.
+      const ov = topOpenOverlay();
+      if (ov){ ov.classList.remove('open'); return true; }
+      // 2) A coach/parent "More" sub-section is open → back to the More menu.
+      if (document.querySelector('.more-section.active')){ backToMoreMenu(); return true; }
+      if (document.querySelector('[id^="parent-section-"].active')){ backToParentMenu(); return true; }
+      // 3) Not on the home tab → go home.
+      if (currentTab && currentTab !== 'home'){ showTab(currentRole, 'home'); return true; }
+      return false; // at the app root — allow the browser to leave.
+    }
+    window.addEventListener('popstate', function(){
+      if (meshHandleBack()) arm(); // consumed a level; re-arm to catch the next Back.
+    });
+    if (document.readyState === 'complete') arm();
+    else window.addEventListener('load', arm);
+  })();
 
   function applyDesktopPracticeLayout() {
     const tab = document.getElementById('tab-coach-practice');
