@@ -5252,7 +5252,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.79</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.80</div>
   </div>
 </div>
 
@@ -5263,7 +5263,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.79';
+  const APP_VERSION = 'v39.80';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5714,6 +5714,7 @@
   }
 
   function showTab(role, tab) {
+    const _navPrevTab = currentTab;
     currentTab = tab;
     // Close player profile if open
     const ppOverlay = document.getElementById('player-profile-overlay');
@@ -5778,58 +5779,82 @@
     // Player My Info — rendered via 'more' tab hook above
     // Re-apply per-feature edit gating after the tab (and its dynamic controls) render.
     if (role === 'coach') setTimeout(applyPermissionState, 80);
+    // History: a tab change is a forward navigation — Back/swipe returns to the prior tab.
+    if (!_navRestoring && _navPrevTab && _navPrevTab !== tab) {
+      const _pr = role, _pt = _navPrevTab;
+      navPush(() => showTab(_pr, _pt));
+    }
   }
 
-  // ===== Mobile in-app Back / swipe-back (browser history integration) =====
-  // The app is a single page and never used the History API, so the browser Back arrow
-  // was dead and iOS/Android edge-swipe did nothing. We seed one history entry, then on
-  // each Back press unwind ONE level of app UI and re-arm — so Back walks back out the
-  // same way the on-screen back arrows do, instead of leaving the app on the first press.
-  (function initMeshBack(){
-    // Known full-screen sheets that use style.display (not the .open class); close them
-    // via their real closers so cleanup runs (e.g. stopping the QR camera stream).
-    function sheetClosers(){
-      return [
-        ['qr-scanner-overlay', closeQRScanner],
-        ['item-action-overlay', closeItemAction],
-        ['assign-item-overlay', closeAssignItem],
-        ['print-tag-overlay', closePrintTag],
-      ];
-    }
-    function arm(){ try { history.pushState({ mesh: true }, ''); } catch(e){} }
-    function topOpenOverlay(){
-      // Modals toggle the .open class, but so do expandable list items (doc/playbook
-      // folders). Scope to real overlays by id suffix so Back doesn't collapse a folder.
-      // Check computed display (not offsetParent — that is null for position:fixed).
-      const open = Array.prototype.slice.call(document.querySelectorAll('.open'))
-        .filter(el => /-(overlay|editor|modal)$/.test(el.id) && getComputedStyle(el).display !== 'none');
-      return open.length ? open[open.length - 1] : null;
-    }
-    function meshHandleBack(){
-      // 0) Display-based full-screen sheets (QR scanner + inventory action sheets).
-      const sheets = sheetClosers();
-      for (let i = sheets.length - 1; i >= 0; i--){
-        const el = document.getElementById(sheets[i][0]);
-        if (el && getComputedStyle(el).display !== 'none'){
-          try { sheets[i][1](); } catch(e){ el.style.display = 'none'; }
-          return true;
-        }
+  // ===== In-app history navigation (Back button + iOS swipe-back) =====
+  // The app is a single page. To make the browser Back arrow AND iOS/Android edge-swipe
+  // behave, we push a history entry for each forward in-app navigation (tab change, More
+  // sub-section, overlay/modal) and give each a small "undo". Back/swipe pops entries and
+  // runs the undos. Pushing a real entry PER VIEW (instead of one shared seed) is what
+  // makes iOS swipe-back reveal the actual previous screen instead of a stale frame.
+  let _navStack = [];        // [{ id, undo }] — one per pushed view, deepest last
+  let _navId = 0;            // monotonic id, mirrored into history.state.navId
+  let _navRestoring = false; // true while running undos, so they don't re-push
+
+  function navPush(undo) {
+    if (_navRestoring) return;
+    _navId++;
+    _navStack.push({ id: _navId, undo });
+    try { history.pushState({ mesh: true, navId: _navId }, ''); } catch(e) {}
+  }
+
+  function _navUnwindTo(targetId) {
+    _navRestoring = true;
+    try {
+      while (_navStack.length && _navStack[_navStack.length - 1].id > targetId) {
+        const entry = _navStack.pop();
+        try { entry.undo(); } catch(e) {}
       }
-      // 1) Top-most .open modal / the full-screen player card.
-      const ov = topOpenOverlay();
-      if (ov){ ov.classList.remove('open'); return true; }
-      // 2) A coach/parent "More" sub-section is open → back to the More menu.
-      if (document.querySelector('.more-section.active')){ backToMoreMenu(); return true; }
-      if (document.querySelector('[id^="parent-section-"].active')){ backToParentMenu(); return true; }
-      // 3) Not on the home tab → go home.
-      if (currentTab && currentTab !== 'home'){ showTab(currentRole, 'home'); return true; }
-      return false; // at the app root — allow the browser to leave.
+    } finally { _navRestoring = false; }
+  }
+
+  (function initNavHistory(){
+    // Display-based full-screen sheets (not the .open class) → close via real closers so
+    // cleanup runs (e.g. stopping the QR camera stream).
+    const SHEET_CLOSERS = {
+      'qr-scanner-overlay': () => closeQRScanner(),
+      'item-action-overlay': () => closeItemAction(),
+      'assign-item-overlay': () => closeAssignItem(),
+      'print-tag-overlay': () => closePrintTag(),
+    };
+    // Mark the current (root) entry so a Back from the first screen leaves the app.
+    try { history.replaceState({ mesh: true, navId: 0 }, ''); } catch(e) {}
+
+    // Auto-track overlays/modals as they open, so we don't have to instrument ~25 open
+    // sites. A modal is a real overlay by id suffix (…-overlay/-editor/-modal) or a known
+    // display-based sheet; folders reuse .open but don't match the id pattern.
+    const openSet = new Set();
+    function scan(el){
+      if (!el || !el.id) return;
+      const isSheet = el.id in SHEET_CLOSERS;
+      const isModal = /-(overlay|editor|modal)$/.test(el.id);
+      if (!isSheet && !isModal) return;
+      let visible = false;
+      try { visible = getComputedStyle(el).display !== 'none' && (isSheet || el.classList.contains('open')); } catch(e) {}
+      const tracked = openSet.has(el);
+      if (visible && !tracked) {
+        openSet.add(el);
+        navPush(() => {
+          openSet.delete(el);
+          if (isSheet) { try { SHEET_CLOSERS[el.id](); return; } catch(e) { el.style.display = 'none'; return; } }
+          el.classList.remove('open');
+        });
+      } else if (!visible && tracked) {
+        openSet.delete(el); // closed via its own UI; leave the now-harmless history entry
+      }
     }
-    window.addEventListener('popstate', function(){
-      if (meshHandleBack()) arm(); // consumed a level; re-arm to catch the next Back.
+    const obs = new MutationObserver(muts => { for (const m of muts) scan(m.target); });
+    obs.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'], subtree: true });
+
+    window.addEventListener('popstate', (e) => {
+      const targetId = (e.state && typeof e.state.navId === 'number') ? e.state.navId : 0;
+      _navUnwindTo(targetId);
     });
-    if (document.readyState === 'complete') arm();
-    else window.addEventListener('load', arm);
   })();
 
   function applyDesktopPracticeLayout() {
@@ -13197,6 +13222,9 @@
     }
     // Gate this section's edit controls for assistant coaches (runs after section render).
     setTimeout(applyPermissionState, 60);
+    // History (mobile): entering a section from the More menu is a forward nav; Back
+    // returns to the menu. Desktop navigates sections via the sidebar, so skip it there.
+    if (!isDesktop() && !_navRestoring) navPush(() => backToMoreMenu());
   }
 
   function backToMoreMenu() {
@@ -18401,6 +18429,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (section === 'myplayer') renderParentMyPlayer();
     const tab = document.getElementById('tab-parent-more');
     if (tab) tab.scrollTop = 0;
+    // History (mobile): entering a parent section is a forward nav; Back returns to menu.
+    if (!isDesktop() && !_navRestoring) navPush(() => backToParentMenu());
   }
 
   function backToParentMenu() {
