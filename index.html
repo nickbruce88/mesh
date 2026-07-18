@@ -2560,8 +2560,8 @@
     <div id="invite-banner" style="background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;-webkit-tap-highlight-color:transparent">
       <div style="font-size:22px;flex-shrink:0;cursor:pointer" onclick="openShareInvite()">🔗</div>
       <div style="flex:1;cursor:pointer" onclick="openShareInvite()">
-        <div style="font-size:13px;font-weight:700;color:var(--team-primary)">Invite players & parents</div>
-        <div style="font-size:12px;color:var(--gray-2);margin-top:2px">Join code: <strong style="font-family:monospace;color:var(--team-primary)" id="home-join-code">——</strong></div>
+        <div style="font-size:13px;font-weight:700;color:var(--team-primary)">Invite your team</div>
+        <div style="font-size:12px;color:var(--gray-2);margin-top:2px">Separate codes for players, parents &amp; assistant coaches — tap to share</div>
       </div>
       <div style="font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;flex-shrink:0" onclick="openShareInvite()">Share ›</div>
       <div style="font-size:18px;color:var(--gray-3);cursor:pointer;padding:4px;flex-shrink:0;line-height:1" onclick="dismissInviteBanner()" title="Dismiss">✕</div>
@@ -3456,10 +3456,15 @@
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;color:var(--gray-2)" id="sched-record-label">0–0 overall</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" id="coach-view-list" onclick="setCoachSchedView('list',this)">List</button>
+          <button class="btn-sm active-btn" id="coach-view-cal" onclick="setCoachSchedView('cal',this)" style="background:var(--team-primary);color:var(--team-primary-text)">Calendar</button>
+        </div>
       </div>
 
+      <div id="coach-sched-list" style="display:none"></div>
       <div id="coach-sched-cal"></div>
     </div>
 
@@ -4321,7 +4326,7 @@
       <div class="pp-jersey" id="pp-jersey">#22</div>
       <div>
         <div class="pp-hero-name" id="pp-hero-name">—</div>
-        <div class="pp-hero-pos" id="pp-hero-pos">Wide Receiver · Varsity</div>
+        <div class="pp-hero-pos" id="pp-hero-pos">—</div>
         <div class="pp-hero-badges" id="pp-hero-badges"></div>
       </div>
     </div>
@@ -5017,10 +5022,11 @@
   <div id="share-invite-overlay" onclick="closeShareInvite()" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end">
     <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:600px;margin:0 auto;padding:12px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div style="font-size:16px;font-weight:700">Invite to your program</div>
         <div style="color:var(--gray-3);cursor:pointer;font-size:16px" onclick="closeShareInvite()">✕</div>
       </div>
+      <div style="font-size:12px;color:var(--fg-3);line-height:1.5;margin-bottom:18px">Each role has its own code — send people the one that matches how they'll join.</div>
 
       <!-- Three role codes -->
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
@@ -5275,7 +5281,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.84</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.85</div>
   </div>
 </div>
 
@@ -5289,7 +5295,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.84';
+  const APP_VERSION = 'v39.85';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5471,6 +5477,7 @@
   }
 
   function setPlayerSchedView(view, btn) { setSchedView('player', view, btn); }
+  function setCoachSchedView(view, btn) { setSchedView('coach', view, btn); }
 
   // Schedule list shows upcoming only by default; this reveals past results.
   // Only one role's schedule is on screen at a time, so a single flag is enough.
@@ -9005,12 +9012,13 @@
 
   // ===== SHARE INVITE =====
   function getActiveJoinCode() {
-    // Try localStorage first (real program), fall back to demo code
+    // Real program codes only — never the old 'NMPA-24' demo default (it was leaking back
+    // into the home banner after opening the share sheet).
     try {
       const code = localStorage.getItem('mesh_current_program');
       if (code) return code;
     } catch(e) {}
-    return obProgram.joinCode || 'NMPA-24';
+    return obProgram.coachCode || obProgram.playerCode || obProgram.joinCode || '';
   }
 
   function getAppUrl() {
@@ -11252,16 +11260,32 @@
     { label:'DB', color:'#39ff14' },
   ];
 
-  let PRACTICE_COACHES = [
-    { name:'Coach Waite', pos:'QB' },
-
-    { name:'Coach Estrada', pos:'WR' },
-    { name:'Coach Dunn', pos:'OL' },
-  ];
+  // Free-form coaches for the practice-grid columns. Starts empty; real assistant coaches
+  // are merged in from list_program_coaches when the position-group editor opens.
+  let PRACTICE_COACHES = [];
 
   let _epgDragSrc = null;
 
-  function openEditPositionGroups() {
+  // Pull the program's real assistant coaches (their login accounts) into the free-form
+  // practice-coach list so they can be assigned to a position group. Adds any not already
+  // present by name; existing manual entries and assignments are preserved.
+  async function mergeRealCoachesIntoPractice() {
+    try {
+      const programId = await getValidProgramId();
+      if (!programId) return;
+      const { data, error } = await db.rpc('list_program_coaches', { p_program_id: programId });
+      if (error) throw error;
+      (data || []).forEach(c => {
+        const name = (c.name || '').trim();
+        if (name && !PRACTICE_COACHES.some(pc => (pc.name || '').trim().toLowerCase() === name.toLowerCase())) {
+          PRACTICE_COACHES.push({ name, pos: '' });
+        }
+      });
+    } catch(e) { console.warn('[Staff] merge coaches:', e); }
+  }
+
+  async function openEditPositionGroups() {
+    await mergeRealCoachesIntoPractice();
     let overlay = document.getElementById('edit-pos-groups-overlay');
     if (overlay) overlay.remove();
     overlay = document.createElement('div');
@@ -12423,12 +12447,19 @@
   }
 
   // ===== MANAGE STAFF =====
-  function openManageStaff(){
+  async function openManageStaff(){
     closeProfileModal();
     let user={}; try{ user=JSON.parse(localStorage.getItem('mesh_user')||'{}'); }catch(e){}
     const headName=user.name||'Head Coach';
     const headInit=headName.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'HC';
     let groups=[]; try{ groups=(PRACTICE_POSITION_GROUPS||[]).slice(); }catch(e){}
+    // Real assistant coaches (login accounts) for this program.
+    let coaches=[];
+    try {
+      const programId = await getValidProgramId();
+      if (programId) { const { data } = await db.rpc('list_program_coaches', { p_program_id: programId }); coaches = data || []; }
+    } catch(e){ console.warn('[Staff] list:', e); }
+    const initOf = n => (n||'Coach').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'CO';
     let ov=document.getElementById('manage-staff-overlay'); if(ov) ov.remove();
     ov=document.createElement('div'); ov.id='manage-staff-overlay';
     ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:210;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -12442,14 +12473,20 @@
         <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Head coach</div>
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0 16px;border-bottom:1px solid var(--border)">
           <div style="width:38px;height:38px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">${headInit}</div>
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">${headName}</div><div style="font-size:12px;color:var(--fg-3)">You · full access</div></div>
+          <div style="flex:1"><div style="font-size:14px;font-weight:600">${_esc(headName)}</div><div style="font-size:12px;color:var(--fg-3)">You · full access</div></div>
         </div>
-        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px">Position groups</div>
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px">Assistant coaches</div>
+        ${coaches.length ? coaches.map(c=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+            <div style="width:34px;height:34px;border-radius:50%;background:var(--bg-3);color:var(--fg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${initOf(c.name)}</div>
+            <div style="flex:1"><div style="font-size:14px;font-weight:600">${_esc(c.name||'Coach')}</div><div style="font-size:12px;color:var(--fg-3)">Assistant coach</div></div>
+          </div>`).join('') : `<div style="font-size:12px;color:var(--fg-3);line-height:1.5;padding:4px 0 8px">No assistant coaches yet. Share your <b>Assistant Coach code</b> — when a coach joins, they'll appear here.</div>`}
+        <button onclick="document.getElementById('manage-staff-overlay').remove();if(window.openStaffAccess)openStaffAccess()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font);margin-top:6px">Set what each coach can edit</button>
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px">Position groups</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
           ${groups.length?groups.map(g=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600"><span style="width:9px;height:9px;border-radius:50%;background:${g.color||'var(--team-primary)'}"></span>${g.label}</span>`).join(''):'<span style="font-size:12px;color:var(--fg-3)">None yet</span>'}
         </div>
         <button onclick="document.getElementById('manage-staff-overlay').remove();if(window.openEditPositionGroups)openEditPositionGroups()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font);margin-top:12px">Assign coaches to position groups</button>
-        <div style="font-size:11px;color:var(--fg-3);margin-top:12px;line-height:1.5">Inviting assistant coaches with their own logins and permissions is coming soon.</div>
       </div>`;
     document.body.appendChild(ov);
   }
@@ -21476,9 +21513,10 @@ Jersey|RushingNum|RushingYards|RushingTDNum
   function savePbLink() { closePbLinkModal(); showToast('Link feature coming soon'); }
 
 
-  // Init drill library and script section
-  if (document.readyState !== 'loading') { renderDrillLibrary(); renderScriptSection(); renderDepthChart(); }
-  document.addEventListener('DOMContentLoaded', () => { renderDrillLibrary(); renderScriptSection(); renderDepthChart(); });
+  // Init drill library and script section. renderGridHeader() rebuilds the practice grid
+  // header from real data — replaces the static demo coach names (Coach Waite/Bruce/etc.).
+  if (document.readyState !== 'loading') { renderDrillLibrary(); renderScriptSection(); renderDepthChart(); renderGridHeader(); }
+  document.addEventListener('DOMContentLoaded', () => { renderDrillLibrary(); renderScriptSection(); renderDepthChart(); renderGridHeader(); });
 
   async function logOut() {
     closeProfileModal();
@@ -21569,6 +21607,9 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     });
     const coachSub = document.getElementById('coach-home-sub');
     if (coachSub) coachSub.textContent = obProgram.teamName + ' · ' + new Date().getFullYear() + ' Season';
+    // Depth chart team label was a static "Nampa Bulldogs" demo — set it to the real team.
+    const dcTeamLabel = document.getElementById('dc-team-label');
+    if (dcTeamLabel) dcTeamLabel.textContent = obProgram.teamName || 'Your Team';
 
     // Load all data. These hit independent tables, so run them in parallel instead of a
     // serial waterfall (was 9 sequential Supabase round-trips — the main mobile load lag).
