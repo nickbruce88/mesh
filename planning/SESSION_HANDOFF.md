@@ -18,6 +18,19 @@ verifiable parental consent") — so shipping under-13 support without it would 
 Docs pushed at commit b133122 (2026-07-16). This item was deferred deliberately by the founder; do not treat
 it as beta-blocking.
 
+## 📝 POST-BETA FEATURE IDEAS (not blocking; captured so they don't get lost)
+Equipment / QR (surfaced 2026-07-16 while reviewing the inventory flow):
+- **Batch / "print all tags."** Today QR tags print one item at a time (`printItemTag` → single-label
+  overlay, `window.print()`). A coach tagging 60 helmets has to print 60 times. Add a batch print sheet
+  (all items, or all in a category) so setup isn't per-item. Confirm during inventory testing whether any
+  batch path already exists — current read is per-item only.
+- **"Bring your own QR" / attach an existing code to an item.** Today the model is Mesh-generates-only:
+  `generateItemId()` auto-assigns `MESH-<CAT>-###`, the item ID isn't editable, and the scanner
+  (`onQRDetected`) rejects anything that isn't an already-known Mesh ID ("⚠️ Unknown code"). Coaches whose
+  gear is already barcoded/tagged can't register those codes. Would need: an editable/secondary code field
+  on the item, and a scanner lookup that matches either the Mesh ID or a stored external code. Feature work,
+  not a bug — the current flow is intentional.
+
 ## SESSION 3b (2026-07-15) — Parent Home events + Playbook removal → v39.60
 User-requested after v39.59 went live and My Player was confirmed pulling real data.
 - **Playbook REMOVED from the parent role** (More-menu item). Parents don't need it. It was never in the
