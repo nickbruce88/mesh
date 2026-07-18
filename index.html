@@ -5252,18 +5252,21 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.81</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.82</div>
   </div>
 </div>
 
+<!-- supabase-js is needed at startup (the app builds the db client immediately) → blocking.
+     The rest are only used by lazy features (PDF viewer, QR scan/gen, xlsx/zip export) and are
+     referenced behind existence guards, so `defer` takes them off the critical boot path. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.81';
+  const APP_VERSION = 'v39.82';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -21515,16 +21518,22 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     const coachSub = document.getElementById('coach-home-sub');
     if (coachSub) coachSub.textContent = obProgram.teamName + ' · ' + new Date().getFullYear() + ' Season';
 
-    // Load all data
-    await annLoad();
-    await loadDrillsFromSupabase();
-    await loadPhotoFromSupabase();
-    await loadRosterFromSupabase(programId);
-    await loadInventoryFromSupabase(programId);
+    // Load all data. These hit independent tables, so run them in parallel instead of a
+    // serial waterfall (was 9 sequential Supabase round-trips — the main mobile load lag).
+    // allSettled so one slow/failed table can't stall or break the rest.
+    await Promise.allSettled([
+      annLoad(),
+      loadDrillsFromSupabase(),
+      loadPhotoFromSupabase(),
+      loadRosterFromSupabase(programId),
+      loadInventoryFromSupabase(programId),
+      loadScheduleFromSupabase(programId),
+      loadGameStats(programId),
+      loadStatCategories(programId),
+    ]);
+    // Depth chart builds from the roster (buildDCFromPlayers), so it must run AFTER the
+    // roster has populated PLAYERS — keep it sequential, after the parallel batch.
     await loadDCFromSupabase(programId);
-    await loadScheduleFromSupabase(programId);
-    await loadGameStats(programId);
-    await loadStatCategories(programId);
     subscribeToPlayers(programId);
     subscribeToPlayerMessages(programId); // message-list realtime for ALL roles
     startAnnouncementsPolling(programId); // auto-refresh announcements for ALL roles
