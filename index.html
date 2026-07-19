@@ -5283,7 +5283,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.88</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.89</div>
   </div>
 </div>
 
@@ -5297,7 +5297,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.88';
+  const APP_VERSION = 'v39.89';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12726,6 +12726,49 @@
       apply(_threadDecorCache[t.id]);
     } catch(e){}
   }
+
+  // A cluster of up to 3 member mini-avatars (pic or initials), iMessage-style, for named
+  // group threads. Container must be position:relative. 4+ members → caller keeps the icon.
+  function buildAvatarCluster(members){
+    const mini = (m, style) => {
+      const inner = m.photo
+        ? '<img src="' + m.photo + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'
+        : _esc(_initials(m.name || ''));
+      return '<div style="position:absolute;' + style + 'display:flex;align-items:center;justify-content:center;'
+        + 'border-radius:50%;background:var(--bg-3);color:var(--fg-2);font-size:9px;font-weight:700;overflow:hidden;'
+        + 'box-shadow:0 0 0 1.5px var(--bg-2)">' + inner + '</div>';
+    };
+    const s = '62%';
+    if (members.length === 2) {
+      return mini(members[0], 'top:0;left:0;width:' + s + ';height:' + s + ';')
+           + mini(members[1], 'bottom:0;right:0;width:' + s + ';height:' + s + ';');
+    }
+    return mini(members[0], 'top:0;left:50%;transform:translateX(-50%);width:' + s + ';height:' + s + ';')
+         + mini(members[1], 'bottom:0;left:0;width:' + s + ';height:' + s + ';')
+         + mini(members[2], 'bottom:0;right:0;width:' + s + ';height:' + s + ';');
+  }
+  // Named group thread (kind 'dm' WITH a subject) → cluster of members' avatars. Keeps the
+  // group icon when there are 4+ others (too many to fit). Broadcasts keep their icon.
+  const _groupAvatarCache = {};
+  async function decorateGroupThread(t, avatarEl){
+    if (!avatarEl || !t || t.kind !== 'dm' || !t.subject) return;
+    const render = (members) => {
+      if (!members || members.length < 2 || members.length > 3) return; // 1 → handled as DM; 4+ → keep icon
+      avatarEl.style.position = 'relative';
+      avatarEl.textContent = '';
+      avatarEl.innerHTML = buildAvatarCluster(members);
+    };
+    if (_groupAvatarCache[t.id]) { render(_groupAvatarCache[t.id]); return; }
+    try {
+      const { data } = await db.rpc('thread_members', { p_thread: t.id });
+      if (!data) return;
+      const others = data.filter(m => !_isMeMember(m));
+      if (others.length < 2 || others.length > 3) return; // keep the group icon
+      const members = await Promise.all(others.slice(0, 3).map(async m => ({ name: m.name, photo: await getMemberPhoto(m.user_id) })));
+      _groupAvatarCache[t.id] = members;
+      render(members);
+    } catch(e){}
+  }
   function msgListId(role){ return role==='player'?'player-msg-group-list':role==='parent'?'parent-msg-group-list':'coach-msg-group-list'; }
   function msgEmptyId(role){ return role==='player'?'player-msg-empty':role==='parent'?'parent-msg-empty':'coach-msg-empty'; }
 
@@ -12790,6 +12833,7 @@
       item.onclick = () => openThread(t.id);
       list.appendChild(item);
       resolveThreadName(t, document.getElementById('mgn-' + t.id), document.getElementById('mga-' + t.id)); // name + avatar (pic/initials)
+      decorateGroupThread(t, document.getElementById('mga-' + t.id)); // named group → avatar cluster
     });
 
     if (_showArchived && shown.length === 0) {
@@ -12904,6 +12948,7 @@
     const av = threadAvatar(t);
     if (titleEl) titleEl.textContent = threadTitle(t);
     resolveThreadName(t, titleEl, avEl); // DM/witnessed → person's name (+🛡️) + their pic/initials
+    decorateGroupThread(t, avEl); // named group → avatar cluster
     if (avEl) { avEl.className = 'thread-avatar'; avEl.style.background=''; avEl.style.color=''; avEl.textContent = av.icon; }
     loadThreadSubtitle(t, subEl);
     updateThreadMuteBtn();
