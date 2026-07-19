@@ -391,6 +391,10 @@
   .group-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
   .group-chip { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-2); background: var(--bg-3); color: var(--fg-2); }
   .group-chip.active { background: var(--team-primary-glow); border-color: var(--team-primary-glow); color: var(--team-primary); }
+  /* Player More sub-nav pills */
+  .pm-tab { padding:7px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--bg-3);color:var(--fg-2);cursor:pointer;font-family:var(--font);white-space:nowrap; }
+  .pm-tab.active { background:var(--team-primary);border-color:var(--team-primary);color:var(--team-primary-text); }
+  @media (min-width:768px) { #player-more-nav { display:none !important; } }
 
   /* ROSTER */
   .roster-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
@@ -4308,8 +4312,21 @@
 
   <!-- Player More Tab -->
   <div id="tab-player-more" class="scroll-content" style="display:none;padding:0 20px 80px">
+    <!-- Mobile sub-nav (hidden on desktop, which uses the sidebar) -->
+    <div id="player-more-nav" style="display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 6px">
+      <button class="pm-tab active" data-sec="info" onclick="playerMoreShow('info',this)">👤 My Info</button>
+      <button class="pm-tab" data-sec="depth" onclick="playerMoreShow('depth',this)">📊 Depth Chart</button>
+      <button class="pm-tab" data-sec="playbook" onclick="playerMoreShow('playbook',this)">📖 Playbook</button>
+      <button class="pm-tab" data-sec="documents" onclick="playerMoreShow('documents',this)">📁 Documents</button>
+    </div>
     <div id="player-myinfo-page">
       <!-- Rendered by renderMyInfoPage() -->
+    </div>
+    <!-- Documents section (shared docs pushed by coaches) -->
+    <div id="player-docs-section" style="display:none;padding-top:6px">
+      <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin:8px 0 12px">Documents</div>
+      <div id="player-doc-list"></div>
+      <div id="player-doc-empty" style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px;display:none">No documents shared yet.</div>
     </div>
   </div>
 
@@ -5284,7 +5301,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.91</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.92</div>
   </div>
 </div>
 
@@ -5298,7 +5315,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.91';
+  const APP_VERSION = 'v39.92';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5809,7 +5826,7 @@
     }
     // Player "More" (My Info) on MOBILE — the isDesktop branch above renders it on
     // desktop; mobile has no sidebar path, so without this the tab is blank on phones.
-    if (!isDesktop() && role === 'player' && tab === 'more') setTimeout(() => renderMyInfoPage(), 50);
+    if (!isDesktop() && role === 'player' && tab === 'more') setTimeout(() => playerMoreShow('info'), 50);
     // Messages — load the caller's real threads (all roles); start on the inbox view.
     if (tab === 'messages') { _showArchived = false; loadThreadList(role); }
     // Player My Info — rendered via 'more' tab hook above
@@ -9192,6 +9209,7 @@
       { id: 'stats', icon: '📈', label: 'My Info', tab: 'tab-player-more', more: 'stats' },
       { id: 'depth', icon: '📊', label: 'Depth Chart', tab: 'tab-player-more', more: 'depth-player' },
       { id: 'playbook', icon: '📖', label: 'Playbook', tab: 'tab-player-more', more: 'playbook-player' },
+      { id: 'docs', icon: '📄', label: 'Documents', tab: 'tab-player-more', more: 'documents' },
     ]
   };
 
@@ -14311,7 +14329,11 @@
     try {
       const { data } = await db.from('stat_categories').select('*').eq('program_id', programId);
       if (data && data.length) {
-        STAT_CATEGORIES = data;
+        // Dedup by key. The table can accumulate duplicate default rows (seeded more than
+        // once across sessions/devices), which rendered every stat tile twice — a 3-wide
+        // grid showed an identical top and bottom row across all roles + desktop/mobile.
+        const seen = new Set();
+        STAT_CATEGORIES = data.filter(c => { if (!c.key || seen.has(c.key)) return false; seen.add(c.key); return true; });
       } else {
         // Seed default categories for this sport
         const sport = obProgram.sport || 'Football';
@@ -18685,13 +18707,30 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   // ===== PLAYER MORE TAB =====
-  function showPlayerSection(section) {
-    // player-more-menu no longer exists — My Info is a single page now
-    if (section === 'stats') { renderMyInfoPage(); return; }
-    if (section === 'depth') { renderPlayerDepthChart(); return; }
-    if (section === 'documents') { docLoadFromSupabase().then(() => renderSharedDocs('players')); return; }
+  // Player "More" sub-nav: My Info / Depth Chart / Playbook / Documents. Each section renders
+  // inline into tab-player-more; this shows one and hides the others.
+  function playerMoreShow(section, btn) {
+    const nav = document.getElementById('player-more-nav');
+    if (nav) nav.querySelectorAll('.pm-tab').forEach(b => b.classList.toggle('active', b === btn || (!btn && b.dataset.sec === section)));
+    const docs = document.getElementById('player-docs-section');
+    if (section === 'documents') {
+      ['player-myinfo-page','player-dc-body','player-pb-body'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+      if (docs) docs.style.display = 'block';
+      docLoadFromSupabase().then(() => renderSharedDocs('players'));
+    } else {
+      if (docs) docs.style.display = 'none';
+      if (section === 'depth') renderPlayerDepthChart();
+      else if (section === 'playbook') renderPlayerPlaybook();
+      else renderMyInfoPage();
+    }
     const tab = document.getElementById('tab-player-more');
     if (tab) tab.scrollTop = 0;
+  }
+
+  // Back-compat entry (desktop sidebar) — normalize section ids and delegate.
+  function showPlayerSection(section) {
+    const map = { stats:'info', info:'info', depth:'depth', 'depth-player':'depth', playbook:'playbook', 'playbook-player':'playbook', documents:'documents' };
+    playerMoreShow(map[section] || 'info');
   }
 
   function renderPlayerDepthChart() {
@@ -18699,9 +18738,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const moreTab = document.getElementById('tab-player-more');
     if (!moreTab) return;
 
-    // Hide My Info page
+    // Hide My Info page + other sections
     const myInfoPage = document.getElementById('player-myinfo-page');
     if (myInfoPage) myInfoPage.style.display = 'none';
+    const pbBody0 = document.getElementById('player-pb-body'); if (pbBody0) pbBody0.style.display = 'none';
+    const docsSec0 = document.getElementById('player-docs-section'); if (docsSec0) docsSec0.style.display = 'none';
 
     // Create or reuse container
     let body = document.getElementById('player-dc-body');
@@ -18925,11 +18966,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const moreTab = document.getElementById('tab-player-more');
     if (!moreTab) return;
 
-    // Hide My Info page and DC body
+    // Hide My Info page, DC body, and Documents
     const myInfoPage = document.getElementById('player-myinfo-page');
     if (myInfoPage) myInfoPage.style.display = 'none';
     const dcBody = document.getElementById('player-dc-body');
     if (dcBody) dcBody.style.display = 'none';
+    const docsSec1 = document.getElementById('player-docs-section'); if (docsSec1) docsSec1.style.display = 'none';
 
     // Create or reuse playbook container
     let pbBody = document.getElementById('player-pb-body');
@@ -19019,6 +19061,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Hide DC body if showing
     const dcBody = document.getElementById('player-dc-body');
     if (dcBody) dcBody.style.display = 'none';
+    const docsSec = document.getElementById('player-docs-section');
+    if (docsSec) docsSec.style.display = 'none';
     const page = document.getElementById('player-myinfo-page');
     if (!page) return;
     page.style.display = 'block';
@@ -20132,6 +20176,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       .sort((a,b) => (a.time||'').localeCompare(b.time||''));
     const d = new Date(dateStr + 'T12:00:00');
     const label = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+    const isCoach = currentRole === 'coach'; // event editing/adding + stat logging are coach-only
 
     let existing = document.getElementById('cal-day-detail-overlay');
     if (existing) existing.remove();
@@ -20151,11 +20196,11 @@ Jersey|RushingNum|RushingYards|RushingTDNum
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
           <div style="font-size:10px;padding:2px 7px;border-radius:10px;background:${tagColor(e.tag||'other')}22;color:${tagColor(e.tag||'other')};font-weight:600">${tagLabel(e.tag||'other')}</div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${isCoach ? `<div style="display:flex;gap:4px;flex-wrap:wrap">
             ${new Date(dateStr) < new Date() && (e.tag === 'game' || e.tag === 'scrimmage') ? `<div onclick="document.getElementById('cal-day-detail-overlay').remove();openLogStats('${e.id}','${dateStr}',encodeURIComponent(e.opponent||e.title||''))" style="font-size:10px;color:var(--green);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--green)">📊 Log stats</div>` : ''}
             <div onclick="document.getElementById('cal-day-detail-overlay').remove();openEditCalEvent('${e.id}')" style="font-size:10px;color:var(--team-primary);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--team-primary)">Edit</div>
             <div onclick="deleteCalEvent('${e.id}');document.getElementById('cal-day-detail-overlay').remove()" style="font-size:10px;color:var(--fg-3);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">Remove</div>
-          </div>
+          </div>` : ''}
         </div>
       </div>`).join('') : '<div style="font-size:13px;color:var(--fg-3);padding:8px 0">No events yet</div>';
 
@@ -20166,8 +20211,8 @@ Jersey|RushingNum|RushingYards|RushingTDNum
           <div onclick="document.getElementById('cal-day-detail-overlay').remove()" style="cursor:pointer;color:var(--gray-3);font-size:20px">✕</div>
         </div>
         ${eventsHTML}
-        <button onclick="document.getElementById('cal-day-detail-overlay').remove();openAddEventForDate('${dateStr}')"
-          class="btn-primary" style="width:100%;margin-top:14px;font-size:13px">+ Add event</button>
+        ${isCoach ? `<button onclick="document.getElementById('cal-day-detail-overlay').remove();openAddEventForDate('${dateStr}')"
+          class="btn-primary" style="width:100%;margin-top:14px;font-size:13px">+ Add event</button>` : ''}
       </div>`;
     document.body.appendChild(overlay);
   }
