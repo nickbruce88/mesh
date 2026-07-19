@@ -5281,7 +5281,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.86</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.87</div>
   </div>
 </div>
 
@@ -5295,7 +5295,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.86';
+  const APP_VERSION = 'v39.87';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -15256,24 +15256,17 @@ ${printBtnHtml}
       return;
     }
 
-    // Two-pass dedup — handles mismatched game_id between player/coach submissions
-    const byGameId = {};
-    approved.filter(s => s.submitted_by !== 'coach').forEach(s => {
-      if (s.game_id) byGameId[s.player_id + '||' + s.game_id + '||' + s.category] = s;
-    });
-    approved.filter(s => s.submitted_by === 'coach').forEach(s => {
-      if (s.game_id) byGameId[s.player_id + '||' + s.game_id + '||' + s.category] = s;
-    });
-    const byOppDate = {};
-    approved.filter(s => s.submitted_by !== 'coach').forEach(s => {
-      const k = s.player_id + '||' + (s.opponent||'') + '|' + (s.game_date||'') + '||' + s.category;
-      byOppDate[k] = s;
-    });
-    approved.filter(s => s.submitted_by === 'coach').forEach(s => {
-      const k = s.player_id + '||' + (s.opponent||'') + '|' + (s.game_date||'') + '||' + s.category;
-      byOppDate[k] = s;
-    });
-    const uniqueApproved = Object.values({ ...byOppDate, ...byGameId });
+    // Dedup to ONE stat per (player, game, category). Key by opponent+date+category —
+    // present on both player and coach submissions, so it also collapses a mismatched
+    // game_id. Process player subs first so coach subs override.
+    // NOTE: the previous version built two maps with DIFFERENT key shapes (game_id vs
+    // opp+date) and spread-merged them; since the keys never collided, every stat was
+    // emitted twice and every total was doubled (enter 2 → shows 4).
+    const dedup = {};
+    const keyFor = s => s.player_id + '||' + (s.opponent||'') + '|' + (s.game_date||'') + '||' + s.category;
+    approved.filter(s => s.submitted_by !== 'coach').forEach(s => { dedup[keyFor(s)] = s; });
+    approved.filter(s => s.submitted_by === 'coach').forEach(s => { dedup[keyFor(s)] = s; });
+    const uniqueApproved = Object.values(dedup);
 
     // Aggregate season totals per player per category
     const totals = {};
@@ -15384,30 +15377,15 @@ ${printBtnHtml}
   function renderPlayerStatHistory(pid) {
     const playerStats = GAME_STATS.filter(s => (s.player_id === pid) && s.status === 'approved');
 
-    // Two-pass dedup — handles mismatched game_id values between player/coach submissions
-    // Pass 1: dedupe by game_id + category (coach wins)
-    const byGameId = {};
-    playerStats.filter(s => s.submitted_by !== 'coach').forEach(s => {
-      if (s.game_id) byGameId[s.game_id + '||' + s.category] = s;
-    });
-    playerStats.filter(s => s.submitted_by === 'coach').forEach(s => {
-      if (s.game_id) byGameId[s.game_id + '||' + s.category] = s;
-    });
-
-    // Pass 2: dedupe by opponent + date + category (catches mismatched game_id)
-    const byOppDate = {};
-    playerStats.filter(s => s.submitted_by !== 'coach').forEach(s => {
-      const k = (s.opponent || '') + '|' + (s.game_date || '') + '||' + s.category;
-      byOppDate[k] = s;
-    });
-    playerStats.filter(s => s.submitted_by === 'coach').forEach(s => {
-      const k = (s.opponent || '') + '|' + (s.game_date || '') + '||' + s.category;
-      byOppDate[k] = s;
-    });
-
-    // Merge both maps — prefer game_id-keyed entries, fill gaps from opp+date keyed
-    const merged = { ...byOppDate, ...byGameId };
-    const uniqueStats = Object.values(merged);
+    // Dedup to ONE stat per (game, category). Key by opponent+date+category — present on
+    // both player and coach submissions, so it also collapses a mismatched game_id; coach
+    // subs override player subs. (The old two-map spread-merge used mismatched key shapes
+    // and double-counted every stat — enter 2 → shows 4.)
+    const dedup = {};
+    const keyFor = s => (s.opponent || '') + '|' + (s.game_date || '') + '||' + s.category;
+    playerStats.filter(s => s.submitted_by !== 'coach').forEach(s => { dedup[keyFor(s)] = s; });
+    playerStats.filter(s => s.submitted_by === 'coach').forEach(s => { dedup[keyFor(s)] = s; });
+    const uniqueStats = Object.values(dedup);
 
     // Season totals
     const totals = {};
