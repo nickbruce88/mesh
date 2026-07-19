@@ -5281,7 +5281,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.85</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.86</div>
   </div>
 </div>
 
@@ -5295,7 +5295,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.85';
+  const APP_VERSION = 'v39.86';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12877,6 +12877,14 @@
 
     const overlay = document.getElementById(ids.overlay);
     if (overlay) { overlay.classList.add('open'); if (ownOverlay) { overlay.style.display='flex'; overlay.style.flexDirection='column'; } }
+    // Coach thread overlay is fixed to the viewport; stop it above the bottom tab bar so
+    // the reply box sits directly ABOVE the nav icons instead of hidden behind them. The
+    // nav stays visible on purpose. Desktop uses a relative two-pane, so mobile-only.
+    if (overlay && role === 'coach' && !isDesktop()) {
+      const nav = document.getElementById('bottom-nav');
+      const navH = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+      overlay.style.bottom = navH ? navH + 'px' : '';
+    }
     const emptyState = document.getElementById(role === 'player' ? 'player-thread-empty-state' : 'thread-empty-state');
     if (emptyState) emptyState.style.display = 'none';
     const inputEl = document.getElementById(ids.input); if (inputEl) inputEl.value = '';
