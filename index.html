@@ -1128,6 +1128,8 @@
         min-width: 0;
         position: relative !important;
         inset: auto !important;
+        max-width: none !important;
+        margin-inline: 0 !important;
         z-index: 1 !important;
         background: var(--bg) !important;
       }
@@ -4093,7 +4095,7 @@
     </div><!-- end msg-left-panel -->
 
     <!-- ===== PARENT MESSAGE THREAD VIEW ===== -->
-    <div id="parent-msg-thread-overlay" style="position:absolute;inset:0;background:var(--bg);z-index:10;display:none;flex-direction:column">
+    <div id="parent-msg-thread-overlay" style="position:fixed;top:0;bottom:0;left:0;right:0;margin-inline:auto;max-width:420px;background:var(--bg);z-index:70;display:none;flex-direction:column">
       <div class="thread-header">
         <div class="thread-back" onclick="closeParentThread()">‹</div>
         <div class="thread-avatar" id="parent-thread-avatar">💬</div>
@@ -4271,7 +4273,7 @@
     </div><!-- end msg-left-panel -->
 
   <!-- ===== PLAYER MESSAGE THREAD VIEW ===== -->
-  <div id="player-msg-thread-overlay" style="position:absolute;inset:0;background:var(--bg);z-index:10;display:none;flex-direction:column">
+  <div id="player-msg-thread-overlay" style="position:fixed;top:0;bottom:0;left:0;right:0;margin-inline:auto;max-width:420px;background:var(--bg);z-index:70;display:none;flex-direction:column">
     <div class="thread-header">
       <div class="thread-back" onclick="closePlayerThread()">‹</div>
       <div class="thread-avatar group-staff" id="player-thread-avatar">🎙️</div>
@@ -5281,7 +5283,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.87</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.88</div>
   </div>
 </div>
 
@@ -5295,7 +5297,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.87';
+  const APP_VERSION = 'v39.88';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12671,18 +12673,57 @@
     if (t.kind === 'witnessed_dm' || t.kind === 'dm') return _threadNameCache[t.id] || 'Direct message';
     return 'Direct message';
   }
-  async function resolveThreadName(t, nameEl){
+  // Is this thread member the current user? Match on auth uid AND on name — a parent's
+  // mesh_auth_uid can be empty/mismatched, which left them un-excluded and showing their
+  // OWN name as the thread title.
+  function _isMeMember(m){
+    const myUid = _myUid();
+    if (myUid && m.user_id && m.user_id === myUid) return true;
+    const myName = (_myName() || '').trim().toLowerCase();
+    return !!myName && (m.name || '').trim().toLowerCase() === myName;
+  }
+  // Per-user signed avatar URL (from profiles.photo_url), cached. null = no pic → initials.
+  const _memberPhotoCache = {};
+  async function getMemberPhoto(userId){
+    if (!userId) return null;
+    if (userId in _memberPhotoCache) return _memberPhotoCache[userId];
+    try {
+      const { data } = await db.from('profiles').select('photo_url').eq('id', userId).maybeSingle();
+      if (!data || !data.photo_url) { _memberPhotoCache[userId] = null; return null; }
+      const path = data.photo_url.startsWith('http') ? (userId + '/avatar.jpg') : data.photo_url;
+      const urlMap = await signAvatarUrls(path);
+      const url = (urlMap && urlMap[path]) || null;
+      _memberPhotoCache[userId] = url;
+      return url;
+    } catch(e){ _memberPhotoCache[userId] = null; return null; }
+  }
+  function _setThreadAvatar(avatarEl, photoUrl, name){
+    if (!avatarEl) return;
+    if (photoUrl) { avatarEl.innerHTML = '<img src="' + photoUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'; }
+    else { avatarEl.innerHTML = ''; avatarEl.textContent = _initials(name || ''); }
+  }
+  // Resolve a DM/witnessed thread's display: the OTHER person's name (+ 🛡️ if witnessed),
+  // and their profile pic (or initials) as the thread avatar. Cached per thread.
+  const _threadDecorCache = {};
+  async function resolveThreadName(t, nameEl, avatarEl){
     if (!t || t.subject || (t.kind !== 'witnessed_dm' && t.kind !== 'dm')) return;
-    if (_threadNameCache[t.id]) { if (nameEl) nameEl.textContent = _threadNameCache[t.id]; return; }
+    const isWit = t.kind === 'witnessed_dm';
+    const apply = (c) => {
+      if (nameEl) nameEl.textContent = c.name + (isWit ? ' 🛡️' : '');
+      if (avatarEl) _setThreadAvatar(avatarEl, c.photo, c.name);
+    };
+    if (_threadDecorCache[t.id]) { apply(_threadDecorCache[t.id]); return; }
     try {
       const { data } = await db.rpc('thread_members', { p_thread: t.id });
       if (!data) return;
-      const others = data.filter(m => m.user_id !== _myUid());
+      const others = data.filter(m => !_isMeMember(m));
       const primary = others.find(m => !m.is_witness) || others[0]; // the person, not the witness
-      if (primary && primary.name) {
-        _threadNameCache[t.id] = primary.name;
-        if (nameEl) nameEl.textContent = primary.name;
-      }
+      if (!primary) return;
+      const name = primary.name || 'Direct message';
+      _threadNameCache[t.id] = name;
+      const photo = await getMemberPhoto(primary.user_id);
+      _threadDecorCache[t.id] = { name, photo };
+      apply(_threadDecorCache[t.id]);
     } catch(e){}
   }
   function msgListId(role){ return role==='player'?'player-msg-group-list':role==='parent'?'parent-msg-group-list':'coach-msg-group-list'; }
@@ -12740,7 +12781,7 @@
       item.className = 'msg-group-item';
       item.id = 'mgi-' + t.id;
       item.innerHTML =
-        '<div class="msg-group-avatar" style="background:'+av.color+'22;color:'+av.color+'">'+av.icon+'</div>'+
+        '<div class="msg-group-avatar" id="mga-'+t.id+'" style="background:'+av.color+'22;color:'+av.color+'">'+av.icon+'</div>'+
         '<div class="msg-group-content"><div class="msg-group-header">'+
         '<div class="msg-group-name"><span class="mgn-text" id="mgn-'+t.id+'">'+_esc(threadTitle(t))+'</span>'+(t.muted?' <span style="color:var(--fg-3)">🔕</span>':'')+'</div>'+
         '<div class="inbox-time">'+when+'</div></div>'+
@@ -12748,7 +12789,7 @@
         '<div class="unread-dot" id="mgu-'+t.id+'" style="opacity:0"></div>';
       item.onclick = () => openThread(t.id);
       list.appendChild(item);
-      resolveThreadName(t, document.getElementById('mgn-' + t.id)); // fill in the real name for DM/witnessed threads
+      resolveThreadName(t, document.getElementById('mgn-' + t.id), document.getElementById('mga-' + t.id)); // name + avatar (pic/initials)
     });
 
     if (_showArchived && shown.length === 0) {
@@ -12838,7 +12879,7 @@
     try {
       const { data } = await db.rpc('thread_members', { p_thread: t.id });
       if (data) {
-        const others = data.filter(m => m.user_id !== _myUid());
+        const others = data.filter(m => !_isMeMember(m));
         subEl.textContent = others.map(m => m.name + (m.is_witness ? ' (witness)' : '')).join(', ') || 'Direct message';
       }
     } catch(e){ subEl.textContent = ''; }
@@ -12862,7 +12903,7 @@
     const body    = document.getElementById(ids.body);
     const av = threadAvatar(t);
     if (titleEl) titleEl.textContent = threadTitle(t);
-    resolveThreadName(t, titleEl); // DM/witnessed → show the person's name in the header too
+    resolveThreadName(t, titleEl, avEl); // DM/witnessed → person's name (+🛡️) + their pic/initials
     if (avEl) { avEl.className = 'thread-avatar'; avEl.style.background=''; avEl.style.color=''; avEl.textContent = av.icon; }
     loadThreadSubtitle(t, subEl);
     updateThreadMuteBtn();
@@ -12877,13 +12918,17 @@
 
     const overlay = document.getElementById(ids.overlay);
     if (overlay) { overlay.classList.add('open'); if (ownOverlay) { overlay.style.display='flex'; overlay.style.flexDirection='column'; } }
-    // Coach thread overlay is fixed to the viewport; stop it above the bottom tab bar so
-    // the reply box sits directly ABOVE the nav icons instead of hidden behind them. The
-    // nav stays visible on purpose. Desktop uses a relative two-pane, so mobile-only.
-    if (overlay && role === 'coach' && !isDesktop()) {
-      const nav = document.getElementById('bottom-nav');
-      const navH = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
-      overlay.style.bottom = navH ? navH + 'px' : '';
+    // Mobile: the thread overlay is fixed to the viewport; stop it above the bottom tab bar
+    // so the reply box sits directly ABOVE the nav icons instead of hidden behind them (the
+    // nav stays visible on purpose). Applies to all roles. Reset first so desktop uses its
+    // relative two-pane CSS.
+    if (overlay) {
+      overlay.style.bottom = '';
+      if (!isDesktop()) {
+        const nav = document.getElementById('bottom-nav');
+        const navH = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+        if (navH) overlay.style.bottom = navH + 'px';
+      }
     }
     const emptyState = document.getElementById(role === 'player' ? 'player-thread-empty-state' : 'thread-empty-state');
     if (emptyState) emptyState.style.display = 'none';
