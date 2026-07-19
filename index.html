@@ -392,9 +392,6 @@
   .group-chip { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-2); background: var(--bg-3); color: var(--fg-2); }
   .group-chip.active { background: var(--team-primary-glow); border-color: var(--team-primary-glow); color: var(--team-primary); }
   /* Player More sub-nav pills */
-  .pm-tab { padding:7px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--bg-3);color:var(--fg-2);cursor:pointer;font-family:var(--font);white-space:nowrap; }
-  .pm-tab.active { background:var(--team-primary);border-color:var(--team-primary);color:var(--team-primary-text); }
-  @media (min-width:768px) { #player-more-nav { display:none !important; } }
 
   /* ROSTER */
   .roster-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
@@ -939,7 +936,8 @@
     .more-section-header .more-back-btn { display: none; }
     .more-section { display: none !important; }
     .more-section.active { display: block !important; }
-    #more-menu { display: none !important; }
+    #more-menu, #player-more-menu, #parent-more-menu { display: none !important; }
+    #player-more-back { display: none !important; }
 
     /* ===== DESKTOP PRACTICE PLANNER ===== */
     #tab-coach-practice.scroll-content {
@@ -4312,13 +4310,39 @@
 
   <!-- Player More Tab -->
   <div id="tab-player-more" class="scroll-content" style="display:none;padding:0 20px 80px">
-    <!-- Mobile sub-nav (hidden on desktop, which uses the sidebar) -->
-    <div id="player-more-nav" style="display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 6px">
-      <button class="pm-tab active" data-sec="info" onclick="playerMoreShow('info',this)">👤 My Info</button>
-      <button class="pm-tab" data-sec="depth" onclick="playerMoreShow('depth',this)">📊 Depth Chart</button>
-      <button class="pm-tab" data-sec="playbook" onclick="playerMoreShow('playbook',this)">📖 Playbook</button>
-      <button class="pm-tab" data-sec="documents" onclick="playerMoreShow('documents',this)">📁 Documents</button>
+
+    <!-- MORE MENU LIST (mobile; hidden on desktop, which uses the sidebar) -->
+    <div class="more-menu" id="player-more-menu">
+      <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px;padding-top:4px">More</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px" id="player-more-team"></div>
+
+      <div class="more-menu-item" onclick="showPlayerSection('info')">
+        <div class="more-menu-icon" style="background:var(--team-primary-glow-sm)">👤</div>
+        <div><div class="more-menu-label">My Info</div><div class="more-menu-sub">Profile, jersey &amp; status</div></div>
+        <div class="more-menu-arrow">›</div>
+      </div>
+      <div class="more-menu-item" onclick="showPlayerSection('depth')">
+        <div class="more-menu-icon" style="background:rgba(52,199,89,0.1)">📊</div>
+        <div><div class="more-menu-label">Depth Chart</div><div class="more-menu-sub">Offense, Defense &amp; Special Teams</div></div>
+        <div class="more-menu-arrow">›</div>
+      </div>
+      <div class="more-menu-item" onclick="showPlayerSection('playbook')">
+        <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">📖</div>
+        <div><div class="more-menu-label">Playbook</div><div class="more-menu-sub">Team plays &amp; formations</div></div>
+        <div class="more-menu-arrow">›</div>
+      </div>
+      <div class="more-menu-item" onclick="showPlayerSection('documents')">
+        <div class="more-menu-icon" style="background:rgba(160,100,255,0.1)">📁</div>
+        <div><div class="more-menu-label">Documents</div><div class="more-menu-sub">Forms &amp; shared files</div></div>
+        <div class="more-menu-arrow">›</div>
+      </div>
     </div>
+
+    <!-- Back row (shown inside a section on mobile; each section body keeps its own title) -->
+    <div id="player-more-back" style="display:none;margin:10px 0 2px">
+      <span class="more-back-btn" onclick="backToPlayerMenu()" style="font-size:15px;font-weight:600">‹ Back</span>
+    </div>
+
     <div id="player-myinfo-page">
       <!-- Rendered by renderMyInfoPage() -->
     </div>
@@ -5301,7 +5325,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.93</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.94</div>
   </div>
 </div>
 
@@ -5315,7 +5339,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.93';
+  const APP_VERSION = 'v39.94';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5823,10 +5847,8 @@
     if (!isDesktop() && tab === 'more') {
       if (role === 'coach') backToMoreMenu();
       else if (role === 'parent') backToParentMenu();
+      else if (role === 'player') setTimeout(() => backToPlayerMenu(), 50);
     }
-    // Player "More" (My Info) on MOBILE — the isDesktop branch above renders it on
-    // desktop; mobile has no sidebar path, so without this the tab is blank on phones.
-    if (!isDesktop() && role === 'player' && tab === 'more') setTimeout(() => playerMoreShow('info'), 50);
     // Messages — load the caller's real threads (all roles); start on the inbox view.
     if (tab === 'messages') { _showArchived = false; loadThreadList(role); }
     // Player My Info — rendered via 'more' tab hook above
@@ -18707,30 +18729,46 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   // ===== PLAYER MORE TAB =====
-  // Player "More" sub-nav: My Info / Depth Chart / Playbook / Documents. Each section renders
-  // inline into tab-player-more; this shows one and hides the others.
-  function playerMoreShow(section, btn) {
-    const nav = document.getElementById('player-more-nav');
-    if (nav) nav.querySelectorAll('.pm-tab').forEach(b => b.classList.toggle('active', b === btn || (!btn && b.dataset.sec === section)));
-    const docs = document.getElementById('player-docs-section');
-    if (section === 'documents') {
+  // Player "More" is a drill-in menu like the coach/parent More tabs: the menu lists
+  // My Info / Depth Chart / Playbook / Documents; tapping a row hides the menu, shows a
+  // Back row, and renders that section inline. Desktop drives sections from the sidebar
+  // (the menu list is hidden by CSS there).
+  function showPlayerSection(section) {
+    const map = { stats:'info', info:'info', depth:'depth', 'depth-player':'depth', playbook:'playbook', 'playbook-player':'playbook', documents:'documents', docs:'documents' };
+    const sec = map[section] || 'info';
+    const menu = document.getElementById('player-more-menu');
+    if (menu) menu.classList.add('hidden');
+    const back = document.getElementById('player-more-back');
+    if (back) back.style.display = isDesktop() ? 'none' : '';
+
+    if (sec === 'documents') {
       ['player-myinfo-page','player-dc-body','player-pb-body'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+      const docs = document.getElementById('player-docs-section');
       if (docs) docs.style.display = 'block';
       docLoadFromSupabase().then(() => renderSharedDocs('players'));
+    } else if (sec === 'depth') {
+      renderPlayerDepthChart();
+    } else if (sec === 'playbook') {
+      renderPlayerPlaybook();
     } else {
-      if (docs) docs.style.display = 'none';
-      if (section === 'depth') renderPlayerDepthChart();
-      else if (section === 'playbook') renderPlayerPlaybook();
-      else renderMyInfoPage();
+      renderMyInfoPage();
     }
     const tab = document.getElementById('tab-player-more');
     if (tab) tab.scrollTop = 0;
+    // History (mobile): entering a section is a forward nav; Back returns to the menu.
+    if (!isDesktop() && !_navRestoring) navPush(() => backToPlayerMenu());
   }
 
-  // Back-compat entry (desktop sidebar) — normalize section ids and delegate.
-  function showPlayerSection(section) {
-    const map = { stats:'info', info:'info', depth:'depth', 'depth-player':'depth', playbook:'playbook', 'playbook-player':'playbook', documents:'documents' };
-    playerMoreShow(map[section] || 'info');
+  function backToPlayerMenu() {
+    ['player-myinfo-page','player-dc-body','player-pb-body','player-docs-section'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    const back = document.getElementById('player-more-back');
+    if (back) back.style.display = 'none';
+    const menu = document.getElementById('player-more-menu');
+    if (menu) menu.classList.remove('hidden');
+    const team = document.getElementById('player-more-team');
+    if (team && typeof obProgram !== 'undefined' && obProgram && obProgram.teamName) team.textContent = obProgram.teamName;
+    const tab = document.getElementById('tab-player-more');
+    if (tab) tab.scrollTop = 0;
   }
 
   function renderPlayerDepthChart() {
@@ -19351,11 +19389,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <span class="pp-note-tag ${tagClass}">${tagLabel}</span>`;
       notesList.appendChild(div);
     });
-  }
-
-  function backToPlayerMenu() {
-    // No longer needed — My Info is a single page
-    renderMyInfoPage();
   }
 
   // ===== MY GROUP (PLAYER VIEW) =====
