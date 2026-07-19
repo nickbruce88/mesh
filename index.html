@@ -5283,7 +5283,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.89</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.90</div>
   </div>
 </div>
 
@@ -5297,7 +5297,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.89';
+  const APP_VERSION = 'v39.90';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -13292,11 +13292,16 @@
     const programId = await getValidProgramId();
     if (!programId) { showToast('No program'); return; }
     try {
-      const { data: threadId, error } = await db.rpc('create_thread', {
-        p_program_id: programId, p_kind: 'witnessed_dm', p_subject: null,
-        p_participant_uids: [pnmSelectedCoach], p_witness_uids: [pnmSelectedWitness]
-      });
-      if (error) throw error;
+      // Reuse an existing witnessed thread with the same coach + witness instead of duplicating.
+      let threadId = await findExisting1to1('witnessed_dm', pnmSelectedCoach, pnmSelectedWitness);
+      if (!threadId) {
+        const { data, error } = await db.rpc('create_thread', {
+          p_program_id: programId, p_kind: 'witnessed_dm', p_subject: null,
+          p_participant_uids: [pnmSelectedCoach], p_witness_uids: [pnmSelectedWitness]
+        });
+        if (error) throw error;
+        threadId = data;
+      }
       closePlayerNewMsg();
       await loadThreadList('player');
       currentThreadKind = 'witnessed_dm';
@@ -13332,10 +13337,36 @@
     });
   }
 
+  // Find an existing 1:1 thread with `otherUid` so "new message" reuses it instead of
+  // creating a duplicate. For witnessed threads, also require the same witness.
+  async function findExisting1to1(kind, otherUid, witnessUid){
+    const threads = Object.values(_threads || {});
+    for (const t of threads) {
+      if (t.kind !== kind || t.subject) continue; // 1:1 only (named groups keep their own thread)
+      try {
+        const { data } = await db.rpc('thread_members', { p_thread: t.id });
+        if (!data) continue;
+        const others = data.filter(m => !_isMeMember(m));
+        const nonWit = others.filter(m => !m.is_witness);
+        if (nonWit.length === 1 && nonWit[0].user_id === otherUid) {
+          if (kind === 'witnessed_dm') {
+            if (witnessUid && others.some(m => m.is_witness && m.user_id === witnessUid)) return t.id;
+          } else {
+            return t.id;
+          }
+        }
+      } catch(e){}
+    }
+    return null;
+  }
+
   async function startParentDM(coachUid) {
     const ov = document.getElementById('parent-newmsg-overlay'); if (ov) ov.remove();
     const programId = await getValidProgramId(); if (!programId) return;
     try {
+      // Reuse an existing thread with this coach instead of starting a duplicate.
+      const existing = await findExisting1to1('dm', coachUid);
+      if (existing) { currentThreadKind = 'dm'; openThread(existing); return; }
       const { data: threadId, error } = await db.rpc('create_thread', {
         p_program_id: programId, p_kind: 'dm', p_subject: null,
         p_participant_uids: [coachUid], p_witness_uids: []
