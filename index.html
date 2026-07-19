@@ -160,6 +160,12 @@
   .ann-urgency-badge.urgent    { background:rgba(239,68,68,0.15);color:var(--red); }
   .ann-chip { font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);color:var(--fg-3);cursor:pointer;user-select:none;transition:all 0.12s; }
   .ann-chip.active { border-color:var(--team-primary);color:var(--team-primary);background:var(--team-primary-glow); }
+  .ann-new-badge { font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:var(--team-primary-glow);color:var(--team-primary);margin-left:4px;letter-spacing:0.03em;vertical-align:middle; }
+  .announcement-card.ann-past { opacity:0.7; }
+  .ann-card-actions { display:flex;gap:8px;align-items:center;margin-top:8px; }
+  .ann-action-btn { font-size:11px;font-weight:600;color:var(--fg-2);cursor:pointer;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;user-select:none; }
+  .ann-action-btn:active { opacity:0.7; }
+  .ann-past-toggle { font-size:12px;font-weight:700;color:var(--fg-2);cursor:pointer;user-select:none;padding:12px 2px 8px;display:flex;align-items:center;gap:6px; }
   .ann-urgency-chip { font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);color:var(--fg-3);cursor:pointer;user-select:none;transition:all 0.12s; }
   .ann-urgency-chip.active[data-level="normal"]    { border-color:var(--fg-2);color:var(--fg);background:var(--bg-3); }
   .ann-urgency-chip.active[data-level="important"] { border-color:var(--amber);color:var(--amber);background:rgba(245,158,11,0.1); }
@@ -2699,6 +2705,17 @@
           <div class="ann-urgency-chip"        data-level="important" onclick="selectAnnUrgency(this)">⚡ Important</div>
           <div class="ann-urgency-chip"        data-level="urgent"    onclick="selectAnnUrgency(this)">🚨 Urgent</div>
         </div>
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Show on home for</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px" id="ann-duration-chips">
+          <div class="ann-chip"        data-days="1"  onclick="selectAnnDuration(this)">1 day</div>
+          <div class="ann-chip"        data-days="3"  onclick="selectAnnDuration(this)">3 days</div>
+          <div class="ann-chip active" data-days="7"  onclick="selectAnnDuration(this)">1 week</div>
+          <div class="ann-chip"        data-days="14" onclick="selectAnnDuration(this)">2 weeks</div>
+          <div class="ann-chip"        data-days="0"  onclick="selectAnnDuration(this)">Always</div>
+        </div>
+        <div style="font-size:11px;color:var(--fg-3);margin-top:6px">After this it moves to “Past announcements” — never deleted, just tidied away.</div>
       </div>
       <button class="note-modal-save" onclick="postAnnouncement()">Post announcement</button>
     </div>
@@ -5325,7 +5342,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.94</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.95</div>
   </div>
 </div>
 
@@ -5339,7 +5356,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.94';
+  const APP_VERSION = 'v39.95';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12207,7 +12224,17 @@
     }
   }
 
-  function addNotif(text, action) {
+  // Clear any bell notifications tagged for a given thread — called when that thread is
+  // opened (via the list, a deep link, anywhere), so reading a message clears its bell
+  // item whether or not the notification itself was tapped.
+  function clearThreadNotifs(threadId) {
+    if (!threadId) return;
+    const panel = document.getElementById('notif-panel');
+    if (!panel) return;
+    panel.querySelectorAll('.notif-item[data-notif-tag="thread:' + threadId + '"]').forEach(item => dismissNotif(item));
+  }
+
+  function addNotif(text, action, tag) {
     const panel = document.getElementById('notif-panel');
     if (!panel) return;
 
@@ -12218,6 +12245,8 @@
     const head = panel.querySelector('.notif-panel-head');
     const item = document.createElement('div');
     item.className = 'notif-item';
+    // Optional tag (e.g. 'thread:<id>') so the item can be cleared when its target is opened elsewhere.
+    if (tag) item.dataset.notifTag = tag;
     item.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-top:1px solid var(--border);position:relative';
     item.innerHTML = `
       <div class="notif-dot" style="margin-top:5px;flex-shrink:0"></div>
@@ -13001,6 +13030,8 @@
     if (banner && role === 'coach') banner.style.display = (t.kind === 'witnessed_dm' || t.kind === 'dm') ? 'flex' : 'none';
 
     const dot = document.getElementById('mgu-' + threadId); if (dot) dot.style.opacity = '0';
+    // Reading the thread clears any bell notification(s) for it, even if opened from the list.
+    clearThreadNotifs(threadId);
 
     const overlay = document.getElementById(ids.overlay);
     if (overlay) { overlay.classList.add('open'); if (ownOverlay) { overlay.style.display='flex'; overlay.style.flexDirection='column'; } }
@@ -14463,7 +14494,7 @@
     addNotif('💬 <span>' + _esc(who) + '</span>: ' + _esc(preview), () => {
       showTab(currentRole || 'coach', 'messages');
       setTimeout(() => openThread(msg.thread_id), 250);
-    });
+    }, 'thread:' + msg.thread_id);
   }
 
   // ===== REAL-TIME PLAYER SUBSCRIPTION =====
@@ -15862,28 +15893,84 @@ ${printBtnHtml}
     const urgencyLabel = { important: '⚡ Important', urgent: '🚨 Urgent' };
     const audienceLabel = { coaches:'🎙️ Coaches', players:'🏈 Players', parents:'👨‍👩‍👧 Parents' };
 
-    list.innerHTML = visible.map(a => {
+    // Lifecycle: an announcement is "active" until its coach-chosen homeDays elapse (0 = always),
+    // OR until this user archives it. Everything else drops into a collapsible "Past" section —
+    // never deleted, so old announcements stay referenceable.
+    const now = Date.now();
+    const DAY = 86400000;
+    const hidden = annHiddenSet();
+    const isExpired = a => {
+      const days = (a.homeDays == null ? 7 : a.homeDays);
+      if (!days) return false; // 0 / falsy = Always on home
+      return (now - (a.postedAt || 0)) > days * DAY;
+    };
+    const active = visible.filter(a => !hidden.has(a.id) && !isExpired(a));
+    const past   = visible.filter(a =>  hidden.has(a.id) || isExpired(a));
+
+    const card = (a, inPast) => {
       const initials    = (a.author || 'C').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const urgency     = a.urgency || 'normal';
       const audience    = a.audience || ['coaches'];
       const audText     = audience.length === 3 ? '🌐 Everyone' : audience.map(g => audienceLabel[g] || g).join(' · ');
       const urgBadge    = urgency !== 'normal' ? `<span class="ann-urgency-badge ${urgency}">${urgencyLabel[urgency]}</span>` : '';
+      const isNew       = (now - (a.postedAt || 0)) < DAY;
+      const newBadge    = (!inPast && isNew) ? `<span class="ann-new-badge">NEW</span>` : '';
+      const archived    = hidden.has(a.id);
       const photoUrl    = a.avatarPath ? pathToUrl[a.avatarPath] : null;
       const avatarInner = photoUrl
         ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
         : initials;
-      return `<div class="announcement-card urgency-${urgency}">
+      const metaTail    = inPast ? (archived ? ' · 🗄️ Archived' : ' · Past') : '';
+      const actionBtn   = inPast
+        ? (archived ? `<div class="ann-action-btn" onclick="restoreAnnouncement('${a.id}')">↩︎ Restore</div>` : '')
+        : `<div class="ann-action-btn" onclick="archiveAnnouncement('${a.id}')">🗄️ Archive</div>`;
+      return `<div class="announcement-card urgency-${urgency}${inPast ? ' ann-past' : ''}">
         <div class="announcement-card-header">
           <div class="announcement-avatar" data-ann-path="${a.avatarPath || ''}">${avatarInner}</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;color:var(--fg)">${a.author || 'Coach'}${urgBadge}</div>
-            <div class="announcement-meta">${a.date || ''} · ${audText}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--fg)">${a.author || 'Coach'}${urgBadge}${newBadge}</div>
+            <div class="announcement-meta">${a.date || ''} · ${audText}${metaTail}</div>
           </div>
           ${isCoach ? `<div class="announcement-del" onclick="deleteAnnouncement('${a.id}')">✕</div>` : ''}
         </div>
         <div class="announcement-body">${escHtml(a.text)}</div>
+        ${actionBtn ? `<div class="ann-card-actions">${actionBtn}</div>` : ''}
       </div>`;
-    }).join('');
+    };
+
+    let html = active.map(a => card(a, false)).join('');
+    if (!active.length) html += `<div style="text-align:center;padding:16px;color:var(--fg-3);font-size:13px">Nothing active right now — see past announcements below.</div>`;
+    if (past.length) {
+      const open = !!_annShowPast[role];
+      html += `<div class="ann-past-toggle" onclick="toggleAnnPast('${role}')">${open ? '▾' : '▸'} Past announcements (${past.length})</div>`;
+      if (open) html += past.map(a => card(a, true)).join('');
+    }
+    list.innerHTML = html;
+  }
+
+  // ===== ANNOUNCEMENT LIFECYCLE HELPERS =====
+  // Per-user archive state (this device). Keyed by announcement id.
+  function annHiddenSet() {
+    try { return new Set(JSON.parse(localStorage.getItem('mesh_ann_hidden') || '[]')); }
+    catch(e) { return new Set(); }
+  }
+  function _annSaveHidden(set) {
+    try { localStorage.setItem('mesh_ann_hidden', JSON.stringify([...set])); } catch(e) {}
+  }
+  function _annRerenderAll() {
+    renderAnnouncements('coach'); renderAnnouncements('player'); renderAnnouncements('parent');
+  }
+  function archiveAnnouncement(id) {
+    const s = annHiddenSet(); s.add(id); _annSaveHidden(s); _annRerenderAll();
+  }
+  function restoreAnnouncement(id) {
+    const s = annHiddenSet(); s.delete(id); _annSaveHidden(s); _annRerenderAll();
+  }
+  // Per-role expand/collapse of the Past section.
+  let _annShowPast = { coach:false, player:false, parent:false };
+  function toggleAnnPast(role) {
+    _annShowPast[role] = !_annShowPast[role];
+    renderAnnouncements(role);
   }
 
   function toggleAnnChip(el) {
@@ -15899,11 +15986,17 @@ ${printBtnHtml}
     el.classList.add('active');
   }
 
+  function selectAnnDuration(el) {
+    document.querySelectorAll('#ann-duration-chips .ann-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+
   function openAnnouncementCompose() {
     document.getElementById('announcement-text-input').value = '';
-    // Reset chips — default: coaches only, normal urgency
+    // Reset chips — default: coaches only, normal urgency, 1 week on home
     document.querySelectorAll('#ann-audience-chips .ann-chip').forEach(c => c.classList.toggle('active', c.dataset.group === 'coaches'));
     document.querySelectorAll('#ann-urgency-chips .ann-urgency-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'normal'));
+    document.querySelectorAll('#ann-duration-chips .ann-chip').forEach(c => c.classList.toggle('active', c.dataset.days === '7'));
     document.getElementById('announcement-overlay').classList.add('open');
     setTimeout(() => document.getElementById('announcement-text-input').focus(), 100);
   }
@@ -15919,6 +16012,7 @@ ${printBtnHtml}
 
     const audience = [...document.querySelectorAll('#ann-audience-chips .ann-chip.active')].map(c => c.dataset.group);
     const urgency  = document.querySelector('#ann-urgency-chips .ann-urgency-chip.active')?.dataset.level || 'normal';
+    const homeDays = parseInt(document.querySelector('#ann-duration-chips .ann-chip.active')?.dataset.days ?? '7', 10);
     const user     = JSON.parse(localStorage.getItem('mesh_user') || '{}');
 
     const newAnnId = annId();
@@ -15936,6 +16030,7 @@ ${printBtnHtml}
       avatarUrl: _currentAvatarUrl || null,   // signed at post time, good for 1hr
       avatarPostedAt: _currentAvatarUrl ? Date.now() : null,
       postedAt: Date.now(),
+      homeDays: isNaN(homeDays) ? 7 : homeDays,   // 0 = always; else days on the active home list
       date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
     });
 
@@ -20034,9 +20129,6 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
 
-    // Build player selector + stat inputs
-    const players = [...PLAYERS].sort((a,b) => (a.name||'').localeCompare(b.name||''));
-
     overlay.innerHTML = `
       <div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column" onclick="event.stopPropagation()">
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
@@ -20049,10 +20141,11 @@ Jersey|RushingNum|RushingYards|RushingTDNum
 
         <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
           <div style="font-size:12px;font-weight:600;color:var(--fg-2);margin-bottom:8px">PLAYER</div>
-          <select id="log-stats-player" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px">
-            <option value="">Select a player...</option>
-            ${players.map(p => `<option value="${p.id||p.db_id}">${_esc(p.name)} — ${_esc(p.pos||'')} ${_esc(p.num||'')}</option>`).join('')}
-          </select>
+          <input type="hidden" id="log-stats-player" value="">
+          <input type="text" id="log-stats-player-search" autocomplete="off" placeholder="Search by name, # or position…"
+            oninput="filterLogStatsPlayers(this.value)" onfocus="filterLogStatsPlayers(this.value)"
+            style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-size:14px;box-sizing:border-box">
+          <div id="log-stats-player-results" style="display:none;margin-top:6px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);max-height:220px;overflow-y:auto"></div>
         </div>
 
         <div style="flex:1;overflow-y:auto;padding:16px 20px" id="log-stats-cats">
@@ -20067,40 +20160,80 @@ Jersey|RushingNum|RushingYards|RushingTDNum
 
     document.body.appendChild(overlay);
 
+    // Stash context so the (global) search-select handler can render categories for this game.
+    _logStatsCtx = { gameId, gameDate };
+
     // Show pending submissions for this game
     renderPendingStats(gameId, document.getElementById('log-stats-pending-section'));
+  }
 
-    // On player change, show relevant stat categories
-    document.getElementById('log-stats-player').addEventListener('change', function() {
-      const pid = this.value;
-      const player = PLAYERS.find(p => (p.id||p.db_id) === pid);
-      const cats = STAT_CATEGORIES;
-      const catsDiv = document.getElementById('log-stats-cats');
-      if (!pid || !cats.length) { catsDiv.innerHTML = '<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:20px">No stat categories set up yet.</div>'; return; }
+  // Player-stats context for the searchable picker (set by openLogStats).
+  let _logStatsCtx = { gameId: null, gameDate: null };
 
-      // Filter to player's position if available
-      const pos = player?.pos || '';
-      const relevant = cats.filter(c => !c.position_group?.length || c.position_group.includes(pos));
-      const rest = cats.filter(c => c.position_group?.length && !c.position_group.includes(pos));
+  // Filtered, searchable player picker for Log Game Stats (matches name, jersey # or position;
+  // replaces the old native <select> that only jumped to the first letter-match).
+  function filterLogStatsPlayers(q) {
+    const results = document.getElementById('log-stats-player-results');
+    if (!results) return;
+    const ql = (q || '').toLowerCase().trim();
+    const players = [...PLAYERS]
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      .filter(p => !ql
+        || (p.name || '').toLowerCase().includes(ql)
+        || String(p.num || '').includes(ql)
+        || (p.pos || '').toLowerCase().includes(ql));
+    if (!players.length) {
+      results.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--fg-3)">No players found</div>';
+      results.style.display = 'block';
+      return;
+    }
+    results.innerHTML = players.slice(0, 60).map(p => {
+      const id = p.id || p.db_id;
+      return `<div onclick="selectLogStatsPlayer('${id}')" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${_esc(p.name)} <span style="color:var(--fg-3)">— ${_esc(p.pos || '—')} #${_esc(p.num || '—')}</span></div>`;
+    }).join('');
+    results.style.display = 'block';
+  }
 
-      // Get existing stats for this player+game
-      const existing = {};
-      GAME_STATS.filter(s => s.player_id === pid && s.game_id === '${gameId}' && s.submitted_by === 'coach')
-        .forEach(s => existing[s.category] = s.value);
+  function selectLogStatsPlayer(pid) {
+    const hid = document.getElementById('log-stats-player');
+    const search = document.getElementById('log-stats-player-search');
+    const results = document.getElementById('log-stats-player-results');
+    const player = PLAYERS.find(p => (p.id || p.db_id) === pid);
+    if (hid) hid.value = pid;
+    if (search) search.value = player ? `${player.name} — ${player.pos || '—'} #${player.num || '—'}` : '';
+    if (results) { results.style.display = 'none'; results.innerHTML = ''; }
+    renderLogStatsCats(pid);
+  }
 
-      const renderCatGroup = (cats, label) => cats.length ? `
-        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin:12px 0 8px">${label}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          ${cats.map(c => `
-            <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px">
-              <div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${c.label}${c.unit?' ('+c.unit+')':''}</div>
-              <input type="number" step="0.5" min="0" data-cat="${c.key}" value="${existing[c.key]??''}" placeholder="0"
-                style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:16px;font-weight:700;padding:2px 0;outline:none">
-            </div>`).join('')}
-        </div>` : '';
+  function renderLogStatsCats(pid) {
+    const player = PLAYERS.find(p => (p.id || p.db_id) === pid);
+    const cats = STAT_CATEGORIES;
+    const catsDiv = document.getElementById('log-stats-cats');
+    if (!catsDiv) return;
+    if (!pid || !cats.length) { catsDiv.innerHTML = '<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:20px">No stat categories set up yet.</div>'; return; }
 
-      catsDiv.innerHTML = renderCatGroup(relevant, 'Relevant to position') + renderCatGroup(rest, 'Other categories');
-    });
+    // Filter to player's position if available
+    const pos = player?.pos || '';
+    const relevant = cats.filter(c => !c.position_group?.length || c.position_group.includes(pos));
+    const rest = cats.filter(c => c.position_group?.length && !c.position_group.includes(pos));
+
+    // Prefill existing coach-entered stats for this player+game.
+    const existing = {};
+    GAME_STATS.filter(s => s.player_id === pid && s.game_id === _logStatsCtx.gameId && s.submitted_by === 'coach')
+      .forEach(s => existing[s.category] = s.value);
+
+    const renderCatGroup = (cats, label) => cats.length ? `
+      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin:12px 0 8px">${label}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${cats.map(c => `
+          <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px">
+            <div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${c.label}${c.unit?' ('+c.unit+')':''}</div>
+            <input type="number" step="0.5" min="0" data-cat="${c.key}" value="${existing[c.key]??''}" placeholder="0"
+              style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:16px;font-weight:700;padding:2px 0;outline:none">
+          </div>`).join('')}
+      </div>` : '';
+
+    catsDiv.innerHTML = renderCatGroup(relevant, 'Relevant to position') + renderCatGroup(rest, 'Other categories');
   }
 
   function renderAllPendingStats() {
