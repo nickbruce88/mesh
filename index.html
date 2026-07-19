@@ -4475,9 +4475,10 @@
         <span>⚠️</span>
         <span>For your protection and your coach's, direct messages must include a parent/guardian or a second coach. Group channels don't have this requirement.</span>
       </div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Message to</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:2px">Message to</div>
+      <div style="font-size:11px;color:var(--fg-3);margin-bottom:10px">Pick one coach for a direct message, or several to start a group.</div>
       <div id="pnm-coach-list"></div>
-      <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin:12px 0 8px">Required — add a parent or second coach</div>
+      <div id="pnm-witness-label" style="font-size:12px;font-weight:600;color:var(--gray-2);margin:12px 0 8px">Required — add a parent or second coach</div>
       <div id="pnm-witness-list"></div>
       <div class="ng-validation" id="pnm-validation" style="margin-top:10px"></div>
       <div style="font-size:12px;font-weight:600;color:var(--gray-2);margin:12px 0 8px">Message</div>
@@ -5283,7 +5284,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.90</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.91</div>
   </div>
 </div>
 
@@ -5297,7 +5298,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.90';
+  const APP_VERSION = 'v39.91';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -13099,8 +13100,8 @@
   function _selRole(id){ const m=_dir.find(x=>x.user_id===id); return m?m.role:null; }
 
   let ngSelectedMembers = new Set();   // set of user_id
-  let pnmSelectedCoach = null;         // user_id
-  let pnmSelectedWitness = null;       // user_id
+  let pnmSelectedCoaches = new Set();  // user_ids — multi-select; 2+ coaches → group (no witness)
+  let pnmSelectedWitness = null;       // user_id (only used for a single-coach direct message)
 
   // ===== COACH: NEW GROUP MODAL =====
   async function openNewGroupModal() {
@@ -13224,12 +13225,13 @@
 
   // ===== PLAYER: NEW DIRECT MESSAGE =====
   async function openPlayerNewMsg() {
-    pnmSelectedCoach = null;
+    pnmSelectedCoaches.clear();
     pnmSelectedWitness = null;
     const txt = document.getElementById('pnm-text'); if (txt) txt.value = '';
     const val = document.getElementById('pnm-validation'); if (val) val.className = 'ng-validation';
     document.getElementById('player-new-msg-overlay').classList.add('open');
     await loadDirectory();
+    updatePNMWitnessVisibility();
 
     const mkRow = (m, pickFn, idPrefix, labelRole) => {
       const row = document.createElement('div');
@@ -13256,11 +13258,19 @@
   }
 
   function selectPNMCoach(id) {
-    pnmSelectedCoach = id;
+    // Multi-select: pick one coach (needs a witness) or several (a group — no witness).
+    if (pnmSelectedCoaches.has(id)) pnmSelectedCoaches.delete(id); else pnmSelectedCoaches.add(id);
     document.querySelectorAll('#pnm-coach-list .member-check').forEach(el => { el.className = 'member-check'; el.textContent = ''; });
-    const el = document.getElementById('pnm-coach-' + id);
-    if (el) { el.className = 'member-check checked'; el.textContent = '✓'; }
+    pnmSelectedCoaches.forEach(cid => { const el = document.getElementById('pnm-coach-' + cid); if (el) { el.className = 'member-check checked'; el.textContent = '✓'; } });
+    updatePNMWitnessVisibility();
     validatePNM();
+  }
+
+  // The witness (parent / 2nd coach) is only required for a single-coach direct message.
+  // Selecting 2+ coaches is a group and satisfies the safety rule on its own.
+  function updatePNMWitnessVisibility(){
+    const needWitness = pnmSelectedCoaches.size < 2;
+    ['pnm-witness-label','pnm-witness-list'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = needWitness ? '' : 'none'; });
   }
 
   function selectPNMWitness(id) {
@@ -13273,12 +13283,17 @@
 
   function validatePNM() {
     const el = document.getElementById('pnm-validation');
-    if (pnmSelectedCoach && pnmSelectedWitness) {
+    if (!el) return;
+    const nc = pnmSelectedCoaches.size;
+    if (nc >= 2) {
+      el.className = 'ng-validation pass';
+      el.textContent = '✅ Group with ' + nc + ' coaches — no witness needed.';
+    } else if (nc === 1 && pnmSelectedWitness && !pnmSelectedCoaches.has(pnmSelectedWitness)) {
       el.className = 'ng-validation pass';
       el.textContent = '✅ Safety requirement met — message will be visible to all selected members.';
-    } else if (pnmSelectedCoach && !pnmSelectedWitness) {
+    } else if (nc === 1) {
       el.className = 'ng-validation fail';
-      el.textContent = '⚠️ Add a parent or second coach to continue.';
+      el.textContent = '⚠️ Add a parent or second coach — or pick another coach to make a group.';
     } else {
       el.className = 'ng-validation';
     }
@@ -13286,29 +13301,49 @@
 
   async function sendPlayerDirectMsg() {
     const text = document.getElementById('pnm-text').value.trim();
-    if (!pnmSelectedCoach || !pnmSelectedWitness) { validatePNM(); return; }
-    if (pnmSelectedCoach === pnmSelectedWitness) { showToast('Pick a witness who is not the coach'); return; }
+    const coaches = [...pnmSelectedCoaches];
+    if (coaches.length === 0) { validatePNM(); return; }
+    if (coaches.length === 1) {
+      if (!pnmSelectedWitness) { validatePNM(); return; }
+      if (pnmSelectedWitness === coaches[0]) { showToast('Pick a witness who is not the coach'); return; }
+    }
     if (!text) { showToast('Please enter a message'); return; }
     const programId = await getValidProgramId();
     if (!programId) { showToast('No program'); return; }
     try {
-      // Reuse an existing witnessed thread with the same coach + witness instead of duplicating.
-      let threadId = await findExisting1to1('witnessed_dm', pnmSelectedCoach, pnmSelectedWitness);
-      if (!threadId) {
+      let threadId, kind;
+      if (coaches.length >= 2) {
+        // Group with multiple coaches — the coaches keep each other accountable, so no
+        // separate witness is required (matches the coach-side group safety rule).
+        kind = 'dm';
+        const names = coaches.map(id => { const m = _dir.find(x => x.user_id === id); return m ? (m.name || '').split(' ')[0] : ''; }).filter(Boolean);
+        const subject = names.slice(0, 3).join(', ') + (coaches.length > 3 ? ' & ' + (coaches.length - 3) + ' more' : '');
         const { data, error } = await db.rpc('create_thread', {
-          p_program_id: programId, p_kind: 'witnessed_dm', p_subject: null,
-          p_participant_uids: [pnmSelectedCoach], p_witness_uids: [pnmSelectedWitness]
+          p_program_id: programId, p_kind: 'dm', p_subject: subject || 'Coaches',
+          p_participant_uids: coaches, p_witness_uids: []
         });
         if (error) throw error;
         threadId = data;
+      } else {
+        // Single coach → witnessed direct message. Reuse an existing one if present.
+        kind = 'witnessed_dm';
+        threadId = await findExisting1to1('witnessed_dm', coaches[0], pnmSelectedWitness);
+        if (!threadId) {
+          const { data, error } = await db.rpc('create_thread', {
+            p_program_id: programId, p_kind: 'witnessed_dm', p_subject: null,
+            p_participant_uids: [coaches[0]], p_witness_uids: [pnmSelectedWitness]
+          });
+          if (error) throw error;
+          threadId = data;
+        }
       }
       closePlayerNewMsg();
       await loadThreadList('player');
-      currentThreadKind = 'witnessed_dm';
+      currentThreadKind = kind;
       await openThread(threadId);
       const inp = document.getElementById('player-thread-input');
       if (inp) { inp.value = text; sendThreadMsg(); }
-    } catch(e) { console.error('[Msg] player witnessed DM:', e); showToast('Could not send: ' + (e.message || 'error')); }
+    } catch(e) { console.error('[Msg] player message:', e); showToast('Could not send: ' + (e.message || 'error')); }
   }
 
   // Parent → coach direct message. Dynamic coach picker (parent tab has no dedicated modal).
