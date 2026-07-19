@@ -5342,7 +5342,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.95</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.96</div>
   </div>
 </div>
 
@@ -5356,7 +5356,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.95';
+  const APP_VERSION = 'v39.96';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -15895,17 +15895,22 @@ ${printBtnHtml}
 
     // Lifecycle: an announcement is "active" until its coach-chosen homeDays elapse (0 = always),
     // OR until this user archives it. Everything else drops into a collapsible "Past" section —
-    // never deleted, so old announcements stay referenceable.
+    // never deleted, so old announcements stay referenceable. A per-user "kept" set overrides
+    // expiry: restoring ANY past announcement (expired or archived) keeps it active for this
+    // user all season, until they archive it again.
     const now = Date.now();
     const DAY = 86400000;
     const hidden = annHiddenSet();
+    const kept   = annKeptSet();
     const isExpired = a => {
       const days = (a.homeDays == null ? 7 : a.homeDays);
       if (!days) return false; // 0 / falsy = Always on home
       return (now - (a.postedAt || 0)) > days * DAY;
     };
-    const active = visible.filter(a => !hidden.has(a.id) && !isExpired(a));
-    const past   = visible.filter(a =>  hidden.has(a.id) || isExpired(a));
+    // Archived → always Past. Kept → always active. Otherwise follow the coach's expiry clock.
+    const isActive = a => hidden.has(a.id) ? false : (kept.has(a.id) ? true : !isExpired(a));
+    const active = visible.filter(isActive);
+    const past   = visible.filter(a => !isActive(a));
 
     const card = (a, inPast) => {
       const initials    = (a.author || 'C').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -15916,13 +15921,16 @@ ${printBtnHtml}
       const isNew       = (now - (a.postedAt || 0)) < DAY;
       const newBadge    = (!inPast && isNew) ? `<span class="ann-new-badge">NEW</span>` : '';
       const archived    = hidden.has(a.id);
+      const keptThis    = kept.has(a.id);
       const photoUrl    = a.avatarPath ? pathToUrl[a.avatarPath] : null;
       const avatarInner = photoUrl
         ? `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
         : initials;
-      const metaTail    = inPast ? (archived ? ' · 🗄️ Archived' : ' · Past') : '';
+      // Meta tail: past cards say why they're there; kept-active cards flag that the user pinned them.
+      const metaTail    = inPast ? (archived ? ' · 🗄️ Archived' : ' · Past') : (keptThis ? ' · 📌 Kept' : '');
+      // Restore is offered on EVERY past card (expired or archived); active cards offer Archive.
       const actionBtn   = inPast
-        ? (archived ? `<div class="ann-action-btn" onclick="restoreAnnouncement('${a.id}')">↩︎ Restore</div>` : '')
+        ? `<div class="ann-action-btn" onclick="restoreAnnouncement('${a.id}')">📌 Keep on home</div>`
         : `<div class="ann-action-btn" onclick="archiveAnnouncement('${a.id}')">🗄️ Archive</div>`;
       return `<div class="announcement-card urgency-${urgency}${inPast ? ' ann-past' : ''}">
         <div class="announcement-card-header">
@@ -15949,22 +15957,36 @@ ${printBtnHtml}
   }
 
   // ===== ANNOUNCEMENT LIFECYCLE HELPERS =====
-  // Per-user archive state (this device). Keyed by announcement id.
+  // Per-user state (this device), keyed by announcement id:
+  //   hidden — user archived it → always Past
+  //   kept   — user restored/pinned it → always active, overriding the coach's expiry, until re-archived
+  // The two are mutually exclusive: archiving clears kept, keeping clears hidden.
   function annHiddenSet() {
     try { return new Set(JSON.parse(localStorage.getItem('mesh_ann_hidden') || '[]')); }
+    catch(e) { return new Set(); }
+  }
+  function annKeptSet() {
+    try { return new Set(JSON.parse(localStorage.getItem('mesh_ann_kept') || '[]')); }
     catch(e) { return new Set(); }
   }
   function _annSaveHidden(set) {
     try { localStorage.setItem('mesh_ann_hidden', JSON.stringify([...set])); } catch(e) {}
   }
+  function _annSaveKept(set) {
+    try { localStorage.setItem('mesh_ann_kept', JSON.stringify([...set])); } catch(e) {}
+  }
   function _annRerenderAll() {
     renderAnnouncements('coach'); renderAnnouncements('player'); renderAnnouncements('parent');
   }
   function archiveAnnouncement(id) {
-    const s = annHiddenSet(); s.add(id); _annSaveHidden(s); _annRerenderAll();
+    const h = annHiddenSet(); h.add(id);    _annSaveHidden(h);
+    const k = annKeptSet();   k.delete(id); _annSaveKept(k);
+    _annRerenderAll();
   }
   function restoreAnnouncement(id) {
-    const s = annHiddenSet(); s.delete(id); _annSaveHidden(s); _annRerenderAll();
+    const h = annHiddenSet(); h.delete(id); _annSaveHidden(h);
+    const k = annKeptSet();   k.add(id);    _annSaveKept(k);
+    _annRerenderAll();
   }
   // Per-role expand/collapse of the Past section.
   let _annShowPast = { coach:false, player:false, parent:false };
