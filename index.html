@@ -2485,9 +2485,13 @@
       <div class="ob-field-label">Your full name *</div>
       <input class="input-field" id="join-parent-name" placeholder="Keisha Johnson" style="margin-bottom:12px">
       <div class="ob-field-label">Your player *</div>
-      <select class="input-field" id="join-parent-player" style="background:var(--black-3);color:var(--white);margin-bottom:12px">
+      <select class="input-field" id="join-parent-player" onchange="onParentPlayerChange()" style="background:var(--black-3);color:var(--white);margin-bottom:12px">
         <option value="">Select your player</option>
       </select>
+      <div id="join-parent-player-manual-wrap" style="display:none">
+        <input class="input-field" id="join-parent-player-manual" placeholder="Your player's full name" style="margin-bottom:6px">
+        <div style="font-size:11px;color:var(--gray-3);margin:0 0 12px;line-height:1.5">We'll add them to your coach's roster. When your player signs up with the same name, their account links automatically.</div>
+      </div>
       <div class="ob-field-label">Phone (optional)</div>
       <input class="input-field" id="join-parent-phone" placeholder="(208) 555-0000" type="tel" style="margin-bottom:24px">
       <button class="btn-primary" onclick="submitParentProfile()">Join program →</button>
@@ -5347,7 +5351,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.03</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.04</div>
   </div>
 </div>
 
@@ -5361,7 +5365,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.03';
+  const APP_VERSION = 'v40.04';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9950,6 +9954,17 @@
       opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
       select.appendChild(opt);
     });
+    // Fallback: parent whose player isn't on the roster yet can add them by name.
+    const manual = document.createElement('option');
+    manual.value = '__manual__';
+    manual.textContent = '➕ My player isn\'t listed yet';
+    select.appendChild(manual);
+  }
+  // Show a name input when the parent chooses "my player isn't listed yet".
+  function onParentPlayerChange() {
+    const sel = document.getElementById('join-parent-player');
+    const manualWrap = document.getElementById('join-parent-player-manual-wrap');
+    if (manualWrap) manualWrap.style.display = (sel && sel.value === '__manual__') ? 'block' : 'none';
   }
 
   // Populate the player "claim your roster spot" dropdown with UNCLAIMED roster entries
@@ -10299,8 +10314,8 @@
   async function submitParentProfile() {
     const name = document.getElementById('join-parent-name').value.trim();
     const sel = document.getElementById('join-parent-player');
-    const playerId = sel.value;
-    const playerName = sel.options[sel.selectedIndex]?.dataset.name || 'your player';
+    let playerId = sel.value;
+    let playerName = sel.options[sel.selectedIndex]?.dataset.name || 'your player';
     if (!name) { showToast('Please enter your name'); return; }
     if (!playerId) { showToast('Please select your player'); return; }
 
@@ -10309,6 +10324,21 @@
     const uid = localStorage.getItem('mesh_auth_uid') || null;
     const programId = localStorage.getItem('mesh_joining_program_id') || null;
     const validProgramId = programId && programId.includes('-') ? programId : null;
+
+    // "My player isn't listed yet" → create a placeholder roster entry by name, then link to it.
+    // (find_or_create_player reuses an unclaimed same-name row if one exists, avoiding duplicates.)
+    if (playerId === '__manual__') {
+      const manualName = document.getElementById('join-parent-player-manual')?.value.trim() || '';
+      if (!manualName) { showToast("Enter your player's name"); return; }
+      if (!validProgramId) { showToast('Could not reach your program — try again'); return; }
+      const { data: newId, error: fcErr } = await db.rpc('find_or_create_player', {
+        p_program_id: validProgramId, p_player_name: manualName
+      });
+      if (fcErr || !newId) { console.error('[Join] find_or_create_player error:', fcErr); showToast('Could not add your player — try again'); return; }
+      playerId = newId;
+      playerName = manualName;
+    }
+
     const validPlayerId = playerId && playerId.includes('-') ? playerId : null;  // real DB rows only (UUIDs)
     if (uid && validProgramId && validPlayerId) {
       try {
