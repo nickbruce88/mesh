@@ -35,24 +35,22 @@ async function buildVapidHeaders(endpoint: string): Promise<Record<string, strin
   );
   const sigInput = `${header}.${payload}`;
 
-  const privKeyBytes = base64urlToUint8Array(VAPID_PRIVATE_KEY);
+  // Import the VAPID signing key as a JWK. The previous raw→PKCS8 DER wrapping threw
+  // InvalidEncoding at sign time on Deno; a JWK with explicit d/x/y is the reliable path.
+  // d = private scalar (VAPID_PRIVATE_KEY); x/y = coordinates from the public key
+  // (VAPID_PUBLIC_KEY is the 65-byte uncompressed point: 0x04 || X(32) || Y(32)).
+  const pubBytes = base64urlToUint8Array(VAPID_PUBLIC_KEY);
+  const jwk = {
+    kty: 'EC',
+    crv: 'P-256',
+    d: uint8ArrayToBase64url(base64urlToUint8Array(VAPID_PRIVATE_KEY)),
+    x: uint8ArrayToBase64url(pubBytes.slice(1, 33)),
+    y: uint8ArrayToBase64url(pubBytes.slice(33, 65)),
+    ext: true,
+  };
   const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    // Wrap raw EC private key bytes into PKCS8 DER
-    (() => {
-      // EC private key PKCS8 wrapper for P-256
-      const prefix = new Uint8Array([
-        0x30, 0x41, 0x02, 0x01, 0x00, 0x30, 0x13, 0x06,
-        0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
-        0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03,
-        0x01, 0x07, 0x04, 0x27, 0x30, 0x25, 0x02, 0x01,
-        0x01, 0x04, 0x20
-      ]);
-      const key = new Uint8Array(prefix.length + privKeyBytes.length);
-      key.set(prefix);
-      key.set(privKeyBytes, prefix.length);
-      return key.buffer;
-    })(),
+    'jwk',
+    jwk,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
