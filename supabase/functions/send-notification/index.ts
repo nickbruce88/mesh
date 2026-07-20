@@ -271,36 +271,46 @@ Deno.serve(async (req) => {
       recipients.map(async (token) => {
         const sub = token.subscription;
         const host = (() => { try { return new URL(sub?.endpoint).host; } catch { return 'invalid-endpoint'; } })();
-        // Subscription must carry the encryption keys (standard PushSubscription.toJSON()).
-        if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
-          console.log('[send-notification] subscription missing keys — user re-subscribe needed', JSON.stringify({ host }));
-          throw new Error('Subscription missing keys');
-        }
-        const headers = await buildVapidHeaders(sub.endpoint);
-        headers['Content-Encoding'] = 'aes128gcm';
-        const payloadStr = JSON.stringify({ title, body: body || '', tag: type, url: clickUrl });
-        const encrypted = await encryptPayload(sub.keys.p256dh, sub.keys.auth, payloadStr);
-
-        const res = await fetch(sub.endpoint, {
-          method: 'POST',
-          headers,
-          body: encrypted,
-        });
-
-        if (!res.ok && res.status !== 201) {
-          // Log the push service's reason (401 = VAPID, 400 = payload/format, 413 = too big, etc.)
-          const errText = await res.text().catch(() => '');
-          console.log('[send-notification] PUSH FAILED', JSON.stringify({ status: res.status, host, body: errText.slice(0, 300) }));
-          // 404/410 = subscription gone — remove it so we stop trying.
-          if (res.status === 410 || res.status === 404) {
-            await db.from('notification_tokens')
-              .delete()
-              .eq('subscription->>endpoint', sub.endpoint);
+        try {
+          // Subscription must carry the encryption keys (standard PushSubscription.toJSON()).
+          if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
+            console.log('[send-notification] subscription missing keys — user re-subscribe needed', JSON.stringify({ host, keys: sub?.keys ? Object.keys(sub.keys) : null }));
+            throw new Error('Subscription missing keys');
           }
-          throw new Error(`Push failed: ${res.status}`);
+          const headers = await buildVapidHeaders(sub.endpoint);
+          headers['Content-Encoding'] = 'aes128gcm';
+          const payloadStr = JSON.stringify({ title, body: body || '', tag: type, url: clickUrl });
+          const encrypted = await encryptPayload(sub.keys.p256dh, sub.keys.auth, payloadStr);
+
+          const res = await fetch(sub.endpoint, {
+            method: 'POST',
+            headers,
+            body: encrypted,
+          });
+
+          if (!res.ok && res.status !== 201) {
+            // Log the push service's reason (401 = VAPID, 400 = payload/format, 413 = too big, etc.)
+            const errText = await res.text().catch(() => '');
+            console.log('[send-notification] PUSH FAILED (http)', JSON.stringify({ status: res.status, host, body: errText.slice(0, 300) }));
+            // 404/410 = subscription gone — remove it so we stop trying.
+            if (res.status === 410 || res.status === 404) {
+              await db.from('notification_tokens')
+                .delete()
+                .eq('subscription->>endpoint', sub.endpoint);
+            }
+            throw new Error(`Push failed: ${res.status}`);
+          }
+          console.log('[send-notification] push ok', JSON.stringify({ status: res.status, host }));
+          return res.status;
+        } catch (e) {
+          // Capture exceptions from VAPID signing / encryption / fetch (not just HTTP errors).
+          console.log('[send-notification] PUSH THREW', JSON.stringify({
+            host,
+            error: String((e && e.message) || e),
+            stack: (e && e.stack) ? String(e.stack).slice(0, 500) : null,
+          }));
+          throw e;
         }
-        console.log('[send-notification] push ok', JSON.stringify({ status: res.status, host }));
-        return res.status;
       })
     );
 
