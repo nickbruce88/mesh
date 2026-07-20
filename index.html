@@ -2412,7 +2412,7 @@
     <div class="ob-step active" id="join-step-1">
       <div style="font-size:14px;color:var(--gray-2);margin-bottom:20px">Enter the join code your coach gave you.</div>
       <div class="ob-field-label">Program join code</div>
-      <input class="input-field" id="join-code-input" placeholder="e.g. NMPA-24" style="text-transform:uppercase;letter-spacing:0.1em;font-size:20px;text-align:center;margin-bottom:8px" oninput="this.value=this.value.toUpperCase()">
+      <input class="input-field" id="join-code-input" placeholder="e.g. LINC-PLAY-A3F" style="text-transform:uppercase;letter-spacing:0.1em;font-size:20px;text-align:center;margin-bottom:8px" oninput="this.value=this.value.toUpperCase()">
       <div style="font-size:12px;color:var(--red);margin-bottom:20px;min-height:18px" id="join-code-error"></div>
       <button class="btn-primary" onclick="verifyJoinCode()">Continue →</button>
     </div>
@@ -5346,7 +5346,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.01</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.02</div>
   </div>
 </div>
 
@@ -5360,7 +5360,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.01';
+  const APP_VERSION = 'v40.02';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9681,9 +9681,13 @@
       const uid = data.session.user.id;
       console.log('[Session] Active session found, uid:', uid);
       const resolved = await resolveUserSession(uid);
-      // A coach who verified their email and came back still has a live session but
-      // no program — resume onboarding instead of dropping them to the landing screen.
-      if (!resolved) routeUnresolvedUser();
+      // Not resolved = authenticated but no program/player/profile row yet. Either a coach who
+      // confirmed their email (beta code → wizard) OR a player/parent/assistant who confirmed and
+      // still needs to finish their profile (pending join → resume). Try the join resume first.
+      if (!resolved) {
+        const resumed = await resumePendingJoin();
+        if (!resumed) routeUnresolvedUser();
+      }
       return resolved;
     } catch(e) {
       console.warn('[Session] Check error:', e);
@@ -9926,6 +9930,74 @@
     }
   }
 
+  // Populate the parent "your player" dropdown from the program's roster (used by verifyJoinCode
+  // and when resuming a parent join after email confirmation).
+  async function populateParentPlayerDropdown(programId) {
+    const select = document.getElementById('join-parent-player');
+    if (!select) return;
+    select.innerHTML = '<option value="">Select your player</option>';
+    const validId = programId && programId.includes('-') ? programId : null;
+    if (validId) {
+      try {
+        const { data: dbPlayers } = await db.from('players')
+          .select('id, name, pos').eq('program_id', validId).eq('role', 'player');
+        (dbPlayers || []).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id; opt.dataset.name = p.name;
+          opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
+          select.appendChild(opt);
+        });
+      } catch(e) { console.error('Error loading players for dropdown:', e); }
+    }
+    PLAYERS.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.db_id || p.id; opt.dataset.name = p.name;
+      opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
+      select.appendChild(opt);
+    });
+  }
+
+  // ===== JOIN: email-confirmation resume =====
+  // Email confirmation is ON for ALL roles. A joining player/parent/assistant confirms their
+  // email BEFORE the profile step; we stash the join context so that when they return
+  // authenticated (session auto-detected from the confirmation link), resumePendingJoin()
+  // drops them back on the correct profile step — mirroring the coach's beta-code resume.
+  function stashPendingJoin() {
+    try {
+      localStorage.setItem('mesh_pending_join', JSON.stringify({
+        role: joinSelectedRole,
+        programId: localStorage.getItem('mesh_joining_program_id') || '',
+        code: localStorage.getItem('mesh_joining_code') || '',
+        programName: document.getElementById('join-program-name')?.textContent || ''
+      }));
+    } catch(e) {}
+  }
+  function clearPendingJoin() { try { localStorage.removeItem('mesh_pending_join'); } catch(e) {} }
+  function goToJoinProfileStep() {
+    const step = joinSelectedRole === 'player' ? 'join-step-3-player'
+               : joinSelectedRole === 'coach'  ? 'join-step-3-coach'
+               : 'join-step-3-parent';
+    showScreen('screen-join');
+    document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(step)?.classList.add('active');
+  }
+  async function resumePendingJoin() {
+    let pj = null;
+    try { pj = JSON.parse(localStorage.getItem('mesh_pending_join') || 'null'); } catch(e) {}
+    if (!pj || !pj.role) return false;
+    console.log('[Session] Resuming pending join as', pj.role);
+    joinSelectedRole = pj.role;
+    try {
+      if (pj.programId) localStorage.setItem('mesh_joining_program_id', pj.programId);
+      if (pj.code) localStorage.setItem('mesh_joining_code', pj.code);
+    } catch(e) {}
+    const nameEl = document.getElementById('join-program-name');
+    if (nameEl && pj.programName) nameEl.textContent = pj.programName;
+    if (pj.role === 'parent') await populateParentPlayerDropdown(pj.programId);
+    goToJoinProfileStep();
+    return true;
+  }
+
   async function verifyJoinCode() {
     const code = document.getElementById('join-code-input').value.trim().toUpperCase();
     const errEl = document.getElementById('join-code-error');
@@ -9999,38 +10071,8 @@
     // Load existing players for parent dropdown — only if we have a real program ID
     const storedProgramId = program.id && program.id !== 'demo' ? program.id : null;
 
-    // Load existing players for parent dropdown
-    const select = document.getElementById('join-parent-player');
-    select.innerHTML = '<option value="">Select your player</option>';
-
-    // Only query Supabase if we have a real UUID
-    // Option value = player id (needed to persist the parent↔player link); label + data-name keep the name
-    if (storedProgramId) {
-      try {
-        const { data: dbPlayers } = await db.from('players')
-          .select('id, name, pos')
-          .eq('program_id', storedProgramId)
-          .eq('role', 'player');
-        if (dbPlayers) {
-          dbPlayers.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.dataset.name = p.name;
-            opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
-            select.appendChild(opt);
-          });
-        }
-      } catch(e) { console.error('Error loading players for dropdown:', e); }
-    }
-
-    // Also add existing PLAYERS array
-    PLAYERS.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.db_id || p.id;
-      opt.dataset.name = p.name;
-      opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
-      select.appendChild(opt);
-    });
+    // Load existing players for the parent's "your player" dropdown.
+    await populateParentPlayerDropdown(storedProgramId);
 
     // Role detected from which Supabase column matched
     joinSelectedRole = _detectedRole;
@@ -10090,35 +10132,35 @@
     btn.disabled = true;
 
     try {
-      // Try signing up first
       const { data: signUpData, error: signUpError } = await db.auth.signUp({ email, password });
-      
-      let uid = '';
-      if (signUpError && (signUpError.message?.includes('already registered') || signUpError.message?.includes('already been registered'))) {
-        // Account exists — sign in instead
+
+      // Existing account → try to sign in (only succeeds if it's already confirmed).
+      if (signUpError && /already/i.test(signUpError.message || '')) {
         const { data: signInData, error: signInError } = await db.auth.signInWithPassword({ email, password });
-        if (signInError) throw signInError;
-        uid = signInData.user?.id || '';
-      } else if (signUpError) {
-        throw signUpError;
-      } else {
-        uid = signUpData.user?.id || '';
-        // Sign in immediately after signup to establish authenticated session
-        // This ensures the session is active before we insert the player row
-        const { error: signInError } = await db.auth.signInWithPassword({ email, password });
-        if (signInError) console.warn('[Join] Auto sign-in after signup failed:', signInError);
+        if (signInError) {
+          errEl.textContent = 'That email already has an account. Confirm it from the email we sent, or check your password.';
+          return;
+        }
+        localStorage.setItem('mesh_auth_email', email);
+        localStorage.setItem('mesh_auth_uid', signInData.user?.id || '');
+        goToJoinProfileStep(); // already confirmed → straight to profile
+        return;
       }
+      if (signUpError) throw signUpError;
 
       localStorage.setItem('mesh_auth_email', email);
-      localStorage.setItem('mesh_auth_uid', uid);
-      console.log('[Join] Account ready, uid:', uid);
+      localStorage.setItem('mesh_auth_uid', signUpData.user?.id || '');
 
-      // Move to profile step
-      document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
-      const profileStep = joinSelectedRole === 'player' ? 'join-step-3-player'
-                        : joinSelectedRole === 'coach'  ? 'join-step-3-coach'
-                        : 'join-step-3-parent';
-      document.getElementById(profileStep).classList.add('active');
+      if (signUpData.session) {
+        // Session issued immediately (email confirmation disabled) — go straight to profile.
+        goToJoinProfileStep();
+      } else {
+        // Email confirmation required (all roles). Stash the join so we can resume after they
+        // confirm, then ask them to check their email.
+        stashPendingJoin();
+        document.getElementById('check-email-address').textContent = email;
+        showScreen('screen-check-email');
+      }
     } catch(e) {
       errEl.textContent = e.message || 'Could not create account. Try again.';
     } finally {
@@ -10304,6 +10346,7 @@
     const pid = localStorage.getItem('mesh_joining_program_id') || localStorage.getItem('mesh_program_id') || null;
     const nm = (document.getElementById('join-program-name')?.textContent || '').trim();
     if (nm) obProgram.teamName = obProgram.teamName || nm;
+    clearPendingJoin(); // completed the join — no pending resume needed
     launchApp(role, { name: u.name, role: u.role || role }, pid);
   }
 
