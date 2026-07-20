@@ -5139,6 +5139,8 @@
       <div class="notif-panel-title">Notifications</div>
       <div class="notif-panel-close" onclick="toggleNotifPanel()">✕</div>
     </div>
+    <!-- Tap-to-enable row (also carries the iOS "add to Home Screen" hint). Populated by refreshNotifEnableRow(). -->
+    <div id="notif-enable-row" style="display:none;padding:12px 16px;border-top:1px solid var(--border)"></div>
     <div data-notif-empty style="text-align:center;padding:40px 20px;color:var(--fg-3);font-size:13px">
       <div style="font-size:32px;margin-bottom:10px">🔔</div>
       No notifications yet
@@ -5344,7 +5346,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.98</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.99</div>
   </div>
 </div>
 
@@ -5358,7 +5360,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.98';
+  const APP_VERSION = 'v39.99';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5381,6 +5383,46 @@
       console.warn('[Push] Service worker registration failed:', e);
       return null;
     }
+  }
+
+  // ---- Notification enablement UI (bell panel) ----
+  // iPhones/iPads: push only works from an app installed to the Home Screen, and iOS shows the
+  // permission prompt ONLY in response to a tap — never from the auto on-load call. So the bell
+  // panel offers a tap-to-enable button (and, on an un-installed iPhone, an "Add to Home Screen" hint).
+  function isIOSDevice() {
+    const ua = navigator.userAgent || '';
+    return /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+  function isStandalonePWA() {
+    return window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+  function refreshNotifEnableRow() {
+    const row = document.getElementById('notif-enable-row');
+    if (!row) return;
+    if (!('Notification' in window)) { row.style.display = 'none'; return; }
+    const perm = Notification.permission;
+    if (perm === 'granted') { row.style.display = 'none'; return; }
+    row.style.display = 'block';
+    if (perm === 'denied') {
+      row.innerHTML = `<div style="font-size:12px;color:var(--fg-3);line-height:1.5">🔕 Notifications are blocked for this site. Turn them back on in your browser or device settings, then reopen this panel.</div>`;
+      return;
+    }
+    // perm === 'default' — we can still ask.
+    if (isIOSDevice() && !isStandalonePWA()) {
+      row.innerHTML = `<div style="font-size:13px;font-weight:700;margin-bottom:4px">📲 Enable notifications on iPhone</div>
+        <div style="font-size:12px;color:var(--fg-3);line-height:1.55">iOS only allows notifications from an installed app. Tap the <b>Share</b> icon in Safari, choose <b>Add to Home Screen</b>, then open Mesh from that icon and tap <b>Turn on notifications</b> here.</div>`;
+      return;
+    }
+    row.innerHTML = `<button onclick="enableNotificationsTap()" class="btn-primary" style="width:100%;font-size:13px;padding:10px">🔔 Turn on notifications</button>
+      <div style="font-size:11px;color:var(--fg-3);margin-top:6px;text-align:center">Get message &amp; announcement alerts even when the app is closed.</div>`;
+  }
+  async function enableNotificationsTap() {
+    // Runs inside a user tap → satisfies iOS's user-gesture requirement for the permission prompt.
+    await subscribeToPush(currentRole || 'coach');
+    refreshNotifEnableRow();
+    if (Notification.permission === 'granted') showToast('Notifications on ✓');
+    else if (Notification.permission === 'denied') showToast('Notifications blocked — enable in settings');
   }
 
   async function subscribeToPush(role) {
@@ -12192,6 +12234,7 @@
       notifCount = 0;
       const badge = document.getElementById('notif-badge');
       if (badge) badge.style.display = 'none';
+      refreshNotifEnableRow(); // show/update the enable button or iOS hint if push isn't on yet
     }
   }
   function markNotifRead(el) {
