@@ -166,6 +166,19 @@
   .ann-action-btn { font-size:11px;font-weight:600;color:var(--fg-2);cursor:pointer;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;user-select:none; }
   .ann-action-btn:active { opacity:0.7; }
   .ann-past-toggle { font-size:12px;font-weight:700;color:var(--fg-2);cursor:pointer;user-select:none;padding:12px 2px 8px;display:flex;align-items:center;gap:6px; }
+  /* ===== FIRST-RUN GUIDED TOUR (spotlight coach marks) ===== */
+  .tour-blocker { position:fixed; inset:0; z-index:9000; display:none; background:transparent; -webkit-tap-highlight-color:transparent; }
+  .tour-hole { position:fixed; z-index:9001; border-radius:12px; box-shadow:0 0 0 9999px rgba(0,0,0,0.72); pointer-events:none; display:none; }
+  .tour-tooltip { position:fixed; z-index:9002; width:320px; max-width:88vw; background:var(--bg-2); border:1px solid var(--border); border-radius:16px; padding:16px 18px; box-shadow:0 14px 44px rgba(0,0,0,0.55); display:none; }
+  .tour-tip-title { font-size:16px; font-weight:800; margin-bottom:6px; color:var(--fg); letter-spacing:-0.2px; }
+  .tour-tip-body { font-size:13px; color:var(--fg-2); line-height:1.55; margin-bottom:14px; }
+  .tour-tip-foot { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .tour-dots { display:flex; gap:5px; }
+  .tour-dot { width:6px; height:6px; border-radius:50%; background:var(--border); transition:background 0.2s; }
+  .tour-dot.active { background:var(--team-primary); }
+  .tour-tip-btns { display:flex; gap:6px; align-items:center; }
+  .tour-btn-ghost { background:none; border:none; color:var(--fg-3); font-size:13px; font-weight:600; cursor:pointer; padding:7px 8px; font-family:var(--font); }
+  .tour-btn-primary { background:var(--team-primary); color:var(--team-primary-text,#fff); border:none; border-radius:20px; font-size:13px; font-weight:700; padding:8px 18px; cursor:pointer; font-family:var(--font); }
   .ann-urgency-chip { font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);color:var(--fg-3);cursor:pointer;user-select:none;transition:all 0.12s; }
   .ann-urgency-chip.active[data-level="normal"]    { border-color:var(--fg-2);color:var(--fg);background:var(--bg-3); }
   .ann-urgency-chip.active[data-level="important"] { border-color:var(--amber);color:var(--amber);background:rgba(245,158,11,0.1); }
@@ -5350,8 +5363,9 @@
     <div class="profile-menu-item" id="pmi-staff-access" onclick="openStaffAccess()"><span class="pmi">🔐</span> Staff access</div>
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
+    <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.04</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.05</div>
   </div>
 </div>
 
@@ -5365,7 +5379,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.04';
+  const APP_VERSION = 'v40.05';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10414,6 +10428,8 @@
     if (nm) obProgram.teamName = obProgram.teamName || nm;
     clearPendingJoin(); // completed the join — no pending resume needed
     launchApp(role, { name: u.name, role: u.role || role }, pid);
+    // First-run guided tour for the just-joined player/parent/assistant.
+    setTimeout(() => startTour(role), 1200);
   }
 
   function login(role) {
@@ -10675,6 +10691,8 @@
     buildNav('coach');
     showTab('coach', 'home');
     updateInviteBanner();
+    // First-run guided tour (this runs only on initial program setup).
+    setTimeout(() => startTour('coach'), 1000);
     // Prompt for push notifications after onboarding
     setTimeout(() => subscribeToPush('coach'), 1500);
     // Load any existing roster from Supabase
@@ -10687,6 +10705,133 @@
         subscribeToPlayers(id);
       }
     });
+  }
+
+  // ===== FIRST-RUN GUIDED TOUR (spotlight coach marks) =====
+  // Per-role walkthrough that dims the screen and spotlights real UI elements. Auto-runs once
+  // right after onboarding completes (that code path only runs on first setup/join, so no
+  // "seen" flag is needed); also replayable from the profile menu.
+  const TOUR_STEPS = {
+    coach: [
+      { title: 'Welcome to Mesh! 🏈', body: "Let's take a quick tour. You can replay this anytime from your profile menu.", target: null },
+      { title: 'Invite your team', body: 'Coaches, players, and parents each get their own join code. Tap a code to copy it and share.', target: '#invite-banner', before: () => showTab('coach','home') },
+      { title: 'Post an announcement', body: 'Share news with your team. Pick who sees it and how long it stays on their home screen.', target: '#announce-post-btn', before: () => showTab('coach','home') },
+      { title: 'Plan practice', body: 'Build practice scripts period by period, by position group.', target: '#nav-practice' },
+      { title: 'Message your team', body: 'Group threads and direct messages. Player DMs are automatically witnessed for safety.', target: '#nav-messages' },
+      { title: 'Turn on notifications', body: 'Tap the bell, then "Turn on notifications" — so messages reach you even when the app is closed.', target: '#notif-btn', before: () => showTab('coach','home') },
+      { title: 'Everything else lives here', body: 'Roster, depth chart, stats, inventory, and documents are all under More.', target: '#nav-more' },
+    ],
+    player: [
+      { title: 'Welcome to Mesh! 🏈', body: 'A quick tour of your team app. Replay anytime from your profile.', target: null },
+      { title: 'Your home', body: 'Announcements from your coaches show up here.', target: '#nav-home' },
+      { title: 'Your schedule', body: 'Games and practices — see what’s coming up and where.', target: '#nav-schedule' },
+      { title: 'Messages', body: 'Message your coaches. Tap the bell up top to turn on notifications so you never miss one.', target: '#nav-messages' },
+      { title: 'Your info & playbook', body: 'My Info, Depth Chart, Playbook, and Documents are all under More.', target: '#nav-more' },
+    ],
+    parent: [
+      { title: 'Welcome to Mesh! 🏈', body: "A quick tour so you can follow your player's team. Replay anytime from your profile.", target: null },
+      { title: 'This week', body: "Your player's games and practices for the week, plus announcements from the staff.", target: '#nav-home' },
+      { title: 'Full schedule', body: 'The whole season schedule lives here.', target: '#nav-schedule' },
+      { title: 'Messages', body: 'Message the coaching staff. Tap the bell up top to turn on notifications.', target: '#nav-messages' },
+      { title: 'Your player & documents', body: "Your player's profile and shared documents are under More.", target: '#nav-more' },
+    ],
+  };
+  let _tour = { role: null, idx: 0, steps: [] };
+  let _tourSeq = 0; // guards against out-of-order async step application
+
+  function _tourEnsureEls() {
+    if (document.getElementById('tour-tooltip')) return;
+    ['tour-blocker','tour-hole','tour-tooltip'].forEach(id => {
+      const el = document.createElement('div');
+      el.id = id; el.className = id;
+      document.body.appendChild(el);
+    });
+  }
+  function startTour(role) {
+    role = role || currentRole || 'coach';
+    const steps = TOUR_STEPS[role];
+    if (!steps || !steps.length) return;
+    _tour = { role, idx: 0, steps };
+    _tourEnsureEls();
+    ['tour-blocker','tour-hole','tour-tooltip'].forEach(id => { document.getElementById(id).style.display = 'block'; });
+    showTourStep(0);
+  }
+  async function showTourStep(i) {
+    const steps = _tour.steps;
+    if (i < 0 || i >= steps.length) { endTour(); return; }
+    const myseq = ++_tourSeq;
+    _tour.idx = i;
+    const step = steps[i];
+    if (step.before) { try { step.before(); } catch(e){} }
+    await new Promise(r => setTimeout(r, step.before ? 380 : 60));
+    if (myseq !== _tourSeq) return; // a newer step started — abandon this one
+    renderTourTooltip(step, i, steps.length); // set content first so the tooltip height is real
+    const targetEl = step.target ? document.querySelector(step.target) : null;
+    const rect = targetEl ? targetEl.getBoundingClientRect() : null;
+    // Treat hidden/zero-size targets (e.g. bottom nav on desktop) as "no target" → centered tip.
+    if (targetEl && rect.width > 4 && rect.height > 4) {
+      if (typeof targetEl.scrollIntoView === 'function') { try { targetEl.scrollIntoView({ block:'center', behavior:'instant' }); } catch(e){ targetEl.scrollIntoView(); } }
+      await new Promise(r => setTimeout(r, 50));
+      if (myseq !== _tourSeq) return;
+      const r2 = targetEl.getBoundingClientRect();
+      positionTourHole(r2);
+      positionTourTooltip(r2);
+    } else {
+      const hole = document.getElementById('tour-hole');
+      hole.style.left = '50%'; hole.style.top = '50%'; hole.style.width = '0px'; hole.style.height = '0px';
+      positionTourTooltip(null);
+    }
+  }
+  function positionTourHole(rect) {
+    const hole = document.getElementById('tour-hole');
+    const pad = 8;
+    hole.style.left = Math.max(0, rect.left - pad) + 'px';
+    hole.style.top = Math.max(0, rect.top - pad) + 'px';
+    hole.style.width = (rect.width + pad*2) + 'px';
+    hole.style.height = (rect.height + pad*2) + 'px';
+  }
+  function positionTourTooltip(rect) {
+    const tip = document.getElementById('tour-tooltip');
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    if (!rect) {
+      tip.style.left = Math.round((vw - tw)/2) + 'px';
+      tip.style.top = Math.round((vh - th)/2) + 'px';
+      return;
+    }
+    const gap = 14;
+    let top = (vh - rect.bottom > th + gap + 20) ? rect.bottom + gap : rect.top - th - gap;
+    top = Math.max(12, Math.min(top, vh - th - 12));
+    let left = rect.left + rect.width/2 - tw/2;
+    left = Math.max(12, Math.min(left, vw - tw - 12));
+    tip.style.left = Math.round(left) + 'px';
+    tip.style.top = Math.round(top) + 'px';
+  }
+  function renderTourTooltip(step, i, total) {
+    const tip = document.getElementById('tour-tooltip');
+    const isLast = i === total - 1;
+    const dots = Array.from({length: total}, (_, k) => `<span class="tour-dot${k===i?' active':''}"></span>`).join('');
+    tip.innerHTML =
+      `<div class="tour-tip-title">${step.title}</div>` +
+      `<div class="tour-tip-body">${step.body}</div>` +
+      `<div class="tour-tip-foot">` +
+        `<div class="tour-dots">${dots}</div>` +
+        `<div class="tour-tip-btns">` +
+          (i > 0 ? `<button class="tour-btn-ghost" onclick="tourBack()">Back</button>`
+                 : `<button class="tour-btn-ghost" onclick="endTour()">Skip</button>`) +
+          `<button class="tour-btn-primary" onclick="tourNext()">${isLast ? 'Done' : 'Next'}</button>` +
+        `</div>` +
+      `</div>`;
+  }
+  function tourNext() { showTourStep(_tour.idx + 1); }
+  function tourBack() { showTourStep(_tour.idx - 1); }
+  function endTour() {
+    ['tour-blocker','tour-hole','tour-tooltip'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  }
+  // Replay entry point (profile menu). Closes the profile modal first.
+  function replayTour() {
+    if (typeof closeProfileModal === 'function') closeProfileModal();
+    setTimeout(() => startTour(currentRole || 'coach'), 250);
   }
 
   function selectRole(el) {
