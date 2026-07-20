@@ -2284,12 +2284,9 @@
         <div class="ob-sport-btn" onclick="selectSport(this,'Track')">🏃 Track</div>
         <div class="ob-sport-btn" onclick="selectSport(this,'Other')">🏅 Other</div>
       </div>
-      <div class="ob-field-label" style="margin-top:14px">Your role</div>
-      <div style="display:flex;gap:8px;margin-bottom:24px">
-        <div class="ob-sport-btn selected" id="ob-role-head" onclick="selectCoachRole('Head Coach',this)" style="flex:1">👑 Head Coach</div>
-        <div class="ob-sport-btn" id="ob-role-asst" onclick="selectCoachRole('Assistant Coach',this)" style="flex:1">🎽 Assistant</div>
-      </div>
+      <div style="height:10px"></div>
       <button class="btn-primary" onclick="obNext(1)">Next →</button>
+      <div style="font-size:12px;color:var(--gray-3);text-align:center;margin-top:14px;line-height:1.5">Assistant coach? Don't set up here — ask your head coach for the <b>coach code</b> and <span onclick="showJoinFlow()" style="color:var(--team-primary);font-weight:600;cursor:pointer">join their program</span> instead.</div>
     </div>
 
     <!-- STEP 2: Program info + join code -->
@@ -2457,8 +2454,12 @@
     <div class="ob-step" id="join-step-3-player">
       <div style="font-size:18px;font-weight:700;margin-bottom:4px">Your player profile</div>
       <div style="font-size:13px;color:var(--gray-2);margin-bottom:20px">This builds your coach's roster automatically.</div>
+      <div class="ob-field-label">Already on your coach's roster?</div>
+      <select class="input-field" id="join-player-claim" onchange="onPlayerClaimChange()" style="background:var(--black-3);color:var(--white);margin-bottom:12px">
+        <option value="">I'm new / not listed yet</option>
+      </select>
       <div class="ob-field-label">Full name *</div>
-      <input class="input-field" id="join-player-name" placeholder="Dan Smith" style="margin-bottom:12px">
+      <input class="input-field" id="join-player-name" placeholder="e.g. Dan Smith" style="margin-bottom:12px">
       <div class="ob-field-label">Position *</div>
       <select class="input-field" id="join-player-pos" style="background:var(--black-3);color:var(--white);margin-bottom:12px">
         <option value="">Select position</option>
@@ -5346,7 +5347,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.02</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.03</div>
   </div>
 </div>
 
@@ -5360,7 +5361,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.02';
+  const APP_VERSION = 'v40.03';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9824,12 +9825,6 @@
     obProgram.sport = sport;
   }
 
-  function selectCoachRole(role, el) {
-    document.getElementById('ob-role-head').classList.remove('selected');
-    document.getElementById('ob-role-asst').classList.remove('selected');
-    el.classList.add('selected');
-    obProgram.role = role;
-  }
 
   // (Legacy single-code generateJoinCode removed in v39.67 — it was declared AFTER
   // the three-code version and silently clobbered it, so onboarding step 2 showed a
@@ -9957,6 +9952,38 @@
     });
   }
 
+  // Populate the player "claim your roster spot" dropdown with UNCLAIMED roster entries
+  // (players the coach added who have no account yet). Lets a player pick their real name
+  // even if they'd type a nickname — prevents duplicate roster rows.
+  async function populatePlayerClaimDropdown(programId) {
+    const select = document.getElementById('join-player-claim');
+    if (!select) return;
+    select.innerHTML = '<option value="">I\'m new / not listed yet</option>';
+    const validId = programId && programId.includes('-') ? programId : null;
+    if (!validId) return;
+    try {
+      const { data } = await db.from('players')
+        .select('id, name, pos').eq('program_id', validId).eq('role', 'player').is('auth_uid', null);
+      (data || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id; opt.dataset.name = p.name; opt.dataset.pos = p.pos || '';
+        opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
+        select.appendChild(opt);
+      });
+    } catch(e) { console.error('Error loading roster for claim:', e); }
+  }
+  // Picking an existing roster entry pre-fills the name/position fields.
+  function onPlayerClaimChange() {
+    const select = document.getElementById('join-player-claim');
+    const opt = select?.options[select.selectedIndex];
+    if (opt && opt.value) {
+      const nameInput = document.getElementById('join-player-name');
+      if (nameInput && opt.dataset.name) nameInput.value = opt.dataset.name;
+      const posSel = document.getElementById('join-player-pos');
+      if (posSel && opt.dataset.pos) posSel.value = opt.dataset.pos;
+    }
+  }
+
   // ===== JOIN: email-confirmation resume =====
   // Email confirmation is ON for ALL roles. A joining player/parent/assistant confirms their
   // email BEFORE the profile step; we stash the join context so that when they return
@@ -9994,6 +10021,7 @@
     const nameEl = document.getElementById('join-program-name');
     if (nameEl && pj.programName) nameEl.textContent = pj.programName;
     if (pj.role === 'parent') await populateParentPlayerDropdown(pj.programId);
+    if (pj.role === 'player') await populatePlayerClaimDropdown(pj.programId);
     goToJoinProfileStep();
     return true;
   }
@@ -10073,6 +10101,8 @@
 
     // Load existing players for the parent's "your player" dropdown.
     await populateParentPlayerDropdown(storedProgramId);
+    // Load unclaimed roster entries for the player's "claim your spot" dropdown.
+    await populatePlayerClaimDropdown(storedProgramId);
 
     // Role detected from which Supabase column matched
     joinSelectedRole = _detectedRole;
@@ -10176,6 +10206,8 @@
     if (!pos) { showToast('Please select your position'); return; }
 
     const numVal = document.getElementById('join-player-num').value.trim();
+    const claimSel = document.getElementById('join-player-claim');
+    const claimId = claimSel && claimSel.value ? claimSel.value : null; // roster entry the player picked
     const programId = localStorage.getItem('mesh_joining_program_id') || null;
     // Only use programId if it looks like a real UUID
     const validProgramId = programId && programId.includes('-') ? programId : null;
@@ -10197,20 +10229,27 @@
       role: 'player'
     };
 
-    // Save to Supabase — upsert by name to avoid duplicates with coach-uploaded roster
+    // Save to Supabase. A claimed roster entry (player picked their name) wins; otherwise fall
+    // back to a case-insensitive match against UNCLAIMED roster rows so nickname/casing
+    // differences ("dan smith" vs "Dan Smith") don't create a duplicate.
     try {
       if (validProgramId) {
-        // Check if player with this name already exists in the program
-        const { data: existing } = await db.from('players')
-          .select('id')
-          .eq('program_id', validProgramId)
-          .eq('name', name)
-          .maybeSingle();
+        let targetId = claimId;
+        if (!targetId) {
+          const { data: matches } = await db.from('players')
+            .select('id')
+            .eq('program_id', validProgramId)
+            .ilike('name', name)          // case-insensitive exact match
+            .is('auth_uid', null)         // only merge into an unclaimed entry
+            .limit(1);
+          if (matches && matches.length) targetId = matches[0].id;
+        }
 
-        if (existing) {
-          // Player already exists (coach uploaded roster) — update with self-reported info + auth_uid
+        if (targetId) {
+          // Claim/merge the existing roster entry with the player's self-reported info + auth_uid.
           const { data, error } = await db.from('players')
             .update({
+              name:     playerData.name,
               num:      playerData.num,
               pos:      playerData.pos,
               year:     playerData.year,
@@ -10218,11 +10257,11 @@
               weight:   playerData.weight,
               auth_uid: authUid,
             })
-            .eq('id', existing.id)
+            .eq('id', targetId)
             .select()
             .single();
           if (error) throw error;
-          console.log('Player profile merged with existing roster entry:', data);
+          console.log('Player profile claimed/merged with roster entry:', data);
         } else {
           // No existing row — insert as new
           const { data, error } = await db.from('players').insert(playerData).select().single();
@@ -10242,11 +10281,8 @@
     // Also add to local PLAYERS array for this session
     PLAYERS.push({ ...playerData, id: 'p' + Date.now(), notes: [], discipline: [], academic: [], parent: '', parentPhone: '', parentEmail: '', disciplinaryStatus: 'green', group: '' });
     renderCoachRoster();
-
-    // Notify head coach that a new player joined
-    addNotif(`<span>${name}</span> just joined as a player — they've been added to the roster and the All Players group.`, () => {
-      showTab('tab-coach-messages');
-    });
+    // (The head coach is notified of the new player via the realtime players subscription,
+    //  not from here — this code runs on the joining player's own device.)
 
     try {
       localStorage.setItem('mesh_role', 'player');
