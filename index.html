@@ -466,7 +466,9 @@
 
   /* BOTTOM NAV */
   .bottom-nav { display: flex; border-top: 1px solid var(--border); background: var(--bg); padding: 8px 0 20px; position: sticky; bottom: 0; }
-  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; position: relative; }
+  .nav-unread-badge { position: absolute; top: 2px; left: calc(50% + 6px); background: var(--team-primary); color: #fff; font-size: 9px; font-weight: 800; min-width: 16px; height: 16px; border-radius: 8px; display: none; align-items: center; justify-content: center; padding: 0 4px; box-sizing: border-box; border: 1.5px solid var(--bg); line-height: 1; }
+  .sidebar-unread-badge { margin-left: auto; background: var(--team-primary); color: #fff; font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: none; align-items: center; justify-content: center; padding: 0 5px; box-sizing: border-box; line-height: 1; }
   .nav-icon { font-size: 20px; }
   .nav-icon-img { width: 24px; height: 24px; object-fit: contain; opacity: 0.6; transition: opacity 0.15s, transform 0.15s; }
   .nav-item.active .nav-icon-img { opacity: 1; transform: scale(1.08); }
@@ -5342,7 +5344,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.96</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.97</div>
   </div>
 </div>
 
@@ -5356,7 +5358,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.96';
+  const APP_VERSION = 'v39.97';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5503,12 +5505,14 @@
       } else {
         iconHtml = `<div class="nav-icon">${item.icon}</div>`;
       }
-      el.innerHTML = `${iconHtml}<div class="nav-label">${item.label}</div>`;
+      const badgeHtml = item.id === 'messages' ? `<span class="nav-unread-badge" id="nav-msg-badge"></span>` : '';
+      el.innerHTML = `${iconHtml}<div class="nav-label">${item.label}</div>${badgeHtml}`;
       el.onclick = () => showTab(role, item.id);
       nav.appendChild(el);
     });
     // Build desktop sidebar
     if (isDesktop()) buildDesktopSidebar(role);
+    updateMsgUnreadBadge();
   }
 
   function hideAllTabs() {
@@ -9281,7 +9285,8 @@
       const el = document.createElement('div');
       el.className = 'sidebar-item' + (item.id === desktopActiveItem ? ' active' : '');
       el.dataset.id = item.id;
-      el.innerHTML = `<span class="sidebar-item-icon">${item.icon}</span><span>${item.label}</span>`;
+      const sbBadge = item.id === 'messages' ? `<span class="sidebar-unread-badge" id="sidebar-msg-badge"></span>` : '';
+      el.innerHTML = `<span class="sidebar-item-icon">${item.icon}</span><span>${item.label}</span>${sbBadge}`;
       el.onclick = () => {
         desktopActiveItem = item.id;
         nav.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
@@ -12899,7 +12904,7 @@
         '<div class="msg-group-name"><span class="mgn-text" id="mgn-'+t.id+'">'+_esc(threadTitle(t))+'</span>'+(t.muted?' <span style="color:var(--fg-3)">🔕</span>':'')+'</div>'+
         '<div class="inbox-time">'+when+'</div></div>'+
         '<div class="msg-group-preview" id="mgp-'+t.id+'">'+_esc(preview)+'</div></div>'+
-        '<div class="unread-dot" id="mgu-'+t.id+'" style="opacity:0"></div>';
+        '<div class="unread-dot" id="mgu-'+t.id+'" style="opacity:'+(((t.unread_count||0)>0 && t.id!==currentThread)?'1':'0')+'"></div>';
       item.onclick = () => openThread(t.id);
       list.appendChild(item);
       resolveThreadName(t, document.getElementById('mgn-' + t.id), document.getElementById('mga-' + t.id)); // name + avatar (pic/initials)
@@ -12913,6 +12918,37 @@
       note.textContent = 'No archived conversations.';
       list.appendChild(note);
     }
+    updateMsgUnreadBadge();
+  }
+
+  // Persistent Messages unread badge (bottom nav + desktop sidebar) — counts threads with
+  // server-tracked unread messages (unread_count from list_my_threads), skipping muted ones.
+  function updateMsgUnreadBadge() {
+    let n = 0;
+    Object.values(_threads || {}).forEach(t => {
+      if (t && !t.muted && (t.unread_count || 0) > 0) n++;
+    });
+    const txt = n > 9 ? '9+' : String(n);
+    ['nav-msg-badge', 'sidebar-msg-badge'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (n > 0) { el.textContent = txt; el.style.display = 'flex'; }
+      else { el.style.display = 'none'; }
+    });
+  }
+
+  // Best-effort: if the app was opened from a tapped message push (?thread=<id>), open that
+  // thread once the thread list is loaded, then strip the param so a refresh won't reopen it.
+  function maybeOpenThreadFromUrl(role) {
+    try {
+      const tid = new URLSearchParams(location.search).get('thread');
+      if (!tid) return;
+      history.replaceState(null, '', location.pathname);
+      if (_threads[tid]) {
+        showTab(role, 'messages');
+        setTimeout(() => openThread(tid), 300);
+      }
+    } catch (e) { console.warn('[Msg] deep-link:', e); }
   }
 
   // (Built-in group threads are now real broadcast rows loaded via loadThreadList → renderThreadList.)
@@ -13032,6 +13068,10 @@
     const dot = document.getElementById('mgu-' + threadId); if (dot) dot.style.opacity = '0';
     // Reading the thread clears any bell notification(s) for it, even if opened from the list.
     clearThreadNotifs(threadId);
+    // Persist read state server-side (syncs unread across devices) and clear it locally now.
+    if (_threads[threadId]) _threads[threadId].unread_count = 0;
+    updateMsgUnreadBadge();
+    db.rpc('mark_thread_read', { p_thread: threadId }).catch(e => console.warn('[Msg] mark_thread_read:', e));
 
     const overlay = document.getElementById(ids.overlay);
     if (overlay) { overlay.classList.add('open'); if (ownOverlay) { overlay.style.display='flex'; overlay.style.flexDirection='column'; } }
@@ -14470,6 +14510,13 @@
         if (preview) preview.textContent = (msg.sender_name ? msg.sender_name + ': ' : '') + msg.content;
         const dot = document.getElementById('mgu-' + msg.thread_id);
         if (dot && msg.thread_id !== currentThread) dot.style.opacity = '1';
+        if (msg.thread_id !== currentThread) {
+          // Bump the thread's local unread count + the nav badge for a live incoming message.
+          if (known) { known.unread_count = (known.unread_count || 0) + 1; updateMsgUnreadBadge(); }
+        } else {
+          // It's the thread I'm looking at — keep the server's read marker current.
+          db.rpc('mark_thread_read', { p_thread: msg.thread_id }).catch(()=>{});
+        }
         // In-app bell for one of MY threads I'm not currently viewing.
         if (known && msg.thread_id !== currentThread) notifyIncomingMessage(msg);
         // Refresh the list (debounced) when it's a NEW thread, or a known thread that's currently
@@ -22007,7 +22054,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     subscribeToPlayers(programId);
     subscribeToPlayerMessages(programId); // message-list realtime for ALL roles
     startAnnouncementsPolling(programId); // auto-refresh announcements for ALL roles
-    loadThreadList(appRole); // warm the thread list/_threads so message bells can resolve threads
+    loadThreadList(appRole).then(() => maybeOpenThreadFromUrl(appRole)); // warm _threads; then honor a ?thread= deep link from a tapped push
     loadNotifPrefs();        // sync server-side notification prefs into the local cache
 
     // Render announcements for correct role

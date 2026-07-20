@@ -73,6 +73,74 @@ async function buildVapidHeaders(endpoint: string): Promise<Record<string, strin
   };
 }
 
+// ---------- Payload encryption (RFC 8291 + RFC 8188 "aes128gcm") ----------
+// Web Push REQUIRES the message body to be encrypted with the subscription's keys.
+// Sending it in the clear (as this function used to) is rejected/dropped by push
+// services, which is why closed-app notifications weren't arriving.
+
+function concatBytes(...arrs: Uint8Array[]): Uint8Array {
+  const total = arrs.reduce((n, a) => n + a.length, 0);
+  const out = new Uint8Array(total);
+  let o = 0;
+  for (const a of arrs) { out.set(a, o); o += a.length; }
+  return out;
+}
+
+async function hmacSha256(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
+  const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', k, data));
+}
+
+// Encrypt `payloadStr` for one subscription; returns the aes128gcm request body.
+async function encryptPayload(
+  p256dh: string, auth: string, payloadStr: string
+): Promise<Uint8Array> {
+  const te = new TextEncoder();
+  const uaPublic   = base64urlToUint8Array(p256dh);  // recipient public key, 65 bytes
+  const authSecret = base64urlToUint8Array(auth);    // recipient auth secret, 16 bytes
+
+  // Server ephemeral ECDH key pair (fresh per message).
+  const asKeys = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']
+  ) as CryptoKeyPair;
+  const asPublic = new Uint8Array(await crypto.subtle.exportKey('raw', asKeys.publicKey)); // 65 bytes
+
+  // Shared ECDH secret with the recipient's public key.
+  const uaKey = await crypto.subtle.importKey(
+    'raw', uaPublic, { name: 'ECDH', namedCurve: 'P-256' }, false, []
+  );
+  const ecdhSecret = new Uint8Array(
+    await crypto.subtle.deriveBits({ name: 'ECDH', public: uaKey }, asKeys.privateKey, 256)
+  );
+
+  // RFC 8291 §3.4 — derive the input keying material (IKM).
+  const prkKey = await hmacSha256(authSecret, ecdhSecret);
+  const keyInfo = concatBytes(te.encode('WebPush: info\0'), uaPublic, asPublic);
+  const ikm = (await hmacSha256(prkKey, concatBytes(keyInfo, new Uint8Array([1])))).slice(0, 32);
+
+  // RFC 8188 — derive content-encryption key + nonce from a random salt.
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const prk = await hmacSha256(salt, ikm);
+  const cek = (await hmacSha256(prk, concatBytes(te.encode('Content-Encoding: aes128gcm\0'), new Uint8Array([1])))).slice(0, 16);
+  const nonce = (await hmacSha256(prk, concatBytes(te.encode('Content-Encoding: nonce\0'), new Uint8Array([1])))).slice(0, 12);
+
+  // Single record: plaintext + 0x02 delimiter (final record), then AES-128-GCM.
+  const record = concatBytes(te.encode(payloadStr), new Uint8Array([2]));
+  const aesKey = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
+  const ciphertext = new Uint8Array(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, tagLength: 128 }, aesKey, record)
+  );
+
+  // Header: salt(16) | rs(4, uint32 BE) | idlen(1) | keyid(server public, 65) | ciphertext.
+  const rs = 4096;
+  const header = new Uint8Array(16 + 4 + 1 + asPublic.length);
+  header.set(salt, 0);
+  new DataView(header.buffer).setUint32(16, rs, false);
+  header[20] = asPublic.length;
+  header.set(asPublic, 21);
+  return concatBytes(header, ciphertext);
+}
+
 // ---------- Main handler ----------
 
 Deno.serve(async (req) => {
@@ -184,23 +252,31 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
 
+    // Tapping the notification should open the app (and, for a message, the thread).
+    const clickUrl = thread_id ? `/?thread=${thread_id}` : '/';
+
     // Send push to each subscriber
     const results = await Promise.allSettled(
       recipients.map(async (token) => {
         const sub = token.subscription;
+        // Subscription must carry the encryption keys (standard PushSubscription.toJSON()).
+        if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
+          throw new Error('Subscription missing keys');
+        }
         const headers = await buildVapidHeaders(sub.endpoint);
-        const payloadStr = JSON.stringify({ title, body: body || '', tag: type });
-        const payloadBytes = new TextEncoder().encode(payloadStr);
+        headers['Content-Encoding'] = 'aes128gcm';
+        const payloadStr = JSON.stringify({ title, body: body || '', tag: type, url: clickUrl });
+        const encrypted = await encryptPayload(sub.keys.p256dh, sub.keys.auth, payloadStr);
 
         const res = await fetch(sub.endpoint, {
           method: 'POST',
           headers,
-          body: payloadBytes,
+          body: encrypted,
         });
 
         if (!res.ok && res.status !== 201) {
-          // 410 = subscription expired — remove it
-          if (res.status === 410) {
+          // 404/410 = subscription gone — remove it so we stop trying.
+          if (res.status === 410 || res.status === 404) {
             await db.from('notification_tokens')
               .delete()
               .eq('subscription->>endpoint', sub.endpoint);
