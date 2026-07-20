@@ -12,6 +12,14 @@ Throughout, watch for three mobile failure modes: (a) blank where desktop has co
 
 ## 📱 PHONE
 
+### 🔔 FIRST — turn on notifications (every tester, every device, one time)
+Push is opt-in per person per device — enabling it as one user does NOT enable it for anyone else.
+Do this before the messaging/announcement push checks below. Works the same for coach, player, and parent.
+- [ ] **iPhone only:** in **Safari**, open the app → **Share** → **Add to Home Screen** → **Add**, then open Mesh from the new Home Screen icon (push does NOT work from a Safari tab; needs iOS 16.4+)
+- [ ] Tap the **🔔 bell** (top-right) → **Turn on notifications** → **Allow** on the browser/OS prompt
+- [ ] Fully close the app, have someone send you a message → confirm the notification banner arrives
+- [ ] Tap the notification → it opens the app to that conversation
+
 ### Coach
 - [ ] Log in → coach home renders; nothing blank or cut off
 - [ ] ⚠️ Equipment/QR scanner — open, allow camera, scan a code (top mobile risk; camera is the one enabled device permission)
@@ -23,8 +31,9 @@ Throughout, watch for three mobile failure modes: (a) blank where desktop has co
 - [ ] ⚠️ Change a disciplinary status → it sticks; auto-note attributed to you
 - [ ] Take attendance; save; reload to confirm
 - [ ] ⚠️ Roster importer — upload a real CSV/xlsx; confirm it's forgiving and players land correctly
-- [ ] Post an announcement → appears
-- [ ] ⚠️ Messaging — send a message; confirm push notification arrives on the phone
+- [ ] Post an announcement → appears; pick a "show on home for" duration; older ones sit under "Past announcements"
+- [ ] ⚠️ Messaging — send/receive; with notifications enabled (above), closed-app push arrives
+- [ ] ⚠️ Unread — a message that arrives while closed shows an unread dot + Messages nav badge on login; opening the thread clears both (and stays read on your other devices)
 - [ ] Enter/approve a stat
 
 ### Player
@@ -32,7 +41,7 @@ Throughout, watch for three mobile failure modes: (a) blank where desktop has co
 - [ ] ⚠️ My Schedule — list + calendar, correct Home/Away labels
 - [ ] My stats load
 - [ ] Announcements visible
-- [ ] Messaging send/receive + push
+- [ ] ⚠️ Messaging — send/receive; closed-app push (after enabling above); unread dot + Messages badge on login, clear on open
 - [ ] Documents open
 - [ ] ⚠️ Notification settings — only the Messages toggle remains (dead practice/games/roster toggles gone)
 
@@ -41,7 +50,7 @@ Throughout, watch for three mobile failure modes: (a) blank where desktop has co
 - [ ] ⚠️ My Player pulls real data (jersey `#22`, position, stats) — not blank, not placeholder
 - [ ] ⚠️ Schedule list + calendar, correct labels
 - [ ] Documents open
-- [ ] Messaging + push
+- [ ] ⚠️ Messaging — send/receive; closed-app push (after enabling above); unread dot + Messages badge on login, clear on open
 - [ ] Confirm NO Playbook anywhere in the parent role (removed)
 
 ---
