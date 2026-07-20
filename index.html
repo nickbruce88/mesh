@@ -2297,9 +2297,9 @@
       <div style="font-size:22px;font-weight:800;margin-bottom:6px">Your program</div>
       <div style="font-size:14px;color:var(--gray-2);margin-bottom:24px">This generates your unique join code.</div>
       <div class="ob-field-label">School name</div>
-      <input class="input-field" id="ob-school-name" placeholder="Nampa High School" oninput="generateJoinCode()" style="margin-bottom:14px">
+      <input class="input-field" id="ob-school-name" placeholder="e.g. Lincoln High School" oninput="generateJoinCode()" style="margin-bottom:14px">
       <div class="ob-field-label">Team / Program name</div>
-      <input class="input-field" id="ob-team-name" placeholder="Nampa Bulldogs" style="margin-bottom:24px">
+      <input class="input-field" id="ob-team-name" placeholder="e.g. Lincoln Lions" style="margin-bottom:24px">
       <div style="background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius);padding:16px;margin-bottom:24px;text-align:center">
         <div style="font-size:11px;font-weight:700;color:var(--gray-3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Your coach join code</div>
         <div style="font-size:32px;font-weight:800;letter-spacing:0.12em;color:var(--team-primary);font-family:monospace" id="ob-join-code">——</div>
@@ -2566,7 +2566,7 @@
   <!-- Coach Home -->
   <div id="tab-coach-home" class="scroll-content">
     <div class="greeting" id="coach-home-greeting">Hey, <span>Coach</span> 👋</div>
-    <div class="sub-greeting">Nampa Bulldogs · 2026 Season</div>
+    <div class="sub-greeting"></div>
 
     <!-- Join code card — always visible for easy sharing -->
     <div id="invite-banner" style="background:var(--team-primary-glow-sm);border:1px solid var(--team-primary-glow);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;-webkit-tap-highlight-color:transparent">
@@ -2796,13 +2796,13 @@
       <div class="pgrid-row pgrid-header" id="practice-grid-header" style="border:1px solid var(--border);border-radius:var(--radius-sm) var(--radius-sm) 0 0;border-bottom:none">
         <div class="grid-corner"><div class="grid-corner-label">Period</div></div>
         <div class="pgrid-cols" id="practice-grid-header-cols">
-          <div class="grid-col-head" data-col="QB" onclick="toggleColFilter('QB', this)"><div class="gc-name"><span class="gc-dot dot-QB"></span>QB</div><div class="gc-coach">Coach Waite</div></div>
-          <div class="grid-col-head" data-col="RB" onclick="toggleColFilter('RB', this)"><div class="gc-name"><span class="gc-dot dot-RB"></span>RB</div><div class="gc-coach">Coach Bruce</div></div>
-          <div class="grid-col-head" data-col="WR" onclick="toggleColFilter('WR', this)"><div class="gc-name"><span class="gc-dot dot-WR"></span>WR</div><div class="gc-coach">Coach Estrada</div></div>
-          <div class="grid-col-head" data-col="OL" onclick="toggleColFilter('OL', this)"><div class="gc-name"><span class="gc-dot dot-OL"></span>OL</div><div class="gc-coach">Coach Dunn</div></div>
-          <div class="grid-col-head" data-col="DL" onclick="toggleColFilter('DL', this)"><div class="gc-name"><span class="gc-dot dot-DL"></span>DL</div><div class="gc-coach">Coach Batke</div></div>
-          <div class="grid-col-head" data-col="LB" onclick="toggleColFilter('LB', this)"><div class="gc-name"><span class="gc-dot dot-LB"></span>LB</div><div class="gc-coach">Coach Good</div></div>
-          <div class="grid-col-head" data-col="DB" onclick="toggleColFilter('DB', this)"><div class="gc-name"><span class="gc-dot dot-DB"></span>DB</div><div class="gc-coach">Coach Randolph</div></div>
+          <div class="grid-col-head" data-col="QB" onclick="toggleColFilter('QB', this)"><div class="gc-name"><span class="gc-dot dot-QB"></span>QB</div><div class="gc-coach"></div></div>
+          <div class="grid-col-head" data-col="RB" onclick="toggleColFilter('RB', this)"><div class="gc-name"><span class="gc-dot dot-RB"></span>RB</div><div class="gc-coach"></div></div>
+          <div class="grid-col-head" data-col="WR" onclick="toggleColFilter('WR', this)"><div class="gc-name"><span class="gc-dot dot-WR"></span>WR</div><div class="gc-coach"></div></div>
+          <div class="grid-col-head" data-col="OL" onclick="toggleColFilter('OL', this)"><div class="gc-name"><span class="gc-dot dot-OL"></span>OL</div><div class="gc-coach"></div></div>
+          <div class="grid-col-head" data-col="DL" onclick="toggleColFilter('DL', this)"><div class="gc-name"><span class="gc-dot dot-DL"></span>DL</div><div class="gc-coach"></div></div>
+          <div class="grid-col-head" data-col="LB" onclick="toggleColFilter('LB', this)"><div class="gc-name"><span class="gc-dot dot-LB"></span>LB</div><div class="gc-coach"></div></div>
+          <div class="grid-col-head" data-col="DB" onclick="toggleColFilter('DB', this)"><div class="gc-name"><span class="gc-dot dot-DB"></span>DB</div><div class="gc-coach"></div></div>
         </div>
       </div>
       <div class="grid-scroll-wrap" style="margin-top:0;border-radius:0 0 var(--radius-sm) var(--radius-sm)">
@@ -3097,7 +3097,7 @@
     <!-- MORE MENU LIST -->
     <div class="more-menu" id="more-menu">
       <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px;margin-bottom:4px;padding-top:4px">More</div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px" id="more-menu-team">Nampa Bulldogs</div>
+      <div style="font-size:13px;color:var(--gray-2);margin-bottom:16px" id="more-menu-team"></div>
 
       <div class="more-menu-item" onclick="showMoreSection('depth')">
         <div class="more-menu-icon" style="background:var(--team-primary-glow-sm)">📊</div>
@@ -3194,7 +3194,7 @@
 
       <!-- DEPTH CHART VIEW -->
       <div id="dc-chart-view">
-        <div style="font-size:13px;color:var(--fg-2);margin-bottom:10px" id="dc-team-label">Nampa Bulldogs</div>
+        <div style="font-size:13px;color:var(--fg-2);margin-bottom:10px" id="dc-team-label"></div>
 
         <!-- Level dropdown -->
         <div class="level-dropdown" id="level-dropdown" onclick="toggleLevelMenu()">
@@ -3948,7 +3948,7 @@
       </div>
 
       <div class="ob-field-label">Location (optional)</div>
-      <input class="input-field" id="game-location" placeholder="e.g. Nampa High School Stadium" style="margin-bottom:12px">
+      <input class="input-field" id="game-location" placeholder="e.g. Lincoln High Stadium" style="margin-bottom:12px">
 
       <!-- Score section — only show for past games -->
       <div id="game-score-section" style="display:none">
@@ -4385,7 +4385,7 @@
     </div>
 
     <div class="pp-hero">
-      <div class="pp-jersey" id="pp-jersey">#22</div>
+      <div class="pp-jersey" id="pp-jersey">#—</div>
       <div>
         <div class="pp-hero-name" id="pp-hero-name">—</div>
         <div class="pp-hero-pos" id="pp-hero-pos">—</div>
@@ -5346,7 +5346,7 @@
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v39.99</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.00</div>
   </div>
 </div>
 
@@ -5360,7 +5360,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v39.99';
+  const APP_VERSION = 'v40.00';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -16990,55 +16990,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   // Call immediately so attendance/perf work even before Supabase loads
   syncRosterData();
 
-  // Placeholder performance data for demo players
-  const DEMO_PERF = [
-    // Bench, Squat, Clean, 40-yard, Vertical
-    { id:'p1',  bench:195, squat:295, clean:155, deadlift:285, forty:4.72, vertical:32, broad_jump:102, shuttle:4.31 },
-    { id:'p2',  bench:255, squat:365, clean:195, deadlift:355, forty:4.51, vertical:36, broad_jump:108, shuttle:4.18 },
-    { id:'p3',  bench:185, squat:275, clean:145, deadlift:265, forty:4.48, vertical:38, broad_jump:112, shuttle:4.12 },
-    { id:'p4',  bench:165, squat:245, clean:130, deadlift:235, forty:4.55, vertical:35, broad_jump:105, shuttle:4.22 },
-    { id:'p5',  bench:185, squat:285, clean:150, deadlift:270, forty:4.81, vertical:30, broad_jump:98,  shuttle:4.38 },
-    { id:'p6',  bench:225, squat:335, clean:180, deadlift:315, forty:4.58, vertical:34, broad_jump:104, shuttle:4.25 },
-    { id:'p7',  bench:245, squat:355, clean:190, deadlift:345, forty:4.65, vertical:33, broad_jump:101, shuttle:4.29 },
-    { id:'p8',  bench:335, squat:455, clean:255, deadlift:435, forty:5.21, vertical:26, broad_jump:90,  shuttle:4.72 },
-    { id:'p9',  bench:175, squat:265, clean:140, deadlift:250, forty:4.42, vertical:39, broad_jump:114, shuttle:4.08 },
-    { id:'p10', bench:265, squat:385, clean:210, deadlift:375, forty:4.71, vertical:33, broad_jump:102, shuttle:4.27 },
-    { id:'p11', bench:235, squat:345, clean:185, deadlift:330, forty:4.68, vertical:34, broad_jump:103, shuttle:4.24 },
-    { id:'p12', bench:155, squat:225, clean:120, deadlift:215, forty:4.88, vertical:28, broad_jump:94,  shuttle:4.45 },
-    { id:'p13', bench:175, squat:265, clean:140, deadlift:250, forty:4.85, vertical:29, broad_jump:96,  shuttle:4.42 },
-  ];
-
-  // Inject demo perf into PERF_DATA if no real data loaded yet
-  function loadDemoPerfData() {
-    if (PERF_DATA.length > 0) return; // real data exists, skip
-    const date = '2025-08-01';
-    const label = 'Summer max-out';
-    DEMO_PERF.forEach(d => {
-      const cats = [
-        { key:'bench', val:d.bench, unit:'lbs' },
-        { key:'squat', val:d.squat, unit:'lbs' },
-        { key:'clean', val:d.clean, unit:'lbs' },
-        { key:'deadlift', val:d.deadlift, unit:'lbs' },
-        { key:'forty', val:d.forty, unit:'seconds' },
-        { key:'vertical', val:d.vertical, unit:'inches' },
-        { key:'broad_jump', val:d.broad_jump, unit:'inches' },
-        { key:'shuttle', val:d.shuttle, unit:'seconds' },
-      ];
-      cats.forEach(c => {
-        PERF_DATA.push({
-          id: d.id + '_' + c.key,
-          player_id: d.id,
-          program_id: 'demo',
-          date,
-          session_label: label,
-          category: c.key,
-          value: c.val,
-          unit: c.unit
-        });
-      });
-    });
-  }
-
   let rosterSort = 'alpha';
   let rosterGroupFilter = 'ALL';
   let rosterFilterOpen = false;
@@ -19538,83 +19489,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       document.getElementById('submit-stats-overlay')?.remove();
       renderMyInfoPage(); // refresh
     } catch(e) { showToast('Error submitting stats'); console.error(e); }
-  }
-
-  function renderPlayerStanding() {
-    // Marcus Johnson is p3 in PLAYERS
-    const player = PLAYERS[0] || null; if (!player) return;
-    if (!player) return;
-
-    // Disciplinary status card
-    const discCard = document.getElementById('player-standing-disc-card');
-    if (discCard) {
-      const ds = player.disciplinaryStatus || 'green';
-      const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
-      const discBg = { green: 'rgba(57,255,20,0.08)', yellow: 'rgba(255,184,0,0.08)', red: 'rgba(255,68,68,0.08)' };
-      discCard.innerHTML = `
-        <div style="background:${discBg[ds]};border:1.5px solid ${discColors[ds]}33;border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:4px">
-          <div style="font-size:28px;line-height:1">${ds === 'green' ? '✅' : ds === 'yellow' ? '⚠️' : '🚨'}</div>
-          <div>
-            <div style="font-size:16px;font-weight:700;color:${discColors[ds]}">${discStatusLabel(ds)}</div>
-            <div style="font-size:12px;color:var(--gray-2);margin-top:3px">${DISC_STATUSES.find(d=>d.key===ds)?.desc || ''}</div>
-          </div>
-        </div>`;
-    }
-
-    // Notes — show positive notes and disciplinary notes
-    const notesList = document.getElementById('player-standing-notes');
-    if (!notesList) return;
-    notesList.innerHTML = '';
-
-    const visibleNotes = [
-      ...player.notes.filter(n => n.type === 'positive' || n.type === 'general'),
-      ...player.discipline.map(d => ({
-        type: 'discipline',
-        text: `Incident: ${d.incident}. Consequence: ${d.consequence}.`,
-        author: d.coach,
-        date: d.date,
-        status: d.status
-      }))
-    ];
-
-    if (visibleNotes.length === 0) {
-      notesList.innerHTML = '<div style="color:var(--gray-3);font-size:13px;text-align:center;padding:20px 0">No notes on file</div>';
-      return;
-    }
-
-    visibleNotes.forEach(n => {
-      const div = document.createElement('div');
-      div.className = 'pp-note-card';
-      const tagClass = n.type === 'discipline' ? 'discipline' : n.type === 'positive' ? 'positive' : 'general';
-      const tagLabel = n.type === 'discipline' ? 'Discipline record' : n.type === 'positive' ? 'Positive' : 'General';
-      div.innerHTML = `
-        <div class="pp-note-head">
-          <span class="pp-note-author">${n.author}</span>
-          <span class="pp-note-date">${n.date}</span>
-        </div>
-        <div class="pp-note-text">${n.text}</div>
-        ${n.status ? `<div style="font-size:11px;color:var(--gray-3);margin-top:4px">Status: ${n.status}</div>` : ''}
-        <span class="pp-note-tag ${tagClass}">${tagLabel}</span>`;
-      notesList.appendChild(div);
-    });
-  }
-
-  // ===== MY GROUP (PLAYER VIEW) =====
-  function renderPlayerGroup() {
-    const container = document.getElementById('player-group-display');
-    if (!container) return;
-    const playerGroup = TEAM_GROUPS.find(g => g.name === 'Red') || TEAM_GROUPS[0];
-    container.innerHTML = `
-      <div style="background:${playerGroup.bg};border:1.5px solid ${playerGroup.color};border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px">
-        <div style="font-size:32px;margin-bottom:8px">🏈</div>
-        <div style="font-size:22px;font-weight:800;color:${playerGroup.color};letter-spacing:-0.3px">${_esc(playerGroup.name)} Group</div>
-        <div style="font-size:13px;color:var(--gray-2);margin-top:6px">Assigned by Coach Waite</div>
-      </div>
-      <div class="card" style="padding:0">
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Group</span><span class="pp-info-value" style="color:${playerGroup.color};font-weight:700">${_esc(playerGroup.name)}</span></div>
-        <div class="pp-info-row" style="padding:11px 14px"><span class="pp-info-label">Position</span><span class="pp-info-value">Wide Receiver</span></div>
-        <div class="pp-info-row" style="padding:11px 14px;border-bottom:none"><span class="pp-info-label">Last updated</span><span class="pp-info-value">Oct 10 by Coach Waite</span></div>
-      </div>`;
   }
 
   // ===== SCHEDULE CALENDAR VIEW =====
