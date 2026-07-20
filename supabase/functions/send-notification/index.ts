@@ -164,6 +164,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
 
+    console.log('[send-notification] invoked', JSON.stringify({
+      type, thread_id: thread_id || null,
+      target_roles: target_roles || null,
+      target_user_ids_count: Array.isArray(target_user_ids) ? target_user_ids.length : 0,
+      category: category || null,
+    }));
+
     const db = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -225,7 +232,9 @@ Deno.serve(async (req) => {
     const { data: tokens, error } = await q;
 
     if (error) throw error;
+    console.log('[send-notification] tokens matched:', tokens?.length || 0);
     if (!tokens || tokens.length === 0) {
+      console.log('[send-notification] no device tokens — nobody has notifications enabled for this target');
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
 
@@ -249,8 +258,10 @@ Deno.serve(async (req) => {
       }
     }
     if (recipients.length === 0) {
+      console.log('[send-notification] all recipients filtered out by prefs/mutes');
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
+    console.log('[send-notification] recipients after filters:', recipients.length);
 
     // Tapping the notification should open the app (and, for a message, the thread).
     const clickUrl = thread_id ? `/?thread=${thread_id}` : '/';
@@ -259,8 +270,10 @@ Deno.serve(async (req) => {
     const results = await Promise.allSettled(
       recipients.map(async (token) => {
         const sub = token.subscription;
+        const host = (() => { try { return new URL(sub?.endpoint).host; } catch { return 'invalid-endpoint'; } })();
         // Subscription must carry the encryption keys (standard PushSubscription.toJSON()).
         if (!sub || !sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) {
+          console.log('[send-notification] subscription missing keys — user re-subscribe needed', JSON.stringify({ host }));
           throw new Error('Subscription missing keys');
         }
         const headers = await buildVapidHeaders(sub.endpoint);
@@ -275,6 +288,9 @@ Deno.serve(async (req) => {
         });
 
         if (!res.ok && res.status !== 201) {
+          // Log the push service's reason (401 = VAPID, 400 = payload/format, 413 = too big, etc.)
+          const errText = await res.text().catch(() => '');
+          console.log('[send-notification] PUSH FAILED', JSON.stringify({ status: res.status, host, body: errText.slice(0, 300) }));
           // 404/410 = subscription gone — remove it so we stop trying.
           if (res.status === 410 || res.status === 404) {
             await db.from('notification_tokens')
@@ -283,12 +299,14 @@ Deno.serve(async (req) => {
           }
           throw new Error(`Push failed: ${res.status}`);
         }
+        console.log('[send-notification] push ok', JSON.stringify({ status: res.status, host }));
         return res.status;
       })
     );
 
     const sent = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.filter(r => r.status === 'rejected').length;
+    console.log('[send-notification] done', JSON.stringify({ sent, failed }));
 
     return new Response(JSON.stringify({ sent, failed }), {
       status: 200,
