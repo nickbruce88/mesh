@@ -5394,7 +5394,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.21</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.22</div>
   </div>
 </div>
 
@@ -5408,7 +5408,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.21';
+  const APP_VERSION = 'v40.22';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10749,29 +10749,48 @@
   // Per-role walkthrough that dims the screen and spotlights real UI elements. Auto-runs once
   // right after onboarding completes (that code path only runs on first setup/join, so no
   // "seen" flag is needed); also replayable from the profile menu.
+  // Nav-target selector matching BOTH layouts for one tab id: desktop sidebar item OR mobile
+  // bottom-nav item. The tour engine picks whichever is actually on-screen (_resolveTourTarget).
+  const _navSel = (id, mobileId) => `.sidebar-item[data-id="${id}"], #nav-${mobileId || id}`;
+  // The "everything else" areas: a single sidebar on desktop, tucked under More on mobile. Adaptive
+  // target + copy so neither layout is told to look somewhere that doesn't exist for it.
+  const _moreTarget = () => isDesktop() ? document.getElementById('sidebar-nav') : document.querySelector('#nav-more');
   const TOUR_STEPS = {
     coach: [
       { title: 'Welcome to Mesh! 🏈', body: "Let's take a quick tour. You can replay this anytime from your profile menu.", target: null },
       { title: 'Invite your team', body: 'Coaches, players, and parents each get their own join code. Tap a code to copy it and share.', target: '#invite-banner', before: () => showTab('coach','home') },
       { title: 'Post an announcement', body: 'Share news with your team. Pick who sees it and how long it stays on their home screen.', target: '#announce-post-btn', before: () => showTab('coach','home') },
-      { title: 'Plan practice', body: 'Build practice scripts period by period, by position group.', target: '#nav-practice' },
-      { title: 'Message your team', body: 'Group threads and direct messages. Player DMs are automatically witnessed for safety.', target: '#nav-messages' },
+      { title: 'Plan practice', body: 'Build practice scripts period by period, by position group.', target: _navSel('practice') },
+      { title: 'Message your team', body: 'Group threads and direct messages. A one-on-one message with a player needs a witness before it can send — a built-in safety guardrail.', target: _navSel('messages') },
       { title: 'Turn on notifications', body: 'Tap the bell, then "Turn on notifications" — so messages reach you even when the app is closed.', target: '#notif-btn', before: () => showTab('coach','home') },
-      { title: 'Everything else lives here', body: 'Roster, depth chart, stats, inventory, and documents are all under More.', target: '#nav-more' },
+      { title: 'Your whole program',
+        target: _moreTarget,
+        body: () => isDesktop()
+          ? 'Roster, calendar, depth chart, inventory, attendance, performance, drills, and documents all live in the sidebar on the left.'
+          : 'Roster, calendar, depth chart, inventory, attendance, performance, and documents all live under <b>More</b>.' },
     ],
     player: [
       { title: 'Welcome to Mesh! 🏈', body: 'A quick tour of your team app. Replay anytime from your profile.', target: null },
-      { title: 'Your home', body: 'Announcements from your coaches show up here.', target: '#nav-home' },
-      { title: 'Your schedule', body: 'Games and practices — see what’s coming up and where.', target: '#nav-schedule' },
-      { title: 'Messages', body: 'Message your coaches. Tap the bell up top to turn on notifications so you never miss one.', target: '#nav-messages' },
-      { title: 'Your info & playbook', body: 'My Info, Depth Chart, Playbook, and Documents are all under More.', target: '#nav-more' },
+      { title: 'Your home', body: 'Announcements from your coaches show up here.', target: _navSel('home') },
+      { title: 'Your schedule', body: 'Games and practices — see what’s coming up and where.', target: _navSel('schedule') },
+      { title: 'Your performance', body: 'Your training numbers and game stats across the season.', target: _navSel('performance') },
+      { title: 'Messages', body: 'Message your coaches. Turn on notifications from the bell so you never miss one.', target: _navSel('messages') },
+      { title: 'Your info & playbook',
+        target: _moreTarget,
+        body: () => isDesktop()
+          ? 'My Info, Depth Chart, Playbook, and Documents all live in the sidebar on the left.'
+          : 'My Info, Depth Chart, Playbook, and Documents all live under <b>More</b>.' },
     ],
     parent: [
       { title: 'Welcome to Mesh! 🏈', body: "A quick tour so you can follow your player's team. Replay anytime from your profile.", target: null },
-      { title: 'This week', body: "Your player's games and practices for the week, plus announcements from the staff.", target: '#nav-home' },
-      { title: 'Full schedule', body: 'The whole season schedule lives here.', target: '#nav-schedule' },
-      { title: 'Messages', body: 'Message the coaching staff. Tap the bell up top to turn on notifications.', target: '#nav-messages' },
-      { title: 'Your player & documents', body: "Your player's profile and shared documents are under More.", target: '#nav-more' },
+      { title: 'This week', body: "Your player's games and practices for the week, plus announcements from the staff.", target: _navSel('home') },
+      { title: 'Full schedule', body: 'The whole season schedule lives here.', target: _navSel('schedule') },
+      { title: 'Messages', body: 'Message the coaching staff. Turn on notifications from the bell so you never miss one.', target: _navSel('messages') },
+      { title: 'Your player & documents',
+        target: _moreTarget,
+        body: () => isDesktop()
+          ? "Your player's profile and shared documents live in the sidebar on the left."
+          : "Your player's profile and shared documents live under <b>More</b>." },
     ],
   };
   let _tour = { role: null, idx: 0, steps: [] };
@@ -10803,7 +10822,7 @@
     await new Promise(r => setTimeout(r, step.wait != null ? step.wait : (step.before ? 380 : 60)));
     if (myseq !== _tourSeq) return; // a newer step started — abandon this one
     renderTourTooltip(step, i, steps.length); // set content first so the tooltip height is real
-    const targetEl = step.target ? document.querySelector(step.target) : null;
+    const targetEl = _resolveTourTarget(step.target);
     const rect = targetEl ? targetEl.getBoundingClientRect() : null;
     // Treat hidden/zero-size targets (e.g. bottom nav on desktop) as "no target" → centered tip.
     if (targetEl && rect.width > 4 && rect.height > 4) {
@@ -10845,13 +10864,32 @@
     tip.style.left = Math.round(left) + 'px';
     tip.style.top = Math.round(top) + 'px';
   }
+  // Resolve a step's target into a DOM element. `target` may be a CSS selector string, a
+  // function (evaluated now → returns an element or selector), or null. For a selector that
+  // matches several nodes, prefer the first VISIBLE one — this is how a single step can point at
+  // the desktop sidebar item OR the mobile bottom-nav item for the same tab (only one is on-screen).
+  function _resolveTourTarget(target) {
+    if (!target) return null;
+    let t = (typeof target === 'function') ? target() : target;
+    if (!t) return null;
+    if (typeof t === 'object' && t.nodeType) return t; // already an element
+    if (typeof t !== 'string') return null;
+    const nodes = document.querySelectorAll(t);
+    for (const n of nodes) {
+      const r = n.getBoundingClientRect();
+      if (r.width > 4 && r.height > 4) return n; // first visible match wins
+    }
+    return nodes[0] || null; // none visible → first (zero-size falls back to centered tip)
+  }
   function renderTourTooltip(step, i, total) {
     const tip = document.getElementById('tour-tooltip');
     const isLast = i === total - 1;
     const dots = Array.from({length: total}, (_, k) => `<span class="tour-dot${k===i?' active':''}"></span>`).join('');
+    const titleText = (typeof step.title === 'function') ? step.title() : step.title;
+    const bodyText  = (typeof step.body  === 'function') ? step.body()  : step.body;
     tip.innerHTML =
-      `<div class="tour-tip-title">${step.title}</div>` +
-      `<div class="tour-tip-body">${step.body}</div>` +
+      `<div class="tour-tip-title">${titleText}</div>` +
+      `<div class="tour-tip-body">${bodyText}</div>` +
       `<div class="tour-tip-foot">` +
         `<div class="tour-dots">${dots}</div>` +
         `<div class="tour-tip-btns">` +
@@ -10986,12 +11024,12 @@
         { title: 'Messages 💬', body: 'Message your coaches here.', target: null, before: () => showTab('player','messages'), wait: 450 },
         { title: 'The witness rule', body: 'A one-on-one message to a coach can’t be sent until a witness — a parent or another coach — is added. It keeps every conversation safe and visible. You add the witness; it isn’t automatic.', target: '[onclick="openPlayerNewMsg()"]' },
         { title: 'Archive', body: 'Tap 🗄️ inside a thread to archive it; find archived chats under “🗄️ Archived” at the top of your inbox.', target: null },
-        { title: 'Stay notified', body: 'Tap the bell up top to turn on notifications so you never miss a message.', target: '#notif-btn' },
+        { title: 'Stay notified', body: 'Tap the bell to turn on notifications so you never miss a message.', target: '#notif-btn' },
       ],
       parent: [
         { title: 'Messages 💬', body: 'Message the coaching staff here.', target: null, before: () => showTab('parent','messages'), wait: 450 },
         { title: 'Archive', body: 'Tap 🗄️ inside a thread to archive it; find archived chats under “🗄️ Archived” at the top of your inbox.', target: null },
-        { title: 'Stay notified', body: 'Tap the bell up top to turn on notifications so you never miss a message.', target: '#notif-btn' },
+        { title: 'Stay notified', body: 'Tap the bell to turn on notifications so you never miss a message.', target: '#notif-btn' },
       ],
     },
     roster: {
