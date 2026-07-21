@@ -5383,7 +5383,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.10</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.11</div>
   </div>
 </div>
 
@@ -5397,7 +5397,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.10';
+  const APP_VERSION = 'v40.11';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10941,7 +10941,190 @@
     const filled = document.getElementById('practice-day-filled');
     if (!filled || filled.style.display === 'none') return;
     const pgrid = document.getElementById('practice-grid-table');
-    if (pgrid) DAY_GRIDS[currentDayKey] = pgrid.innerHTML;
+    if (pgrid) DAY_GRIDS[currentDayKey] = serializePracticeDay();
+  }
+
+  // ===== STRUCTURED PRACTICE-DAY MODEL (v1) =====
+  // A day's plan is EDITED as live DOM but STORED as a structured object (not an HTML
+  // string). serialize reads the DOM + side-state (start time, notes, drills, scripts,
+  // colors); render rebuilds an identical grid and restores that side-state. This makes
+  // day-switching lossless and gives us a clean shape to persist to the backend (Stage B).
+  const PRACTICE_MODEL_VERSION = 1;
+
+  function _rowKindClass(row) {
+    return [...row.classList].find(c => c.startsWith('row-')) || '';
+  }
+
+  function serializePracticeDay() {
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid) return null;
+    const dayIdx = currentPracticeDay ?? 0;
+    const model = { version: PRACTICE_MODEL_VERSION, start: null, periods: [] };
+
+    const meta = pgrid.querySelector('.pgrid-meta');
+    if (meta?.dataset.start) model.start = meta.dataset.start;
+
+    pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)').forEach(row => {
+      const id = row.dataset.periodId;
+      if (!id) return;
+      const spanCell = row.querySelector('.cell-span');
+      const kind = spanCell ? 'span' : 'group';
+      const dur = parseInt(row.style.getPropertyValue('--dur'))
+               || parseInt((row.querySelector('.gt-dur')?.textContent || '').replace(/\D/g, '')) || 10;
+      const p = {
+        id,
+        type: row.dataset.periodType || (id.match(/^([A-Z]+)/)?.[1] || 'P'),
+        rowClass: _rowKindClass(row),
+        dur,
+        rowColor: row.dataset.rowColor || '',
+        kind,
+        name: '',
+        emoji: '',
+        labelClass: '',
+        cells: [],
+        spanSub: '',
+        notes: { period: [], cells: {} },
+        drills: {},
+        script: PERIOD_SCRIPTS[id] || null,
+        scripted: SCRIPTED_PERIODS.has(id)
+      };
+
+      if (kind === 'span') {
+        const act = spanCell.querySelector('.cell-activity');
+        let txt = act ? act.textContent : '';
+        if (/^💧\s*/.test(txt)) { p.emoji = '💧 '; txt = txt.replace(/^💧\s*/, ''); }
+        p.name = txt.trim();
+        if (act && act.classList.contains('transition-label')) p.labelClass = 'transition-label';
+        const sub = spanCell.querySelector('.cell-sub');
+        if (sub) p.spanSub = sub.textContent;
+      } else {
+        p.name = row.querySelector('.gt-name')?.textContent?.trim() || '';
+        row.querySelectorAll('.pgrid-cols .grid-cell').forEach(cell => {
+          const act = cell.querySelector('.cell-activity');
+          const sub = cell.querySelector('.cell-sub');
+          p.cells.push({
+            col: cell.dataset.col || '',
+            activity: act ? act.textContent : '',
+            sub: sub ? sub.textContent : '',
+            bg: cell.style.background || ''
+          });
+        });
+      }
+
+      // Bundle this period's side-state (notes/drills), keyed globally by day index.
+      const perKey = `${dayIdx}_${id}`;
+      if (PRACTICE_NOTES[perKey]) p.notes.period = PRACTICE_NOTES[perKey];
+      const cellPre = `${perKey}_`;
+      Object.keys(PRACTICE_NOTES).forEach(k => {
+        if (k.startsWith(cellPre)) p.notes.cells[k.slice(cellPre.length)] = PRACTICE_NOTES[k];
+      });
+      Object.keys(CELL_DRILLS).forEach(k => {
+        if (k.startsWith(cellPre)) p.drills[k.slice(cellPre.length)] = CELL_DRILLS[k];
+      });
+
+      model.periods.push(p);
+    });
+    return model;
+  }
+
+  function _periodModelToRow(p) {
+    const row = document.createElement('div');
+    row.className = 'pgrid-row ' + (p.rowClass || 'row-special');
+    row.style.setProperty('--dur', p.dur);
+    row.setAttribute('draggable', 'true');
+    row.setAttribute('data-period-id', p.id);
+    row.setAttribute('data-period-type', p.type || 'P');
+    if (p.rowColor) row.dataset.rowColor = p.rowColor;
+    row.setAttribute('ondragstart', 'dragStart(event)');
+    row.setAttribute('ondragover', 'dragOver(event)');
+    row.setAttribute('ondrop', 'dragDrop(event)');
+    row.setAttribute('ondragend', 'dragEnd(event)');
+
+    // Time cell — gt-time is left blank; recomputeGridTimes() fills it + wires onclick.
+    let tc = '<div class="grid-time-cell note-target"><div class="gt-time"></div>';
+    if (p.kind === 'group') tc += `<div class="gt-name">${_esc(p.name)}</div>`;
+    tc += `<div class="gt-dur">${p.dur} min</div><div class="gt-num">${_esc(p.id)}</div></div>`;
+
+    let body;
+    if (p.kind === 'span') {
+      const lc = p.labelClass ? (' ' + p.labelClass) : '';
+      const subHtml = p.spanSub ? `<div class="cell-sub">${_esc(p.spanSub)}</div>` : '';
+      body = `<div class="grid-cell cell-span left-align"><div class="cell-activity${lc}">${p.emoji || ''}${_esc(p.name)}</div>${subHtml}</div>`;
+    } else {
+      body = '<div class="pgrid-cols">' + (p.cells || []).map(c => {
+        const subHtml = c.sub ? `<div class="cell-sub">${_esc(c.sub)}</div>` : '';
+        return `<div class="grid-cell active-cell" data-col="${_esc(c.col)}"><div class="cell-activity">${_esc(c.activity)}</div>${subHtml}</div>`;
+      }).join('') + '</div>';
+    }
+    row.innerHTML = tc + body;
+
+    // Re-apply row/period color (was inline on cells + time cell).
+    if (p.rowColor) row.querySelectorAll('.grid-cell, .grid-time-cell').forEach(el => { el.style.background = p.rowColor; });
+    // Per-cell background overrides (group cells).
+    (p.cells || []).forEach(c => {
+      if (c.bg) { const el = row.querySelector(`[data-col="${c.col}"]`); if (el) el.style.background = c.bg; }
+    });
+    return row;
+  }
+
+  function renderPracticeDay(model) {
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid || !model) return;
+    const dayIdx = currentPracticeDay ?? 0;
+
+    // Clear this day's global side-state so nothing leaks across days.
+    Object.keys(PRACTICE_NOTES).forEach(k => { if (k.startsWith(dayIdx + '_')) delete PRACTICE_NOTES[k]; });
+    Object.keys(CELL_DRILLS).forEach(k => { if (k.startsWith(dayIdx + '_')) delete CELL_DRILLS[k]; });
+    // Only one day is visible at a time, so scripts describe the current day only.
+    SCRIPTED_PERIODS.clear();
+    Object.keys(PERIOD_SCRIPTS).forEach(k => delete PERIOD_SCRIPTS[k]);
+
+    // Remove existing period rows (keep the hidden meta node).
+    [...pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)')].forEach(r => r.remove());
+
+    // Start time.
+    const meta = _practiceMeta(true);
+    if (meta) { if (model.start) meta.dataset.start = model.start; else delete meta.dataset.start; }
+
+    (model.periods || []).forEach(p => {
+      const row = _periodModelToRow(p);
+      pgrid.appendChild(row);
+
+      const perKey = `${dayIdx}_${p.id}`;
+      // Restore notes + their dot indicators.
+      if (p.notes?.period?.length) {
+        PRACTICE_NOTES[perKey] = p.notes.period;
+        const tcell = row.querySelector('.grid-time-cell');
+        if (tcell && !tcell.querySelector('.note-badge')) {
+          const dot = document.createElement('span'); dot.className = 'note-badge cell-note-badge'; dot.textContent = '●'; tcell.appendChild(dot);
+        }
+      }
+      Object.keys(p.notes?.cells || {}).forEach(col => {
+        PRACTICE_NOTES[`${perKey}_${col}`] = p.notes.cells[col];
+        const cell = row.querySelector(`[data-col="${col}"]`);
+        if (cell && p.notes.cells[col]?.length && !cell.querySelector('.note-badge')) {
+          const dot = document.createElement('span'); dot.className = 'note-badge cell-note-badge'; dot.textContent = '●'; cell.appendChild(dot);
+        }
+      });
+      // Restore drills + their badges.
+      Object.keys(p.drills || {}).forEach(col => {
+        CELL_DRILLS[`${perKey}_${col}`] = p.drills[col];
+        const cell = row.querySelector(`[data-col="${col}"]`);
+        if (cell && !cell.querySelector('.drill-badge')) {
+          const badge = document.createElement('span'); badge.className = 'drill-badge'; badge.textContent = '🎯';
+          badge.style.cssText = 'position:absolute;top:4px;left:4px;font-size:10px;line-height:1';
+          badge.title = p.drills[col].title || ''; cell.appendChild(badge);
+        }
+      });
+      // Restore scripts.
+      if (p.script) PERIOD_SCRIPTS[p.id] = p.script;
+      if (p.scripted) SCRIPTED_PERIODS.add(p.id);
+    });
+
+    renderGridHeader();
+    recomputeGridTimes();   // fills gt-time + re-wires openPeriodNote onclick per row
+    syncPracticeStartInput();
+    renderScriptSection();
   }
 
   function selectDay(day, el) {
@@ -10990,9 +11173,14 @@
       if (editBtn) editBtn.style.display = canEdit('practice') ? 'inline-block' : 'none';
     } else if (savedGrid) {
       const pgrid = document.getElementById('practice-grid-table');
-      if (pgrid) pgrid.innerHTML = savedGrid;
-      renderGridHeader();
-      syncPracticeStartInput();
+      if (typeof savedGrid === 'string') {
+        // Legacy in-session snapshot (pre-structured-model) — restore as-is.
+        if (pgrid) pgrid.innerHTML = savedGrid;
+        renderGridHeader();
+        syncPracticeStartInput();
+      } else {
+        renderPracticeDay(savedGrid);
+      }
       if (filled) filled.style.display = 'block';
       if (gridWrap) gridWrap.style.display = 'block';
       if (blank) blank.style.display = 'none';
@@ -12715,7 +12903,7 @@
     renumberPeriods();
     renderScriptSection();
     renderGridHeader();
-    if (currentDayKey) DAY_GRIDS[currentDayKey] = pgrid.innerHTML;
+    if (currentDayKey) DAY_GRIDS[currentDayKey] = serializePracticeDay();
 
     document.getElementById('practice-day-sub').textContent = 'Loaded from "' + selectedTemplateName + '"';
     document.getElementById('practice-day-blank').style.display = 'none';
