@@ -2842,25 +2842,6 @@
       </div>
     </div><!-- end practice-grid-wrap -->
 
-    <!-- Scripts & Reminders — in main page flow, scroll with full page -->
-    <div id="practice-scripts-reminders" style="display:none;padding:0 4px 40px;margin-top:36px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--fg-3)">Scripts</div>
-        <button class="btn-sm" onclick="openAddScriptModal()" style="font-size:11px">+ Script</button>
-      </div>
-      <div id="script-period-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;margin-top:8px"></div>
-      <div id="script-display-area">
-        <div style="font-size:13px;color:var(--gray-3);text-align:center;padding:20px 0" id="script-empty-msg">No scripts yet — tap "+ Script" to add one</div>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;margin-bottom:8px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--fg-3)">Coaching reminders</div>
-        <button class="btn-sm" onclick="openAddReminderModal()" style="font-size:11px">+ Reminder</button>
-      </div>
-      <div id="reminders-list"></div>
-      <div id="reminders-empty" style="font-size:13px;color:var(--gray-3);text-align:center;padding:12px 0;display:none">No reminders yet</div>
-    </div>
-
     <!-- SIMPLE PRACTICE VIEW -->
     <div id="practice-simple" style="display:none;padding:0 20px 80px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -2889,6 +2870,26 @@
         </div>
         <div class="choice-arrow">›</div>
       </div>
+    </div>
+
+    <!-- Scripts & Reminders — always rendered LAST so it sits below whichever plan view
+         is active (detailed grid, simple blocks, or the blank-day card). -->
+    <div id="practice-scripts-reminders" style="display:none;padding:0 4px 40px;margin-top:36px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--fg-3)">Scripts</div>
+        <button class="btn-sm" onclick="openAddScriptModal()" style="font-size:11px">+ Script</button>
+      </div>
+      <div id="script-period-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;margin-top:8px"></div>
+      <div id="script-display-area">
+        <div style="font-size:13px;color:var(--gray-3);text-align:center;padding:20px 0" id="script-empty-msg">No scripts yet — tap "+ Script" to add one</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--fg-3)">Coaching reminders</div>
+        <button class="btn-sm" onclick="openAddReminderModal()" style="font-size:11px">+ Reminder</button>
+      </div>
+      <div id="reminders-list"></div>
+      <div id="reminders-empty" style="font-size:13px;color:var(--gray-3);text-align:center;padding:12px 0;display:none">No reminders yet</div>
     </div>
   </div>
 
@@ -5383,7 +5384,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.13</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.14</div>
   </div>
 </div>
 
@@ -5397,7 +5398,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.13';
+  const APP_VERSION = 'v40.14';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11211,6 +11212,8 @@
           const filled = document.getElementById('practice-day-filled'); if (filled) filled.style.display = 'block';
           const gw = document.getElementById('practice-grid-wrap'); if (gw) gw.style.display = 'block';
           const hint = document.getElementById('col-filter-hint-wrap'); if (hint) hint.style.display = '';
+          const bg = document.getElementById('practice-below-grid'); if (bg) bg.style.display = canEdit('practice') ? 'block' : 'none';
+          const sc = document.getElementById('practice-scripts-reminders'); if (sc) sc.style.display = 'block';
           const eb = document.getElementById('practice-edit-btn'); if (eb) eb.style.display = canEdit('practice') ? 'inline-block' : 'none';
         }
       }
@@ -11254,13 +11257,16 @@
 
     const savedSimple = DAY_SIMPLE[currentDayKey];
     const savedGrid = DAY_GRIDS[currentDayKey];
+    const belowGrid = document.getElementById('practice-below-grid');
+    const scriptsSec = document.getElementById('practice-scripts-reminders');
 
     if (savedSimple) {
-      // Restore simple plan for this day
+      // Restore simple plan for this day (launchSimpleMode shows the scripts section itself).
       launchSimpleMode(savedSimple);
       if (blank) blank.style.display = 'none';
       if (filled) filled.style.display = 'none';
       if (gridWrap) gridWrap.style.display = 'none';
+      if (belowGrid) belowGrid.style.display = 'none';
       if (editBtn) editBtn.style.display = canEdit('practice') ? 'inline-block' : 'none';
     } else if (savedGrid) {
       const pgrid = document.getElementById('practice-grid-table');
@@ -11276,12 +11282,17 @@
       if (gridWrap) gridWrap.style.display = 'block';
       if (blank) blank.style.display = 'none';
       if (hintWrap) hintWrap.style.display = '';
+      if (belowGrid) belowGrid.style.display = canEdit('practice') ? 'block' : 'none';
+      if (scriptsSec) scriptsSec.style.display = 'block';
       if (editBtn) editBtn.style.display = canEdit('practice') ? 'inline-block' : 'none';
     } else {
+      // Blank day — hide the grid extras AND the scripts section (was left stale before).
       if (filled) filled.style.display = 'none';
       if (gridWrap) gridWrap.style.display = 'none';
       if (blank) blank.style.display = 'block';
       if (hintWrap) hintWrap.style.display = 'none';
+      if (belowGrid) belowGrid.style.display = 'none';
+      if (scriptsSec) scriptsSec.style.display = 'none';
       if (editBtn) editBtn.style.display = 'none';
     }
   }
