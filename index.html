@@ -1889,6 +1889,7 @@
   .action-sheet-item { font-size: 15px; color: var(--fg); padding: 13px 8px; cursor: pointer; border-radius: var(--radius-sm); }
   .action-sheet-item:active { background: var(--bg-3); }
   .action-sheet-item.danger { color: var(--red); }
+  .action-sheet-item.disabled { opacity: 0.38; pointer-events: none; }
   .action-sheet-cancel { width: 100%; background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 13px; font-size: 15px; font-weight: 600; color: var(--gray-1); margin-top: 10px; cursor: pointer; font-family: var(--font); }
 
   /* ===== SUBROLE SWITCHER ===== */
@@ -2900,6 +2901,8 @@
       <div class="action-sheet-title">Tuesday Practice</div>
       <div class="action-sheet-item" onclick="closeActionSheet();openCloneTemplate('load')">📋 Load template</div>
       <div class="action-sheet-item" onclick="closeActionSheet();openSaveTemplate()">💾 Save as template</div>
+      <div class="action-sheet-item" onclick="closeActionSheet();copyPracticeDay()">📄 Copy day</div>
+      <div class="action-sheet-item" id="as-paste-item" onclick="pasteFromActionSheet()">📥 Paste day</div>
       <div class="action-sheet-item" onclick="closeActionSheet();openEditPositionGroups()">⚙️ Edit position groups</div>
       <div class="action-sheet-item" onclick="closeActionSheet();exportPracticePlan()">📤 Export plan</div>
       <div class="action-sheet-item" onclick="closeActionSheet();printPracticePlan()">🖨️ Print plan</div>
@@ -4632,6 +4635,11 @@
       <div class="new-day-step active" id="nd-step-1">
         <div class="nd-title">New practice day</div>
         <div class="nd-sub">How detailed do you want this plan?</div>
+        <!-- Paste a copied plan (shown only when the clipboard has one) -->
+        <div class="start-option" id="nd-paste-option" style="display:none;margin-bottom:14px" onclick="pasteFromNewDay()">
+          <div class="start-option-icon">📥</div>
+          <div><div class="start-option-label">Paste copied plan</div><div class="start-option-sub">Reuse the practice day you copied</div></div>
+        </div>
         <div class="mode-cards">
           <div class="mode-card" id="mode-card-simple" onclick="selectPlanMode('simple')">
             <div class="mode-card-icon">📝</div>
@@ -5384,7 +5392,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.14</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.15</div>
   </div>
 </div>
 
@@ -5398,7 +5406,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.14';
+  const APP_VERSION = 'v40.15';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10905,6 +10913,7 @@
   }
 
   function openActionSheet() {
+    updatePasteButtons();
     document.getElementById('action-sheet-overlay').style.display = 'flex';
   }
 
@@ -11219,6 +11228,82 @@
       }
       _hydratingPractice = false;
     } catch (e) { _hydratingPractice = false; console.warn('practice hydrate error:', e); }
+  }
+
+  // ===== COPY / PASTE A PRACTICE DAY =====
+  // Session clipboard (in-memory, no localStorage). Holds a normalized payload:
+  // detailed = {version,start,periods}, simple = {version,mode:'simple',blocks}.
+  let _practiceClipboard = null;
+
+  function _dayHasPlan(key) {
+    return !!((DAY_SIMPLE[key] && DAY_SIMPLE[key].length) ||
+              (DAY_GRIDS[key] && Array.isArray(DAY_GRIDS[key].periods) && DAY_GRIDS[key].periods.length));
+  }
+
+  function copyPracticeDay() {
+    if (!currentDayKey) return;
+    saveDayGrid(); // capture any on-screen edits into the day stores first
+    let payload = null;
+    if (DAY_SIMPLE[currentDayKey] && DAY_SIMPLE[currentDayKey].length) {
+      payload = { version: PRACTICE_MODEL_VERSION, mode: 'simple', blocks: DAY_SIMPLE[currentDayKey] };
+    } else if (DAY_GRIDS[currentDayKey] && Array.isArray(DAY_GRIDS[currentDayKey].periods) && DAY_GRIDS[currentDayKey].periods.length) {
+      payload = DAY_GRIDS[currentDayKey];
+    }
+    if (!payload) { showToast('Nothing to copy — this day is empty'); return; }
+    _practiceClipboard = JSON.parse(JSON.stringify(payload));
+    updatePasteButtons();
+    showToast('Practice copied — open another day and tap Paste');
+  }
+
+  function pastePracticeDay() {
+    if (!_practiceClipboard) { showToast('Copy a day first'); return; }
+    if (!currentDayKey || !canEdit('practice')) return;
+    saveDayGrid(); // so the "already has a plan?" check reflects the on-screen state
+    if (_dayHasPlan(currentDayKey) && !confirm('Replace this day’s current plan with the copied one?')) return;
+
+    const clip = JSON.parse(JSON.stringify(_practiceClipboard));
+    if (clip.mode === 'simple') {
+      DAY_SIMPLE[currentDayKey] = clip.blocks;
+      delete DAY_GRIDS[currentDayKey];
+      launchSimpleMode(JSON.parse(JSON.stringify(clip.blocks)));
+      const bg = document.getElementById('practice-below-grid'); if (bg) bg.style.display = 'none';
+      _pushPracticeDay(currentDayKey, { version: PRACTICE_MODEL_VERSION, mode: 'simple', blocks: clip.blocks });
+    } else {
+      DAY_GRIDS[currentDayKey] = clip;
+      delete DAY_SIMPLE[currentDayKey];
+      renderPracticeDay(clip);
+      const simpleEl = document.getElementById('practice-simple'); if (simpleEl) simpleEl.style.display = 'none';
+      const blank = document.getElementById('practice-day-blank'); if (blank) blank.style.display = 'none';
+      const filled = document.getElementById('practice-day-filled'); if (filled) filled.style.display = 'block';
+      const gw = document.getElementById('practice-grid-wrap'); if (gw) gw.style.display = 'block';
+      const hint = document.getElementById('col-filter-hint-wrap'); if (hint) hint.style.display = '';
+      const bg = document.getElementById('practice-below-grid'); if (bg) bg.style.display = canEdit('practice') ? 'block' : 'none';
+      const sc = document.getElementById('practice-scripts-reminders'); if (sc) sc.style.display = 'block';
+      const eb = document.getElementById('practice-edit-btn'); if (eb) eb.style.display = canEdit('practice') ? 'inline-block' : 'none';
+      _pushPracticeDay(currentDayKey, clip);
+    }
+    showToast('Practice pasted ✓');
+  }
+
+  function pasteFromActionSheet() {
+    const item = document.getElementById('as-paste-item');
+    if (item && item.classList.contains('disabled')) return; // greyed out — no clipboard
+    closeActionSheet();
+    pastePracticeDay();
+  }
+
+  function pasteFromNewDay() {
+    closeNewDay();
+    pastePracticeDay();
+  }
+
+  // Grey out / hide the Paste affordances until something has been copied.
+  function updatePasteButtons() {
+    const has = !!_practiceClipboard;
+    const as = document.getElementById('as-paste-item');
+    if (as) as.classList.toggle('disabled', !has);
+    const nd = document.getElementById('nd-paste-option');
+    if (nd) nd.style.display = has ? 'flex' : 'none';
   }
 
   function selectDay(day, el) {
@@ -16277,6 +16362,12 @@ ${printBtnHtml}
     (document.getElementById('practice-scripts-reminders')||{style:{}}).style.display='none';
     document.getElementById('practice-day-blank').style.display = 'block';
     document.getElementById('practice-edit-btn').style.display = 'none';
+    // Actually clear the stored plan and remove it from the backend (was UI-only before).
+    if (currentDayKey) {
+      delete DAY_GRIDS[currentDayKey];
+      delete DAY_SIMPLE[currentDayKey];
+      _pushPracticeDay(currentDayKey, { version: PRACTICE_MODEL_VERSION, periods: [] });
+    }
     showToast('Practice day cleared');
   }
 
@@ -17452,6 +17543,7 @@ ${printBtnHtml}
   function openNewDay() {
     // Reset to step 1
     goToNDStep(1);
+    updatePasteButtons(); // show/hide the "Paste copied plan" option
     // Pre-select last mode if available
     if (lastPlanMode) {
       selectPlanMode(lastPlanMode, true);
