@@ -338,6 +338,7 @@
   .gt-time { font-size: 12px; font-weight: 700; color: var(--fg); }
   .gt-dur { font-size: 9px; color: var(--fg-3); margin-top: 1px; }
   .gt-num { font-size: 8px; color: var(--team-primary); font-weight: 700; margin-top: 3px; letter-spacing: 0.05em; }
+  .gt-name { font-size: 10px; font-weight: 700; color: var(--fg-2); margin-top: 2px; line-height: 1.1; word-break: break-word; }
 
   /* Content area — fills 100% of remaining width always */
   .pgrid-cols { display: flex; flex: 1 1 0; min-width: 0; overflow: hidden; }
@@ -2811,6 +2812,11 @@
     </div>
     <!-- Header + grid — shown when day has a plan, hidden when blank -->
     <div id="practice-grid-wrap" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:0 2px">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-2)">🕐 Practice start</span>
+        <input type="time" id="practice-start-input" onchange="setPracticeStart(this.value)" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);font-size:13px;padding:5px 8px;font-family:var(--font)">
+        <span style="font-size:11px;color:var(--fg-3)">times update automatically</span>
+      </div>
       <div class="pgrid-row pgrid-header" id="practice-grid-header" style="border:1px solid var(--border);border-radius:var(--radius-sm) var(--radius-sm) 0 0;border-bottom:none">
         <div class="grid-corner"><div class="grid-corner-label">Period</div></div>
         <div class="pgrid-cols" id="practice-grid-header-cols">
@@ -2913,6 +2919,12 @@
           <button id="note-modal-delete-period" onclick="deletePeriodFromModal()" style="display:none;background:none;border:1px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:11px;font-weight:600;padding:4px 8px;cursor:pointer;font-family:var(--font)">Delete period</button>
           <div class="note-modal-close" onclick="closeNoteModal(event)">✕</div>
         </div>
+      </div>
+
+      <!-- NAME EDITOR (rename a cell or a period) -->
+      <div id="note-name-edit" style="display:none;margin-bottom:12px">
+        <div id="note-name-label" style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Name</div>
+        <input id="note-name-input" class="ap-input" style="width:100%;box-sizing:border-box" oninput="updateNoteName(this.value)" placeholder="Name">
       </div>
 
       <!-- DRILL PICKER (shown for cell notes only) -->
@@ -3033,16 +3045,8 @@
         <div class="ap-field">
           <div class="ap-field-label">Insert position</div>
           <select id="ap-insert-after" class="ap-input">
+            <option value="beginning">At the beginning of practice</option>
             <option value="end">At the end of practice</option>
-            <option value="P1">After P1 — Team Warm Up</option>
-            <option value="T1">After T1 — Transition</option>
-            <option value="P2">After P2 — Defensive Indy</option>
-            <option value="P3">After P3 — Offensive Indy</option>
-            <option value="W1">After W1 — Water Break</option>
-            <option value="P4">After P4 — Tackle Circuit</option>
-            <option value="P5">After P5 — Install</option>
-            <option value="T2">After T2 — Transition</option>
-            <option value="P6">After P6 — Unit Crossover</option>
           </select>
         </div>
 
@@ -5365,7 +5369,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.05</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.06</div>
   </div>
 </div>
 
@@ -5379,7 +5383,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.05';
+  const APP_VERSION = 'v40.06';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10974,6 +10978,7 @@
       const pgrid = document.getElementById('practice-grid-table');
       if (pgrid) pgrid.innerHTML = savedGrid;
       renderGridHeader();
+      syncPracticeStartInput();
       if (filled) filled.style.display = 'block';
       if (gridWrap) gridWrap.style.display = 'block';
       if (blank) blank.style.display = 'none';
@@ -11131,6 +11136,41 @@
   let currentCellPos = null;
   let currentCellEl = null;
 
+  // Rebuild a period row's time-cell onclick from its live DOM (id + time + name), so renames
+  // and re-times don't leave stale args baked into the inline handler.
+  function setPeriodOnclick(row) {
+    const tc = row.querySelector('.grid-time-cell');
+    if (!tc) return;
+    const id = row.dataset.periodId || '';
+    const time = row.querySelector('.gt-time')?.textContent || '';
+    const nm = (row.querySelector('.gt-name')?.textContent
+             || row.querySelector('.cell-span .cell-activity')?.textContent || '').trim();
+    const esc = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    tc.setAttribute('onclick', `openPeriodNote('${esc(id)}', '${esc(time)}', '${esc(nm)}')`);
+  }
+
+  // Live-rename the current cell or period from the modal's name field.
+  function updateNoteName(value) {
+    if (!canEdit('practice')) return;
+    if (currentCellPos && currentCellEl) {
+      const act = currentCellEl.querySelector('.cell-activity');
+      if (act) act.textContent = value;
+      document.getElementById('note-modal-title').textContent = currentCellPos + ' — ' + value;
+    } else if (currentNoteModalPeriodId) {
+      const row = document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"]`);
+      if (row) {
+        const gtName = row.querySelector('.gt-name');
+        if (gtName) gtName.textContent = value;              // group header label
+        const span = row.querySelector('.cell-span .cell-activity');
+        if (span) span.textContent = value;                 // team/break single activity
+        setPeriodOnclick(row);
+      }
+      currentNoteModalPeriodName = value;
+      document.getElementById('note-modal-title').textContent = value;
+    }
+    if (typeof saveDayGrid === 'function') saveDayGrid();
+  }
+
   function openPeriodNote(periodId, timeRange, periodName) {
     if (event) event.stopPropagation();
     currentNoteModalPeriodId = periodId;
@@ -11141,6 +11181,12 @@
 
     document.getElementById('note-modal-title').textContent = periodName;
     document.getElementById('note-modal-sub').textContent = timeRange + ' · ' + periodId;
+    // Period name editor — sets the header label (not each cell).
+    document.getElementById('note-name-label').textContent = 'Period name';
+    const perNameInput = document.getElementById('note-name-input');
+    perNameInput.value = periodName || '';
+    perNameInput.readOnly = !canEdit('practice');
+    document.getElementById('note-name-edit').style.display = 'block';
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a note for this period… e.g. "OL focus on pad level"';
     document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
@@ -11173,6 +11219,12 @@
 
     document.getElementById('note-modal-title').textContent = posGroup + ' — ' + activity;
     document.getElementById('note-modal-sub').textContent = periodId + ' · ' + coachName;
+    // Cell name editor — rename this cell (e.g. QB-Indy → "footwork").
+    document.getElementById('note-name-label').textContent = 'Cell name';
+    const cellNameInput = document.getElementById('note-name-input');
+    cellNameInput.value = activity || '';
+    cellNameInput.readOnly = !canEdit('practice');
+    document.getElementById('note-name-edit').style.display = 'block';
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a coaching note for this cell…';
     document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
@@ -11981,6 +12033,7 @@
     const labels = { team: 'Full Team period', group: 'Per Group period' };
     document.getElementById('ap-type-label-display').textContent = labels[type] || type;
     document.getElementById('ap-duration').value = '10';
+    populateInsertPositions();
     document.getElementById('ap-step-type').style.display = 'none';
     document.getElementById('ap-step-details').style.display = 'block';
   }
@@ -11990,6 +12043,7 @@
     const labels = { water: '💧 Water Break', transition: '➡️ Transition' };
     document.getElementById('ap-type-label-display').textContent = labels[subtype];
     document.getElementById('ap-duration').value = subtype === 'water' ? '3' : '2';
+    populateInsertPositions();
     document.getElementById('ap-step-break-type').style.display = 'none';
     document.getElementById('ap-step-details').style.display = 'block';
   }
@@ -11998,6 +12052,30 @@
     document.getElementById('ap-step-type').style.display = 'block';
     document.getElementById('ap-step-break-type').style.display = 'none';
     document.getElementById('ap-step-details').style.display = 'none';
+  }
+
+  // Build the "Insert position" dropdown from the plan's ACTUAL periods (was hardcoded demo
+  // periods that don't exist in a blank plan). Empty plan → just beginning/end.
+  function populateInsertPositions() {
+    const sel = document.getElementById('ap-insert-after');
+    if (!sel) return;
+    const pgrid = document.getElementById('practice-grid-table');
+    const rows = pgrid ? [...pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)')] : [];
+    if (rows.length === 0) {
+      // First block: beginning == end, but offer both framings; default to the beginning.
+      sel.innerHTML = '<option value="beginning">At the beginning of practice</option>' +
+                      '<option value="end">At the end of practice</option>';
+      return;
+    }
+    let html = '<option value="beginning">At the beginning of practice</option>';
+    rows.forEach(r => {
+      const id = r.dataset.periodId || '';
+      const name = (r.querySelector('.gt-name')?.textContent
+                 || r.querySelector('.cell-activity')?.textContent || '').trim();
+      html += `<option value="${id}">After ${id}${name ? ' — ' + name : ''}</option>`;
+    });
+    html += '<option value="end" selected>At the end of practice</option>'; // appending is the common case
+    sel.innerHTML = html;
   }
 
   function calcNextPeriodTime(insertAfter, duration) {
@@ -12064,8 +12142,10 @@
     let innerHtml;
     if (pendingPeriodType === 'group') {
       const cols = ['QB','RB','WR','OL','DL','LB','DB'];
-      const cells = cols.map(c => `<div class="grid-cell active-cell" data-col="${c}"><div class="cell-activity">${name}</div></div>`).join('');
-      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="pgrid-cols">${cells}</div>`;
+      // Each cell defaults to "COL-PeriodName" (e.g. QB-Indy); the coach taps a cell to rename it.
+      const cells = cols.map(c => `<div class="grid-cell active-cell" data-col="${c}"><div class="cell-activity">${c}-${name}</div></div>`).join('');
+      // Group header carries time + period name + number; the cells hold their own names.
+      innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-name">${name}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="pgrid-cols">${cells}</div>`;
     } else {
       const labelClass = pendingPeriodType === 'break' ? ' transition-label' : '';
       innerHtml = `<div class="grid-time-cell note-target" onclick="openPeriodNote('${newId}', '${startTime}', '${name}')"><div class="gt-time">${startTime}</div><div class="gt-dur">${duration} min</div><div class="gt-num">${newId}</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity${labelClass}">${emoji}${name}</div></div>`;
@@ -12086,6 +12166,10 @@
     const pgrid = document.getElementById('practice-grid-table');
     if (insertAfter === 'end') {
       pgrid.appendChild(newRow);
+    } else if (insertAfter === 'beginning') {
+      const firstPeriod = pgrid.querySelector('.pgrid-row:not(.pgrid-header)');
+      if (firstPeriod) pgrid.insertBefore(newRow, firstPeriod);
+      else pgrid.appendChild(newRow);
     } else {
       const afterRow = pgrid.querySelector(`[data-period-id="${insertAfter}"]`);
       if (afterRow?.nextSibling) pgrid.insertBefore(newRow, afterRow.nextSibling);
@@ -12106,6 +12190,64 @@
     const knob = document.getElementById('ap-script-knob');
     if (toggle) toggle.style.background = 'var(--bg-5)';
     if (knob) { knob.style.left = '3px'; knob.style.background = 'var(--fg-3)'; }
+  }
+
+  // ===== PRACTICE TIMING =====
+  // Times are computed from a single practice start + each period's duration, so reordering
+  // (drag) or inserting a period re-flows every time. Start is stored in a hidden meta node
+  // inside the grid table, so it rides along with the saved grid HTML.
+  function fmtPracticeTime(mins) {
+    mins = ((mins % 1440) + 1440) % 1440;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    const h12 = (h % 12) || 12;
+    return `${h12}:${String(m).padStart(2, '0')}`; // 12-hour, no AM/PM (matches real plans)
+  }
+  function _practiceMeta(create) {
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid) return null;
+    let meta = pgrid.querySelector('.pgrid-meta');
+    if (!meta && create) {
+      meta = document.createElement('div');
+      meta.className = 'pgrid-meta';
+      meta.style.display = 'none';
+      pgrid.insertBefore(meta, pgrid.firstChild);
+    }
+    return meta;
+  }
+  function getPracticeStartMins() {
+    const meta = _practiceMeta(false);
+    const stored = meta?.dataset.start;
+    if (stored && /^\d{1,2}:\d{2}$/.test(stored)) {
+      const [h, m] = stored.split(':').map(Number);
+      return h * 60 + m;
+    }
+    return 15 * 60 + 30; // default 3:30 PM (never AM)
+  }
+  function setPracticeStart(hhmm) {
+    if (!/^\d{1,2}:\d{2}$/.test(hhmm || '')) return;
+    const meta = _practiceMeta(true);
+    if (meta) meta.dataset.start = hhmm;
+    recomputeGridTimes();
+    if (typeof saveDayGrid === 'function') saveDayGrid();
+  }
+  function syncPracticeStartInput() {
+    const input = document.getElementById('practice-start-input');
+    if (!input) return;
+    const mins = getPracticeStartMins();
+    input.value = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+  }
+  function recomputeGridTimes() {
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid) return;
+    let mins = getPracticeStartMins();
+    pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)').forEach(row => {
+      const dur = parseInt(row.style.getPropertyValue('--dur'))
+               || parseInt((row.querySelector('.gt-dur')?.textContent || '').replace(/[^\d]/g, '')) || 10;
+      const timeEl = row.querySelector('.gt-time');
+      if (timeEl) timeEl.textContent = fmtPracticeTime(mins);
+      setPeriodOnclick(row); // keep the inline handler's time arg current
+      mins += dur;
+    });
   }
 
   function renumberPeriods() {
@@ -12149,6 +12291,8 @@
         });
       }
     });
+    recomputeGridTimes(); // reorders/inserts/deletes re-flow every period's time from the start
+    syncPracticeStartInput();
   }
 
   function deletePeriodFromModal() {
