@@ -2927,6 +2927,12 @@
         <input id="note-name-input" class="ap-input" style="width:100%;box-sizing:border-box" placeholder="Name">
       </div>
 
+      <!-- ROW COLOR (shown for full-width team/break periods) -->
+      <div id="note-color-row" style="display:none;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Row color</div>
+        <div id="note-color-swatches" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+
       <!-- DRILL PICKER (shown for cell notes only) -->
       <div id="drill-picker-section" style="display:none;margin-bottom:12px">
         <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Drill from library</div>
@@ -4775,8 +4781,8 @@
         <button class="add-tag-btn" onclick="addCustomDrillPos()">+ Add</button>
       </div>
 
-      <div class="add-drill-label">Description</div>
-      <textarea class="add-drill-textarea" id="drill-desc-input" placeholder="What does this drill work on? What should coaches emphasize?"></textarea>
+      <div class="add-drill-label">How to run it</div>
+      <textarea class="add-drill-textarea" id="drill-desc-input" placeholder="Describe the drill setup and how it runs — e.g. &quot;Set two bags 5 yards apart. Players line up single file, shuffle through the bags, then break downhill on the coach's call…&quot;"></textarea>
 
       <div class="add-drill-label">Video link (optional)</div>
       <input class="add-drill-input" id="drill-video-input" placeholder="YouTube or Hudl URL" type="url">
@@ -5371,7 +5377,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.08</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.09</div>
   </div>
 </div>
 
@@ -5385,7 +5391,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.08';
+  const APP_VERSION = 'v40.09';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11173,6 +11179,34 @@
     if (typeof saveDayGrid === 'function') saveDayGrid();
   }
 
+  // Row-color palette for full-width team/break periods (break up the "sea of green").
+  const ROW_COLORS = [
+    { key: 'green',  bg: 'rgba(57,255,20,0.10)' },
+    { key: 'blue',   bg: 'rgba(77,159,255,0.14)' },
+    { key: 'amber',  bg: 'rgba(255,180,0,0.14)' },
+    { key: 'red',    bg: 'rgba(239,68,68,0.13)' },
+    { key: 'purple', bg: 'rgba(160,100,255,0.14)' },
+    { key: 'gray',   bg: 'rgba(130,130,130,0.12)' },
+  ];
+  function renderNoteColorSwatches(currentBg) {
+    const wrap = document.getElementById('note-color-swatches');
+    if (!wrap) return;
+    const norm = s => (s || '').replace(/\s/g, '');
+    wrap.innerHTML = ROW_COLORS.map(c => {
+      const sel = norm(currentBg) === norm(c.bg);
+      return `<div onclick="setPeriodColor('${c.bg}')" title="${c.key}" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:${c.bg};border:2px solid ${sel ? 'var(--team-primary)' : 'var(--border)'}"></div>`;
+    }).join('');
+  }
+  function setPeriodColor(bg) {
+    if (!canEdit('practice') || !currentNoteModalPeriodId) return;
+    const row = document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"]`);
+    if (!row) return;
+    row.dataset.rowColor = bg;
+    row.querySelectorAll('.grid-cell, .grid-time-cell').forEach(el => { el.style.background = bg; });
+    renderNoteColorSwatches(bg);
+    if (typeof saveDayGrid === 'function') saveDayGrid();
+  }
+
   function openPeriodNote(periodId, timeRange, periodName) {
     if (event) event.stopPropagation();
     currentNoteModalPeriodId = periodId;
@@ -11189,6 +11223,12 @@
     perNameInput.value = periodName || '';
     perNameInput.readOnly = !canEdit('practice');
     document.getElementById('note-name-edit').style.display = 'block';
+    // Row color — only for full-width team/break periods.
+    const _perRow = document.querySelector(`[data-period-id="${periodId}"]`);
+    const _isSpan = !!_perRow?.querySelector('.cell-span');
+    const _colorRow = document.getElementById('note-color-row');
+    if (_colorRow) _colorRow.style.display = (_isSpan && canEdit('practice')) ? 'block' : 'none';
+    if (_isSpan) renderNoteColorSwatches(_perRow.dataset.rowColor || _perRow.querySelector('.grid-cell')?.style.background || '');
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a note for this period… e.g. "OL focus on pad level"';
     document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
@@ -11227,6 +11267,7 @@
     cellNameInput.value = activity || '';
     cellNameInput.readOnly = !canEdit('practice');
     document.getElementById('note-name-edit').style.display = 'block';
+    document.getElementById('note-color-row').style.display = 'none'; // row color is period-level only
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a coaching note for this cell…';
     document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
@@ -21540,6 +21581,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     _creatingDrillFromCell = false;
     closeAddDrill();
     renderDrillLibrary();
+    if (drillDropdownOpen) filterDrillDropdown(); // keep the cell picker current if it's open
     if (stageToCell && currentCellPos) {
       selectDrillFromDropdown(drillData.id); // stage it in the still-open cell modal; commits on Save changes
       showToast('Drill created — tap “Save changes” to add it');
