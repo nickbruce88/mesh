@@ -32,6 +32,7 @@ Do this before the messaging/announcement push checks below. Works the same for 
 - [ ] Take attendance; save; reload to confirm
 - [ ] ⚠️ Roster importer — upload a real CSV/xlsx; confirm it's forgiving and players land correctly
 - [ ] Post an announcement → appears; pick a "show on home for" duration; older ones sit under "Past announcements"
+- [ ] ⚠️ Practice plan persists — build a day (periods, cell names, a note, a drill, a row color, a start time), fully reload the app → same day loads back identical (was in-memory only; now saved server-side per date). Switch weeks and back; a second coach sees the same plan.
 - [ ] ⚠️ Messaging — send/receive; with notifications enabled (above), closed-app push arrives
 - [ ] ⚠️ Unread — a message that arrives while closed shows an unread dot + Messages nav badge on login; opening the thread clears both (and stays read on your other devices)
 - [ ] Enter/approve a stat
