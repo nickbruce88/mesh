@@ -2964,7 +2964,7 @@
             <span style="font-size:12px;color:var(--blue);cursor:pointer" id="dp-preview-video-link">🎬 Watch video</span>
           </div>
         </div>
-        <button onclick="createDrillFromCell()" style="width:100%;text-align:center;padding:9px;margin-top:8px;background:transparent;border:1.5px dashed var(--border-2);border-radius:var(--radius-sm);color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">＋ Create a new drill</button>
+        <button id="cell-create-drill-btn" onclick="createDrillFromCell()" style="width:100%;text-align:center;padding:9px;margin-top:8px;background:transparent;border:1.5px dashed var(--border-2);border-radius:var(--radius-sm);color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">＋ Create a new drill</button>
         <div style="height:1px;background:var(--border);margin:12px 0"></div>
       </div>
 
@@ -5351,7 +5351,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.17</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.18</div>
   </div>
 </div>
 
@@ -5365,7 +5365,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.17';
+  const APP_VERSION = 'v40.18';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10745,7 +10745,7 @@
     _tour.idx = i;
     const step = steps[i];
     if (step.before) { try { step.before(); } catch(e){} }
-    await new Promise(r => setTimeout(r, step.before ? 380 : 60));
+    await new Promise(r => setTimeout(r, step.wait != null ? step.wait : (step.before ? 380 : 60)));
     if (myseq !== _tourSeq) return; // a newer step started — abandon this one
     renderTourTooltip(step, i, steps.length); // set content first so the tooltip height is real
     const targetEl = step.target ? document.querySelector(step.target) : null;
@@ -10809,6 +10809,8 @@
   function tourBack() { showTourStep(_tour.idx - 1); }
   function endTour() {
     ['tour-blocker','tour-hole','tour-tooltip'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    // The practice guide opens real modals + may drop a demo period — undo all that.
+    if (_tour.key === 'practice') { try { _cleanupPracticeGuide(); } catch(e){} }
     // Finishing OR skipping a guide counts as "seen" so it won't auto-launch again.
     if (_tour.key) markGuideSeen(_tour.key);
   }
@@ -10822,16 +10824,80 @@
   // Each major tab has its own spotlight walkthrough, rendered by the same engine as the
   // overview tour. Guides auto-launch ONCE on first visit to a tab (seen-state is stored
   // server-side, per user), and can be replayed anytime from the Guides hub.
+
+  // --- Practice-guide helpers: the practice guide drives the real UI (opens the actual
+  //     modals/menus and spotlights their controls). Cell-level features need a period to
+  //     exist, so on an empty day we drop in a tagged demo period and remove it when the
+  //     guide ends. Nothing here calls saveDayGrid, so the demo never touches the backend. ---
+  let _practiceGuideDemo = false;
+  function _guideCloseModals() {
+    try { closeNoteModal(); } catch(e){}
+    try { closeAddDrill(); } catch(e){}
+    try { closeAddPeriod(); } catch(e){}
+    try { closeActionSheet(); } catch(e){}
+    const epg = document.getElementById('edit-pos-groups-overlay'); if (epg) epg.remove();
+  }
+  function _guideEnsureDemoPeriod() {
+    const pgrid = document.getElementById('practice-grid-table');
+    if (!pgrid) return;
+    if (pgrid.querySelector('.pgrid-row:not(.pgrid-header) .pgrid-cols .grid-cell[data-col]')) return; // real group period exists
+    if (pgrid.querySelector('.pgrid-row:not(.pgrid-header)')) return; // team-only plan — don't disturb it
+    const cols = (PRACTICE_POSITION_GROUPS || []).map(g => g.label);
+    const cells = {}; cols.forEach(c => cells[c] = c + ' drill');
+    try { launchDetailedAI([{ id: 'P1', name: 'Indy (example)', type: 'special', duration: 15, start: '3:30', cells }]); } catch(e){ return; }
+    const row = document.querySelector('#practice-grid-table .pgrid-row:not(.pgrid-header)');
+    if (row) { row.dataset.guideDemo = '1'; _practiceGuideDemo = true; }
+    try { renderGridHeader(); } catch(e){}
+  }
+  function _guideOpenFirstCell() {
+    _guideCloseModals();
+    _guideEnsureDemoPeriod();
+    const row = document.querySelector('#practice-grid-table .pgrid-row:not(.pgrid-header)');
+    const cell = row && row.querySelector('.pgrid-cols .grid-cell[data-col]');
+    if (!cell) return;
+    try { openCellNote(row.dataset.periodId, cell.dataset.col, 'Coach', cell.querySelector('.cell-activity')?.textContent || ''); } catch(e){}
+  }
+  function _guideOpenFirstPeriodNote() {
+    _guideCloseModals();
+    _guideEnsureDemoPeriod();
+    const row = document.querySelector('#practice-grid-table .pgrid-row:not(.pgrid-header)');
+    if (!row) return;
+    const time = row.querySelector('.gt-time')?.textContent || '';
+    const nm = (row.querySelector('.gt-name')?.textContent || row.querySelector('.cell-span .cell-activity')?.textContent || '').trim();
+    try { openPeriodNote(row.dataset.periodId, time, nm); } catch(e){}
+  }
+  function _cleanupPracticeGuide() {
+    _guideCloseModals();
+    if (!_practiceGuideDemo) return;
+    document.querySelectorAll('#practice-grid-table .pgrid-row[data-guide-demo]').forEach(r => r.remove());
+    _practiceGuideDemo = false;
+    try { renumberPeriods(); } catch(e){}
+    const pgrid = document.getElementById('practice-grid-table');
+    if (pgrid && !pgrid.querySelector('.pgrid-row:not(.pgrid-header)')) {
+      ['practice-day-filled','practice-grid-wrap','practice-below-grid','practice-scripts-reminders'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+      const blank = document.getElementById('practice-day-blank'); if (blank) blank.style.display = 'block';
+      const eb = document.getElementById('practice-edit-btn'); if (eb) eb.style.display = 'none';
+    }
+  }
+
   const GUIDES = {
     overview: TOUR_STEPS, // role-keyed
     practice: {
       coach: [
-        { title: 'Practice planner 📋', body: "Build your practice day by day. Here's the quick tour.", target: null, before: () => showTab('coach','practice') },
-        { title: 'Day & week', body: 'Tap a day to plan it; the arrows move between weeks. Each day is saved on its own.', target: '#practice-week-title' },
-        { title: 'Start time', body: 'Set when practice starts — every period’s time is calculated from here and re-flows when you reorder.', target: '#practice-start-input' },
-        { title: 'Build periods', body: 'Add team periods, position-group (Indy) blocks, and water/transition breaks. Tap any cell to rename it, add a note, or attach a drill.', target: null },
-        { title: 'Reuse a day', body: 'Under Actions you can Copy a day and Paste it onto another — or save it as a reusable template.', target: null },
-        { title: 'Saved automatically', body: 'Every change syncs to your team in the cloud, so your staff sees the same plan and it survives a reload.', target: null },
+        { title: 'Practice planner 📋', body: "Let's build a practice plan step by step. We'll open the real screens as we go.", target: null, before: () => { _guideCloseModals(); showTab('coach','practice'); }, wait: 500 },
+        { title: 'Pick the week & day', body: 'Tap a day to plan it; the arrows move between weeks. Every day is saved on its own.', target: '#practice-week-title' },
+        { title: 'Set the start time', body: "Set when practice starts. Every period's time is calculated from here — and re-flows automatically when you add or reorder periods.", target: '#practice-start-input' },
+        { title: 'Name your columns', body: 'These are your position groups (QB, RB, OL…). Rename any column to match how you split your team.', target: '#epg-pos-list', before: () => { _guideCloseModals(); openEditPositionGroups(); }, wait: 800 },
+        { title: 'Assign a coach to each group', body: 'Give every position column a coach — their name shows on that column so everyone knows who runs it.', target: '#epg-coach-list' },
+        { title: 'Add a period', body: 'This is where you build the day — tap “+ Add period” to add one.', target: '.add-period-btn', before: () => { _guideCloseModals(); _guideEnsureDemoPeriod(); }, wait: 450 },
+        { title: 'Team, group, or break', body: 'Pick a type — a full-team period, a position-group (Indy) block split by column, or a water/transition break — then set its name and duration.', target: '#ap-step-type', before: () => { _guideCloseModals(); openAddPeriod(); }, wait: 450 },
+        { title: 'Name the period', body: 'Tap a period’s time cell to name it (e.g. “Inside Run”), add a note for the whole period, or reorder it.', target: '#note-name-input', before: () => _guideOpenFirstPeriodNote(), wait: 450 },
+        { title: 'Name each cell', body: 'Tap any cell to rename what that group is doing that period — e.g. “QB → footwork ladder”.', target: '#note-name-input', before: () => _guideOpenFirstCell(), wait: 450 },
+        { title: 'Pull a drill from your library', body: 'Search your saved drills and attach one to the cell — coaches can tap it to see the details.', target: '#drill-picker-trigger', before: () => _guideOpenFirstCell(), wait: 450 },
+        { title: 'Or create a new drill', body: 'Don’t have it yet? Create a brand-new drill right here — it saves to your Drill Library and attaches to the cell.', target: '#cell-create-drill-btn', before: () => _guideOpenFirstCell(), wait: 450 },
+        { title: 'Add coaching notes', body: 'Drop a coaching note on any cell (“emphasize pad level”). Then “Save changes” commits the cell name, drill, and note together.', target: '#note-modal-textarea', before: () => _guideOpenFirstCell(), wait: 450 },
+        { title: 'The Actions menu', body: 'Everything else lives here: load or save a template, Copy a day and Paste it onto another, edit position groups, and export or print the plan.', target: '#action-sheet-overlay .action-sheet', before: () => { _guideCloseModals(); openActionSheet(); }, wait: 450 },
+        { title: 'It all saves itself ✅', body: 'Every change syncs to your team in the cloud — your staff sees the same plan and it’s still here after a reload. That’s the whole planner!', target: null, before: () => _guideCloseModals() },
       ],
     },
     calendar: {
