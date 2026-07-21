@@ -2924,7 +2924,7 @@
       <!-- NAME EDITOR (rename a cell or a period) -->
       <div id="note-name-edit" style="display:none;margin-bottom:12px">
         <div id="note-name-label" style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Name</div>
-        <input id="note-name-input" class="ap-input" style="width:100%;box-sizing:border-box" oninput="updateNoteName(this.value)" placeholder="Name">
+        <input id="note-name-input" class="ap-input" style="width:100%;box-sizing:border-box" placeholder="Name">
       </div>
 
       <!-- DRILL PICKER (shown for cell notes only) -->
@@ -2947,9 +2947,7 @@
             <span style="font-size:12px;color:var(--blue);cursor:pointer" id="dp-preview-video-link">🎬 Watch video</span>
           </div>
         </div>
-        <button class="btn-sm" style="width:100%;text-align:center;padding:9px;margin-top:8px" id="drill-insert-btn" onclick="insertPickedDrill()" disabled>Insert into cell</button>
-        <div style="text-align:center;font-size:12px;color:var(--fg-3);margin:8px 0 6px">or</div>
-        <button onclick="createDrillFromCell()" style="width:100%;text-align:center;padding:9px;background:transparent;border:1.5px dashed var(--border-2);border-radius:var(--radius-sm);color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">＋ Create a new drill</button>
+        <button onclick="createDrillFromCell()" style="width:100%;text-align:center;padding:9px;margin-top:8px;background:transparent;border:1.5px dashed var(--border-2);border-radius:var(--radius-sm);color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">＋ Create a new drill</button>
         <div style="height:1px;background:var(--border);margin:12px 0"></div>
       </div>
 
@@ -2958,12 +2956,14 @@
 
       <!-- Add note area -->
       <div id="note-add-area">
-        <textarea class="note-modal-textarea" id="note-modal-textarea" placeholder="Add a note…" rows="3"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="note-cancel-btn" onclick="cancelNoteEdit()" style="display:none;flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">Cancel</button>
-          <button class="note-modal-save" onclick="saveNoteModal()" style="flex:2">Save note</button>
+        <textarea class="note-modal-textarea" id="note-modal-textarea" placeholder="Add a note (optional)…" rows="3"></textarea>
+        <div style="text-align:right;margin-top:4px">
+          <button id="note-cancel-btn" onclick="cancelNoteEdit()" style="display:none;background:none;border:none;color:var(--fg-3);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancel edit</button>
         </div>
       </div>
+
+      <!-- One button commits everything: name, drill, and note -->
+      <button class="note-modal-save" onclick="saveCellModal()" style="width:100%;margin-top:6px">Save changes</button>
 
       <div class="note-modal-footer" id="note-modal-footer">Visible to all staff</div>
       <div id="period-script-action" style="display:none;margin-top:10px">
@@ -5371,7 +5371,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.07</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.08</div>
   </div>
 </div>
 
@@ -5385,7 +5385,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.07';
+  const APP_VERSION = 'v40.08';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11247,7 +11247,7 @@
     document.getElementById('drill-picker-caret').style.transform = '';
     document.getElementById('drill-dropdown-panel').style.display = 'none';
     document.getElementById('drill-picker-preview').style.display = 'none';
-    document.getElementById('drill-insert-btn').disabled = true;
+    { const _dib = document.getElementById('drill-insert-btn'); if (_dib) _dib.disabled = true; }
 
     renderNoteCards();
 
@@ -11353,7 +11353,7 @@
       videoEl.style.display = 'none';
     }
     document.getElementById('drill-picker-preview').style.display = 'block';
-    document.getElementById('drill-insert-btn').disabled = false;
+    { const _dib = document.getElementById('drill-insert-btn'); if (_dib) _dib.disabled = false; }
   }
 
   function updateDrillPicker() {} // no-op — kept for any stale refs
@@ -11398,7 +11398,7 @@
     document.getElementById('drill-picker-label').textContent = 'Search drills…';
     document.getElementById('drill-picker-label').style.color = 'var(--fg-3)';
     document.getElementById('drill-picker-preview').style.display = 'none';
-    document.getElementById('drill-insert-btn').disabled = true;
+    { const _dib = document.getElementById('drill-insert-btn'); if (_dib) _dib.disabled = true; }
     showToast('"' + drill.title + '" attached ✓');
   }
 
@@ -11506,6 +11506,47 @@
         <div style="font-size:13px;color:var(--fg);line-height:1.5;white-space:pre-wrap">${note.text}</div>
       </div>`;
     }).join('');
+  }
+
+  // One button commits everything staged in the cell/period modal: name, drill, note.
+  function saveCellModal() {
+    if (!canEdit('practice')) { closeNoteModal(); return; }
+    // 1. Name (renames the cell, or the period header)
+    const nameVal = document.getElementById('note-name-input')?.value;
+    if (nameVal != null) updateNoteName(nameVal);
+    // 2. Staged drill (picked or newly created) → attach to this cell
+    if (selectedDrillId && currentCellPos) {
+      const drill = DRILLS.find(d => d.id === selectedDrillId);
+      if (drill) _attachDrillToCurrentCell(drill);
+    }
+    // 3. Note text (if any)
+    _commitNote(document.getElementById('note-modal-textarea')?.value);
+    savePracticePlanToSupabase();
+    closeNoteModal();
+    showToast('Saved ✓');
+  }
+
+  // Add or update a note for the current cell/period (no toast/persist — caller handles that).
+  function _commitNote(text) {
+    text = (text || '').trim();
+    if (!text) return false;
+    const key = currentCellPos ? noteKey(currentNoteModalPeriodId, currentCellPos) : noteKey(currentNoteModalPeriodId, null);
+    if (!PRACTICE_NOTES[key]) PRACTICE_NOTES[key] = [];
+    if (_editingNoteId) {
+      const idx = PRACTICE_NOTES[key].findIndex(n => n.id === _editingNoteId);
+      if (idx !== -1) { PRACTICE_NOTES[key][idx].text = text; PRACTICE_NOTES[key][idx].updatedAt = Date.now(); }
+      _editingNoteId = null;
+    } else {
+      PRACTICE_NOTES[key].push({ id: 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5), text, author: getCurrentCoachName(), createdAt: Date.now(), updatedAt: Date.now() });
+    }
+    const dotTarget = currentCellEl || document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"] .grid-time-cell`);
+    if (dotTarget && !dotTarget.querySelector('.note-badge')) {
+      const dot = document.createElement('span');
+      dot.className = 'note-badge cell-note-badge';
+      dot.textContent = '●';
+      dotTarget.appendChild(dot);
+    }
+    return true;
   }
 
   function saveNoteModal() {
@@ -21495,12 +21536,13 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     }
     saveDrillsToStorage();
 
-    const attachToCell = _creatingDrillFromCell && !editingDrillId;
+    const stageToCell = _creatingDrillFromCell && !editingDrillId;
     _creatingDrillFromCell = false;
     closeAddDrill();
     renderDrillLibrary();
-    if (attachToCell && _attachDrillToCurrentCell(drillData)) {
-      showToast('Drill created & added to cell ✓');
+    if (stageToCell && currentCellPos) {
+      selectDrillFromDropdown(drillData.id); // stage it in the still-open cell modal; commits on Save changes
+      showToast('Drill created — tap “Save changes” to add it');
     } else {
       showToast((editingDrillId ? 'Drill updated' : 'Drill added') + ' ✓');
     }
