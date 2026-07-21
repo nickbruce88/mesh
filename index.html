@@ -5383,7 +5383,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.11</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.12</div>
   </div>
 </div>
 
@@ -5397,7 +5397,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.11';
+  const APP_VERSION = 'v40.12';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10941,7 +10941,7 @@
     const filled = document.getElementById('practice-day-filled');
     if (!filled || filled.style.display === 'none') return;
     const pgrid = document.getElementById('practice-grid-table');
-    if (pgrid) DAY_GRIDS[currentDayKey] = serializePracticeDay();
+    if (pgrid) { DAY_GRIDS[currentDayKey] = serializePracticeDay(); _pushPracticeDay(currentDayKey); }
   }
 
   // ===== STRUCTURED PRACTICE-DAY MODEL (v1) =====
@@ -11125,6 +11125,76 @@
     recomputeGridTimes();   // fills gt-time + re-wires openPeriodNote onclick per row
     syncPracticeStartInput();
     renderScriptSection();
+  }
+
+  // ===== PER-DAY PRACTICE PLAN PERSISTENCE (Supabase) =====
+  // DAY_GRIDS is keyed by RELATIVE week offset ("0_Tue"); the backend is keyed by the
+  // ABSOLUTE calendar date, so the same weekday in different weeks stays distinct.
+  const _practiceSaveTimers = {};
+  let _hydratingPractice = false;
+
+  function _isoDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  function _dayKeyToISO(dayKey) {
+    if (!dayKey) return null;
+    const i = dayKey.indexOf('_');
+    if (i < 0) return null;
+    const offset = parseInt(dayKey.slice(0, i), 10);
+    const label = dayKey.slice(i + 1);
+    const d = getWeekDates(offset).find(x => x.label === label);
+    return d ? _isoDate(d.date) : null;
+  }
+
+  // Debounced push of one day's model to the backend (skipped while hydrating).
+  function _pushPracticeDay(dayKey) {
+    if (_hydratingPractice || !dayKey) return;
+    if (!canEdit('practice')) return; // only editors write
+    const iso = _dayKeyToISO(dayKey);
+    if (!iso) return;
+    clearTimeout(_practiceSaveTimers[dayKey]);
+    _practiceSaveTimers[dayKey] = setTimeout(async () => {
+      try {
+        const programId = await getValidProgramId();
+        if (!programId) return;
+        const model = DAY_GRIDS[dayKey] || { version: PRACTICE_MODEL_VERSION, periods: [] };
+        const { error } = await db.rpc('save_practice_day', { p_program_id: programId, p_date: iso, p_plan: model });
+        if (error) console.warn('practice day save failed:', error.message);
+      } catch (e) { console.warn('practice day save error:', e); }
+    }, 1200);
+  }
+
+  // Load a week's saved days from the backend into DAY_GRIDS, then re-render the active day.
+  async function hydratePracticeWeek(offset) {
+    try {
+      const programId = await getValidProgramId();
+      if (!programId) return;
+      const days = getWeekDates(offset);
+      const { data, error } = await db.rpc('get_practice_days', {
+        p_program_id: programId, p_from: _isoDate(days[0].date), p_to: _isoDate(days[6].date)
+      });
+      if (error) { console.warn('practice hydrate failed:', error.message); return; }
+      _hydratingPractice = true;
+      (data || []).forEach(row => {
+        const dObj = days.find(x => _isoDate(x.date) === row.practice_date);
+        if (!dObj) return;
+        const plan = row.plan;
+        if (plan && Array.isArray(plan.periods) && plan.periods.length) {
+          DAY_GRIDS[`${offset}_${dObj.label}`] = plan;
+        }
+      });
+      _hydratingPractice = false;
+      // If the currently-shown day just got data, render it (bypass selectDay's save-first path
+      // so we don't clobber the freshly-hydrated model with the empty grid on screen).
+      if (currentDayKey && currentDayKey.startsWith(offset + '_') && DAY_GRIDS[currentDayKey]) {
+        renderPracticeDay(DAY_GRIDS[currentDayKey]);
+        const blank = document.getElementById('practice-day-blank'); if (blank) blank.style.display = 'none';
+        const filled = document.getElementById('practice-day-filled'); if (filled) filled.style.display = 'block';
+        const gw = document.getElementById('practice-grid-wrap'); if (gw) gw.style.display = 'block';
+        const hint = document.getElementById('col-filter-hint-wrap'); if (hint) hint.style.display = '';
+        const eb = document.getElementById('practice-edit-btn'); if (eb) eb.style.display = canEdit('practice') ? 'inline-block' : 'none';
+      }
+    } catch (e) { _hydratingPractice = false; console.warn('practice hydrate error:', e); }
   }
 
   function selectDay(day, el) {
@@ -11971,6 +12041,7 @@
       pills[targetIdx].classList.add('active');
       selectDay(DAY_ORDER[targetIdx], pills[targetIdx]);
     }
+    hydratePracticeWeek(practiceWeekOffset);
     showToast(delta > 0 ? 'Next week ›' : '‹ Previous week');
   }
 
@@ -11987,6 +12058,7 @@
       pills[targetIdx].classList.add('active');
       selectDay(DAY_ORDER[targetIdx], pills[targetIdx]);
     }
+    hydratePracticeWeek(practiceWeekOffset);
   }
 
   // ===== EDIT POSITION GROUPS =====
