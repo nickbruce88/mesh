@@ -9,6 +9,10 @@
 -- Keyed by the ABSOLUTE practice_date (not the app's relative week offset), so "Tuesday" this
 -- week and next week are distinct rows.
 --
+-- The plan jsonb carries BOTH practice modes in one row: detailed = {version,start,periods:[…]},
+-- simple = {version,mode:'simple',blocks:[…]}. A plan with neither periods nor blocks deletes
+-- the row. (v40.13 added simple-mode support — re-run this file to update save_practice_day.)
+--
 -- Depends on: programs(id, owner_id), profiles(id, program_id, role).
 -- ===========================================================================================
 
@@ -53,8 +57,10 @@ begin
     raise exception 'Only coaches can edit the practice plan';
   end if;
 
+  -- Empty plan = no detailed periods AND no simple blocks → remove the row.
   if p_plan is null
-     or coalesce(jsonb_array_length(p_plan->'periods'), 0) = 0 then
+     or (coalesce(jsonb_array_length(p_plan->'periods'), 0) = 0
+         and coalesce(jsonb_array_length(p_plan->'blocks'), 0) = 0) then
     delete from practice_days where program_id = p_program_id and practice_date = p_date;
     return;
   end if;
