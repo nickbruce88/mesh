@@ -445,7 +445,7 @@
   .pos-row { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
   .pos-row:last-child { border-bottom: none; }
   .pos-tag { min-width: 38px; font-size: 12px; font-weight: 700; color: var(--team-primary); padding-top: 4px; }
-  .pos-players { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .pos-players { flex: 1; display: flex; flex-direction: column; gap: 0; }
   .dc-player { display: flex; align-items: center; gap: 8px; font-size: 13px; }
   .dc-string { width: 18px; height: 18px; border-radius: 50%; background: var(--border); color: var(--fg-2); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .dc-player.starter .dc-string { background: var(--team-primary); color: var(--bg); }
@@ -1416,18 +1416,19 @@
   .ob-sport-btn:active { opacity:0.8; }
 
   /* ===== DEPTH CHART DRAG + SWAP ===== */
-  .dc-row-wrap { display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);position:relative;transition:opacity 0.15s; }
+  .dc-row-wrap { display:flex;align-items:center;gap:11px;padding:11px 6px;border-bottom:1px solid rgba(130,130,130,0.22);position:relative;transition:opacity 0.15s; }
   .dc-row-wrap:last-child { border-bottom:none; }
   .dc-row-wrap.dragging { opacity:0.4; }
   .dc-row-wrap.drag-over { border-top:2px solid var(--team-primary);margin-top:-1px; }
-  .dc-drag-handle { font-size:18px;color:var(--fg-3);cursor:grab;padding:0 2px;flex-shrink:0;display:none;user-select:none;-webkit-user-select:none;line-height:1; }
+  .dc-drag-handle { font-size:19px;color:var(--fg-3);cursor:grab;padding:0 2px;flex-shrink:0;display:none;user-select:none;-webkit-user-select:none;line-height:1; }
   .dc-drag-handle:active { cursor:grabbing; }
   .dc-edit-mode .dc-drag-handle { display:block; }
-  .dc-string-badge { width:20px;height:20px;border-radius:50%;background:var(--border);color:var(--fg-2);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
-  .dc-string-badge.starter { background:var(--team-primary);color:var(--bg); }
-  .dc-player-name-btn { flex:1;font-size:13px;font-weight:600;color:var(--fg);background:none;border:none;text-align:left;font-family:var(--font);padding:0;cursor:default; }
+  .dc-string-badge { width:27px;height:27px;border-radius:50%;background:var(--bg-3);border:1.5px solid rgba(130,130,130,0.32);color:var(--fg-2);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .dc-string-badge.starter { background:var(--team-primary);border-color:var(--team-primary);color:var(--team-primary-text); }
+  .dc-player-name-btn { flex:1;font-size:15px;font-weight:700;color:var(--fg);background:none;border:none;text-align:left;font-family:var(--font);padding:0;cursor:default;letter-spacing:-0.01em; }
   .dc-edit-mode .dc-player-name-btn { cursor:pointer;color:var(--team-primary);text-decoration:underline dotted; }
-  .dc-jersey-num { font-size:11px;color:var(--fg-3);flex-shrink:0; }
+  .dc-jersey-num { font-size:13px;font-weight:800;color:var(--fg);background:var(--bg-3);border:1px solid rgba(130,130,130,0.3);border-radius:7px;padding:3px 9px;flex-shrink:0;min-width:40px;text-align:center;letter-spacing:0.02em; }
+  .dc-jersey-num:empty { display:none; }
 
   /* ===== ATTENDANCE ===== */
   .att-session-tab { padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg-3);color:var(--fg-2);border:1px solid var(--border);transition:all 0.15s;-webkit-tap-highlight-color:transparent }
@@ -3197,7 +3198,7 @@
         <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">📖</div>
         <div>
           <div class="more-menu-label">Playbook</div>
-          <div class="more-menu-sub">Offense, Defense, Special Teams</div>
+          <div class="more-menu-sub">Mesh Play Designer — coming soon</div>
         </div>
         <div class="more-menu-arrow">›</div>
       </div>
@@ -3713,46 +3714,13 @@
       <div class="more-section-header">
         <div class="more-back-btn" onclick="backToMoreMenu()">‹</div>
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Playbook</div>
-        <button class="btn-sm" id="pb-select-toggle-inline" onclick="pbToggleSelectMode()" style="margin-left:auto;display:none">Edit</button>
       </div>
 
-      <div class="pb-unit-nav" style="margin:0 -20px 16px;padding:0 20px">
-        <button class="pb-unit-btn active" onclick="showPbUnit('offense',this)">Offense</button>
-        <button class="pb-unit-btn" onclick="showPbUnit('defense',this)">Defense</button>
-        <button class="pb-unit-btn" onclick="showPbUnit('special',this)">Special Teams</button>
-      </div>
-
-      <div id="pb-inline-body">
-        <div class="pb-unit-section active" id="pb-offense-inline">
-          <div class="pb-action-row" id="pb-offense-actions-inline">
-            <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-            <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('offense')">📁 New folder</button>
-          </div>
-          <div id="pb-offense-content-inline"></div>
-        </div>
-        <div class="pb-unit-section" id="pb-defense-inline">
-          <div class="pb-action-row" id="pb-defense-actions-inline">
-            <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-            <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('defense')">📁 New folder</button>
-          </div>
-          <div id="pb-defense-content-inline"></div>
-        </div>
-        <div class="pb-unit-section" id="pb-special-inline">
-          <div class="pb-action-row" id="pb-special-actions-inline">
-            <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-            <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('special')">📁 New folder</button>
-          </div>
-          <div id="pb-special-content-inline"></div>
-        </div>
-      </div>
-
-      <div class="pb-select-bar" id="pb-select-bar-inline">
-        <span class="pb-select-bar-label" id="pb-select-label">0 selected</span>
-        <button class="btn-sm" onclick="pbSelectAll()" style="background:var(--bg-3);color:var(--fg-2)">Select all</button>
-        <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="openMoveModal()">Move to folder</button>
-        <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteSelected()">Delete plays</button>
-        <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteFolder()">Delete folder</button>
-        <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbToggleSelectMode()">Cancel</button>
+      <div style="text-align:center;padding:70px 24px;color:var(--fg-3)">
+        <div style="font-size:54px;margin-bottom:16px">🎨</div>
+        <div style="font-size:19px;font-weight:800;color:var(--fg);margin-bottom:10px">Mesh Play Designer</div>
+        <div style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--team-primary);background:var(--team-primary-glow);border:1.5px solid var(--team-primary);border-radius:20px;padding:5px 14px;margin-bottom:16px">Coming soon</div>
+        <div style="font-size:13.5px;line-height:1.6;max-width:300px;margin:0 auto">Draw up plays and formations right inside Mesh. We're building it now — check back soon.</div>
       </div>
     </div><!-- end more-playbook -->
 
@@ -4387,7 +4355,7 @@
       </div>
       <div class="more-menu-item" onclick="showPlayerSection('playbook')">
         <div class="more-menu-icon" style="background:rgba(77,159,255,0.1)">📖</div>
-        <div><div class="more-menu-label">Playbook</div><div class="more-menu-sub">Team plays &amp; formations</div></div>
+        <div><div class="more-menu-label">Playbook</div><div class="more-menu-sub">Mesh Play Designer — coming soon</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
       <div class="more-menu-item" onclick="showPlayerSection('documents')">
@@ -4762,6 +4730,7 @@
       <div style="margin-top:24px">
         <button class="note-modal-save" onclick="insertDrillIntoPlan()">+ Add to practice plan</button>
       </div>
+      <button id="dd-delete-btn" onclick="deleteDrillFromDetail()" style="width:100%;margin-top:10px;display:none;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑️ Delete drill</button>
     </div>
     </div>
   </div>
@@ -4859,8 +4828,8 @@
 
 
   <!-- ===== ADD / EDIT ITEM MODAL ===== -->
-  <div id="add-item-overlay" onclick="if(event.target===this)closeAddItemSheet()" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end">
-    <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;padding:12px 20px 32px;border-top:1px solid var(--black-4);max-height:88vh;overflow-y:auto" onclick="event.stopPropagation()">
+  <div id="add-item-overlay" onclick="if(event.target===this)closeAddItemSheet()" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end;justify-content:center">
+    <div style="background:var(--black-2);border-radius:18px 18px 0 0;width:100%;max-width:460px;margin:0 auto;padding:12px 20px 32px;border-top:1px solid var(--black-4);max-height:88vh;overflow-y:auto" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div style="font-size:16px;font-weight:700" id="add-item-title">Add item</div>
@@ -4979,6 +4948,7 @@
       <!-- Assignment -->
       <div class="section-label" style="margin-top:20px">Assignment</div>
       <div id="item-assignment-section"></div>
+      <button id="item-delete-btn" onclick="deleteCurrentItem()" style="width:100%;margin-top:24px;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:var(--radius-sm);padding:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">🗑️ Delete item</button>
     </div>
   </div>
 
@@ -5277,43 +5247,14 @@
         <div style="font-size:17px;font-weight:700">Playbook</div>
         <div style="font-size:12px;color:var(--fg-3)" id="pb-header-sub">Your Team</div>
       </div>
-      <button class="btn-sm" id="pb-select-toggle" onclick="pbToggleSelectMode()" style="display:none">Edit</button>
-    </div>
-    <div class="pb-unit-nav">
-      <button class="pb-unit-btn active" onclick="showPbUnit('offense',this)">Offense</button>
-      <button class="pb-unit-btn" onclick="showPbUnit('defense',this)">Defense</button>
-      <button class="pb-unit-btn" onclick="showPbUnit('special',this)">Special Teams</button>
     </div>
     <div class="pb-body">
-      <div class="pb-unit-section active" id="pb-offense">
-        <div class="pb-action-row" id="pb-offense-actions">
-          <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-          <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('offense')">📁 New folder</button>
-        </div>
-        <div id="pb-offense-content"></div>
+      <div style="text-align:center;padding:70px 24px;color:var(--fg-3)">
+        <div style="font-size:54px;margin-bottom:16px">🎨</div>
+        <div style="font-size:19px;font-weight:800;color:var(--fg);margin-bottom:10px">Mesh Play Designer</div>
+        <div style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--team-primary);background:var(--team-primary-glow);border:1.5px solid var(--team-primary);border-radius:20px;padding:5px 14px;margin-bottom:16px">Coming soon</div>
+        <div style="font-size:13.5px;line-height:1.6;max-width:300px;margin:0 auto">Draw up plays and formations right inside Mesh. We're building it now — check back soon.</div>
       </div>
-      <div class="pb-unit-section" id="pb-defense">
-        <div class="pb-action-row" id="pb-defense-actions">
-          <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-          <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('defense')">📁 New folder</button>
-        </div>
-        <div id="pb-defense-content"></div>
-      </div>
-      <div class="pb-unit-section" id="pb-special">
-        <div class="pb-action-row" id="pb-special-actions">
-          <div class="pb-coming-soon">🎨 Mesh Play Designer — coming soon</div>
-          <button class="pb-folder-btn" data-edit="playbook" onclick="openNewFolderModal('special')">📁 New folder</button>
-        </div>
-        <div id="pb-special-content"></div>
-      </div>
-    </div>
-    <div class="pb-select-bar" id="pb-select-bar">
-      <span class="pb-select-bar-label" id="pb-select-label">0 selected</span>
-      <button class="btn-sm" onclick="pbSelectAll()" style="background:var(--bg-3);color:var(--fg-2)">Select all</button>
-      <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="openMoveModal()">Move to folder</button>
-      <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteSelected()">Delete plays</button>
-      <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbDeleteFolder()">Delete folder</button>
-      <button class="btn-sm" style="background:var(--bg-3);border:1.5px solid var(--red);color:var(--red)" onclick="pbToggleSelectMode()">Cancel</button>
     </div>
   </div>
 
@@ -5392,7 +5333,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.15</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.16</div>
   </div>
 </div>
 
@@ -5406,7 +5347,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.15';
+  const APP_VERSION = 'v40.16';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9374,7 +9315,8 @@
       el.className = 'sidebar-item' + (item.id === desktopActiveItem ? ' active' : '');
       el.dataset.id = item.id;
       const sbBadge = item.id === 'messages' ? `<span class="sidebar-unread-badge" id="sidebar-msg-badge"></span>` : '';
-      el.innerHTML = `<span class="sidebar-item-icon">${item.icon}</span><span>${item.label}</span>${sbBadge}`;
+      const soonBadge = item.id === 'playbook' ? `<span style="margin-left:auto;font-size:9px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:var(--team-primary);background:var(--team-primary-glow);border:1px solid var(--team-primary);border-radius:10px;padding:1px 6px">Soon</span>` : '';
+      el.innerHTML = `<span class="sidebar-item-icon">${item.icon}</span><span>${item.label}</span>${sbBadge}${soonBadge}`;
       el.onclick = () => {
         desktopActiveItem = item.id;
         nav.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
@@ -15004,10 +14946,11 @@
     nameBtn.onclick = () => openPlayerProfile(player.name);
     wrap.appendChild(nameBtn);
 
-    // Jersey number
+    // Jersey number — emphasized badge (blank badge collapses via :empty)
     const num = document.createElement('span');
     num.className = 'dc-jersey-num';
-    num.textContent = player.num;
+    const jn = (player.num === null || player.num === undefined || player.num === '') ? '' : String(player.num).replace(/^#/, '');
+    num.textContent = jn ? '#' + jn : '';
     wrap.appendChild(num);
 
     // Flag
@@ -16612,11 +16555,35 @@ ${printBtnHtml}
       </div>`;
       return;
     }
-    body.innerHTML = renderPlayerStatHistory(pid);
+    body.innerHTML = renderPlayerStatHistory(pid, canEdit('performance'));
   }
 
-  // Shared: render season totals + game-by-game breakdown for a player
-  function renderPlayerStatHistory(pid) {
+  // Delete every logged stat for one player's game (coach only). Matches by game_id when
+  // present, otherwise by opponent + date (both submissions collapse to the same entry).
+  async function deletePlayerGameStats(pid, gameId, encOpponent, gameDate) {
+    if (!requireEdit('performance')) return;
+    const opponent = decodeURIComponent(encOpponent || '');
+    if (!confirm(`Delete ${opponent || 'this game'}’s stats for this player? This cannot be undone.`)) return;
+    const programId = obProgram?.id || localStorage.getItem('mesh_program_id');
+    let _err = null;
+    try {
+      let q = db.from('game_stats').delete().eq('player_id', pid);
+      if (programId) q = q.eq('program_id', programId);
+      if (gameId) q = q.eq('game_id', gameId);
+      else q = q.eq('game_date', gameDate || '').eq('opponent', opponent);
+      const { error } = await q;
+      if (error) { console.error('Delete stat error:', error); _err = error; }
+    } catch (e) { console.error('Delete stat error:', e); _err = e; }
+    if (programId) await loadGameStats(programId);
+    const pl = PLAYERS.find(p => p.db_id === pid || p.id === pid);
+    if (pl) renderPPStats(pl);
+    renderCoachGameStats();
+    showToast(_err ? '⚠️ Deleted here, but the database delete failed — may reappear on reload' : 'Stats deleted');
+  }
+
+  // Shared: render season totals + game-by-game breakdown for a player.
+  // canDelete = true only in the coach's player-profile view (not the player's own history).
+  function renderPlayerStatHistory(pid, canDelete) {
     const playerStats = GAME_STATS.filter(s => (s.player_id === pid) && s.status === 'approved');
 
     // Dedup to ONE stat per (game, category). Key by opponent+date+category — present on
@@ -16650,7 +16617,7 @@ ${printBtnHtml}
     const byGame = {};
     uniqueStats.forEach(s => {
       const key = s.game_id;
-      if (!byGame[key]) byGame[key] = { date: s.game_date, opponent: s.opponent, stats: {} };
+      if (!byGame[key]) byGame[key] = { gameId: key, date: s.game_date, opponent: s.opponent, stats: {} };
       byGame[key].stats[s.category] = (byGame[key].stats[s.category] || 0) + (parseFloat(s.value) || 0);
     });
     const games = Object.values(byGame).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -16661,10 +16628,14 @@ ${printBtnHtml}
           const cat = STAT_CATEGORIES.find(c => c.key === k);
           return `<span style="margin-right:10px"><strong>${v}${cat?.unit?' '+cat.unit:''}</strong> <span style="color:var(--fg-3)">${cat?.label||k}</span></span>`;
         }).join('');
+        const delBtn = canDelete
+          ? `<div onclick="deletePlayerGameStats('${pid}','${g.gameId||''}','${encodeURIComponent(g.opponent||'')}','${g.date||''}')" title="Delete these stats" style="font-size:10px;color:var(--red);cursor:pointer;padding:2px 7px;border-radius:4px;border:1px solid var(--red);flex-shrink:0">Delete</div>`
+          : '';
         return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <div style="font-size:13px;font-weight:700">${_esc(g.opponent || 'Game')}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px">
+            <div style="font-size:13px;font-weight:700;flex:1">${_esc(g.opponent || 'Game')}</div>
             <div style="font-size:11px;color:var(--fg-3)">${g.date || ''}</div>
+            ${delBtn}
           </div>
           <div style="font-size:12px;flex-wrap:wrap">${statLine}</div>
         </div>`;
@@ -18954,6 +18925,25 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     openAddItem(currentItemId);
   }
 
+  async function deleteCurrentItem() {
+    if (!requireEdit('inventory')) return;
+    const item = INVENTORY.find(i => i.id === currentItemId);
+    if (!item) return;
+    if (!confirm(`Delete "${item.name}"? This cannot be undone.`)) return;
+
+    let _delErr = null;
+    if (item.db_id) {
+      const { error } = await db.from('inventory').delete().eq('id', item.db_id);
+      if (error) { console.error('Inventory delete error:', error); _delErr = error; }
+    }
+    const idx = INVENTORY.findIndex(i => i.id === currentItemId);
+    if (idx >= 0) INVENTORY.splice(idx, 1);
+
+    closeItemDetail();
+    renderInventory();
+    showToast(_delErr ? '⚠️ Deleted here, but the database delete failed — may reappear on reload' : 'Item deleted');
+  }
+
   async function returnItem(id) {
     if(!requireEdit('inventory'))return;
     const item = INVENTORY.find(i => i.id === id);
@@ -20103,29 +20093,17 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     }
     pbBody.style.display = 'block';
 
-    // Render playbook UI — same as coach but no add/delete
-    const units = ['offense', 'defense', 'special'];
-    const unitLabels = { offense: 'Offense', defense: 'Defense', special: 'Special Teams' };
-
+    // Playbook is parked — Mesh Play Designer is coming soon (was a unit-tabbed play grid).
     pbBody.innerHTML = `
       <div style="padding:16px 0 12px;display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Playbook</div>
       </div>
-
-      <!-- Unit tabs -->
-      <div style="display:flex;gap:2px;background:var(--bg-3);border-radius:var(--radius-sm);padding:3px;margin-bottom:16px;width:fit-content">
-        ${units.map((u,i) => `
-          <button id="pb-player-tab-${u}" onclick="switchPlayerPbUnit('${u}')"
-            style="padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--font);
-            ${i===0?'background:var(--team-primary);color:var(--team-primary-text)':'background:transparent;color:var(--fg-2)'}">
-            ${unitLabels[u]}
-          </button>`).join('')}
-      </div>
-
-      <!-- Plays container -->
-      <div id="player-pb-plays"></div>`;
-
-    switchPlayerPbUnit('offense');
+      <div style="text-align:center;padding:60px 24px;color:var(--fg-3)">
+        <div style="font-size:54px;margin-bottom:16px">🎨</div>
+        <div style="font-size:19px;font-weight:800;color:var(--fg);margin-bottom:10px">Mesh Play Designer</div>
+        <div style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--team-primary);background:var(--team-primary-glow);border:1.5px solid var(--team-primary);border-radius:20px;padding:5px 14px;margin-bottom:16px">Coming soon</div>
+        <div style="font-size:13.5px;line-height:1.6;max-width:300px;margin:0 auto">Your coaches will be able to draw up plays and formations right inside Mesh. We're building it now — check back soon.</div>
+      </div>`;
   }
 
   function switchPlayerPbUnit(unit) {
@@ -21277,7 +21255,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
           ${isCoach ? `<div style="display:flex;gap:4px;flex-wrap:wrap">
             ${new Date(dateStr) < new Date() && (e.tag === 'game' || e.tag === 'scrimmage') ? `<div onclick="document.getElementById('cal-day-detail-overlay').remove();openLogStats('${e.id}','${dateStr}',encodeURIComponent(e.opponent||e.title||''))" style="font-size:10px;color:var(--green);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--green)">📊 Log stats</div>` : ''}
             <div onclick="document.getElementById('cal-day-detail-overlay').remove();openEditCalEvent('${e.id}')" style="font-size:10px;color:var(--team-primary);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--team-primary)">Edit</div>
-            <div onclick="deleteCalEvent('${e.id}');document.getElementById('cal-day-detail-overlay').remove()" style="font-size:10px;color:var(--fg-3);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">Remove</div>
+            <div onclick="deleteCalEvent('${e.id}');document.getElementById('cal-day-detail-overlay').remove()" style="font-size:10px;color:var(--red);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--red)">Remove</div>
           </div>` : ''}
         </div>
       </div>`).join('') : '<div style="font-size:13px;color:var(--fg-3);padding:8px 0">No events yet</div>';
@@ -21857,6 +21835,8 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     } else {
       vBlock.innerHTML = `<div style="margin-top:16px;padding:14px;background:var(--black-2);border:1px solid var(--black-4);border-radius:var(--radius);font-size:13px;color:var(--gray-3)">No video link — tap Edit to add one</div>`;
     }
+    const ddDel = document.getElementById('dd-delete-btn');
+    if (ddDel) ddDel.style.display = canEdit('drills') ? 'block' : 'none';
     document.getElementById('drill-detail-overlay').classList.add('open');
   }
 
@@ -21874,6 +21854,20 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     if (!d) return;
     closeDrillDetail();
     showToast(`"${d.title}" — tap a practice cell to insert`);
+  }
+
+  // Delete straight from the drill detail view (same effect as Edit → Delete drill).
+  function deleteDrillFromDetail() {
+    if (!requireEdit('drills')) return;
+    const d = DRILLS.find(x => x.id === currentDetailDrillId);
+    if (!d) return;
+    if (!confirm(`Delete "${d.title}"? This cannot be undone.`)) return;
+    const idx = DRILLS.findIndex(x => x.id === currentDetailDrillId);
+    if (idx >= 0) DRILLS.splice(idx, 1);
+    saveDrillsToStorage();
+    closeDrillDetail();
+    renderDrillLibrary();
+    showToast('Drill deleted');
   }
 
   // ===== ADD / EDIT DRILL =====
@@ -22282,16 +22276,11 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       setTimeout(() => showMoreSection('playbook'), 10);
       return;
     }
-    // Mobile: use overlay
+    // Mobile: use overlay (parked — just the Mesh Play Designer coming-soon note)
     const teamName = localStorage.getItem('mesh_team_name') || (obProgram && obProgram.teamName) || 'Your Team';
-    document.getElementById('pb-header-sub').textContent = teamName;
-    document.getElementById('playbook-overlay').querySelectorAll('.pb-action-row').forEach(el => el.style.display = isCoach ? 'flex' : 'none');
-    const selToggle = document.getElementById('pb-select-toggle');
-    if (selToggle) selToggle.style.display = isCoach ? '' : 'none';
+    const pbSub = document.getElementById('pb-header-sub');
+    if (pbSub) pbSub.textContent = teamName;
     document.getElementById('playbook-overlay').classList.add('open');
-    showPbUnit('offense');
-    await pbLoadFromSupabase();
-    showPbUnit(pbCurrentUnit);
   }
 
   function closePlaybook() {
