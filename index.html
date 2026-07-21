@@ -2048,6 +2048,39 @@
 </style>
 </head>
 <body>
+
+<!-- Boot splash: shown INSTANTLY (before the video landing paints) whenever we're about to route
+     the user somewhere — an email-confirm/recovery redirect, or a returning session in storage.
+     Without this, those loads briefly show the landing screen and kick off several MB of R2
+     background video before routing away. See the boot-routing script below + checkExistingSession. -->
+<div id="boot-splash" style="display:none;position:fixed;inset:0;z-index:99999;background:var(--bg,#0f1115);flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div class="boot-spinner" style="width:36px;height:36px;border-radius:50%;border:3px solid rgba(150,150,150,0.25);border-top-color:var(--team-primary,#c62828);animation:boot-spin 0.8s linear infinite"></div>
+  <div style="font-size:14px;font-weight:600;color:var(--fg-2,#8a8a8a);letter-spacing:0.01em">Signing you in…</div>
+</div>
+<style>@keyframes boot-spin{to{transform:rotate(360deg)}}</style>
+<script>
+(function(){
+  // Decide up front whether this load will route away from the landing screen. If so, show the
+  // splash immediately and let the video IIFE skip the heavy background download entirely.
+  try {
+    var url = (window.location.hash || '') + (window.location.search || '');
+    var authCallback = /access_token=|refresh_token=|[?&#]type=(signup|recovery|magiclink|invite|email_change)|[?&]code=/.test(url);
+    var hasStoredSession = false;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.slice(0, 3) === 'sb-' && k.indexOf('-auth-token') !== -1) { hasStoredSession = true; break; }
+    }
+    window.__meshLikelyRouting = !!(authCallback || hasStoredSession);
+    if (window.__meshLikelyRouting) {
+      var s = document.getElementById('boot-splash');
+      if (s) s.style.display = 'flex';
+      // Failsafe: never let the splash trap the user if routing stalls.
+      setTimeout(function(){ var el = document.getElementById('boot-splash'); if (el) el.style.display = 'none'; }, 8000);
+    }
+  } catch(e) { window.__meshLikelyRouting = false; }
+})();
+</script>
+
 <div class="phone">
 
 <!-- ONBOARDING: LANDING -->
@@ -2131,11 +2164,21 @@
       setTimeout(doSwitch, 4000); // fallback if canplay doesn't fire
     }
 
-    // Kick off
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', startFirst);
-    } else {
-      startFirst();
+    // Kick off — but ONLY if we're actually going to sit on the landing screen. When an email-confirm
+    // redirect or a stored session is present (window.__meshLikelyRouting) we route away immediately,
+    // so skip the multi-MB video download entirely. checkExistingSession calls __startLandingVideos()
+    // as a fallback if it turns out we're staying on the landing after all (e.g. expired session).
+    window.__startLandingVideos = function() {
+      if (window.__landingVideosStarted) return;
+      window.__landingVideosStarted = true;
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startFirst);
+      } else {
+        startFirst();
+      }
+    };
+    if (!window.__meshLikelyRouting) {
+      window.__startLandingVideos();
     }
   })();
   </script>
@@ -5351,7 +5394,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.20</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.21</div>
   </div>
 </div>
 
@@ -5365,7 +5408,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.20';
+  const APP_VERSION = 'v40.21';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9684,6 +9727,7 @@
       const { data } = await db.auth.getSession();
       if (!data?.session?.user) {
         console.log('No active Supabase session — showing landing screen');
+        window.__startLandingVideos?.();   // staying on landing → now load the background videos
         return false;
       }
       const uid = data.session.user.id;
@@ -9699,7 +9743,12 @@
       return resolved;
     } catch(e) {
       console.warn('[Session] Check error:', e);
+      window.__startLandingVideos?.();     // fell through to landing on error → load videos
       return false;
+    } finally {
+      // Whatever branch we took (app, wizard, join, or landing), the boot splash has done its job.
+      const splash = document.getElementById('boot-splash');
+      if (splash) splash.style.display = 'none';
     }
   }
 
@@ -23123,6 +23172,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     } catch(e) {}
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-login').classList.add('active');
+    window.__startLandingVideos?.();   // back on the landing → ensure the background is playing
     showToast('Signed out ✓');
   }
 
