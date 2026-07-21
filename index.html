@@ -5351,7 +5351,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.19</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.20</div>
   </div>
 </div>
 
@@ -5365,7 +5365,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.19';
+  const APP_VERSION = 'v40.20';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10744,6 +10744,12 @@
     const myseq = ++_tourSeq;
     _tour.idx = i;
     const step = steps[i];
+    // Hide the previous step/guide's card + spotlight during the before()+wait window so a new
+    // guide doesn't flash stale content at a stale position before snapping into place.
+    const _tip0 = document.getElementById('tour-tooltip');
+    const _hole0 = document.getElementById('tour-hole');
+    if (_tip0) _tip0.style.visibility = 'hidden';
+    if (_hole0) { _hole0.style.left = '50%'; _hole0.style.top = '50%'; _hole0.style.width = '0px'; _hole0.style.height = '0px'; }
     if (step.before) { try { step.before(); } catch(e){} }
     await new Promise(r => setTimeout(r, step.wait != null ? step.wait : (step.before ? 380 : 60)));
     if (myseq !== _tourSeq) return; // a newer step started — abandon this one
@@ -10763,6 +10769,7 @@
       hole.style.left = '50%'; hole.style.top = '50%'; hole.style.width = '0px'; hole.style.height = '0px';
       positionTourTooltip(null);
     }
+    if (_tip0) _tip0.style.visibility = 'visible'; // reveal now that it's positioned
   }
   function positionTourHole(rect) {
     const hole = document.getElementById('tour-hole');
