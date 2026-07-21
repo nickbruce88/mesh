@@ -4420,13 +4420,13 @@
     </div>
 
     <div class="pp-tab-nav">
-      <button class="pp-tab-btn active" onclick="showPPTab('overview',this)">Overview</button>
-      <button class="pp-tab-btn" onclick="showPPTab('notes',this)">Notes</button>
-      <button class="pp-tab-btn" onclick="showPPTab('discipline',this)">Discipline</button>
-      <button class="pp-tab-btn" onclick="showPPTab('academic',this)">Academic</button>
-      <button class="pp-tab-btn" onclick="showPPTab('contacts',this)">Contacts</button>
-      <button class="pp-tab-btn" onclick="showPPTab('equipment',this)">Equipment</button>
-      <button class="pp-tab-btn" onclick="showPPTab('stats',this)">Stats</button>
+      <button class="pp-tab-btn active" id="pp-tab-overview" onclick="showPPTab('overview',this)">Overview</button>
+      <button class="pp-tab-btn" id="pp-tab-notes" onclick="showPPTab('notes',this)">Notes</button>
+      <button class="pp-tab-btn" id="pp-tab-discipline" onclick="showPPTab('discipline',this)">Discipline</button>
+      <button class="pp-tab-btn" id="pp-tab-academic" onclick="showPPTab('academic',this)">Academic</button>
+      <button class="pp-tab-btn" id="pp-tab-contacts" onclick="showPPTab('contacts',this)">Contacts</button>
+      <button class="pp-tab-btn" id="pp-tab-equipment" onclick="showPPTab('equipment',this)">Equipment</button>
+      <button class="pp-tab-btn" id="pp-tab-stats" onclick="showPPTab('stats',this)">Stats</button>
     </div>
 
     <div class="pp-body">
@@ -5351,7 +5351,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.18</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.19</div>
   </div>
 </div>
 
@@ -5365,7 +5365,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.18';
+  const APP_VERSION = 'v40.19';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10902,62 +10902,125 @@
     },
     calendar: {
       coach: [
-        { title: 'Schedule 📅', body: 'Games, practices, and events for your team.', target: null, before: () => showTab('coach','schedule') },
-        { title: 'List or calendar', body: 'Switch between a month calendar and a list view at the top.', target: null },
-        { title: 'Add an event', body: 'Create games and events, set Home / Away / Neutral, and tag them by type and color.', target: null },
-        { title: 'Edit or remove', body: 'Tap any event to edit it, or Remove it (red outline) if it’s cancelled.', target: null },
+        { title: 'Calendar 📅', body: 'Games, practices, and events for your team — all in one place.', target: null, before: () => showMoreSection('schedule'), wait: 450 },
+        { title: 'List or calendar', body: 'Flip between the month calendar and a running list right here.', target: '#coach-view-cal' },
+        { title: 'Add an event', body: 'Tap any day on the calendar to add a game or event — set the time, location, Home / Away / Neutral, and tag it by type & color.', target: '#coach-sched-cal' },
+        { title: 'Import & export', body: 'Import a schedule, or export your season to any calendar app as an .ics file.', target: '#more-schedule .more-section-header' },
+        { title: 'Edit or remove', body: 'Tap an event to edit it, or Remove it (red outline) if it gets cancelled.', target: null },
       ],
       player: [
-        { title: 'Schedule 📅', body: 'Your team’s games and practices, in list or calendar view.', target: null, before: () => showTab(currentRole,'schedule') },
+        { title: 'Schedule 📅', body: 'Your team’s games and practices, in list or calendar view.', target: null, before: () => showTab(currentRole,'schedule'), wait: 450 },
         { title: 'Where & when', body: 'Each event shows the time, location, and whether it’s Home, Away, or Neutral.', target: null },
       ],
       parent: [
-        { title: 'Schedule 📅', body: 'Your player’s games and practices, in list or calendar view.', target: null, before: () => showTab(currentRole,'schedule') },
+        { title: 'Schedule 📅', body: 'Your player’s games and practices, in list or calendar view.', target: null, before: () => showTab(currentRole,'schedule'), wait: 450 },
         { title: 'Where & when', body: 'Each event shows the time, location, and whether it’s Home, Away, or Neutral.', target: null },
       ],
     },
     messages: {
       coach: [
-        { title: 'Messages 💬', body: 'Team threads and direct messages.', target: null, before: () => showTab('coach','messages') },
-        { title: 'Start a conversation', body: 'Message the whole team, a group, or one person. Player DMs are automatically witnessed for safety.', target: null },
+        { title: 'Messages 💬', body: 'Team threads and direct messages, all in one inbox.', target: null, before: () => showTab('coach','messages'), wait: 450 },
+        { title: 'Start a conversation', body: 'Message the whole team, a position group, or one person.', target: '[data-edit="messages"].msg-compose-btn' },
+        { title: 'The witness rule', body: 'A one-on-one message with a player can’t be SENT until you add a witness — a parent or another coach. (Pick two or more coaches and it becomes a group, so no witness is needed.) It’s a safety guardrail — nothing is witnessed automatically; you choose who.', target: '[data-edit="messages"].msg-compose-btn' },
+        { title: 'Archive a conversation', body: 'Inside any thread, tap the 🗄️ icon to archive it — it moves out of your inbox to keep things tidy.', target: null },
+        { title: 'Find & un-archive', body: 'Archived chats collapse under “🗄️ Archived” at the top of your inbox. Open one and send a message and it pops right back to the inbox.', target: null },
         { title: 'Stay notified', body: 'Tap the bell to turn on notifications so messages reach you even when the app is closed. Unread threads show a dot.', target: '#notif-btn' },
       ],
       player: [
-        { title: 'Messages 💬', body: 'Message your coaches here.', target: null, before: () => showTab('player','messages') },
+        { title: 'Messages 💬', body: 'Message your coaches here.', target: null, before: () => showTab('player','messages'), wait: 450 },
+        { title: 'The witness rule', body: 'A one-on-one message to a coach can’t be sent until a witness — a parent or another coach — is added. It keeps every conversation safe and visible. You add the witness; it isn’t automatic.', target: '[onclick="openPlayerNewMsg()"]' },
+        { title: 'Archive', body: 'Tap 🗄️ inside a thread to archive it; find archived chats under “🗄️ Archived” at the top of your inbox.', target: null },
         { title: 'Stay notified', body: 'Tap the bell up top to turn on notifications so you never miss a message.', target: '#notif-btn' },
       ],
       parent: [
-        { title: 'Messages 💬', body: 'Message the coaching staff here.', target: null, before: () => showTab('parent','messages') },
+        { title: 'Messages 💬', body: 'Message the coaching staff here.', target: null, before: () => showTab('parent','messages'), wait: 450 },
+        { title: 'Archive', body: 'Tap 🗄️ inside a thread to archive it; find archived chats under “🗄️ Archived” at the top of your inbox.', target: null },
         { title: 'Stay notified', body: 'Tap the bell up top to turn on notifications so you never miss a message.', target: '#notif-btn' },
       ],
     },
     roster: {
       coach: [
-        { title: 'Roster 👥', body: 'Everyone on your team.', target: null, before: () => showMoreSection('roster') },
-        { title: 'Sort & filter', body: 'Sort by name, number, or grade and filter by position group.', target: '#roster-filter-btn' },
-        { title: 'Open a player', body: 'Tap a player for their profile — info, stats, notes, discipline, and equipment.', target: null },
-        { title: 'Add players', body: 'Add players one at a time, or import a whole roster from a CSV / spreadsheet.', target: null },
+        { title: 'Your roster 👥', body: 'Every player on your team lives here — tap any card to open their full profile.', target: null, before: () => showMoreSection('roster'), wait: 450 },
+        { title: 'Add or import players', body: 'Add a player by hand, or import your whole roster from a CSV / spreadsheet in one shot.', target: '#more-roster [onclick="openAddPlayerManual()"]' },
+        { title: 'Sort & filter', body: 'Sort by first name, last name, or number — and filter by grade or position group.', target: '#roster-filter-btn' },
+        { title: 'Open a player card', body: 'Tap any player to manage everything about them — notes, discipline, grades, equipment, and stats. We’ll walk you through a card the first time you open one.', target: null },
+      ],
+    },
+    playercard: {
+      coach: [
+        { title: 'The player card 🗂️', body: 'Everything about one player, organized into tabs. Quick run-through:', target: null, before: () => { try { showPPTab('overview'); } catch(e){} }, wait: 300 },
+        { title: 'Overview', body: 'Jersey number, position, class year, and status at a glance — with quick edits.', target: '#pp-tab-overview' },
+        { title: 'Notes', body: 'Log coaching notes on a player — attributed to you and timestamped, so the whole staff stays on the same page.', target: '#pp-tab-notes', before: () => { try { showPPTab('notes'); } catch(e){} }, wait: 250 },
+        { title: 'Discipline', body: 'Track disciplinary status and log incidents. Status changes are auto-noted and attributed to you.', target: '#pp-tab-discipline', before: () => { try { showPPTab('discipline'); } catch(e){} }, wait: 250 },
+        { title: 'Academic', body: 'Keep grades and eligibility here so you know who’s good to go on game day.', target: '#pp-tab-academic', before: () => { try { showPPTab('academic'); } catch(e){} }, wait: 250 },
+        { title: 'Contacts', body: 'Parent / guardian contact info and linked accounts.', target: '#pp-tab-contacts', before: () => { try { showPPTab('contacts'); } catch(e){} }, wait: 250 },
+        { title: 'Equipment', body: 'Every piece of gear assigned to this player, tied into your Inventory.', target: '#pp-tab-equipment', before: () => { try { showPPTab('equipment'); } catch(e){} }, wait: 250 },
+        { title: 'Stats', body: 'Their season game stats and training numbers — you can also delete a game’s stats from here.', target: '#pp-tab-stats', before: () => { try { showPPTab('stats'); } catch(e){} }, wait: 250 },
+        { title: 'That’s the player card', body: 'Tap the tabs anytime to manage a player. Back to Overview!', target: null, before: () => { try { showPPTab('overview'); } catch(e){} } },
       ],
     },
     depth: {
       coach: [
-        { title: 'Depth chart 📊', body: 'Your two-deep by position.', target: null, before: () => showMoreSection('depth') },
-        { title: 'Units & levels', body: 'Switch between Offense, Defense, Special Teams and levels (Varsity / JV) at the top.', target: null },
-        { title: 'Set the strings', body: 'Tap Edit, then drag players to order them — #1 is the starter, the rest are the backups.', target: '#dc-edit-btn' },
+        { title: 'Depth chart 📊', body: 'Your full depth at every position — starters and every backup behind them, not just a two-deep.', target: null, before: () => showMoreSection('depth'), wait: 450 },
+        { title: 'Pick a unit', body: 'Filter to Offense, Defense, or Special Teams — or see All at once.', target: '.unit-filter' },
+        { title: 'Pick a level', body: 'Switch between Varsity, JV, and Freshman here.', target: '#level-dropdown' },
+        { title: 'Set the order', body: 'Tap Edit, then drag players to order them — #1 is the starter, and everyone below is the depth behind them.', target: '#dc-edit-btn' },
+        { title: 'Check your coverage', body: 'The Groups view flags any position that’s thin, so you can spot holes at a glance.', target: '#dc-tab-groups' },
       ],
       player: [
-        { title: 'Depth chart 📊', body: 'See where you line up by position and unit.', target: null, before: () => showPlayerSection('depth') },
+        { title: 'Depth chart 📊', body: 'See where you line up by position and unit.', target: null, before: () => showPlayerSection('depth'), wait: 400 },
+        { title: 'Units & levels', body: 'Switch units and your level (Varsity / JV) at the top to find your spot.', target: '.unit-filter' },
       ],
     },
     performance: {
       coach: [
-        { title: 'Stats & performance 📈', body: 'Game stats and training metrics for your team.', target: null, before: () => showTab('coach','performance') },
-        { title: 'Game vs Training', body: 'Toggle between game-stat leaderboards and training / combine metrics.', target: '#coach-perf-tab-game' },
-        { title: 'Log & approve', body: 'Log stats after a game, or approve stats players submit. Open a player to view — or delete — their game log.', target: null },
+        { title: 'Performance 📈', body: 'Game stats and training metrics for your whole team.', target: null, before: () => showMoreSection('performance'), wait: 450 },
+        { title: 'Game vs Training', body: 'Toggle between game-stat leaderboards and training / combine numbers (bench, squat, 40, and more).', target: '#coach-perf-tab-game' },
+        { title: 'Log & approve stats', body: 'Log stats yourself after a game — or approve the ones players submit (pending ones show up at the top).', target: '#coach-perf-game-view [data-edit="performance"]' },
+        { title: 'Per-player history', body: 'Open any player’s Stats tab to see their game log — and delete a game’s stats if something was entered wrong.', target: null },
       ],
       player: [
-        { title: 'Your stats 📈', body: 'Your game stats and training numbers across the season.', target: null, before: () => showTab('player','performance') },
+        { title: 'Your stats 📈', body: 'Your game stats and training numbers across the season.', target: null, before: () => showTab('player','performance'), wait: 450 },
         { title: 'Submit stats', body: 'After a game you can submit your stats for your coach to approve.', target: null },
+      ],
+    },
+    inventory: {
+      coach: [
+        { title: 'Inventory 🎽', body: 'Track every piece of team equipment and who has it.', target: null, before: () => showMoreSection('inventory'), wait: 450 },
+        { title: 'At a glance', body: 'See totals — assigned, available, and anything in poor condition. Tap a tile to filter the list.', target: '#inv-stats-row' },
+        { title: 'Add & import gear', body: 'Add items one at a time, or import your whole equipment list from a spreadsheet.', target: '#more-inventory [data-edit="inventory"]' },
+        { title: 'QR check-in / out', body: 'Every item gets a QR tag — scan to assign gear to a player or check it back in fast.', target: '#more-inventory [onclick="openQRScanner()"]' },
+        { title: 'Manage an item', body: 'Tap any item to assign it, mark it returned, edit it, or delete it.', target: null },
+      ],
+    },
+    attendance: {
+      coach: [
+        { title: 'Attendance ✅', body: 'Take roll for practices and games in seconds.', target: null, before: () => showMoreSection('attendance'), wait: 450 },
+        { title: 'Take Roll or History', body: 'Take today’s roll, or review past sessions under History.', target: '#att-tab-roll' },
+        { title: 'Pick the session', body: 'Choose a date and, if you like, tie the roll to a specific event.', target: '#att-date' },
+        { title: 'Mark each player', body: 'Tap through Present / Absent / Late / Excused — the counters update live as you go.', target: '#att-player-list' },
+        { title: 'Filter the list', body: 'Narrow by position or class year to move faster through a big roster.', target: '#att-filter-pos' },
+      ],
+    },
+    drills: {
+      coach: [
+        { title: 'Drill Library 🏈', body: 'Your reusable bank of drills — build it once, pull from it every practice.', target: null, before: () => showMoreSection('drills'), wait: 450 },
+        { title: 'Add a drill', body: 'Create a drill with a how-to description, position tags, and even a video link.', target: '#more-drills [data-edit="drills"]' },
+        { title: 'Filter by position', body: 'Jump to drills for a specific position group.', target: '#drill-pos-filter' },
+        { title: 'Use them in practice', body: 'In the Practice planner, tap a cell → “Drill from library” to attach any of these — or create a new one on the spot.', target: null },
+      ],
+    },
+    documents: {
+      coach: [
+        { title: 'Documents 📁', body: 'Share forms, schedules, and files with your team and parents.', target: null, before: () => showMoreSection('docs'), wait: 450 },
+        { title: 'Organize with folders', body: 'Create folders to group files — physical forms, fundraisers, handouts, whatever you need.', target: '#more-docs [data-edit="docs"]' },
+        { title: 'Share with the right people', body: 'Upload a file or link and choose whether players, parents, or both can see it.', target: '#doc-folder-list' },
+      ],
+      player: [
+        { title: 'Documents 📁', body: 'Forms and files your coaches have shared with the team.', target: null, before: () => showPlayerSection('documents'), wait: 400 },
+      ],
+      parent: [
+        { title: 'Documents 📁', body: 'Forms, fundraisers, and files shared by the staff.', target: null, before: () => showParentSection('documents'), wait: 400 },
       ],
     },
   };
@@ -10969,12 +11032,19 @@
     { key: 'calendar',    label: 'Schedule & calendar', icon: '📅', roles: ['coach','player','parent'] },
     { key: 'messages',    label: 'Messages',            icon: '💬', roles: ['coach','player','parent'] },
     { key: 'roster',      label: 'Roster',              icon: '👥', roles: ['coach'] },
+    { key: 'playercard',  label: 'Player card',         icon: '🗂️', roles: ['coach'] },
     { key: 'depth',       label: 'Depth chart',         icon: '📊', roles: ['coach','player'] },
     { key: 'performance', label: 'Stats & performance', icon: '📈', roles: ['coach','player'] },
+    { key: 'attendance',  label: 'Attendance',          icon: '✅', roles: ['coach'] },
+    { key: 'inventory',   label: 'Inventory',           icon: '🎽', roles: ['coach'] },
+    { key: 'drills',      label: 'Drill library',       icon: '🏈', roles: ['coach'] },
+    { key: 'documents',   label: 'Documents',           icon: '📁', roles: ['coach','player','parent'] },
   ];
 
   // Which tab (in showTab) auto-launches which guide.
   const TAB_GUIDE_KEY = { practice: 'practice', schedule: 'calendar', messages: 'messages', performance: 'performance', depth: 'depth' };
+  // Which More-menu section (in showMoreSection) auto-launches which guide.
+  const MORE_GUIDE_KEY = { roster: 'roster', depth: 'depth', schedule: 'calendar', inventory: 'inventory', attendance: 'attendance', performance: 'performance', drills: 'drills', docs: 'documents', documents: 'documents' };
 
   let _guidesSeen = new Set();
   let _guidesReady = false; // gate auto-launch until we've loaded the server list
@@ -14682,14 +14752,14 @@
     if (tab) tab.classList.toggle('wide-cal', section === 'schedule');
     // Trigger any section-specific init
     if (section === 'drills') { loadDrillsFromSupabase(); renderDrillLibrary(); }
-    if (section === 'roster') { renderCoachRoster(); maybeAutoGuide('roster'); }
+    if (section === 'roster') renderCoachRoster();
     if (section === 'inventory') {
       getValidProgramId().then(id => {
         if (id) loadInventoryFromSupabase(id);
         else renderInventory();
       });
     }
-    if (section === 'depth') { renderDepthChart(); maybeAutoGuide('depth'); }
+    if (section === 'depth') renderDepthChart();
     if (section === 'depth-player') {
       // Show player section depth chart
       const playerMore = document.getElementById('tab-player-more');
@@ -14728,6 +14798,9 @@
     }
     // Gate this section's edit controls for assistant coaches (runs after section render).
     setTimeout(applyPermissionState, 60);
+    // First-visit feature guide for More-menu sections (roster, depth, calendar, inventory,
+    // attendance, performance, drills, documents) — once per user.
+    maybeAutoGuide(MORE_GUIDE_KEY[section]);
     // History (mobile): entering a section from the More menu is a forward nav; Back
     // returns to the menu. Desktop navigates sections via the sidebar, so skip it there.
     if (!isDesktop() && !_navRestoring) navPush(() => backToMoreMenu());
@@ -18491,6 +18564,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Reset to overview tab
     showPPTab('overview');
     document.getElementById('player-profile-overlay').classList.add('open');
+    // First time a coach opens any player card, walk them through its tabs.
+    if (currentRole === 'coach') maybeAutoGuide('playercard');
   }
 
   function closePlayerProfile() {
@@ -20030,7 +20105,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.querySelectorAll('[id^="parent-section-"]').forEach(s => s.classList.remove('active'));
     const sec = document.getElementById('parent-section-' + section);
     if (sec) sec.classList.add('active');
-    if (section === 'documents') docLoadFromSupabase().then(() => renderSharedDocs('parents'));
+    if (section === 'documents') { docLoadFromSupabase().then(() => renderSharedDocs('parents')); maybeAutoGuide('documents'); }
     if (section === 'myplayer') renderParentMyPlayer();
     const tab = document.getElementById('tab-parent-more');
     if (tab) tab.scrollTop = 0;
@@ -20063,6 +20138,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const docs = document.getElementById('player-docs-section');
       if (docs) docs.style.display = 'block';
       docLoadFromSupabase().then(() => renderSharedDocs('players'));
+      maybeAutoGuide('documents');
     } else if (sec === 'depth') {
       renderPlayerDepthChart();
       maybeAutoGuide('depth');
