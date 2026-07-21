@@ -3218,6 +3218,14 @@
         </div>
         <div class="more-menu-arrow">›</div>
       </div>
+      <div class="more-menu-item" onclick="openGuidesHub()">
+        <div class="more-menu-icon" style="background:rgba(57,255,20,0.1)">📖</div>
+        <div>
+          <div class="more-menu-label">Guides &amp; walkthroughs</div>
+          <div class="more-menu-sub">Replay any feature walkthrough</div>
+        </div>
+        <div class="more-menu-arrow">›</div>
+      </div>
     </div>
 
     <!-- DEPTH CHART SECTION -->
@@ -4170,6 +4178,11 @@
         <div><div class="more-menu-label">Document Center</div><div class="more-menu-sub">Forms, fundraisers & schedules</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
+      <div class="more-menu-item" onclick="openGuidesHub()">
+        <div class="more-menu-icon" style="background:rgba(57,255,20,0.1)">📖</div>
+        <div><div class="more-menu-label">Guides & walkthroughs</div><div class="more-menu-sub">Replay any walkthrough</div></div>
+        <div class="more-menu-arrow">›</div>
+      </div>
     </div>
 
     <!-- MY PLAYER SECTION -->
@@ -4361,6 +4374,11 @@
       <div class="more-menu-item" onclick="showPlayerSection('documents')">
         <div class="more-menu-icon" style="background:rgba(160,100,255,0.1)">📁</div>
         <div><div class="more-menu-label">Documents</div><div class="more-menu-sub">Forms &amp; shared files</div></div>
+        <div class="more-menu-arrow">›</div>
+      </div>
+      <div class="more-menu-item" onclick="openGuidesHub()">
+        <div class="more-menu-icon" style="background:rgba(57,255,20,0.1)">📖</div>
+        <div><div class="more-menu-label">Guides &amp; walkthroughs</div><div class="more-menu-sub">Replay any walkthrough</div></div>
         <div class="more-menu-arrow">›</div>
       </div>
     </div>
@@ -5331,9 +5349,9 @@
     <div class="profile-menu-item" id="pmi-staff-access" onclick="openStaffAccess()"><span class="pmi">🔐</span> Staff access</div>
     <div class="profile-menu-item" onclick="openManageStaff()"><span class="pmi">👥</span> Manage staff</div>
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
-    <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
+    <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.16</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.17</div>
   </div>
 </div>
 
@@ -5347,7 +5365,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.16';
+  const APP_VERSION = 'v40.17';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5904,6 +5922,8 @@
     // Player My Info — rendered via 'more' tab hook above
     // Re-apply per-feature edit gating after the tab (and its dynamic controls) render.
     if (role === 'coach') setTimeout(applyPermissionState, 80);
+    // First-visit feature guide (once per user).
+    maybeAutoGuide(TAB_GUIDE_KEY[tab]);
     // History: a tab change is a forward navigation — Back/swipe returns to the prior tab.
     if (!_navRestoring && _navPrevTab && _navPrevTab !== tab) {
       const _pr = role, _pt = _navPrevTab;
@@ -10716,15 +10736,8 @@
       document.body.appendChild(el);
     });
   }
-  function startTour(role) {
-    role = role || currentRole || 'coach';
-    const steps = TOUR_STEPS[role];
-    if (!steps || !steps.length) return;
-    _tour = { role, idx: 0, steps };
-    _tourEnsureEls();
-    ['tour-blocker','tour-hole','tour-tooltip'].forEach(id => { document.getElementById(id).style.display = 'block'; });
-    showTourStep(0);
-  }
+  // Overview tour is now just one guide in the registry; delegate to the guide engine.
+  function startTour(role) { startGuide('overview', role); }
   async function showTourStep(i) {
     const steps = _tour.steps;
     if (i < 0 || i >= steps.length) { endTour(); return; }
@@ -10796,11 +10809,177 @@
   function tourBack() { showTourStep(_tour.idx - 1); }
   function endTour() {
     ['tour-blocker','tour-hole','tour-tooltip'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    // Finishing OR skipping a guide counts as "seen" so it won't auto-launch again.
+    if (_tour.key) markGuideSeen(_tour.key);
   }
   // Replay entry point (profile menu). Closes the profile modal first.
   function replayTour() {
     if (typeof closeProfileModal === 'function') closeProfileModal();
-    setTimeout(() => startTour(currentRole || 'coach'), 250);
+    setTimeout(() => startGuide('overview', currentRole || 'coach'), 250);
+  }
+
+  // ===== FEATURE GUIDES =====
+  // Each major tab has its own spotlight walkthrough, rendered by the same engine as the
+  // overview tour. Guides auto-launch ONCE on first visit to a tab (seen-state is stored
+  // server-side, per user), and can be replayed anytime from the Guides hub.
+  const GUIDES = {
+    overview: TOUR_STEPS, // role-keyed
+    practice: {
+      coach: [
+        { title: 'Practice planner 📋', body: "Build your practice day by day. Here's the quick tour.", target: null, before: () => showTab('coach','practice') },
+        { title: 'Day & week', body: 'Tap a day to plan it; the arrows move between weeks. Each day is saved on its own.', target: '#practice-week-title' },
+        { title: 'Start time', body: 'Set when practice starts — every period’s time is calculated from here and re-flows when you reorder.', target: '#practice-start-input' },
+        { title: 'Build periods', body: 'Add team periods, position-group (Indy) blocks, and water/transition breaks. Tap any cell to rename it, add a note, or attach a drill.', target: null },
+        { title: 'Reuse a day', body: 'Under Actions you can Copy a day and Paste it onto another — or save it as a reusable template.', target: null },
+        { title: 'Saved automatically', body: 'Every change syncs to your team in the cloud, so your staff sees the same plan and it survives a reload.', target: null },
+      ],
+    },
+    calendar: {
+      coach: [
+        { title: 'Schedule 📅', body: 'Games, practices, and events for your team.', target: null, before: () => showTab('coach','schedule') },
+        { title: 'List or calendar', body: 'Switch between a month calendar and a list view at the top.', target: null },
+        { title: 'Add an event', body: 'Create games and events, set Home / Away / Neutral, and tag them by type and color.', target: null },
+        { title: 'Edit or remove', body: 'Tap any event to edit it, or Remove it (red outline) if it’s cancelled.', target: null },
+      ],
+      player: [
+        { title: 'Schedule 📅', body: 'Your team’s games and practices, in list or calendar view.', target: null, before: () => showTab(currentRole,'schedule') },
+        { title: 'Where & when', body: 'Each event shows the time, location, and whether it’s Home, Away, or Neutral.', target: null },
+      ],
+      parent: [
+        { title: 'Schedule 📅', body: 'Your player’s games and practices, in list or calendar view.', target: null, before: () => showTab(currentRole,'schedule') },
+        { title: 'Where & when', body: 'Each event shows the time, location, and whether it’s Home, Away, or Neutral.', target: null },
+      ],
+    },
+    messages: {
+      coach: [
+        { title: 'Messages 💬', body: 'Team threads and direct messages.', target: null, before: () => showTab('coach','messages') },
+        { title: 'Start a conversation', body: 'Message the whole team, a group, or one person. Player DMs are automatically witnessed for safety.', target: null },
+        { title: 'Stay notified', body: 'Tap the bell to turn on notifications so messages reach you even when the app is closed. Unread threads show a dot.', target: '#notif-btn' },
+      ],
+      player: [
+        { title: 'Messages 💬', body: 'Message your coaches here.', target: null, before: () => showTab('player','messages') },
+        { title: 'Stay notified', body: 'Tap the bell up top to turn on notifications so you never miss a message.', target: '#notif-btn' },
+      ],
+      parent: [
+        { title: 'Messages 💬', body: 'Message the coaching staff here.', target: null, before: () => showTab('parent','messages') },
+        { title: 'Stay notified', body: 'Tap the bell up top to turn on notifications so you never miss a message.', target: '#notif-btn' },
+      ],
+    },
+    roster: {
+      coach: [
+        { title: 'Roster 👥', body: 'Everyone on your team.', target: null, before: () => showMoreSection('roster') },
+        { title: 'Sort & filter', body: 'Sort by name, number, or grade and filter by position group.', target: '#roster-filter-btn' },
+        { title: 'Open a player', body: 'Tap a player for their profile — info, stats, notes, discipline, and equipment.', target: null },
+        { title: 'Add players', body: 'Add players one at a time, or import a whole roster from a CSV / spreadsheet.', target: null },
+      ],
+    },
+    depth: {
+      coach: [
+        { title: 'Depth chart 📊', body: 'Your two-deep by position.', target: null, before: () => showMoreSection('depth') },
+        { title: 'Units & levels', body: 'Switch between Offense, Defense, Special Teams and levels (Varsity / JV) at the top.', target: null },
+        { title: 'Set the strings', body: 'Tap Edit, then drag players to order them — #1 is the starter, the rest are the backups.', target: '#dc-edit-btn' },
+      ],
+      player: [
+        { title: 'Depth chart 📊', body: 'See where you line up by position and unit.', target: null, before: () => showPlayerSection('depth') },
+      ],
+    },
+    performance: {
+      coach: [
+        { title: 'Stats & performance 📈', body: 'Game stats and training metrics for your team.', target: null, before: () => showTab('coach','performance') },
+        { title: 'Game vs Training', body: 'Toggle between game-stat leaderboards and training / combine metrics.', target: '#coach-perf-tab-game' },
+        { title: 'Log & approve', body: 'Log stats after a game, or approve stats players submit. Open a player to view — or delete — their game log.', target: null },
+      ],
+      player: [
+        { title: 'Your stats 📈', body: 'Your game stats and training numbers across the season.', target: null, before: () => showTab('player','performance') },
+        { title: 'Submit stats', body: 'After a game you can submit your stats for your coach to approve.', target: null },
+      ],
+    },
+  };
+
+  // Hub list (order shown in the Guides menu). roles = who sees each guide.
+  const GUIDE_META = [
+    { key: 'overview',    label: 'App overview',        icon: '🧭', roles: ['coach','player','parent'] },
+    { key: 'practice',    label: 'Practice planner',    icon: '📋', roles: ['coach'] },
+    { key: 'calendar',    label: 'Schedule & calendar', icon: '📅', roles: ['coach','player','parent'] },
+    { key: 'messages',    label: 'Messages',            icon: '💬', roles: ['coach','player','parent'] },
+    { key: 'roster',      label: 'Roster',              icon: '👥', roles: ['coach'] },
+    { key: 'depth',       label: 'Depth chart',         icon: '📊', roles: ['coach','player'] },
+    { key: 'performance', label: 'Stats & performance', icon: '📈', roles: ['coach','player'] },
+  ];
+
+  // Which tab (in showTab) auto-launches which guide.
+  const TAB_GUIDE_KEY = { practice: 'practice', schedule: 'calendar', messages: 'messages', performance: 'performance', depth: 'depth' };
+
+  let _guidesSeen = new Set();
+  let _guidesReady = false; // gate auto-launch until we've loaded the server list
+
+  async function loadGuidesSeen() {
+    try {
+      const { data, error } = await db.rpc('get_my_guides_seen');
+      if (!error && Array.isArray(data)) _guidesSeen = new Set(data);
+    } catch (e) { /* offline / not signed in — leave empty */ }
+    _guidesReady = true;
+  }
+  function markGuideSeen(key) {
+    if (!key || _guidesSeen.has(key)) return;
+    _guidesSeen.add(key);
+    try { db.rpc('mark_guide_seen', { p_key: key }).then(r => { if (r && r.error) console.warn('mark_guide_seen:', r.error.message); }, () => {}); } catch (e) {}
+  }
+
+  function _guideSteps(key, role) {
+    const g = GUIDES[key];
+    if (!g) return null;
+    return Array.isArray(g) ? g : g[role || currentRole];
+  }
+
+  function startGuide(key, role) {
+    role = role || currentRole || 'coach';
+    const steps = _guideSteps(key, role);
+    if (!steps || !steps.length) return;
+    _tour = { role, idx: 0, steps, key };
+    _tourEnsureEls();
+    ['tour-blocker','tour-hole','tour-tooltip'].forEach(id => { document.getElementById(id).style.display = 'block'; });
+    showTourStep(0);
+  }
+
+  // Auto-launch a tab's guide the first time it's opened (once per user, server-tracked).
+  function maybeAutoGuide(key) {
+    if (!key || !_guidesReady || _guidesSeen.has(key)) return;
+    if (!_guideSteps(key, currentRole)) return;
+    const tip = document.getElementById('tour-tooltip');
+    if (tip && tip.style.display === 'block') return; // a guide is already running
+    setTimeout(() => { if (!_guidesSeen.has(key)) startGuide(key, currentRole); }, 700);
+  }
+
+  // ===== GUIDES HUB (browse & replay any guide) =====
+  function openGuidesHub() {
+    if (typeof closeProfileModal === 'function') closeProfileModal();
+    const role = currentRole || 'coach';
+    const items = GUIDE_META.filter(g => g.roles.includes(role));
+    let overlay = document.getElementById('guides-hub-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'guides-hub-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;display:flex;align-items:flex-end;justify-content:center';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:460px;padding:14px 20px 32px;border-top:1px solid var(--border);max-height:82vh;overflow-y:auto" onclick="event.stopPropagation()">
+        <div class="action-sheet-handle"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:17px;font-weight:800;color:var(--fg)">📖 Guides</div>
+          <div style="color:var(--fg-3);cursor:pointer;font-size:18px" onclick="document.getElementById('guides-hub-overlay').remove()">✕</div>
+        </div>
+        <div style="font-size:12px;color:var(--fg-3);margin-bottom:14px">Walkthroughs for each part of Mesh. Tap one to replay it.</div>
+        ${items.map(g => `
+          <div onclick="document.getElementById('guides-hub-overlay').remove(); setTimeout(()=>startGuide('${g.key}'), 220)"
+               style="display:flex;align-items:center;gap:12px;padding:13px 10px;border-radius:var(--radius-sm);cursor:pointer;border-bottom:1px solid var(--border)">
+            <div style="font-size:22px;width:30px;text-align:center;flex-shrink:0">${g.icon}</div>
+            <div style="flex:1;font-size:14.5px;font-weight:600;color:var(--fg)">${g.label}</div>
+            ${_guidesSeen.has(g.key) ? '' : '<span style="font-size:9px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:var(--team-primary);background:var(--team-primary-glow);border:1px solid var(--team-primary);border-radius:10px;padding:1px 7px">New</span>'}
+            <div style="color:var(--fg-3);font-size:18px">›</div>
+          </div>`).join('')}
+      </div>`;
+    document.body.appendChild(overlay);
   }
 
   function selectRole(el) {
@@ -14437,14 +14616,14 @@
     if (tab) tab.classList.toggle('wide-cal', section === 'schedule');
     // Trigger any section-specific init
     if (section === 'drills') { loadDrillsFromSupabase(); renderDrillLibrary(); }
-    if (section === 'roster') renderCoachRoster();
+    if (section === 'roster') { renderCoachRoster(); maybeAutoGuide('roster'); }
     if (section === 'inventory') {
       getValidProgramId().then(id => {
         if (id) loadInventoryFromSupabase(id);
         else renderInventory();
       });
     }
-    if (section === 'depth') renderDepthChart();
+    if (section === 'depth') { renderDepthChart(); maybeAutoGuide('depth'); }
     if (section === 'depth-player') {
       // Show player section depth chart
       const playerMore = document.getElementById('tab-player-more');
@@ -19820,6 +19999,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       docLoadFromSupabase().then(() => renderSharedDocs('players'));
     } else if (sec === 'depth') {
       renderPlayerDepthChart();
+      maybeAutoGuide('depth');
     } else if (sec === 'playbook') {
       renderPlayerPlaybook();
     } else {
@@ -22803,6 +22983,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     const appRole = (role === 'head coach' || role === 'assistant coach' || role === 'coach') ? 'coach' : role;
     currentRole = appRole; // critical — must be set before buildNav
     _sessionUser = user || { name: '', role: appRole }; // store for sidebar
+    loadGuidesSeen(); // fetch which feature guides this user has already seen (gates auto-launch)
 
     // Load appearance first so colors are right before UI renders
     try {
