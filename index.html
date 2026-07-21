@@ -3787,8 +3787,11 @@
       <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Upload a CSV or paste from Google Sheets / Excel</div>
 
       <!-- Download template -->
-      <button onclick="downloadRosterTemplate()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font);margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+      <button onclick="downloadRosterTemplate()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:600;color:var(--team-primary);cursor:pointer;font-family:var(--font);margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">
         📥 Download blank roster template
+      </button>
+      <button onclick="openImportHelp('roster')" style="width:100%;background:none;border:none;padding:4px;font-size:12.5px;font-weight:600;color:var(--fg-3);cursor:pointer;font-family:var(--font);margin-bottom:16px;text-decoration:underline">
+        ❓ How do I get this file from Sheets, Excel, or Word?
       </button>
 
       <!-- Google Sheets tip -->
@@ -3936,6 +3939,10 @@
       </div>
 
       <input type="file" id="ics-import-input" accept=".ics" style="display:none" onchange="handleICSImport(event)">
+
+      <button onclick="openImportHelp('calendar')" style="width:100%;background:none;border:none;padding:12px 4px 0;font-size:12.5px;font-weight:600;color:var(--gray-3);cursor:pointer;font-family:var(--font);text-decoration:underline">
+        ❓ How do I export my schedule from Google / Apple Calendar?
+      </button>
     </div>
   </div>
 
@@ -4965,6 +4972,10 @@
 
 
 
+      <button onclick="openImportHelp('inventory')" style="width:100%;background:none;border:none;padding:2px 4px;font-size:12.5px;font-weight:600;color:var(--fg-3);cursor:pointer;font-family:var(--font);text-decoration:underline">
+        ❓ How do I get this file from Sheets, Excel, or Word?
+      </button>
+
       <!-- Upload / paste -->
       <div style="text-align:center;color:var(--fg-3);font-size:12px;margin:8px 0">— or —</div>
       <div class="pb-upload-btn" style="margin-bottom:10px">
@@ -5394,7 +5405,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.22</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.23</div>
   </div>
 </div>
 
@@ -5408,7 +5419,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.22';
+  const APP_VERSION = 'v40.23';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -7714,6 +7725,88 @@
     if (!e || e.target === document.getElementById('import-menu-overlay')) {
       document.getElementById('import-menu-overlay').style.display = 'none';
     }
+  }
+
+  // ===== "HOW DO I GET THIS FILE?" IMPORT HELP =====
+  // One reusable, type-aware help sheet that teaches coaches how to produce the right file from
+  // whatever app their data already lives in (Sheets, Excel, Numbers, Docs, Word, calendar apps).
+  // Opened from the Roster, Inventory, and Calendar import screens.
+  function openImportHelp(type) {
+    const CSV_APPS = [
+      ['📊', 'Google Sheets', 'Top menu: <b>File → Download → Comma-separated values (.csv)</b>. Done.'],
+      ['📗', 'Microsoft Excel', '<b>File → Save As</b>, and in the file-type dropdown pick <b>CSV UTF-8 (Comma delimited) (.csv)</b>.'],
+      ['🍎', 'Apple Numbers', '<b>File → Export To → CSV…</b>, then Save.'],
+      ['📝', 'Google Docs / Microsoft Word', 'These make documents, not spreadsheets — they <b>can’t</b> save a CSV. Easiest fix: put your list in a <b>table</b>, select the cells, copy, and <b>paste straight into the box</b> on the import screen — no file needed. (Or move the data into Sheets/Excel first, then export.)'],
+    ];
+    const CAL_APPS = [
+      ['📅', 'Google Calendar', 'On a computer: <b>Settings → Import &amp; export → Export</b>. You’ll get a <b>.zip</b> — unzip it and upload the <b>.ics</b> file inside.'],
+      ['🍎', 'Apple Calendar', 'Click the calendar name, then <b>File → Export → Export…</b> to save an <b>.ics</b> file.'],
+      ['📧', 'Outlook', '<b>File → Save Calendar</b>, and save as <b>iCalendar format (.ics)</b>.'],
+    ];
+    const CFG = {
+      roster: {
+        icon: '👥', title: 'How to get your roster file',
+        needs: 'Mesh reads a <b>spreadsheet saved as CSV</b> — or text pasted straight in. Use these columns (any order):',
+        cols: 'name, number, position, year',
+        optional: 'Optional: height, weight, gpa, parent_name, parent_phone, parent_email',
+        apps: CSV_APPS,
+        tmpl: 'Not sure how to lay it out? Tap <b>“Download blank roster template”</b> on the import screen, fill it in, and re-upload it.',
+      },
+      inventory: {
+        icon: '🎽', title: 'How to get your inventory file',
+        needs: 'Mesh reads a <b>spreadsheet saved as CSV</b> — or text pasted straight in. Column names are flexible (“item”, “model”, “count” all work):',
+        cols: 'name, category, brand, size, qty, condition',
+        optional: 'Optional: assigned_to (a player’s name, to check gear out on import)',
+        apps: CSV_APPS,
+        tmpl: 'Not sure how to lay it out? Tap <b>“Download template”</b> on the import screen, fill it in, and re-upload it.',
+      },
+      calendar: {
+        icon: '📅', title: 'How to get your schedule into Mesh',
+        needs: 'Two easy ways — <b>paste your games as text</b> (fastest, no file at all), or import an <b>.ics file</b> exported from your calendar app.',
+        cols: '', optional: '',
+        apps: CAL_APPS,
+        tmpl: 'Fastest of all: on the import screen choose <b>“Paste events”</b> and type one game per line, e.g. <span style="font-family:monospace">8/29 vs Kuna 7:00 PM Home</span>.',
+      },
+    };
+    const c = CFG[type] || CFG.roster;
+
+    let overlay = document.getElementById('import-help-overlay');
+    if (overlay) overlay.remove();
+    overlay = document.createElement('div');
+    overlay.id = 'import-help-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:flex-end;justify-content:center';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+
+    const colsBlock = c.cols ? `
+      <div style="background:var(--bg-3);border-radius:var(--radius-sm);padding:11px 13px;margin:12px 0 4px;font-size:12px">
+        <div style="font-weight:700;color:var(--fg);margin-bottom:4px">Columns Mesh looks for:</div>
+        <div style="font-family:monospace;color:var(--team-primary);margin-bottom:${c.optional ? '4px' : '0'}">${c.cols}</div>
+        ${c.optional ? `<div style="color:var(--fg-3)">${c.optional}</div>` : ''}
+      </div>` : '';
+
+    overlay.innerHTML = `
+      <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:480px;padding:14px 20px 30px;border-top:1px solid var(--border);max-height:86vh;overflow-y:auto" onclick="event.stopPropagation()">
+        <div class="action-sheet-handle"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:17px;font-weight:800;color:var(--fg)">${c.icon} ${c.title}</div>
+          <div style="color:var(--fg-3);cursor:pointer;font-size:18px" onclick="document.getElementById('import-help-overlay').remove()">✕</div>
+        </div>
+        <div style="font-size:13px;color:var(--fg-2);line-height:1.55;margin-bottom:2px">${c.needs}</div>
+        ${colsBlock}
+        <div style="font-weight:800;color:var(--fg);font-size:13px;margin:16px 0 8px">${type === 'calendar' ? 'Export from your calendar app' : 'Save as CSV from your app'}</div>
+        ${c.apps.map(a => `
+          <div style="display:flex;gap:11px;padding:11px 2px;border-bottom:1px solid var(--border)">
+            <div style="font-size:20px;width:26px;text-align:center;flex-shrink:0">${a[0]}</div>
+            <div style="flex:1">
+              <div style="font-size:13.5px;font-weight:700;color:var(--fg);margin-bottom:2px">${a[1]}</div>
+              <div style="font-size:12.5px;color:var(--fg-2);line-height:1.5">${a[2]}</div>
+            </div>
+          </div>`).join('')}
+        <div style="background:var(--team-primary-glow);border:1px solid var(--team-primary);border-radius:var(--radius-sm);padding:11px 13px;margin-top:16px;font-size:12.5px;color:var(--fg);line-height:1.55">
+          💡 <b>No file? No problem.</b> Copy your rows from any app and paste them into the import box — Mesh reads both comma- and tab-separated text. ${c.tmpl}
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
   }
 
   // ===== PASTE IMPORT =====
@@ -10727,6 +10820,10 @@
     applyTheme();
     applySchoolLogo();
     buildNav('coach');
+    // Load which feature guides this user has already seen. The coach onboarding path does NOT go
+    // through launchApp (players/parents do), so without this _guidesReady stays false all session
+    // and the per-tab auto-guides never fire — only the overview tour (which bypasses that gate) ran.
+    loadGuidesSeen();
     showTab('coach', 'home');
     updateInviteBanner();
     // First-run guided tour (this runs only on initial program setup).
