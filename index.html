@@ -2927,6 +2927,12 @@
         <input id="note-name-input" class="ap-input" style="width:100%;box-sizing:border-box" placeholder="Name">
       </div>
 
+      <!-- MOVE PERIOD (reliable reorder on mobile, where drag doesn't work) -->
+      <div id="note-move-row" style="display:none;gap:8px;margin-bottom:12px">
+        <button onclick="movePeriod('up')" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">↑ Move up</button>
+        <button onclick="movePeriod('down')" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">↓ Move down</button>
+      </div>
+
       <!-- ROW COLOR (shown for full-width team/break periods) -->
       <div id="note-color-row" style="display:none;margin-bottom:12px">
         <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Row color</div>
@@ -5377,7 +5383,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.09</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.10</div>
   </div>
 </div>
 
@@ -5391,7 +5397,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.09';
+  const APP_VERSION = 'v40.10';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11207,6 +11213,25 @@
     if (typeof saveDayGrid === 'function') saveDayGrid();
   }
 
+  // Reorder a period up/down (reliable on mobile; keeps the modal open and re-syncs its id
+  // after renumber, which also re-flows the times).
+  function movePeriod(dir) {
+    if (!canEdit('practice') || !currentNoteModalPeriodId) return;
+    const pgrid = document.getElementById('practice-grid-table');
+    const row = pgrid?.querySelector(`[data-period-id="${currentNoteModalPeriodId}"]`);
+    if (!row) return;
+    const rows = [...pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)')];
+    const idx = rows.indexOf(row);
+    if (dir === 'up' && idx > 0) pgrid.insertBefore(row, rows[idx - 1]);
+    else if (dir === 'down' && idx < rows.length - 1) pgrid.insertBefore(rows[idx + 1], row);
+    else return; // already at the edge
+    renumberPeriods(); // renumbers + re-flows times
+    currentNoteModalPeriodId = row.dataset.periodId; // id changed after renumber
+    const sub = document.getElementById('note-modal-sub');
+    if (sub) sub.textContent = (row.querySelector('.gt-time')?.textContent || '') + ' · ' + row.dataset.periodId;
+    if (typeof saveDayGrid === 'function') saveDayGrid();
+  }
+
   function openPeriodNote(periodId, timeRange, periodName) {
     if (event) event.stopPropagation();
     currentNoteModalPeriodId = periodId;
@@ -11223,6 +11248,8 @@
     perNameInput.value = periodName || '';
     perNameInput.readOnly = !canEdit('practice');
     document.getElementById('note-name-edit').style.display = 'block';
+    const _moveRow = document.getElementById('note-move-row');
+    if (_moveRow) _moveRow.style.display = canEdit('practice') ? 'flex' : 'none';
     // Row color — only for full-width team/break periods.
     const _perRow = document.querySelector(`[data-period-id="${periodId}"]`);
     const _isSpan = !!_perRow?.querySelector('.cell-span');
@@ -11268,6 +11295,7 @@
     cellNameInput.readOnly = !canEdit('practice');
     document.getElementById('note-name-edit').style.display = 'block';
     document.getElementById('note-color-row').style.display = 'none'; // row color is period-level only
+    document.getElementById('note-move-row').style.display = 'none'; // move is period-level only
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a coaching note for this cell…';
     document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
