@@ -2948,6 +2948,8 @@
           </div>
         </div>
         <button class="btn-sm" style="width:100%;text-align:center;padding:9px;margin-top:8px" id="drill-insert-btn" onclick="insertPickedDrill()" disabled>Insert into cell</button>
+        <div style="text-align:center;font-size:12px;color:var(--fg-3);margin:8px 0 6px">or</div>
+        <button onclick="createDrillFromCell()" style="width:100%;text-align:center;padding:9px;background:transparent;border:1.5px dashed var(--border-2);border-radius:var(--radius-sm);color:var(--team-primary);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">＋ Create a new drill</button>
         <div style="height:1px;background:var(--border);margin:12px 0"></div>
       </div>
 
@@ -5369,7 +5371,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="replayTour()"><span class="pmi">🧭</span> Take the tour</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.06</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.07</div>
   </div>
 </div>
 
@@ -5383,7 +5385,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.06';
+  const APP_VERSION = 'v40.07';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11398,6 +11400,33 @@
     document.getElementById('drill-picker-preview').style.display = 'none';
     document.getElementById('drill-insert-btn').disabled = true;
     showToast('"' + drill.title + '" attached ✓');
+  }
+
+  // Create a brand-new drill (saved to the Drill Library) right from a practice cell,
+  // then attach it to that cell.
+  let _creatingDrillFromCell = false;
+  function createDrillFromCell() {
+    if (!canEdit('practice')) return;
+    _creatingDrillFromCell = true;
+    openAddDrill(); // add-drill overlay (z88) layers over the open cell modal (z60)
+  }
+  function _attachDrillToCurrentCell(drill) {
+    if (!currentNoteModalPeriodId || !currentCellPos) return false;
+    const key = noteKey(currentNoteModalPeriodId, currentCellPos);
+    CELL_DRILLS[key] = { id: drill.id, title: drill.title, desc: drill.desc, video: drill.video || '' };
+    if (currentCellEl) {
+      let badge = currentCellEl.querySelector('.drill-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'drill-badge';
+        badge.textContent = '🎯';
+        badge.style.cssText = 'position:absolute;top:4px;left:4px;font-size:10px;line-height:1';
+        currentCellEl.appendChild(badge);
+      }
+      badge.title = drill.title;
+    }
+    showDrillInModal(drill);
+    return true;
   }
 
   function showDrillInModal(drill) {
@@ -21419,6 +21448,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
 
   function closeAddDrill() {
     document.getElementById('add-drill-overlay').classList.remove('open');
+    _creatingDrillFromCell = false; // cancelling a create-from-cell shouldn't linger
   }
 
   function toggleDrillPos(pos, el) {
@@ -21465,9 +21495,15 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     }
     saveDrillsToStorage();
 
+    const attachToCell = _creatingDrillFromCell && !editingDrillId;
+    _creatingDrillFromCell = false;
     closeAddDrill();
     renderDrillLibrary();
-    showToast((editingDrillId ? 'Drill updated' : 'Drill added') + ' ✓');
+    if (attachToCell && _attachDrillToCurrentCell(drillData)) {
+      showToast('Drill created & added to cell ✓');
+    } else {
+      showToast((editingDrillId ? 'Drill updated' : 'Drill added') + ' ✓');
+    }
   }
 
   // ===== ADD-DRILL CHOOSER =====
