@@ -5511,7 +5511,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.43</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.44</div>
   </div>
 </div>
 
@@ -5525,7 +5525,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.43';
+  const APP_VERSION = 'v40.44';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5886,8 +5886,14 @@
   // Games carry `opponent`; imported/other events carry only `title`.
   function schedEventName(g) {
     const ha = (g.homeAway || '').toLowerCase();
+    // "vs./@" is opponent-matchup framing, so it only applies to GAMES. A scrimmage,
+    // jamboree, lift, film session, etc. shows its name exactly as typed (Home/Away still
+    // drives the location pill). Add-Game + imported games carry no tag but a real opponent,
+    // so "no tag" counts as game-like; an explicit non-game tag opts out.
+    const tag = (g.tag || '').toLowerCase();
+    const gameLike = !tag || tag === 'game';
     // Away games read as "@Opponent" (tight, no space); home stays "vs. Opponent".
-    const prefix = ha === 'home' ? 'vs. ' : ha === 'away' ? '@' : '';
+    const prefix = gameLike && ha === 'home' ? 'vs. ' : gameLike && ha === 'away' ? '@' : '';
     return g.opponent ? prefix + g.opponent : (g.title || 'Event');
   }
 
@@ -6493,8 +6499,7 @@
       const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
       monthEl.textContent = months[d.getMonth()];
       dayEl.textContent = d.getDate();
-      const prefix = next.homeAway === 'home' ? 'vs. ' : next.homeAway === 'away' ? '@' : '';
-      oppEl.textContent = prefix + next.opponent;
+      oppEl.textContent = schedEventName(next); // respects the game-like vs./@ rule + title fallback
       const timeStr = next.time ? next.time.replace(':','') : '';
       const [h,m] = (next.time||'19:00').split(':').map(Number);
       const ampm = h >= 12 ? 'PM' : 'AM';
