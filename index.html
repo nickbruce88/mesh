@@ -15358,6 +15358,54 @@
 
   const DC_PLACEHOLDER_POS = new Set(['—', '-', '–', '?', '', '#—', '#-']);
 
+  // ===== POSITION VOCABULARY (per-program, customizable) =====
+  // The set of positions a coach can assign, grouped by unit. Seeded from these defaults + whatever
+  // is already in use, editable via the Manage Positions screen, and persisted inside the saved
+  // depth_chart blob (no DB migration). Players store slash-joined positions per unit (e.g. "TE/C/LT")
+  // so one player can occupy many spots at independent depths.
+  const DEFAULT_DC_POSITIONS = {
+    offense: ['QB','RB','FB','WR','TE','LT','LG','C','RG','RT'],
+    defense: ['DE','DT','NT','OLB','MLB','ILB','CB','FS','SS'],
+    special: ['K','P','LS','H','KR','PR'],
+  };
+  let DC_POSITIONS = { offense: [], defense: [], special: [] };
+
+  // Build the vocabulary from defaults ∪ everything currently in use (player fields + existing chart),
+  // preserving DC_POS_ORDER. Called on load when no saved vocabulary exists yet.
+  function seedDCPositions() {
+    const used = { offense: new Set(), defense: new Set(), special: new Set() };
+    const addUsed = (unit, str) => (str||'').split('/').map(s=>s.trim().toUpperCase()).filter(Boolean)
+      .forEach(p => { if (!DC_PLACEHOLDER_POS.has(p)) used[unit].add(p); });
+    PLAYERS.forEach(p => { addUsed('offense', p.posOff); addUsed('defense', p.posDef); addUsed('special', p.posST); });
+    ['offense','defense','special'].forEach(u => (DC_DATA[u]||[]).forEach(g => g.pos && used[u].add(g.pos.toUpperCase())));
+    ['offense','defense','special'].forEach(unit => {
+      const set = new Set([...DEFAULT_DC_POSITIONS[unit], ...used[unit]]);
+      const order = DC_POS_ORDER[unit];
+      DC_POSITIONS[unit] = [...set].sort((a,b) =>
+        (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b)) || a.localeCompare(b));
+    });
+  }
+
+  // A player's headline/primary position = wherever they sit HIGHEST on the depth chart (lowest index
+  // = 1st string). Offense→Defense→Special breaks ties. Falls back to their first listed position if
+  // they're not on the chart yet. Used for the roster row, player-card title, and sorting.
+  function primaryPosition(player) {
+    let best = null; // { pos, unitRank, idx }
+    const units = { offense: 0, defense: 1, special: 2 };
+    ['offense','defense','special'].forEach(unit => {
+      (DC_DATA[unit]||[]).forEach(g => {
+        const idx = g.players.findIndex(pl => pl.name === player.name);
+        if (idx === -1) return;
+        const cand = { pos: g.pos, unitRank: units[unit], idx };
+        if (!best || cand.idx < best.idx || (cand.idx === best.idx && cand.unitRank < best.unitRank)) best = cand;
+      });
+    });
+    if (best) return best.pos;
+    const first = (player.posOff || player.posDef || player.posST || player.pos || '')
+      .split('/').map(s=>s.trim().toUpperCase()).filter(Boolean)[0];
+    return first || (player.pos || '');
+  }
+
   function buildDCFromPlayers() {
     // Helper: add a player to a unit's position group, splitting on slashes
     function addToUnit(unit, posStr, player) {
@@ -15430,39 +15478,49 @@
   function reconcilePlayerInDC(player, oldName) {
     const findName = oldName || player.name;
     const isPH = pos => DC_PLACEHOLDER_POS.has(pos) || pos.replace(/[-—–#\s]/g,'') === '';
-    // 1. Remove this player from every group; drop groups left empty.
-    ['offense','defense','special'].forEach(unit => {
-      DC_DATA[unit].forEach(g => { g.players = g.players.filter(pl => pl.name !== findName); });
-      DC_DATA[unit] = DC_DATA[unit].filter(g => g.players.length > 0);
-    });
-    // 2. Re-add to the groups matching their current fields (same rules as buildDCFromPlayers).
-    const add = (unit, posStr) => {
-      (posStr || '').split('/').map(s => s.trim().toUpperCase()).filter(Boolean).forEach(pos => {
-        if (isPH(pos)) return;
-        let g = DC_DATA[unit].find(x => (x.pos||'').toUpperCase() === pos);
-        if (!g) { g = { pos, players: [] }; DC_DATA[unit].push(g); }
-        if (!g.players.find(pl => pl.name === player.name)) g.players.push({ name: player.name, num: player.num });
-      });
-    };
+    // 1. Compute the positions this player SHOULD occupy per unit, from their current fields.
+    const desired = { offense: new Set(), defense: new Set(), special: new Set() };
+    const want = (unit, posStr) => (posStr||'').split('/').map(s=>s.trim().toUpperCase()).filter(Boolean)
+      .forEach(pos => { if (!isPH(pos)) desired[unit].add(pos); });
     const filterST = s => (s||'').split('/').filter(x => !ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
     const stFromOff = (player.posOff||'').split('/').filter(x => ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
     const stFromDef = (player.posDef||'').split('/').filter(x => ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
-    add('offense', filterST(player.posOff));
-    add('defense', filterST(player.posDef));
-    add('special', [player.posST, stFromOff, stFromDef].filter(Boolean).join('/'));
+    want('offense', filterST(player.posOff));
+    want('defense', filterST(player.posDef));
+    want('special', [player.posST, stFromOff, stFromDef].filter(Boolean).join('/'));
     const rawPos = (player.pos || '').trim();
     if (!player.posOff && !player.posDef && !player.posST && rawPos && !isPH(rawPos.toUpperCase())) {
       const cp = rawPos.toUpperCase();
       const unit = ST_ONLY_POSITIONS.has(cp) ? 'special'
         : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(cp) ? 'defense'
         : ['K','P','LS','KR','PR'].includes(cp) ? 'special' : 'offense';
-      add(unit, rawPos);
+      want(unit, rawPos);
     }
+    // 2. Reconcile each unit IN PLACE so depth ORDER is preserved: keep the player at their existing
+    //    slot (refreshing name/#) where still desired, remove where no longer desired, then append to
+    //    any newly-desired position. Only this player is touched — other players' order is untouched.
+    ['offense','defense','special'].forEach(unit => {
+      DC_DATA[unit].forEach(g => {
+        const pos = (g.pos||'').toUpperCase();
+        const idx = g.players.findIndex(pl => pl.name === findName);
+        if (idx === -1) return;
+        if (desired[unit].has(pos)) { g.players[idx] = { name: player.name, num: player.num }; desired[unit].delete(pos); }
+        else { g.players.splice(idx, 1); }
+      });
+      desired[unit].forEach(pos => {
+        let g = DC_DATA[unit].find(x => (x.pos||'').toUpperCase() === pos);
+        if (!g) { g = { pos, players: [] }; DC_DATA[unit].push(g); }
+        if (!g.players.find(pl => pl.name === player.name)) g.players.push({ name: player.name, num: player.num });
+      });
+      DC_DATA[unit] = DC_DATA[unit].filter(g => g.players.length > 0);
+    });
     // 3. Keep positions in standard order (mirror buildDCFromPlayers' tail).
     ['offense','defense','special'].forEach(unit => {
       const order = DC_POS_ORDER[unit];
       DC_DATA[unit].sort((a, b) => (order.indexOf(a.pos) === -1 ? 99 : order.indexOf(a.pos)) - (order.indexOf(b.pos) === -1 ? 99 : order.indexOf(b.pos)));
     });
+    // A player's stored `pos` follows their highest depth-chart spot (drives roster/card display).
+    player.pos = primaryPosition(player) || player.pos;
     renderDepthChart();
   }
 
@@ -16142,7 +16200,7 @@
     if (!programId) return;
     try {
       await db.from('programs')
-        .update({ depth_chart: DC_DATA })
+        .update({ depth_chart: { offense: DC_DATA.offense, defense: DC_DATA.defense, special: DC_DATA.special, positions: DC_POSITIONS } })
         .eq('id', programId);
       console.log('Depth chart saved to Supabase');
     } catch(e) { console.error('DC save error:', e); }
@@ -16156,19 +16214,23 @@
         .eq('id', programId)
         .single();
       if (error || !data?.depth_chart) {
-        // No saved depth chart — build from current roster and save it
+        // No saved depth chart — build from current roster, seed the position vocabulary, and save.
         buildDCFromPlayers();
+        seedDCPositions();
         renderDepthChart();
         saveDCToSupabase();
         console.log('No saved depth chart — built from roster and saved');
         return;
       }
-      // Merge saved data into DC_DATA
+      // Merge saved units into DC_DATA (the `positions` key is not a unit, so it's skipped here).
       Object.keys(data.depth_chart).forEach(unit => {
         if (DC_DATA[unit]) DC_DATA[unit] = data.depth_chart[unit];
       });
       // Also fill in any players not yet in the saved chart
       buildDCFromPlayers();
+      // Position vocabulary: use the saved custom list, or seed it (older charts predate this).
+      if (data.depth_chart.positions) DC_POSITIONS = data.depth_chart.positions;
+      else seedDCPositions();
       renderDepthChart();
       console.log('Depth chart loaded from Supabase');
     } catch(e) { console.error('DC load error:', e); }
