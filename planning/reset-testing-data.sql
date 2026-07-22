@@ -8,10 +8,15 @@
 --     practice_days, every message + thread, notification tokens/prefs, avatars,
 --     and TOS acceptances.
 --
--- ✅  KEEPS the app itself intact: all tables, RLS, functions, plus the two config
---     tables `beta_codes` (your signup gate) and `stat_categories` (stat-type list).
+-- ✅  KEEPS the app itself intact: all tables, RLS, functions, plus the config table
+--     `beta_codes` (your signup gate — the ONLY genuinely global config).
 --     Storage FILES (uploaded avatar images / documents) are left as-is — they're
 --     orphaned + harmless; clear them from Storage in the dashboard if you want.
+--
+-- NOTE: `stat_categories` IS cleared here — despite the name it is NOT global config.
+--     Rows are per-program (each carries a program_id) and the app AUTO-SEEDS a fresh set
+--     from a built-in default list the first time you open Stats in a new program
+--     (see index.html loadStatCategories). So old rows just point at the deleted program.
 --
 -- Only run this because you're the sole tester and want a full clean sweep.
 -- ============================================================================================
@@ -25,9 +30,9 @@ begin
     'thread_reads','thread_hides','thread_mutes','thread_participants','messages','message_threads',
     -- notifications
     'notification_prefs','notification_tokens',
-    -- per-program data
+    -- per-program data (stat_categories included — per-program, auto-reseeded; NOT global config)
     'game_stats','performance','attendance','inventory','practice_days','parent_links',
-    'avatars','tos_acceptances',
+    'stat_categories','avatars','tos_acceptances',
     -- roster + accounts profile rows
     'players','profiles',
     -- root
@@ -40,12 +45,12 @@ begin
   end loop;
 end $$;
 
--- Verify STEP 1 (each should be 0; beta_codes / stat_categories should still have rows):
+-- Verify STEP 1 (each should be 0; only beta_codes should still have rows):
 --   select 'programs', count(*) from programs
 --   union all select 'profiles', count(*) from profiles
 --   union all select 'players',  count(*) from players
---   union all select 'beta_codes(keep)', count(*) from beta_codes
---   union all select 'stat_categories(keep)', count(*) from stat_categories;
+--   union all select 'stat_categories(now 0)', count(*) from stat_categories
+--   union all select 'beta_codes(keep)', count(*) from beta_codes;
 
 -- ============================================================================================
 -- STEP 2 — remove the login accounts so you can re-register the roles fresh.
