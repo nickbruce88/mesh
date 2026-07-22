@@ -2162,6 +2162,7 @@
   <symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
   <symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-bell-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/></symbol>
 </svg>
 
 <div class="phone">
@@ -2986,12 +2987,12 @@
     <!-- BLANK DAY STATE -->
     <div id="practice-day-blank" style="display:none;padding:0 20px">
       <div class="blank-state">
-        <div class="blank-state-icon">📋</div>
+        <div class="blank-state-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-clipboard-list"/></svg></div>
         <div class="blank-state-title">No plan yet for <span id="blank-day-name">Wednesday</span></div>
         <div class="blank-state-sub">Choose how you want to start this practice</div>
       </div>
       <div class="choice-card" onclick="openNewDay()">
-        <div class="choice-icon">✨</div>
+        <div class="choice-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-sparkles"/></svg></div>
         <div class="choice-content">
           <div class="choice-title">Create practice plan</div>
           <div class="choice-sub">Simple blocks or full grid</div>
@@ -4176,12 +4177,12 @@
         <div class="thread-sub" id="thread-sub">9 coaches</div>
       </div>
       <div class="thread-actions" style="display:flex;gap:16px;align-items:center;padding-left:6px">
-        <div class="thread-mute-btn" onclick="toggleThreadMute()" title="Mute notifications" style="cursor:pointer;font-size:18px;line-height:1">🔔</div>
-        <div onclick="hideCurrentThread()" title="Archive conversation" style="cursor:pointer;font-size:16px;line-height:1">🗄️</div>
+        <div class="thread-mute-btn" onclick="toggleThreadMute()" title="Mute notifications" style="cursor:pointer;font-size:18px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-bell"/></svg></div>
+        <div onclick="hideCurrentThread()" title="Archive conversation" style="cursor:pointer;font-size:16px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-archive"/></svg></div>
       </div>
     </div>
     <div class="safety-banner" id="thread-safety-banner">
-      <span class="safety-banner-icon">🔒</span>
+      <span class="safety-banner-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-lock"/></svg></span>
       <span>All messages are visible to coaching staff and documented</span>
     </div>
     <div class="thread-body" id="thread-body"></div>
@@ -4274,12 +4275,12 @@
           <div class="thread-sub" id="parent-thread-sub">Direct message</div>
         </div>
         <div class="thread-actions" style="display:flex;gap:16px;align-items:center;padding-left:6px">
-          <div class="thread-mute-btn" onclick="toggleThreadMute()" title="Mute notifications" style="cursor:pointer;font-size:18px;line-height:1">🔔</div>
-          <div onclick="hideCurrentThread()" title="Archive conversation" style="cursor:pointer;font-size:16px;line-height:1">🗄️</div>
+          <div class="thread-mute-btn" onclick="toggleThreadMute()" title="Mute notifications" style="cursor:pointer;font-size:18px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-bell"/></svg></div>
+          <div onclick="hideCurrentThread()" title="Archive conversation" style="cursor:pointer;font-size:16px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-archive"/></svg></div>
         </div>
       </div>
       <div class="safety-banner" id="parent-thread-safety-banner">
-        <span class="safety-banner-icon">🔒</span>
+        <span class="safety-banner-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-lock"/></svg></span>
         <span>Messages with coaching staff are documented</span>
       </div>
       <div class="thread-body" id="parent-thread-body"></div>
@@ -4457,12 +4458,12 @@
         <div class="thread-sub" id="player-thread-sub">Coaching staff</div>
       </div>
       <div class="thread-actions" style="display:flex;gap:16px;align-items:center;padding-left:6px">
-        <div class="thread-mute-btn" onclick="toggleThreadMute()" title="Mute notifications" style="cursor:pointer;font-size:18px;line-height:1">🔔</div>
-        <div onclick="hideCurrentThread()" title="Archive conversation" style="cursor:pointer;font-size:16px;line-height:1">🗄️</div>
+        <div class="thread-mute-btn" onclick="toggleThreadMute()" title="Mute notifications" style="cursor:pointer;font-size:18px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-bell"/></svg></div>
+        <div onclick="hideCurrentThread()" title="Archive conversation" style="cursor:pointer;font-size:16px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-archive"/></svg></div>
       </div>
     </div>
     <div class="safety-banner" id="player-thread-safety-banner">
-      <span class="safety-banner-icon">🔒</span>
+      <span class="safety-banner-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-lock"/></svg></span>
       <span>All messages are visible to coaching staff and documented</span>
     </div>
     <div class="thread-body" id="player-thread-body"></div>
@@ -4756,17 +4757,17 @@
         <div class="nd-sub">How detailed do you want this plan?</div>
         <!-- Paste a copied plan (shown only when the clipboard has one) -->
         <div class="start-option" id="nd-paste-option" style="display:none;margin-bottom:14px" onclick="pasteFromNewDay()">
-          <div class="start-option-icon">📥</div>
+          <div class="start-option-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-download"/></svg></div>
           <div><div class="start-option-label">Paste copied plan</div><div class="start-option-sub">Reuse the practice day you copied</div></div>
         </div>
         <div class="mode-cards">
           <div class="mode-card" id="mode-card-simple" onclick="selectPlanMode('simple')">
-            <div class="mode-card-icon">📝</div>
+            <div class="mode-card-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-pencil"/></svg></div>
             <div class="mode-card-label">Simple</div>
             <div class="mode-card-sub">Time blocks only — quick to fill out</div>
           </div>
           <div class="mode-card" id="mode-card-detailed" onclick="selectPlanMode('detailed')">
-            <div class="mode-card-icon">📊</div>
+            <div class="mode-card-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-chart-column"/></svg></div>
             <div class="mode-card-label">Detailed</div>
             <div class="mode-card-sub">Full grid with position group splits</div>
           </div>
@@ -4784,11 +4785,11 @@
           <div><div class="start-option-label">Blank plan</div><div class="start-option-sub">Start from scratch</div></div>
         </div>
         <div class="start-option" onclick="openNDTemplate()">
-          <div class="start-option-icon">📋</div>
+          <div class="start-option-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-clipboard-list"/></svg></div>
           <div><div class="start-option-label">Load template</div><div class="start-option-sub">Pick from your saved templates</div></div>
         </div>
         <div class="start-option ai-option" style="opacity:0.45;pointer-events:none;position:relative">
-          <div class="start-option-icon">✨</div>
+          <div class="start-option-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-sparkles"/></svg></div>
           <div>
             <div class="start-option-label" style="display:flex;align-items:center;gap:8px">AI Coach <span style="font-size:10px;font-weight:700;background:var(--border);color:var(--fg-3);padding:2px 7px;border-radius:20px;letter-spacing:0.05em">COMING SOON</span></div>
             <div class="start-option-sub">AI-generated plans — available soon</div>
@@ -4850,7 +4851,7 @@
       <!-- STEP 4: AI Loading -->
       <div class="new-day-step" id="nd-step-4">
         <div class="ai-loading">
-          <div class="ai-loading-icon">✨</div>
+          <div class="ai-loading-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-sparkles"/></svg></div>
           <div class="ai-loading-title">AI Coach is building your plan…</div>
           <div class="ai-loading-sub" id="ai-loading-sub">Analyzing your answers</div>
         </div>
@@ -4944,7 +4945,7 @@
       <div class="ap-sub" id="pb-add-plays-sub">Offense</div>
 
       <div class="pb-import-option" onclick="pbImportHudl()">
-        <div class="pb-import-icon" style="background:rgba(255,184,0,0.12)">🎬</div>
+        <div class="pb-import-icon" style="background:rgba(255,184,0,0.12)"><svg class="ic" style="width:1em;height:1em"><use href="#i-clapperboard"/></svg></div>
         <div>
           <div class="pb-import-label">Import from Hudl</div>
           <div class="pb-import-sub">Import a Hudl PDF export to pull plays directly</div>
@@ -4953,7 +4954,7 @@
       </div>
 
       <div class="pb-import-option" onclick="pbImportSingle()">
-        <div class="pb-import-icon" style="background:rgba(77,159,255,0.12)">📸</div>
+        <div class="pb-import-icon" style="background:rgba(77,159,255,0.12)"><svg class="ic" style="width:1em;height:1em"><use href="#i-camera"/></svg></div>
         <div>
           <div class="pb-import-label">Add a single play</div>
           <div class="pb-import-sub">Upload one image — screenshot, photo, or diagram</div>
@@ -4962,7 +4963,7 @@
       </div>
 
       <div class="pb-import-option" onclick="pbImportMultiple()">
-        <div class="pb-import-icon" style="background:rgba(161,30,30,0.12)">📚</div>
+        <div class="pb-import-icon" style="background:rgba(161,30,30,0.12)"><svg class="ic" style="width:1em;height:1em"><use href="#i-book-open"/></svg></div>
         <div>
           <div class="pb-import-label">Add multiple plays</div>
           <div class="pb-import-sub">Select several images at once to bulk upload</div>
@@ -5488,7 +5489,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.32</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.33</div>
   </div>
 </div>
 
@@ -5502,7 +5503,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.32';
+  const APP_VERSION = 'v40.33';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5547,7 +5548,7 @@
     if (perm === 'granted') { row.style.display = 'none'; return; }
     row.style.display = 'block';
     if (perm === 'denied') {
-      row.innerHTML = `<div style="font-size:12px;color:var(--fg-3);line-height:1.5">🔕 Notifications are blocked for this site. Turn them back on in your browser or device settings, then reopen this panel.</div>`;
+      row.innerHTML = `<div style="font-size:12px;color:var(--fg-3);line-height:1.5"><svg class="tic"><use href="#i-bell-off"/></svg> Notifications are blocked for this site. Turn them back on in your browser or device settings, then reopen this panel.</div>`;
       return;
     }
     // perm === 'default' — we can still ask.
@@ -14406,7 +14407,7 @@
       item.innerHTML =
         '<div class="msg-group-avatar" id="mga-'+t.id+'" style="background:'+av.color+'22;color:'+av.color+'">'+av.icon+'</div>'+
         '<div class="msg-group-content"><div class="msg-group-header">'+
-        '<div class="msg-group-name"><span class="mgn-text" id="mgn-'+t.id+'">'+_esc(threadTitle(t))+'</span>'+(t.muted?' <span style="color:var(--fg-3)">🔕</span>':'')+'</div>'+
+        '<div class="msg-group-name"><span class="mgn-text" id="mgn-'+t.id+'">'+_esc(threadTitle(t))+'</span>'+(t.muted?' <span style="color:var(--fg-3)"><svg class="tic"><use href="#i-bell-off"/></svg></span>':'')+'</div>'+
         '<div class="inbox-time">'+when+'</div></div>'+
         '<div class="msg-group-preview" id="mgp-'+t.id+'">'+_esc(preview)+'</div></div>'+
         '<div class="unread-dot" id="mgu-'+t.id+'" style="opacity:'+(((t.unread_count||0)>0 && t.id!==currentThread)?'1':'0')+'"></div>';
@@ -14491,7 +14492,7 @@
   function updateThreadMuteBtn(){
     const t = _threads[currentThread];
     const muted = !!(t && t.muted);
-    document.querySelectorAll('.thread-mute-btn').forEach(b => { b.textContent = muted ? '🔕' : '🔔'; b.title = muted ? 'Unmute notifications' : 'Mute notifications'; });
+    document.querySelectorAll('.thread-mute-btn').forEach(b => { b.innerHTML = `<svg class="ic" style="width:1em;height:1em"><use href="#${muted ? 'i-bell-off' : 'i-bell'}"/></svg>`; b.title = muted ? 'Unmute notifications' : 'Mute notifications'; });
   }
 
   async function toggleThreadMute(){
@@ -22442,7 +22443,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     if (d.video) {
       const url = normalizeUrl(d.video);
       vBlock.innerHTML = `<div class="drill-detail-video" onclick="window.open('${url}','_blank','noopener')">
-        <div class="drill-detail-video-icon">🎬</div>
+        <div class="drill-detail-video-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-clapperboard"/></svg></div>
         <div><div class="drill-detail-video-label">Watch video</div><div class="drill-detail-video-sub">${url.replace(/^https?:\/\//,'').split('/')[0]}</div></div>
       </div>`;
     } else {
@@ -22937,7 +22938,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       const fSelMode = pbFolderSelectMode === folder.id;
       html += `<div class="pb-folder open" id="pbf-${folder.id}">
         <div class="pb-folder-head" onclick="pbToggleFolderHead('${folder.id}',event)">
-          <div class="pb-folder-icon">📁</div>
+          <div class="pb-folder-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-folder"/></svg></div>
           <div class="pb-folder-name">${escHtml(folder.name)}</div>
           <div class="pb-folder-count">${fp.length} play${fp.length!==1?'s':''}</div>
           <button class="pb-folder-edit-btn" onclick="event.stopPropagation();pbToggleFolderEdit('${folder.id}')">${fSelMode?'Done':'Edit'}</button>
