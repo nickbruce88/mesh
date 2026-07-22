@@ -5405,7 +5405,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.23</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.24</div>
   </div>
 </div>
 
@@ -5419,7 +5419,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.23';
+  const APP_VERSION = 'v40.24';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11156,7 +11156,7 @@
         { title: 'Pick a unit', body: 'Filter to Offense, Defense, or Special Teams — or see All at once.', target: '.unit-filter' },
         { title: 'Pick a level', body: 'Switch between Varsity, JV, and Freshman here.', target: '#level-dropdown' },
         { title: 'Set the order', body: 'Tap Edit, then drag players to order them — #1 is the starter, and everyone below is the depth behind them.', target: '#dc-edit-btn' },
-        { title: 'Check your coverage', body: 'The Groups view flags any position that’s thin, so you can spot holes at a glance.', target: '#dc-tab-groups' },
+        { title: 'Groups', body: 'A separate way to split your team into your own custom groups — Offense 1 &amp; 2, a 7-on-7 unit, scout team — for practice, without touching the depth chart. Handy while you’re still sorting out who goes where. Add a group, name it, give it a color, then assign players.', target: '#dc-tab-groups' },
       ],
       player: [
         { title: 'Depth chart 📊', body: 'See where you line up by position and unit.', target: null, before: () => showPlayerSection('depth'), wait: 400 },
