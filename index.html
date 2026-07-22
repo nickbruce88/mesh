@@ -4171,7 +4171,7 @@
   <div id="msg-thread-overlay">
     <div class="thread-header">
       <div class="thread-back" onclick="closeThread()">‹</div>
-      <div class="thread-avatar group-staff" id="thread-avatar">🎙️</div>
+      <div class="thread-avatar group-staff" id="thread-avatar"><svg class="ic" style="width:1.25em;height:1.25em"><use href="#i-users"/></svg></div>
       <div style="flex:1">
         <div class="thread-title" id="thread-title">All Staff</div>
         <div class="thread-sub" id="thread-sub">9 coaches</div>
@@ -4452,7 +4452,7 @@
   <div id="player-msg-thread-overlay" style="position:fixed;top:0;bottom:0;left:0;right:0;margin-inline:auto;max-width:420px;background:var(--bg);z-index:70;display:none;flex-direction:column">
     <div class="thread-header">
       <div class="thread-back" onclick="closePlayerThread()">‹</div>
-      <div class="thread-avatar group-staff" id="player-thread-avatar">🎙️</div>
+      <div class="thread-avatar group-staff" id="player-thread-avatar"><svg class="ic" style="width:1.25em;height:1.25em"><use href="#i-users"/></svg></div>
       <div style="flex:1">
         <div class="thread-title" id="player-thread-title">All Coaches</div>
         <div class="thread-sub" id="player-thread-sub">Coaching staff</div>
@@ -5489,7 +5489,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.33</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.34</div>
   </div>
 </div>
 
@@ -5503,7 +5503,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.33';
+  const APP_VERSION = 'v40.34';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -14236,14 +14236,17 @@
   // first (backslash, quotes), then HTML-escape the result for the attribute.
   function _escAttr(s){ return _esc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")); }
 
+  // Returns a Lucide sprite icon id (+ color) for group/broadcast/witnessed threads. All broadcasts
+  // share the megaphone; the per-audience color (below) is what tells Players/Parents/Staff apart.
   function threadAvatar(t){
     if (t.kind === 'broadcast') {
       const b = BROADCASTS.find(x => x.subject === t.subject);
-      return b ? { icon:b.icon, color:b.color } : { icon:'📣', color:'var(--fg-3)' };
+      return { iconId:'i-megaphone', color: b ? b.color : 'var(--fg-3)' };
     }
-    if (t.kind === 'witnessed_dm') return { icon:'🛡️', color:'var(--team-primary)' };
-    return { icon:'💬', color:'var(--blue)' };
+    if (t.kind === 'witnessed_dm') return { iconId:'i-shield', color:'var(--team-primary)' };
+    return { iconId:'i-users', color:'var(--blue)' };
   }
+  function _threadAvatarSvg(iconId){ return '<svg class="ic" style="width:1.25em;height:1.25em"><use href="#'+iconId+'"/></svg>'; }
   // For 1:1 / witnessed threads, show the OTHER person's name (e.g. "Dan Smith"), not
   // "Private (witnessed)". The shield avatar already signals it's protected/witnessed, and
   // the witness is listed in the subtitle once you open the thread. Names come from
@@ -14405,7 +14408,7 @@
       item.className = 'msg-group-item';
       item.id = 'mgi-' + t.id;
       item.innerHTML =
-        '<div class="msg-group-avatar" id="mga-'+t.id+'" style="background:'+av.color+'22;color:'+av.color+'">'+av.icon+'</div>'+
+        '<div class="msg-group-avatar" id="mga-'+t.id+'" style="background:'+av.color+'22;color:'+av.color+'">'+_threadAvatarSvg(av.iconId)+'</div>'+
         '<div class="msg-group-content"><div class="msg-group-header">'+
         '<div class="msg-group-name"><span class="mgn-text" id="mgn-'+t.id+'">'+_esc(threadTitle(t))+'</span>'+(t.muted?' <span style="color:var(--fg-3)"><svg class="tic"><use href="#i-bell-off"/></svg></span>':'')+'</div>'+
         '<div class="inbox-time">'+when+'</div></div>'+
@@ -14561,7 +14564,7 @@
     if (titleEl) titleEl.textContent = threadTitle(t);
     resolveThreadName(t, titleEl, avEl); // DM/witnessed → person's name (+🛡️) + their pic/initials
     decorateGroupThread(t, avEl); // named group → avatar cluster
-    if (avEl) { avEl.className = 'thread-avatar'; avEl.style.background=''; avEl.style.color=''; avEl.textContent = av.icon; }
+    if (avEl) { avEl.className = 'thread-avatar'; avEl.style.background=''; avEl.style.color=''; avEl.innerHTML = _threadAvatarSvg(av.iconId); }
     loadThreadSubtitle(t, subEl);
     updateThreadMuteBtn();
 
