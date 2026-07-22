@@ -307,7 +307,10 @@
   .add-period-btn { width: 100%; background: transparent; border: 1.5px dashed var(--border-2); border-radius: var(--radius); padding: 14px; color: var(--fg-3); font-size: 14px; font-family: var(--font); cursor: pointer; text-align: center; margin-top: 4px; }
 
   /* ===== GRID PRACTICE PLANNER (CSS Grid based — not <table>) ===== */
-  .grid-scroll-wrap { overflow: auto; -webkit-overflow-scrolling: touch; margin: 14px 0; border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 60vh; background: var(--bg); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  /* Grid expands to its full height — the whole plan is visible and the browser window scrolls
+     if it's long (no inner vertical scroll box). Horizontal stays scrollable for wide column
+     sets; the column header is a sibling above this wrap, so it isn't clipped by overflow. */
+  .grid-scroll-wrap { overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; margin: 14px 0; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
   .grid-scroll-wrap::-webkit-scrollbar { width: 5px; height: 5px; }
   .grid-scroll-wrap::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 10px; }
 
@@ -350,7 +353,7 @@
     padding: 8px 8px; text-align: center; box-sizing: border-box;
   }
   .grid-col-head:last-child, .grid-cell:last-child { border-right: none; }
-  .grid-col-head { background: var(--bg-2); padding: 8px 6px; cursor: pointer; transition: background 0.15s; }
+  .grid-col-head { background: var(--bg-2); padding: 14px 6px; cursor: pointer; transition: background 0.15s; }
   .grid-col-head:active { background: var(--bg-3); }
   .gc-name { font-size: 12px; font-weight: 700; color: var(--fg); letter-spacing: 0.02em; }
   .gc-coach { font-size: 9px; color: var(--fg-3); margin-top: 2px; }
@@ -5508,7 +5511,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.39</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.40</div>
   </div>
 </div>
 
@@ -5522,7 +5525,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.39';
+  const APP_VERSION = 'v40.40';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
