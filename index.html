@@ -493,6 +493,10 @@
   .nav-home-logo-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
   .nav-label { font-size: 10px; font-weight: 500; color: var(--fg-3); }
   .nav-item.active .nav-label { color: var(--team-primary); }
+  /* Line-icon (Lucide sprite) base + nav sizing. Icons inherit color via currentColor. */
+  .ic { width: 24px; height: 24px; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+  .nav-ic { width: 25px; height: 25px; color: var(--fg-3); transition: color 0.15s, transform 0.15s; }
+  .nav-item.active .nav-ic { color: var(--team-primary); transform: scale(1.08); }
 
   /* ===== NOTIFICATION PANEL ===== */
   #notif-panel { position:absolute;top:0;right:0;width:100%;max-width:420px;background:var(--bg-2);border-bottom:1px solid var(--border);z-index:80;transform:translateY(-100%);transition:transform 0.25s ease;box-shadow:0 4px 20px rgba(0,0,0,0.5); }
@@ -893,6 +897,7 @@
     }
 
     .sidebar-item-icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+    .sidebar-ic { width: 20px; height: 20px; flex-shrink: 0; }
 
     .sidebar-footer {
       padding: 16px 20px;
@@ -2081,6 +2086,27 @@
 })();
 </script>
 
+<!-- Lucide line-icon sprite (professional UI icons, MIT-licensed). Reference anywhere with
+     <svg class="ic"><use href="#i-NAME"/></svg>. Icons inherit the surrounding text color via
+     currentColor, so they theme with light/dark + team color automatically. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-clipboard-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+  <symbol id="i-message-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-chart-column" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-shirt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></symbol>
+  <symbol id="i-clipboard-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></symbol>
+  <symbol id="i-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol>
+  <symbol id="i-library" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></symbol>
+  <symbol id="i-book-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-ellipsis" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol>
+</svg>
+
 <div class="phone">
 
 <!-- ONBOARDING: LANDING -->
@@ -2618,7 +2644,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:4px">
       <div class="notif-btn-wrap">
-        <div class="notif-btn" onclick="toggleNotifPanel()" id="notif-btn">🔔</div>
+        <div class="notif-btn" onclick="toggleNotifPanel()" id="notif-btn"><svg class="ic" style="width:19px;height:19px"><use href="#i-bell"/></svg></div>
         <div class="notif-badge" id="notif-badge" style="display:none">0</div>
       </div>
       <!-- Avatar hidden on desktop via CSS — profile is in sidebar footer -->
@@ -5405,7 +5431,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi">💳</span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi">📖</span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi">🚪</span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.28</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.29</div>
   </div>
 </div>
 
@@ -5419,7 +5445,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.28';
+  const APP_VERSION = 'v40.29';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5583,6 +5609,18 @@
     ]
   };
 
+  // Nav id → Lucide sprite icon id (see the <symbol> defs near the top of <body>). Used by both the
+  // mobile bottom nav and the desktop sidebar so the two stay in sync.
+  const LUCIDE_ICON = {
+    home: 'i-home', practice: 'i-clipboard-list', messages: 'i-message-circle',
+    calendar: 'i-calendar', schedule: 'i-calendar', roster: 'i-users',
+    depth: 'i-chart-column', 'depth-player': 'i-chart-column',
+    inventory: 'i-shirt', attendance: 'i-clipboard-check', performance: 'i-trending-up',
+    drills: 'i-library', playbook: 'i-book-open', 'playbook-player': 'i-book-open',
+    docs: 'i-file-text', documents: 'i-file-text', player: 'i-user', stats: 'i-user',
+    more: 'i-ellipsis',
+  };
+
   let currentRole = 'coach';
   let _sessionUser = { name: '', role: 'coach' }; // set by launchApp, used by sidebar
   let currentTab = 'home';
@@ -5595,16 +5633,12 @@
       const el = document.createElement('div');
       el.className = 'nav-item' + (i === 0 ? ' active' : '');
       el.id = 'nav-' + item.id;
-      const iconImg = NAV_ICON_IMAGES[item.id];
       let iconHtml;
       if (item.id === 'home' && schoolLogoDataUrl) {
         iconHtml = `<div class="nav-home-logo-badge"><img src="${schoolLogoDataUrl}" class="nav-home-logo-img" alt="School logo"></div>`;
-      } else if (item.id === 'home' && iconImg) {
-        iconHtml = `<img src="${iconImg}" class="nav-icon-img" alt="">`;
-      } else if (iconImg) {
-        iconHtml = `<img src="${iconImg}" class="nav-icon-img" alt="">`;
       } else {
-        iconHtml = `<div class="nav-icon">${item.icon}</div>`;
+        const lid = LUCIDE_ICON[item.id] || 'i-file-text';
+        iconHtml = `<svg class="ic nav-ic"><use href="#${lid}"/></svg>`;
       }
       const badgeHtml = item.id === 'messages' ? `<span class="nav-unread-badge" id="nav-msg-badge"></span>` : '';
       el.innerHTML = `${iconHtml}<div class="nav-label">${item.label}</div>${badgeHtml}`;
@@ -9472,7 +9506,8 @@
       el.dataset.id = item.id;
       const sbBadge = item.id === 'messages' ? `<span class="sidebar-unread-badge" id="sidebar-msg-badge"></span>` : '';
       const soonBadge = item.id === 'playbook' ? `<span style="margin-left:auto;font-size:9px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:var(--team-primary);background:var(--team-primary-glow);border:1px solid var(--team-primary);border-radius:10px;padding:1px 6px">Soon</span>` : '';
-      el.innerHTML = `<span class="sidebar-item-icon">${item.icon}</span><span>${item.label}</span>${sbBadge}${soonBadge}`;
+      const sbLid = LUCIDE_ICON[item.id] || 'i-file-text';
+      el.innerHTML = `<svg class="ic sidebar-ic"><use href="#${sbLid}"/></svg><span>${item.label}</span>${sbBadge}${soonBadge}`;
       el.onclick = () => {
         desktopActiveItem = item.id;
         nav.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
