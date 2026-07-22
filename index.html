@@ -2044,7 +2044,7 @@
   .setup-preview-btn { background: var(--team-primary); color: var(--bg); text-align: center; font-size: 13px; font-weight: 700; padding: 11px; border-radius: var(--radius-sm); margin-bottom: 12px; transition: background 0.15s; }
   .setup-preview-pills { display: flex; gap: 6px; }
   .setup-preview-pill { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--border); }
-  .setup-preview-pill.active { background: var(--team-secondary); color: var(--fg); border-color: var(--team-secondary); transition: background 0.15s, border-color 0.15s; }
+  .setup-preview-pill.active { background: var(--team-secondary); color: var(--team-secondary-text); border-color: var(--team-secondary); transition: background 0.15s, border-color 0.15s; }
 
   .mode-toggle-row { display: flex; gap: 8px; margin-bottom: 4px; }
   .mode-toggle-btn { flex: 1; background: var(--bg-2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px; font-size: 13px; font-weight: 600; color: var(--fg-2); cursor: pointer; font-family: var(--font); }
@@ -5489,7 +5489,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.34</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.35</div>
   </div>
 </div>
 
@@ -5503,7 +5503,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.34';
+  const APP_VERSION = 'v40.35';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
