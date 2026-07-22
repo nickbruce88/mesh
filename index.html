@@ -5489,7 +5489,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.35</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.36</div>
   </div>
 </div>
 
@@ -5503,7 +5503,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.35';
+  const APP_VERSION = 'v40.36';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -15423,6 +15423,49 @@
     renderDepthChart();
   }
 
+  // Reconcile ONE player's depth-chart membership to match their current position fields.
+  // Called when a player is edited so a position change (e.g. DB → SS) MOVES them — removes their
+  // stale entries and re-places them by field — instead of the add-only build leaving a duplicate.
+  // Only this player's entries are touched, so other players' manual swap placements are preserved.
+  function reconcilePlayerInDC(player, oldName) {
+    const findName = oldName || player.name;
+    const isPH = pos => DC_PLACEHOLDER_POS.has(pos) || pos.replace(/[-—–#\s]/g,'') === '';
+    // 1. Remove this player from every group; drop groups left empty.
+    ['offense','defense','special'].forEach(unit => {
+      DC_DATA[unit].forEach(g => { g.players = g.players.filter(pl => pl.name !== findName); });
+      DC_DATA[unit] = DC_DATA[unit].filter(g => g.players.length > 0);
+    });
+    // 2. Re-add to the groups matching their current fields (same rules as buildDCFromPlayers).
+    const add = (unit, posStr) => {
+      (posStr || '').split('/').map(s => s.trim().toUpperCase()).filter(Boolean).forEach(pos => {
+        if (isPH(pos)) return;
+        let g = DC_DATA[unit].find(x => (x.pos||'').toUpperCase() === pos);
+        if (!g) { g = { pos, players: [] }; DC_DATA[unit].push(g); }
+        if (!g.players.find(pl => pl.name === player.name)) g.players.push({ name: player.name, num: player.num });
+      });
+    };
+    const filterST = s => (s||'').split('/').filter(x => !ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
+    const stFromOff = (player.posOff||'').split('/').filter(x => ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
+    const stFromDef = (player.posDef||'').split('/').filter(x => ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
+    add('offense', filterST(player.posOff));
+    add('defense', filterST(player.posDef));
+    add('special', [player.posST, stFromOff, stFromDef].filter(Boolean).join('/'));
+    const rawPos = (player.pos || '').trim();
+    if (!player.posOff && !player.posDef && !player.posST && rawPos && !isPH(rawPos.toUpperCase())) {
+      const cp = rawPos.toUpperCase();
+      const unit = ST_ONLY_POSITIONS.has(cp) ? 'special'
+        : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(cp) ? 'defense'
+        : ['K','P','LS','KR','PR'].includes(cp) ? 'special' : 'offense';
+      add(unit, rawPos);
+    }
+    // 3. Keep positions in standard order (mirror buildDCFromPlayers' tail).
+    ['offense','defense','special'].forEach(unit => {
+      const order = DC_POS_ORDER[unit];
+      DC_DATA[unit].sort((a, b) => (order.indexOf(a.pos) === -1 ? 99 : order.indexOf(a.pos)) - (order.indexOf(b.pos) === -1 ? 99 : order.indexOf(b.pos)));
+    });
+    renderDepthChart();
+  }
+
   let dcEditMode = false;
   let dcSwapPos = null;
   let dcSwapIdx = null;
@@ -18683,6 +18726,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const player = PLAYERS.find(p => p.id === playerId);
     if (!player) return;
 
+    const oldName = player.name; // capture before any rename so we can find their old depth-chart entries
+
     player.name = document.getElementById('pe-name').value.trim() || player.name;
     player.nickname = document.getElementById('pe-nickname').value.trim();
     player.num = document.getElementById('pe-num').value.trim().replace(/^#+/,''); // store without #, formatNum adds it
@@ -18694,6 +18739,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     player.height = document.getElementById('pe-height').value.trim();
     player.weight = document.getElementById('pe-weight').value.trim();
     player.gpa = document.getElementById('pe-gpa').value.trim();
+
+    // The player card is the source of truth for a player's positions: reconcile their depth-chart
+    // slots so a position change MOVES them (removes stale entries) instead of leaving a duplicate.
+    // Also cleans up any pre-existing duplicate on the next save, and refreshes their jersey number.
+    reconcilePlayerInDC(player, oldName);
+    saveDCToSupabase();
 
     overlay.style.display = 'none';
     renderCoachRoster();
@@ -18770,7 +18821,12 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       showToast(`${name} removed`);
     }
 
-    // Rebuild depth chart
+    // Drop the deleted player from the depth chart too — buildDCFromPlayers is add-only and would
+    // otherwise leave them lingering. Remove by name, drop any group left empty, then fill in.
+    ['offense','defense','special'].forEach(unit => {
+      DC_DATA[unit].forEach(g => { g.players = g.players.filter(pl => pl.name !== name); });
+      DC_DATA[unit] = DC_DATA[unit].filter(g => g.players.length > 0);
+    });
     buildDCFromPlayers();
     saveDCToSupabase();
   }
