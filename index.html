@@ -27,7 +27,7 @@
     --black-4:    var(--bg-4);
     --black-5:    var(--bg-5);
     --white:      var(--fg);
-    --gray-1:     #f0f0f0;
+    --gray-1:     var(--fg);   /* always readable text — was a fixed near-white that vanished on the light theme */
     --gray-2:     var(--fg-2);
     --gray-3:     var(--fg-3);
     --gray-4:     var(--fg-4);
@@ -4899,7 +4899,7 @@
         <div class="section-label" style="margin:0">Description</div>
         <button class="btn-sm" onclick="editCurrentDrill()" style="background:var(--bg-3);border:1px solid var(--border);color:var(--fg)">✏️ Edit</button>
       </div>
-      <div style="font-size:14px;color:var(--gray-1);line-height:1.6;margin-top:8px" id="dd-desc"></div>
+      <div style="font-size:14px;color:var(--fg);line-height:1.6;margin-top:8px" id="dd-desc"></div>
       <div id="dd-video-block"></div>
       <div style="margin-top:24px">
         <button class="note-modal-save" onclick="insertDrillIntoPlan()">+ Add to practice plan</button>
@@ -5511,7 +5511,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.40</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.41</div>
   </div>
 </div>
 
@@ -5525,7 +5525,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.40';
+  const APP_VERSION = 'v40.41';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
