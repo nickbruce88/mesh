@@ -5511,7 +5511,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.42</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.43</div>
   </div>
 </div>
 
@@ -5525,7 +5525,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.42';
+  const APP_VERSION = 'v40.43';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -5886,7 +5886,8 @@
   // Games carry `opponent`; imported/other events carry only `title`.
   function schedEventName(g) {
     const ha = (g.homeAway || '').toLowerCase();
-    const prefix = ha === 'home' ? 'vs. ' : ha === 'away' ? 'at ' : '';
+    // Away games read as "@Opponent" (tight, no space); home stays "vs. Opponent".
+    const prefix = ha === 'home' ? 'vs. ' : ha === 'away' ? '@' : '';
     return g.opponent ? prefix + g.opponent : (g.title || 'Event');
   }
 
@@ -6492,7 +6493,7 @@
       const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
       monthEl.textContent = months[d.getMonth()];
       dayEl.textContent = d.getDate();
-      const prefix = next.homeAway === 'home' ? 'vs. ' : next.homeAway === 'away' ? 'at ' : '';
+      const prefix = next.homeAway === 'home' ? 'vs. ' : next.homeAway === 'away' ? '@' : '';
       oppEl.textContent = prefix + next.opponent;
       const timeStr = next.time ? next.time.replace(':','') : '';
       const [h,m] = (next.time||'19:00').split(':').map(Number);
@@ -8450,7 +8451,7 @@
       <div class="today-event-row">
         <div class="today-event-tag" style="background:${tagColor(e.tag||'other')}"></div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600">${_esc(e.opponent||e.title||'Event')}</div>
+          <div style="font-size:13px;font-weight:600">${_esc(schedEventName(e))}</div>
           <div style="font-size:11px;color:var(--gray-3)">${e.time ? formatTime(e.time) : ''}${e.location ? ' · '+e.location : ''}</div>
         </div>
         ${e.homeAway ? `<div style="font-size:10px;font-weight:700;color:${e.homeAway==='home'?'var(--green)':'var(--amber)'}">${e.homeAway.toUpperCase()}</div>` : ''}
@@ -21541,8 +21542,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
       const barsHTML = dayEvents.slice(0, maxShow).map(e => {
         const timeStr = e.time ? formatTime(e.time) : '';
-        const label = [e.opponent || e.title || '', timeStr].filter(Boolean).join(' · ');
-        return `<div class="cal-event-bar ${tagClass(e.tag || 'other')}" title="${_esc(e.opponent||e.title||'')}" onclick="event.stopPropagation();showCalDayDetail('${dateStr}')">
+        const label = [schedEventName(e), timeStr].filter(Boolean).join(' · ');
+        return `<div class="cal-event-bar ${tagClass(e.tag || 'other')}" title="${_esc(schedEventName(e))}" onclick="event.stopPropagation();showCalDayDetail('${dateStr}')">
           ${label}
         </div>`;
       }).join('');
@@ -22316,7 +22317,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="width:4px;border-radius:2px;background:${tagColor(e.tag||'other')};align-self:stretch;flex-shrink:0"></div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;color:var(--fg)">${_esc(e.opponent||e.title||'—')}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--fg)">${_esc(e.opponent ? schedEventName(e) : (e.title||'—'))}</div>
           <div style="font-size:11px;color:var(--fg-3);margin-top:2px">${e.time ? formatTime(e.time) : ''}${e.location ? ' · '+e.location : ''}</div>
           ${e.homeAway ? `<div style="font-size:10px;font-weight:700;color:${e.homeAway==='home'?'var(--green)':'var(--amber)'};margin-top:3px">${e.homeAway.toUpperCase()}</div>` : ''}
         </div>
