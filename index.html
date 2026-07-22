@@ -3053,6 +3053,28 @@
         <input id="note-name-input" class="ap-input" style="width:100%;box-sizing:border-box" placeholder="Name">
       </div>
 
+      <!-- PERIOD LENGTH (adjust duration in place — was delete-and-re-add) -->
+      <div id="note-dur-row" style="display:none;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Length</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button type="button" onclick="stepPeriodDuration(-1)" aria-label="Shorten" style="width:38px;height:38px;flex-shrink:0;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);font-size:20px;font-weight:600;line-height:1;cursor:pointer;font-family:var(--font)">−</button>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);height:38px">
+            <input id="note-dur-input" type="number" min="1" max="90" value="10" onchange="setPeriodDuration(this.value)" style="width:46px;text-align:right;background:none;border:none;outline:none;color:var(--fg);font-size:15px;font-weight:700;font-family:var(--font)">
+            <span style="font-size:12px;color:var(--fg-3)">min</span>
+          </div>
+          <button type="button" onclick="stepPeriodDuration(1)" aria-label="Lengthen" style="width:38px;height:38px;flex-shrink:0;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);font-size:20px;font-weight:600;line-height:1;cursor:pointer;font-family:var(--font)">+</button>
+        </div>
+      </div>
+
+      <!-- PERIOD TYPE (switch full-team ↔ position-groups in place) -->
+      <div id="note-type-row" style="display:none;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Period type</div>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="note-type-span" onclick="setPeriodKind('span')" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">Full team</button>
+          <button type="button" id="note-type-group" onclick="setPeriodKind('group')" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">Position groups</button>
+        </div>
+      </div>
+
       <!-- MOVE PERIOD (reliable reorder on mobile, where drag doesn't work) -->
       <div id="note-move-row" style="display:none;gap:8px;margin-bottom:12px">
         <button onclick="movePeriod('up')" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">↑ Move up</button>
@@ -5486,7 +5508,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.38</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.39</div>
   </div>
 </div>
 
@@ -5500,7 +5522,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.38';
+  const APP_VERSION = 'v40.39';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12156,6 +12178,102 @@
     if (typeof saveDayGrid === 'function') saveDayGrid();
   }
 
+  // Column keys for group periods — read from the live grid header so converted periods
+  // line up with whatever columns this program uses (not a hardcoded list).
+  function _practiceGridCols() {
+    const heads = document.querySelectorAll('#practice-grid-header .grid-col-head[data-col]');
+    const cols = [...heads].map(h => h.dataset.col).filter(Boolean);
+    return cols.length ? cols : ['QB','RB','WR','OL','DL','LB','DB'];
+  }
+  function _currentPeriodRow() {
+    if (!currentNoteModalPeriodId) return null;
+    return document.querySelector(`[data-period-id="${currentNoteModalPeriodId}"]`);
+  }
+  function _rowDur(row) {
+    return parseInt(row?.style.getPropertyValue('--dur'))
+        || parseInt((row?.querySelector('.gt-dur')?.textContent || '').replace(/\D/g, '')) || 10;
+  }
+
+  // Adjust a period's length in place (no more delete-and-re-add). Re-flows every later
+  // period's start time and persists.
+  function setPeriodDuration(mins) {
+    if (!canEdit('practice')) return;
+    const row = _currentPeriodRow();
+    if (!row) return;
+    mins = Math.max(1, Math.min(90, parseInt(mins) || _rowDur(row)));
+    row.style.setProperty('--dur', mins);
+    const durEl = row.querySelector('.gt-dur');
+    if (durEl) durEl.textContent = mins + ' min';
+    const input = document.getElementById('note-dur-input');
+    if (input) input.value = mins;
+    recomputeGridTimes();
+    if (typeof saveDayGrid === 'function') saveDayGrid();
+  }
+  function stepPeriodDuration(dir) {
+    const row = _currentPeriodRow();
+    if (!row) return;
+    setPeriodDuration(_rowDur(row) + dir * 5);
+  }
+
+  // Switch a period between full-team (span) and position-groups (group) in place, keeping
+  // its name, duration, id, notes and position. Rebuilds just the row body + time-cell name.
+  function setPeriodKind(kind) {
+    if (!canEdit('practice')) return;
+    const row = _currentPeriodRow();
+    if (!row) return;
+    const isSpan = !!row.querySelector('.cell-span');
+    const curKind = isSpan ? 'span' : 'group';
+    if (kind === curKind) return;
+
+    // Preserve the period name across the conversion.
+    const name = (row.querySelector('.gt-name')?.textContent
+               || row.querySelector('.cell-span .cell-activity')?.textContent
+               || currentNoteModalPeriodName || '').trim();
+    const rowColor = row.dataset.rowColor || '';
+    const tc = row.querySelector('.grid-time-cell');
+
+    // Drop the old body (span cell OR the group columns).
+    row.querySelector('.cell-span')?.remove();
+    row.querySelector('.pgrid-cols')?.remove();
+
+    if (kind === 'group') {
+      // Add a header name slot in the time cell (before the duration line).
+      if (tc && !tc.querySelector('.gt-name')) {
+        const n = document.createElement('div');
+        n.className = 'gt-name';
+        n.textContent = name;
+        tc.insertBefore(n, tc.querySelector('.gt-dur') || null);
+      }
+      const cells = _practiceGridCols().map(c =>
+        `<div class="grid-cell active-cell" data-col="${c}"><div class="cell-activity">${c}</div></div>`
+      ).join('');
+      const cols = document.createElement('div');
+      cols.className = 'pgrid-cols';
+      cols.innerHTML = cells;
+      row.appendChild(cols);
+      row.className = 'pgrid-row row-special';
+    } else {
+      // Group → full team: drop the header name slot, add a single span cell.
+      tc?.querySelector('.gt-name')?.remove();
+      const span = document.createElement('div');
+      span.className = 'grid-cell cell-span left-align';
+      span.innerHTML = `<div class="cell-activity">${_esc(name)}</div>`;
+      row.appendChild(span);
+      row.className = 'pgrid-row row-team';
+    }
+
+    // Re-apply row color + rewire clicks/times, then persist.
+    if (rowColor) {
+      row.dataset.rowColor = rowColor;
+      row.querySelectorAll('.grid-cell, .grid-time-cell').forEach(el => { el.style.background = rowColor; });
+    }
+    setPeriodOnclick(row);
+    recomputeGridTimes();
+    if (typeof saveDayGrid === 'function') saveDayGrid();
+    // Refresh the modal so its controls (color row, type buttons) match the new kind.
+    openPeriodNote(currentNoteModalPeriodId, row.querySelector('.gt-time')?.textContent || '', name);
+  }
+
   function openPeriodNote(periodId, timeRange, periodName) {
     if (event) event.stopPropagation();
     currentNoteModalPeriodId = periodId;
@@ -12179,6 +12297,26 @@
     const _isSpan = !!_perRow?.querySelector('.cell-span');
     const _colorRow = document.getElementById('note-color-row');
     if (_colorRow) _colorRow.style.display = (_isSpan && canEdit('practice')) ? 'block' : 'none';
+    // Length stepper — adjust this period's duration in place.
+    const _durRow = document.getElementById('note-dur-row');
+    if (_durRow) {
+      _durRow.style.display = canEdit('practice') ? 'block' : 'none';
+      const _durInput = document.getElementById('note-dur-input');
+      if (_durInput) { _durInput.value = _rowDur(_perRow); _durInput.readOnly = !canEdit('practice'); }
+    }
+    // Period type switch — full-team ↔ position-groups. Only for real practice periods
+    // (not water/transition breaks, which have their own row treatment).
+    const _typeRow = document.getElementById('note-type-row');
+    if (_typeRow) {
+      const _isBreak = /^(W|T)/.test(periodId || '') || _perRow?.classList.contains('row-water') || _perRow?.classList.contains('row-transition');
+      _typeRow.style.display = (canEdit('practice') && !_isBreak) ? 'block' : 'none';
+      const _sel = 'background:var(--team-primary);border-color:var(--team-primary);color:var(--team-primary-text)';
+      const _unsel = 'background:var(--bg-3);border-color:var(--border);color:var(--fg-2)';
+      const _spanBtn = document.getElementById('note-type-span');
+      const _groupBtn = document.getElementById('note-type-group');
+      if (_spanBtn) _spanBtn.style.cssText = `flex:1;border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);border:1px solid;${_isSpan ? _sel : _unsel}`;
+      if (_groupBtn) _groupBtn.style.cssText = `flex:1;border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);border:1px solid;${_isSpan ? _unsel : _sel}`;
+    }
     if (_isSpan) renderNoteColorSwatches(_perRow.dataset.rowColor || _perRow.querySelector('.grid-cell')?.style.background || '');
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a note for this period… e.g. "OL focus on pad level"';
@@ -12220,6 +12358,8 @@
     document.getElementById('note-name-edit').style.display = 'block';
     document.getElementById('note-color-row').style.display = 'none'; // row color is period-level only
     document.getElementById('note-move-row').style.display = 'none'; // move is period-level only
+    document.getElementById('note-dur-row').style.display = 'none';   // length is period-level only
+    document.getElementById('note-type-row').style.display = 'none';  // type switch is period-level only
     document.getElementById('note-modal-textarea').value = '';
     document.getElementById('note-modal-textarea').placeholder = 'Add a coaching note for this cell…';
     document.getElementById('note-modal-textarea').readOnly = !canEdit('practice');
