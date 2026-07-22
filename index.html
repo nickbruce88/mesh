@@ -2793,24 +2793,18 @@
           </select>
         </div>
       </div>
-      <div class="ap-field">
-        <div class="ap-field-label">Position (general)</div>
-        <input class="ap-input" id="pe-pos" placeholder="e.g. WR">
-      </div>
-      <div style="display:flex;gap:10px">
-        <div class="ap-field" style="flex:1">
-          <div class="ap-field-label">Off. position</div>
-          <input class="ap-input" id="pe-pos-off" placeholder="e.g. WR">
-        </div>
-        <div class="ap-field" style="flex:1">
-          <div class="ap-field-label">Def. position</div>
-          <input class="ap-input" id="pe-pos-def" placeholder="e.g. CB">
-        </div>
-        <div class="ap-field" style="flex:1">
-          <div class="ap-field-label">ST position</div>
-          <input class="ap-input" id="pe-pos-st" placeholder="e.g. KR">
-        </div>
-      </div>
+      <!-- Positions: multi-select chips per unit. Hidden inputs hold the slash-joined values that
+           savePlayerEdit already reads; pe-pos (general) is kept as a fallback (reconcile sets the
+           real primary from the depth chart on save). A player can hold many positions at once. -->
+      <input type="hidden" id="pe-pos">
+      <input type="hidden" id="pe-pos-off">
+      <input type="hidden" id="pe-pos-def">
+      <input type="hidden" id="pe-pos-st">
+      <div class="ap-field-label" style="margin-bottom:3px">Positions</div>
+      <div style="font-size:11px;color:var(--fg-3);margin-bottom:10px;line-height:1.5">Add every spot this player can fill — set their depth at each on the depth chart. Manage the position list with <b>Positions</b> on the depth chart.</div>
+      <div id="pe-unit-offense" style="margin-bottom:12px"></div>
+      <div id="pe-unit-defense" style="margin-bottom:12px"></div>
+      <div id="pe-unit-special" style="margin-bottom:6px"></div>
       <div style="display:flex;gap:10px">
         <div class="ap-field" style="flex:1">
           <div class="ap-field-label">Height</div>
@@ -3391,7 +3385,10 @@
             <div class="unit-chip" onclick="filterUnit('defense', this)">Defense</div>
             <div class="unit-chip" onclick="filterUnit('special', this)">Special Teams</div>
           </div>
-          <button class="btn-sm" data-edit="depth" id="dc-edit-btn" onclick="toggleDCEdit()">Edit</button>
+          <div style="display:flex;gap:6px">
+            <button class="btn-sm" data-edit="depth" onclick="openManagePositions()"><svg class="tic"><use href="#i-settings"/></svg> Positions</button>
+            <button class="btn-sm" data-edit="depth" id="dc-edit-btn" onclick="toggleDCEdit()">Edit</button>
+          </div>
         </div>
 
         <div class="dc-edit-banner" id="dc-edit-banner" style="display:none">
@@ -5489,7 +5486,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.36</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.37</div>
   </div>
 </div>
 
@@ -5503,7 +5500,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.36';
+  const APP_VERSION = 'v40.37';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -16236,6 +16233,174 @@
     } catch(e) { console.error('DC load error:', e); }
   }
 
+  // ===== MANAGE POSITIONS (customize the per-program position vocabulary) =====
+  const _DC_UNIT_FIELD = { offense: 'posOff', defense: 'posDef', special: 'posST' };
+
+  // Persist a small set of players' position fields to Supabase (rename/delete touch player rows).
+  async function _persistPlayerFields(players) {
+    for (const p of players) {
+      const dbId = p.db_id || p.id;
+      if (dbId && String(dbId).includes('-') && !String(dbId).startsWith('local_')) {
+        try { await db.from('players').update({ pos: p.pos||'', position_off: p.posOff||'', position_def: p.posDef||'', position_st: p.posST||'' }).eq('id', dbId); }
+        catch(e) { console.warn('[Positions] persist error:', e); }
+      }
+    }
+  }
+  // Merge same-named position groups in a unit (after a rename can collide) and re-sort.
+  function _dcConsolidateUnit(unit) {
+    const byPos = {}, order = [];
+    DC_DATA[unit].forEach(g => {
+      const key = (g.pos||'').toUpperCase();
+      if (!byPos[key]) { byPos[key] = { pos: g.pos, players: [] }; order.push(key); }
+      g.players.forEach(pl => { if (!byPos[key].players.find(x => x.name === pl.name)) byPos[key].players.push(pl); });
+    });
+    DC_DATA[unit] = order.map(k => byPos[k]).filter(g => g.players.length > 0);
+    const ord = DC_POS_ORDER[unit];
+    DC_DATA[unit].sort((a,b) => (ord.indexOf(a.pos)===-1?99:ord.indexOf(a.pos)) - (ord.indexOf(b.pos)===-1?99:ord.indexOf(b.pos)));
+  }
+  function _sortVocab(unit) {
+    const ord = DC_POS_ORDER[unit];
+    DC_POSITIONS[unit] = [...new Set((DC_POSITIONS[unit]||[]).map(p => p.toUpperCase()))]
+      .sort((a,b) => (ord.indexOf(a)===-1?99:ord.indexOf(a)) - (ord.indexOf(b)===-1?99:ord.indexOf(b)) || a.localeCompare(b));
+  }
+
+  function openManagePositions() {
+    if (!requireEdit('depth')) return;
+    let ov = document.getElementById('manage-pos-overlay');
+    if (ov) ov.remove();
+    ov = document.createElement('div');
+    ov.id = 'manage-pos-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick = e => { if (e.target === ov) closeManagePositions(); };
+    ov.innerHTML = `<div style="background:var(--bg-2);border-radius:16px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;border:1px solid var(--border);padding:20px 20px 24px" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:17px;font-weight:800;color:var(--fg)">Manage positions</div>
+          <div style="color:var(--fg-3);cursor:pointer;font-size:18px" onclick="closeManagePositions()">✕</div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-3);margin-bottom:16px;line-height:1.5">Your program's position names, by unit — rename or remove to match your scheme. These are the options coaches choose from on each player. Tap a name to rename it.</div>
+        <div id="manage-pos-body"></div>
+      </div>`;
+    document.body.appendChild(ov);
+    renderManagePositions();
+  }
+  function closeManagePositions() { const ov = document.getElementById('manage-pos-overlay'); if (ov) ov.remove(); }
+
+  function renderManagePositions() {
+    const body = document.getElementById('manage-pos-body');
+    if (!body) return;
+    const usage = unit => {
+      const f = _DC_UNIT_FIELD[unit], m = {};
+      PLAYERS.forEach(p => (p[f]||'').split('/').map(s=>s.trim().toUpperCase()).filter(Boolean).forEach(pos => m[pos] = (m[pos]||0)+1));
+      return m;
+    };
+    body.innerHTML = [['offense','Offense'],['defense','Defense'],['special','Special Teams']].map(([key,label]) => {
+      const counts = usage(key);
+      return `<div style="margin-bottom:20px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:9px">${label}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          ${(DC_POSITIONS[key]||[]).map(pos => `
+            <span style="display:inline-flex;align-items:center;gap:7px;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;padding:5px 7px 5px 12px;font-size:13px;font-weight:600;color:var(--fg)">
+              <span contenteditable="true" spellcheck="false" onblur="renamePosition('${key}','${_escAttr(pos)}',this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" style="outline:none;min-width:16px">${_esc(pos)}</span>
+              ${counts[pos] ? `<span style="font-size:10px;color:var(--fg-3);font-weight:600">${counts[pos]}</span>` : ''}
+              <span onclick="deletePosition('${key}','${_escAttr(pos)}')" style="cursor:pointer;color:var(--fg-3);font-size:16px;line-height:1;width:14px;text-align:center" title="Delete position">×</span>
+            </span>`).join('')}
+          <span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg-3);border:1px dashed var(--border);border-radius:20px;padding:2px 4px 2px 11px">
+            <input id="mp-add-${key}" placeholder="Add…" onkeydown="if(event.key==='Enter'){addPosition('${key}');}" style="background:none;border:none;outline:none;color:var(--fg);font-size:13px;font-family:var(--font);width:60px">
+            <button onclick="addPosition('${key}')" style="background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:50%;width:22px;height:22px;font-size:15px;line-height:1;cursor:pointer;flex-shrink:0">+</button>
+          </span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function addPosition(unit) {
+    const inp = document.getElementById('mp-add-'+unit);
+    const val = (inp?.value||'').trim().toUpperCase();
+    if (val && !(DC_POSITIONS[unit]||[]).some(p => p.toUpperCase() === val)) {
+      DC_POSITIONS[unit] = DC_POSITIONS[unit] || [];
+      DC_POSITIONS[unit].push(val);
+      _sortVocab(unit);
+      saveDCToSupabase();
+    }
+    if (inp) inp.value = '';
+    renderManagePositions();
+    setTimeout(() => document.getElementById('mp-add-'+unit)?.focus(), 0);
+  }
+
+  function renamePosition(unit, oldPos, newRaw) {
+    const newPos = (newRaw||'').trim().toUpperCase();
+    if (!newPos || newPos === (oldPos||'').toUpperCase()) { renderManagePositions(); return; }
+    const field = _DC_UNIT_FIELD[unit];
+    // vocabulary
+    DC_POSITIONS[unit] = (DC_POSITIONS[unit]||[]).map(p => p.toUpperCase() === oldPos.toUpperCase() ? newPos : p);
+    _sortVocab(unit);
+    // players + depth chart
+    const affected = [];
+    const repl = str => (str||'').split('/').map(s => s.trim()).filter(Boolean).map(s => s.toUpperCase() === oldPos.toUpperCase() ? newPos : s).join('/');
+    PLAYERS.forEach(p => { const nv = repl(p[field]); if (nv !== (p[field]||'')) { p[field] = nv; affected.push(p); } });
+    DC_DATA[unit].forEach(g => { if ((g.pos||'').toUpperCase() === oldPos.toUpperCase()) g.pos = newPos; });
+    _dcConsolidateUnit(unit);
+    affected.forEach(p => { p.pos = primaryPosition(p) || p.pos; }); // recompute after DC_DATA is correct
+    syncRosterData(); renderDepthChart(); renderCoachRoster?.(); renderManagePositions();
+    _persistPlayerFields(affected); saveDCToSupabase();
+    showToast(`${oldPos} → ${newPos}`);
+  }
+
+  function deletePosition(unit, pos) {
+    const field = _DC_UNIT_FIELD[unit];
+    const affected = PLAYERS.filter(p => (p[field]||'').split('/').some(s => s.trim().toUpperCase() === pos.toUpperCase()));
+    if (affected.length && !confirm(`Delete "${pos}"? ${affected.length} player${affected.length>1?'s are':' is'} listed there — they'll be removed from that position.`)) return;
+    DC_POSITIONS[unit] = (DC_POSITIONS[unit]||[]).filter(p => p.toUpperCase() !== pos.toUpperCase());
+    const strip = str => (str||'').split('/').map(s => s.trim()).filter(s => s && s.toUpperCase() !== pos.toUpperCase()).join('/');
+    affected.forEach(p => { p[field] = strip(p[field]); });
+    DC_DATA[unit] = DC_DATA[unit].filter(g => (g.pos||'').toUpperCase() !== pos.toUpperCase());
+    affected.forEach(p => { p.pos = primaryPosition(p) || p.pos; }); // recompute after removing the group
+    syncRosterData(); renderDepthChart(); renderCoachRoster?.(); renderManagePositions();
+    _persistPlayerFields(affected); saveDCToSupabase();
+    showToast(`${pos} removed`);
+  }
+
+  // ===== PLAYER-EDIT POSITION CHIPS (multi-select per unit; picks from the program vocabulary) =====
+  const PE_UNIT = { offense: { short: 'off', label: 'Offense' }, defense: { short: 'def', label: 'Defense' }, special: { short: 'st', label: 'Special Teams' } };
+  const _peInput = unit => document.getElementById('pe-pos-' + PE_UNIT[unit].short);
+  const _peGet = unit => (_peInput(unit)?.value || '').split('/').map(s => s.trim().toUpperCase()).filter(Boolean);
+  function _peSet(unit, arr) { const el = _peInput(unit); if (el) el.value = [...new Set(arr)].join('/'); renderPeChips(unit); }
+  function renderPeChips(unit) {
+    const host = document.getElementById('pe-unit-' + unit); if (!host) return;
+    const sel = _peGet(unit);
+    // Vocabulary for the picker = program list ∪ any positions this player already holds (custom/legacy).
+    const vocab = [...new Set([...(DC_POSITIONS[unit] || []), ...sel])];
+    host.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:var(--fg-2);margin-bottom:6px">${PE_UNIT[unit].label}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        ${sel.map(pos => `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--team-primary-glow-sm);border:1px solid var(--team-primary);border-radius:20px;padding:4px 6px 4px 11px;font-size:13px;font-weight:700;color:var(--team-primary)">${_esc(pos)}<span onclick="peRemovePos('${unit}','${_escAttr(pos)}')" style="cursor:pointer;font-size:14px;line-height:1;width:14px;text-align:center">×</span></span>`).join('')}
+        <button type="button" onclick="peTogglePicker('${unit}')" style="background:var(--bg-3);border:1px dashed var(--border);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--fg-2);cursor:pointer;font-family:var(--font)">＋ Add</button>
+      </div>
+      <div id="pe-picker-${unit}" style="display:none;margin-top:8px;padding:10px;background:var(--bg-3);border:1px solid var(--border);border-radius:10px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          ${vocab.map(pos => { const on = sel.includes(pos.toUpperCase()); return `<span onclick="pe${on?'Remove':'Add'}Pos('${unit}','${_escAttr(pos)}')" style="cursor:pointer;background:${on?'var(--team-primary)':'var(--bg-2)'};color:${on?'var(--team-primary-text)':'var(--fg)'};border:1px solid ${on?'var(--team-primary)':'var(--border)'};border-radius:16px;padding:4px 11px;font-size:12.5px;font-weight:600">${_esc(pos)}</span>`; }).join('') || '<span style="font-size:12px;color:var(--fg-3)">No positions yet — add one below.</span>'}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="pe-new-${unit}" placeholder="New position…" onkeydown="if(event.key==='Enter'){event.preventDefault();peAddCustom('${unit}');}" style="flex:1;background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--fg);font-family:var(--font);outline:none">
+          <button type="button" onclick="peAddCustom('${unit}')" class="btn-sm">Add</button>
+        </div>
+      </div>`;
+  }
+  function renderAllPeChips() { ['offense','defense','special'].forEach(renderPeChips); }
+  function peTogglePicker(unit) { const p = document.getElementById('pe-picker-' + unit); if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none'; }
+  function _peKeepOpen(unit) { const p = document.getElementById('pe-picker-' + unit); if (p) p.style.display = 'block'; }
+  function peAddPos(unit, pos) { _peSet(unit, [..._peGet(unit), pos.toUpperCase()]); _peKeepOpen(unit); }
+  function peRemovePos(unit, pos) { _peSet(unit, _peGet(unit).filter(x => x !== pos.toUpperCase())); _peKeepOpen(unit); }
+  function peAddCustom(unit) {
+    const inp = document.getElementById('pe-new-' + unit);
+    const v = (inp?.value || '').trim().toUpperCase();
+    if (!v) return;
+    if (!(DC_POSITIONS[unit] || []).some(p => p.toUpperCase() === v)) { DC_POSITIONS[unit] = DC_POSITIONS[unit] || []; DC_POSITIONS[unit].push(v); _sortVocab(unit); saveDCToSupabase(); }
+    _peSet(unit, [..._peGet(unit), v]);
+    if (inp) inp.value = '';
+    _peKeepOpen(unit);
+  }
+
   function toggleDCEdit() {
     if(!requireEdit('depth'))return;
     dcEditMode = !dcEditMode;
@@ -18772,6 +18937,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     document.getElementById('pe-pos-off').value = player.posOff || '';
     document.getElementById('pe-pos-def').value = player.posDef || '';
     document.getElementById('pe-pos-st').value = player.posST || '';
+    renderAllPeChips(); // draw the position chips from the hidden inputs
     document.getElementById('pe-year').value = player.year || 'Freshman';
     document.getElementById('pe-height').value = player.height || '';
     document.getElementById('pe-weight').value = player.weight || '';
