@@ -5486,7 +5486,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.37</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.38</div>
   </div>
 </div>
 
@@ -5500,7 +5500,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.37';
+  const APP_VERSION = 'v40.38';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -12121,7 +12121,10 @@
     const norm = s => (s || '').replace(/\s/g, '');
     wrap.innerHTML = ROW_COLORS.map(c => {
       const sel = norm(currentBg) === norm(c.bg);
-      return `<div onclick="setPeriodColor('${c.bg}')" title="${c.key}" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:${c.bg};border:2px solid ${sel ? 'var(--team-primary)' : 'var(--border)'}"></div>`;
+      // The applied row tint is intentionally faint; show the SWATCH at full saturation so each
+      // colour is clearly distinguishable before you pick it (they used to look greyed-out).
+      const vivid = c.bg.replace(/[\d.]+\)\s*$/, '0.9)');
+      return `<div onclick="setPeriodColor('${c.bg}')" title="${c.key}" style="width:30px;height:30px;border-radius:8px;cursor:pointer;background:${vivid};border:${sel ? '3px solid var(--team-primary)' : '1px solid rgba(120,120,120,0.4)'};box-sizing:border-box"></div>`;
     }).join('');
   }
   function setPeriodColor(bg) {
@@ -12501,19 +12504,26 @@
   // One button commits everything staged in the cell/period modal: name, drill, note.
   function saveCellModal() {
     if (!canEdit('practice')) { closeNoteModal(); return; }
-    // 1. Name (renames the cell, or the period header)
-    const nameVal = document.getElementById('note-name-input')?.value;
-    if (nameVal != null) updateNoteName(nameVal);
-    // 2. Staged drill (picked or newly created) → attach to this cell
-    if (selectedDrillId && currentCellPos) {
-      const drill = DRILLS.find(d => d.id === selectedDrillId);
-      if (drill) _attachDrillToCurrentCell(drill);
+    // Wrap in try/finally so the modal ALWAYS closes on Save even if one of the steps below hiccups
+    // — the visible edit + local save happen first, so a later error shouldn't strand the modal open.
+    try {
+      // 1. Name (renames the cell, or the period header)
+      const nameVal = document.getElementById('note-name-input')?.value;
+      if (nameVal != null) updateNoteName(nameVal);
+      // 2. Staged drill (picked or newly created) → attach to this cell
+      if (typeof selectedDrillId !== 'undefined' && selectedDrillId && currentCellPos) {
+        const drill = DRILLS.find(d => d.id === selectedDrillId);
+        if (drill) _attachDrillToCurrentCell(drill);
+      }
+      // 3. Note text (if any)
+      _commitNote(document.getElementById('note-modal-textarea')?.value);
+      savePracticePlanToSupabase();
+    } catch (e) {
+      console.error('[Practice] saveCellModal error:', e);
+    } finally {
+      closeNoteModal();
+      showToast('Saved ✓');
     }
-    // 3. Note text (if any)
-    _commitNote(document.getElementById('note-modal-textarea')?.value);
-    savePracticePlanToSupabase();
-    closeNoteModal();
-    showToast('Saved ✓');
   }
 
   // Add or update a note for the current cell/period (no toast/persist — caller handles that).
@@ -13623,6 +13633,17 @@
 
     if (plan.gridHTML) {
       pgrid.innerHTML = plan.gridHTML;
+      pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)').forEach(row => {
+        // Strip baked-in demo sub-labels ("South side of field", etc.) — not editable, read as demo cruft.
+        if (plan.premade) row.querySelectorAll('.cell-sub').forEach(s => s.remove());
+        // Hand-written templates omit .gt-name on group (Indy) periods, so renaming them silently
+        // no-ops. Add the leading-column name slot where missing so the period-name feature works.
+        if (row.querySelector('.pgrid-cols') && !row.querySelector('.gt-name')) {
+          const tc = row.querySelector('.grid-time-cell');
+          const dur = tc?.querySelector('.gt-dur');
+          if (tc) { const n = document.createElement('div'); n.className = 'gt-name'; tc.insertBefore(n, dur || null); }
+        }
+      });
     } else if (plan.periods && plan.periods.length > 0) {
       SCRIPTED_PERIODS.clear();
       if (plan.scriptedPeriods) plan.scriptedPeriods.forEach(p => SCRIPTED_PERIODS.add(p));
