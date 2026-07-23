@@ -5536,7 +5536,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.48</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.49</div>
   </div>
 </div>
 
@@ -5550,7 +5550,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.48';
+  const APP_VERSION = 'v40.49';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -20118,11 +20118,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     item.assignedTo = null;
 
     // Update in Supabase
-    let _retErr = null;
-    if (item.db_id) {
-      const { error } = await db.from('inventory').update({ assigned_to: null }).eq('id', item.db_id);
-      if (error) { console.error('Return item error:', error); _retErr = error; }
-    }
+    const { error: _retErr } = await _persistInventory(item, { assigned_to: null });
+    if (_retErr) console.error('Return item error:', _retErr);
 
     showToast(_retErr ? '⚠️ Updated here, but the database sync failed — may revert on reload' : `${item.name} returned by ${playerName} ✓`);
     closeItemDetail();
@@ -20219,11 +20216,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     const item = INVENTORY.find(i => i.id === itemId);
     if (!item) return;
     item.assignedTo = playerName;
-    let _assignErr = null;
-    if (item.db_id) {
-      const { error } = await db.from('inventory').update({ assigned_to: playerName }).eq('id', item.db_id);
-      if (error) { console.error('Assign from profile error:', error); _assignErr = error; }
-    }
+    const { error: _assignErr } = await _persistInventory(item, { assigned_to: playerName });
+    if (_assignErr) console.error('Assign from profile error:', _assignErr);
     closeAssignItemPick();
     renderInventory();
     renderPPEquipment(PLAYERS.find(p => p.id === currentPlayerId));
@@ -20252,16 +20246,30 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (filtered.length === 0) list.innerHTML = '<div style="color:var(--gray-3);font-size:13px;text-align:center;padding:16px">No players found</div>';
   }
 
+  // Persist an inventory field change. Uses db_id when we have it, else falls back to matching
+  // the row by item_id + program_id — freshly-imported items may not have their db_id captured
+  // yet, and gating persistence on db_id is exactly why assignments were lost on refresh.
+  async function _persistInventory(item, patch) {
+    try {
+      let q = db.from('inventory').update(patch);
+      if (item.db_id) { q = q.eq('id', item.db_id); }
+      else {
+        const programId = await getValidProgramId();
+        if (!programId || !item.id) return { error: { message: 'no key to match inventory row' } };
+        q = q.eq('item_id', item.id).eq('program_id', programId);
+      }
+      const { error } = await q;
+      return { error };
+    } catch (e) { return { error: e }; }
+  }
+
   async function confirmAssign(playerName) {
     if(!requireEdit('inventory'))return;
     const item = INVENTORY.find(i => i.id === currentItemId);
     if (!item) return;
     item.assignedTo = playerName;
-    let _assignErr = null;
-    if (item.db_id) {
-      const { error } = await db.from('inventory').update({ assigned_to: playerName }).eq('id', item.db_id);
-      if (error) { console.error('Assign item error:', error); _assignErr = error; }
-    }
+    const { error: _assignErr } = await _persistInventory(item, { assigned_to: playerName });
+    if (_assignErr) console.error('Assign item error:', _assignErr);
     closeAssignItem();
     closeItemDetail();
     renderInventory();
@@ -20490,6 +20498,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     item.assignedTo = player.name;
     renderInventory();
     renderPPEquipment(player);
+    // Persist the checkout (this path previously only updated in memory → lost on refresh).
+    _persistInventory(item, { assigned_to: player.name }).then(({ error }) => {
+      if (error) console.error('QR checkout persist error:', error);
+    });
 
     // Show confirmation bottom sheet
     const modal = document.createElement('div');
@@ -20902,10 +20914,18 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         assigned_to: item.assignedTo || null,
         item_id: item.id,
       }));
-      db.from('inventory').insert(supabaseRows)
-        .then(({ error }) => {
-          if (error) console.error('Inventory import sync error:', error);
-          else console.log(`Inventory: ${supabaseRows.length} items saved to Supabase ✓`);
+      db.from('inventory').insert(supabaseRows).select()
+        .then(({ data, error }) => {
+          if (error) { console.error('Inventory import sync error:', error); return; }
+          // Capture the DB ids back onto the local items (match by item_id) so assign/return/
+          // edit/delete persist in THIS session — without this, same-session assignments were
+          // lost on refresh because the items had no db_id to update.
+          if (data && data.length) {
+            const byItemId = {};
+            data.forEach(row => { byItemId[row.item_id] = row.id; });
+            newItems.forEach(item => { if (byItemId[item.id]) item.db_id = byItemId[item.id]; });
+          }
+          console.log(`Inventory: ${data?.length || 0} items saved to Supabase ✓`);
         });
     });
   }
