@@ -5536,7 +5536,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.47</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.48</div>
   </div>
 </div>
 
@@ -5550,7 +5550,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.47';
+  const APP_VERSION = 'v40.48';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -16020,20 +16020,28 @@
   // Default stat categories per sport
   const DEFAULT_STAT_CATEGORIES = {
     Football: [
-      { key:'rush_yards', label:'Rush Yards', unit:'yds', position_group:['RB','QB','WR'] },
-      { key:'rush_att', label:'Rush Attempts', unit:'', position_group:['RB','QB'] },
-      { key:'rush_td', label:'Rush TDs', unit:'', position_group:['RB','QB','WR'] },
-      { key:'rec_yards', label:'Rec Yards', unit:'yds', position_group:['WR','TE','RB'] },
-      { key:'receptions', label:'Receptions', unit:'', position_group:['WR','TE','RB'] },
-      { key:'rec_td', label:'Rec TDs', unit:'', position_group:['WR','TE','RB'] },
-      { key:'pass_yards', label:'Pass Yards', unit:'yds', position_group:['QB'] },
-      { key:'pass_td', label:'Pass TDs', unit:'', position_group:['QB'] },
-      { key:'pass_att', label:'Pass Att', unit:'', position_group:['QB'] },
-      { key:'pass_comp', label:'Completions', unit:'', position_group:['QB'] },
-      { key:'tackles', label:'Tackles', unit:'', position_group:['DL','LB','DB'] },
-      { key:'sacks', label:'Sacks', unit:'', position_group:['DL','LB'] },
-      { key:'ints', label:'Interceptions', unit:'', position_group:['DB','LB'] },
-      { key:'tfl', label:'TFL', unit:'', position_group:['DL','LB'] },
+      // Passing (INT here = thrown by the QB — kept distinct from a defensive interception)
+      { key:'pass_comp',  label:'Completions',          unit:'',    group:'Passing',   position_group:['QB'] },
+      { key:'pass_att',   label:'Pass Attempts',        unit:'',    group:'Passing',   position_group:['QB'] },
+      { key:'pass_yards', label:'Pass Yards',           unit:'yds', group:'Passing',   position_group:['QB'] },
+      { key:'pass_td',    label:'Pass TDs',             unit:'',    group:'Passing',   position_group:['QB'] },
+      { key:'pass_int',   label:'Interceptions Thrown', unit:'',    group:'Passing',   position_group:['QB'] },
+      // Rushing
+      { key:'rush_att',   label:'Rush Attempts',        unit:'',    group:'Rushing',   position_group:['RB','QB'] },
+      { key:'rush_yards', label:'Rush Yards',           unit:'yds', group:'Rushing',   position_group:['RB','QB','WR'] },
+      { key:'rush_td',    label:'Rush TDs',             unit:'',    group:'Rushing',   position_group:['RB','QB','WR'] },
+      // Receiving
+      { key:'receptions', label:'Receptions',           unit:'',    group:'Receiving', position_group:['WR','TE','RB'] },
+      { key:'rec_yards',  label:'Rec Yards',            unit:'yds', group:'Receiving', position_group:['WR','TE','RB'] },
+      { key:'rec_td',     label:'Rec TDs',              unit:'',    group:'Receiving', position_group:['WR','TE','RB'] },
+      // Defense (INT here = interception made by the defender)
+      { key:'tackles',        label:'Tackles',            unit:'',  group:'Defense',   position_group:['DL','LB','DB'] },
+      { key:'tfl',            label:'Tackles for Loss',   unit:'',  group:'Defense',   position_group:['DL','LB','DB'] },
+      { key:'sacks',          label:'Sacks',              unit:'',  group:'Defense',   position_group:['DL','LB'] },
+      { key:'ints',           label:'Interceptions',      unit:'',  group:'Defense',   position_group:['DB','LB'] },
+      { key:'pass_defl',      label:'Pass Deflections',   unit:'',  group:'Defense',   position_group:['DB','LB'] },
+      { key:'forced_fumbles', label:'Forced Fumbles',     unit:'',  group:'Defense',   position_group:['DL','LB','DB'] },
+      { key:'fumble_rec',     label:'Fumble Recoveries',  unit:'',  group:'Defense',   position_group:['DL','LB','DB'] },
     ],
     Baseball: [
       { key:'hits', label:'Hits', unit:'' },
@@ -16063,6 +16071,34 @@
       { key:'turnovers', label:'Turnovers', unit:'to' },
     ],
   };
+  // ===== STAT GROUPING (Passing / Rushing / Receiving / Defense …) =====
+  // Categories carry a `group` (new defaults), but legacy programs seeded before this have
+  // none — so we infer the group from the key as a fallback. This keeps the entry screen and
+  // leaderboard grouped even for older data.
+  const STAT_GROUP_ORDER = ['Passing','Rushing','Receiving','Defense','Kicking','Other'];
+  function statGroupOf(cat) {
+    if (cat && cat.group) return cat.group;
+    const k = ((cat && cat.key) || '').toLowerCase();
+    if (k.startsWith('pass')) return 'Passing';
+    if (k.startsWith('rush')) return 'Rushing';
+    if (k.startsWith('rec') || k === 'receptions') return 'Receiving';
+    if (k.startsWith('kick') || ['fg','xp','punt','punts','punt_yards','fg_made','xp_made'].includes(k)) return 'Kicking';
+    if (k.startsWith('def') || ['tackles','sacks','ints','tfl','pass_defl','forced_fumbles','fumble_rec','ff','fr','pd','solo','assist_tackles'].includes(k)) return 'Defense';
+    return 'Other';
+  }
+  // → [ [groupName, cats[]], … ] following STAT_GROUP_ORDER; unknown groups appended.
+  function groupStatCats(cats) {
+    const by = {};
+    cats.forEach(c => { const g = statGroupOf(c); (by[g] = by[g] || []).push(c); });
+    const order = [...STAT_GROUP_ORDER, ...Object.keys(by).filter(g => !STAT_GROUP_ORDER.includes(g))];
+    return order.filter(g => by[g] && by[g].length).map(g => [g, by[g]]);
+  }
+  // Section headers only make sense when there's real grouping (football). A single "Other"
+  // bucket (e.g. baseball/soccer) renders flat, as before.
+  function statGroupsShowHeaders(groups) {
+    return groups.length > 1 || (groups[0] && groups[0][0] !== 'Other');
+  }
+
   let gameLocation = 'home';
   let editingGameId = null;
 
@@ -16243,9 +16279,13 @@
         // Seed default categories for this sport
         const sport = obProgram.sport || 'Football';
         const defaults = DEFAULT_STAT_CATEGORIES[sport] || DEFAULT_STAT_CATEGORIES.Football;
-        const rows = defaults.map(c => ({ ...c, program_id: programId, sport }));
+        // Only persist columns the table actually has. `group` is intentionally NOT stored
+        // (it's a reserved SQL word and not a column) — statGroupOf() re-derives it from the
+        // key, so grouping works whether a category was seeded here or loaded back later.
+        const rows = defaults.map(c => ({ key: c.key, label: c.label, unit: c.unit, position_group: c.position_group, program_id: programId, sport }));
         const { data: inserted } = await db.from('stat_categories').insert(rows).select();
-        STAT_CATEGORIES = inserted || rows;
+        // Keep the in-memory copy from the local defaults so `group` is present this session.
+        STAT_CATEGORIES = (inserted && inserted.length) ? inserted : defaults.map(c => ({ ...c, program_id: programId, sport }));
       }
     } catch(e) { console.warn('Stat categories load error:', e); }
   }
@@ -17547,20 +17587,19 @@ ${printBtnHtml}
     const usedCats = [...new Set(uniqueApproved.map(s => s.category))];
     const cats = STAT_CATEGORIES.filter(c => usedCats.includes(c.key));
 
-    body.innerHTML = cats.map(cat => {
-      // Build leaderboard for this category
+    // One leaderboard block (top-3 + view-all) for a single stat category. Returns '' if nobody
+    // has that stat.
+    const catBlock = cat => {
       const entries = Object.entries(totals)
-        .filter(([pid, cats]) => cats[cat.key] !== undefined)
-        .map(([pid, cats]) => {
+        .filter(([pid, cs]) => cs[cat.key] !== undefined)
+        .map(([pid, cs]) => {
           const player = PLAYERS.find(p => p.db_id === pid || p.id === pid);
-          return { pid, name: player?.name || 'Unknown', pos: player?.position || '', total: cats[cat.key] || 0 };
+          return { pid, name: player?.name || 'Unknown', pos: player?.position || player?.pos || '', total: cs[cat.key] || 0 };
         })
         .sort((a, b) => b.total - a.total);
-
       if (!entries.length) return '';
       const top3 = entries.slice(0, 3);
       const hasMore = entries.length > 3;
-
       return `<div class="game-stat-cat-block" id="gscat-${cat.key}">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:13px;font-weight:700;color:var(--fg)">${cat.label}</div>
@@ -17573,7 +17612,23 @@ ${printBtnHtml}
           ${entries.map((e, i) => gsStatRow(e, i, cat)).join('')}
         </div>
       </div>`;
-    }).filter(Boolean).join('<div style="height:1px;background:var(--border);margin:16px 0"></div>');
+    };
+
+    // Group the category leaderboards into Passing / Rushing / Receiving / Defense sections
+    // (MaxPreps-style) instead of one long flat list. Non-football sports render flat.
+    const groups = groupStatCats(cats);
+    const showHeads = statGroupsShowHeaders(groups);
+    const divider = '<div style="height:1px;background:var(--border);margin:14px 0"></div>';
+    body.innerHTML = groups.map(([groupName, groupCats]) => {
+      const blocks = groupCats.map(catBlock).filter(Boolean);
+      if (!blocks.length) return '';
+      const inner = blocks.join(divider);
+      if (!showHeads) return inner;
+      return `<div style="margin-bottom:24px">
+        <div style="font-size:14px;font-weight:800;color:var(--fg);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 12px;padding-bottom:7px;border-bottom:2px solid var(--team-primary)">${groupName}</div>
+        ${inner}
+      </div>`;
+    }).filter(Boolean).join(showHeads ? '' : divider);
   }
 
   function gsStatRow(e, i, cat) {
@@ -21465,14 +21520,20 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           </select>
         </div>
         <div style="flex:1;overflow-y:auto;padding:16px 20px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            ${cats.map(c => `
+          ${(() => {
+            const catInput = c => `
               <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px">
                 <div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${c.label}${c.unit?' ('+c.unit+')':''}</div>
                 <input type="number" step="0.5" min="0" data-cat="${c.key}" placeholder="0"
                   style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:16px;font-weight:700;padding:2px 0;outline:none">
-              </div>`).join('')}
-          </div>
+              </div>`;
+            const groups = groupStatCats(cats);
+            const showHeads = statGroupsShowHeaders(groups);
+            return groups.map(([g, cs], i) =>
+              (showHeads ? `<div style="font-size:11.5px;font-weight:800;color:var(--team-primary);text-transform:uppercase;letter-spacing:0.06em;margin:${i?16:2}px 0 8px">${g}</div>` : '') +
+              `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cs.map(catInput).join('')}</div>`
+            ).join('');
+          })()}
         </div>
         <div style="padding:14px 20px;border-top:1px solid var(--border)">
           <button onclick="submitPlayerStats()" class="btn-primary" style="width:100%;font-size:15px;padding:13px">Submit for approval</button>
@@ -22224,18 +22285,31 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     GAME_STATS.filter(s => s.player_id === pid && s.game_id === _logStatsCtx.gameId && s.submitted_by === 'coach')
       .forEach(s => existing[s.category] = s.value);
 
-    const renderCatGroup = (cats, label) => cats.length ? `
-      <div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.07em;margin:12px 0 8px">${label}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${cats.map(c => `
-          <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px">
-            <div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${c.label}${c.unit?' ('+c.unit+')':''}</div>
-            <input type="number" step="0.5" min="0" data-cat="${c.key}" value="${existing[c.key]??''}" placeholder="0"
-              style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:16px;font-weight:700;padding:2px 0;outline:none">
-          </div>`).join('')}
-      </div>` : '';
+    const catInput = c => `
+      <div style="background:var(--bg-3);border-radius:var(--radius);padding:10px">
+        <div style="font-size:11px;color:var(--fg-3);margin-bottom:4px">${c.label}${c.unit?' ('+c.unit+')':''}</div>
+        <input type="number" step="0.5" min="0" data-cat="${c.key}" value="${existing[c.key]??''}" placeholder="0"
+          style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:16px;font-weight:700;padding:2px 0;outline:none">
+      </div>`;
+    const sectionHead = label => `<div style="font-size:11.5px;font-weight:800;color:var(--team-primary);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px">${label}</div>`;
+    // Render a set of categories grouped into Passing/Rushing/… sections (headers hidden for
+    // single-bucket sports).
+    const renderGrouped = cats => {
+      const groups = groupStatCats(cats);
+      const showHeads = statGroupsShowHeaders(groups);
+      return groups.map(([g, cs]) =>
+        (showHeads ? sectionHead(g) : '') +
+        `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${cs.map(catInput).join('')}</div>`
+      ).join('');
+    };
 
-    catsDiv.innerHTML = renderCatGroup(relevant, 'Relevant to position') + renderCatGroup(rest, 'Other categories');
+    let html = renderGrouped(relevant);
+    if (rest.length) {
+      html += `<div style="height:1px;background:var(--border);margin:18px 0 4px"></div>
+        <div style="font-size:11px;color:var(--fg-3);margin-bottom:2px">Other stats${pos ? ' — not typical for ' + _esc(pos) : ''}</div>`
+        + renderGrouped(rest);
+    }
+    catsDiv.innerHTML = html || '<div style="color:var(--fg-3);font-size:13px;text-align:center;padding:20px">No stat categories.</div>';
   }
 
   function renderAllPendingStats() {
