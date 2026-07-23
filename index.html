@@ -5536,7 +5536,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.51</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.52</div>
   </div>
 </div>
 
@@ -5550,7 +5550,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.51';
+  const APP_VERSION = 'v40.52';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -13273,18 +13273,28 @@
     // Use renderGridHeader which builds the header correctly via DOM API
     renderGridHeader();
 
-    // Rebuild per-group cells in all group rows (exclude the header row) (exclude the header row)
+    // Rebuild per-group cells in all group rows so the column set matches the edited groups —
+    // but PRESERVE each cell's own activity/sub/background (mapped by position). The old code
+    // copied the FIRST cell's activity into every column, wiping all the distinct per-position
+    // work (QB/RB/WR/… all became the QB value).
     document.querySelectorAll('.pgrid-row:not(.pgrid-header)').forEach(row => {
       const cols = row.querySelector('.pgrid-cols');
       if (!cols) return;
       const periodId = row.dataset.periodId || 'P1';
-      const actText = cols.querySelector('.cell-activity')?.textContent || '';
-      const cells = PRACTICE_POSITION_GROUPS.map(g => {
+      const prevCells = [...cols.querySelectorAll('.grid-cell')].map(c => ({
+        activity: c.querySelector('.cell-activity')?.textContent || '',
+        sub: c.querySelector('.cell-sub')?.textContent || '',
+        bg: c.style.background || ''
+      }));
+      const cells = PRACTICE_POSITION_GROUPS.map((g, i) => {
+        const prev = prevCells[i] || { activity: g.label, sub: '', bg: '' };
+        const act = prev.activity || g.label;
         const el = document.createElement('div');
         el.className = 'grid-cell active-cell';
         el.dataset.col = g.label;
-        el.onclick = () => openCellNote(periodId, g.label, 'Coach', actText);
-        el.innerHTML = '<div class="cell-activity">' + actText + '</div>';
+        el.onclick = () => openCellNote(periodId, g.label, 'Coach', act);
+        el.innerHTML = '<div class="cell-activity">' + _esc(act) + '</div>' + (prev.sub ? '<div class="cell-sub">' + _esc(prev.sub) + '</div>' : '');
+        if (prev.bg) el.style.background = prev.bg;
         return el.outerHTML;
       });
       cols.innerHTML = cells.join('');
@@ -13292,6 +13302,7 @@
 
     applyColumnColors();
     savePositionGroupsToSupabase();
+    if (typeof saveDayGrid === 'function') saveDayGrid(); // persist the rebuilt day grid too
     showToast('Position groups saved ✓');
   }
   let pendingPeriodType = null;
