@@ -5538,7 +5538,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.55</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.56</div>
   </div>
 </div>
 
@@ -5552,7 +5552,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.55';
+  const APP_VERSION = 'v40.56';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -14571,6 +14571,26 @@
     return { iconId:'i-users', color:'var(--blue)' };
   }
   function _threadAvatarSvg(iconId){ return '<svg class="ic" style="width:1.25em;height:1.25em"><use href="#'+iconId+'"/></svg>'; }
+  // Update the open thread's safety banner: witnessed_dm gets an explicit shield + "witnessed"
+  // wording; other DMs/groups keep the generic "visible to staff" note. Works for the coach,
+  // player and parent thread overlays.
+  function _updateSafetyBanner(role, kind) {
+    const id = role === 'player' ? 'player-thread-safety-banner'
+             : role === 'parent' ? 'parent-thread-safety-banner'
+             : 'thread-safety-banner';
+    const banner = document.getElementById(id);
+    if (!banner) return;
+    const show = kind === 'witnessed_dm' || kind === 'dm';
+    banner.style.display = show ? 'flex' : 'none';
+    if (!show) return;
+    const isWit = kind === 'witnessed_dm';
+    const icon = banner.querySelector('.safety-banner-icon');
+    const txt  = banner.querySelector('span:not(.safety-banner-icon)');
+    if (icon) icon.innerHTML = '<svg class="ic" style="width:1em;height:1em"><use href="#' + (isWit ? 'i-shield' : 'i-lock') + '"/></svg>';
+    if (txt)  txt.textContent = isWit
+      ? 'Witnessed conversation — documented and visible to coaching staff'
+      : 'All messages are visible to coaching staff and documented';
+  }
   // For 1:1 / witnessed threads, show the OTHER person's name (e.g. "Dan Smith"), not
   // "Private (witnessed)". The shield avatar already signals it's protected/witnessed, and
   // the witness is listed in the subtitle once you open the thread. Names come from
@@ -14894,9 +14914,9 @@
 
     if (body) body.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:12px;padding:16px">Loading…</div>';
 
-    // Safety banner (coach overlay only) — private/witnessed threads.
-    const banner = document.getElementById('thread-safety-banner');
-    if (banner && role === 'coach') banner.style.display = (t.kind === 'witnessed_dm' || t.kind === 'dm') ? 'flex' : 'none';
+    // Safety banner — witnessed threads say so explicitly (shield); other DMs get the generic
+    // "visible to staff" note. Applies to whichever role's thread overlay is open.
+    _updateSafetyBanner(role, t.kind);
 
     const dot = document.getElementById('mgu-' + threadId); if (dot) dot.style.opacity = '0';
     // Reading the thread clears any bell notification(s) for it, even if opened from the list.
@@ -15155,15 +15175,40 @@
     const programId = await getValidProgramId();
     if (!programId) { showToast('No program'); return; }
     try {
-      const { data: threadId, error } = await db.rpc('create_thread', {
-        p_program_id: programId, p_kind: 'dm', p_subject: name,
-        p_participant_uids: selected, p_witness_uids: []
-      });
-      if (error) throw error;
+      // A 1-coach ↔ 1-player conversation with a single parent as the witness is a WITNESSED
+      // direct message — it must carry kind 'witnessed_dm' + the parent flagged as the witness
+      // so it gets the shield avatar, the 🛡️ title, the "(witness)" subtitle and the witnessed
+      // banner. Previously this always created a plain group 'dm', so none of that showed.
+      const playersSel = selected.filter(id => _selRole(id) === 'player');
+      const parentsSel = selected.filter(id => _selRole(id) === 'parent');
+      const isWitnessed = playersSel.length === 1 && parentsSel.length === 1 && selected.length === 2;
+
+      let threadId, kind;
+      if (isWitnessed) {
+        kind = 'witnessed_dm';
+        const playerUid = playersSel[0], witnessUid = parentsSel[0];
+        threadId = await findExisting1to1('witnessed_dm', playerUid, witnessUid);
+        if (!threadId) {
+          const { data, error } = await db.rpc('create_thread', {
+            p_program_id: programId, p_kind: 'witnessed_dm', p_subject: null,
+            p_participant_uids: [playerUid], p_witness_uids: [witnessUid]
+          });
+          if (error) throw error;
+          threadId = data;
+        }
+      } else {
+        kind = 'dm';
+        const { data, error } = await db.rpc('create_thread', {
+          p_program_id: programId, p_kind: 'dm', p_subject: name,
+          p_participant_uids: selected, p_witness_uids: []
+        });
+        if (error) throw error;
+        threadId = data;
+      }
       closeNewGroupModal();
-      showToast('Group "' + name + '" created ✓');
+      showToast(isWitnessed ? 'Witnessed message ready ✓' : 'Group "' + name + '" created ✓');
       await loadThreadList('coach');
-      currentThreadKind = 'dm';
+      currentThreadKind = kind;
       setTimeout(() => openThread(threadId), 200);
     } catch(e) { console.error('[Msg] create group:', e); showToast('Could not create group: ' + (e.message || 'error')); }
   }
