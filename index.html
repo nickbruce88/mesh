@@ -1863,12 +1863,15 @@
   .today-event-tag { width:4px;border-radius:2px;align-self:stretch;flex-shrink:0 }
 
   @media (min-width:768px) {
-    .cal-day { min-height:124px; max-height:168px; }
-    .cal-event-bar { font-size:11px; }
-  }
-  /* Calendar gets a wider content column than other sections (clean, centered) */
-  @media (min-width:1280px) {
-    #tab-coach-more.wide-cal { max-width:1520px; }
+    /* Calendar fills the content area (like the practice grid) instead of a boxed column,
+       with taller day cells + larger text so more fits and it's easier to read. */
+    #tab-coach-more.wide-cal { max-width:1800px; }
+    .cal-day { min-height:150px; max-height:210px; padding:6px; }
+    .cal-day-label { font-size:12px; padding:10px 0; }
+    .cal-day-num { font-size:14px; margin-bottom:5px; }
+    .cal-day.today .cal-day-num { width:24px; height:24px; font-size:13px; }
+    .cal-event-bar { font-size:12px; padding:3px 7px; margin-bottom:3px; }
+    .cal-more { font-size:11px; }
   }
 
   /* ===== iOS SAFARI TAP FIX ===== */
@@ -5511,7 +5514,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.44</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.45</div>
   </div>
 </div>
 
@@ -5525,7 +5528,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.44';
+  const APP_VERSION = 'v40.45';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -21542,7 +21545,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const dayEvents = monthEvents.filter(e => e.date === dateStr)
         .sort((a,b) => (a.time||'').localeCompare(b.time||''));
       const isToday = dateStr === todayStr;
-      const maxShow = 4;
+      // Taller desktop cells fit more event bars before the "+N more" roll-up.
+      const maxShow = (typeof isDesktop === 'function' && isDesktop()) ? 6 : 4;
       const extra = dayEvents.length - maxShow;
 
       const barsHTML = dayEvents.slice(0, maxShow).map(e => {
