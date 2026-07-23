@@ -5536,7 +5536,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.53</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.54</div>
   </div>
 </div>
 
@@ -5550,7 +5550,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.53';
+  const APP_VERSION = 'v40.54';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10316,25 +10316,40 @@
     if (!validId) return;
     try {
       const { data } = await db.from('players')
-        .select('id, name, pos').eq('program_id', validId).eq('role', 'player').is('auth_uid', null);
+        .select('id, name, pos, num, year, height, weight').eq('program_id', validId).eq('role', 'player').is('auth_uid', null);
       (data || []).forEach(p => {
         const opt = document.createElement('option');
-        opt.value = p.id; opt.dataset.name = p.name; opt.dataset.pos = p.pos || '';
+        opt.value = p.id;
+        opt.dataset.name = p.name; opt.dataset.pos = p.pos || '';
+        opt.dataset.num = p.num || ''; opt.dataset.year = p.year || '';
+        opt.dataset.height = p.height || ''; opt.dataset.weight = p.weight || '';
         opt.textContent = p.name + (p.pos ? ' (' + p.pos + ')' : '');
         select.appendChild(opt);
       });
     } catch(e) { console.error('Error loading roster for claim:', e); }
   }
-  // Picking an existing roster entry pre-fills the name/position fields.
+  // Picking an existing roster entry pre-fills ALL of that player's fields from the coach's
+  // roster (name, position, jersey #, year, height, weight) so the player doesn't retype a
+  // mismatching value that would overwrite the coach's data on submit. Still editable.
   function onPlayerClaimChange() {
     const select = document.getElementById('join-player-claim');
     const opt = select?.options[select.selectedIndex];
-    if (opt && opt.value) {
-      const nameInput = document.getElementById('join-player-name');
-      if (nameInput && opt.dataset.name) nameInput.value = opt.dataset.name;
-      const posSel = document.getElementById('join-player-pos');
-      if (posSel && opt.dataset.pos) posSel.value = opt.dataset.pos;
-    }
+    if (!opt || !opt.value) return;
+    const d = opt.dataset;
+    const clean = v => (v == null || v === '' || v === '—') ? null : v;
+    // Text inputs — only overwrite when the roster has a real value.
+    const setInput = (id, val) => { const el = document.getElementById(id); if (el && clean(val) != null) el.value = clean(val); };
+    // Selects — only set if the roster value matches an existing option.
+    const setSelect = (id, val) => {
+      const el = document.getElementById(id); const v = clean(val);
+      if (el && v && [...el.options].some(o => o.value === v || o.text === v)) el.value = v;
+    };
+    setInput('join-player-name', d.name);
+    setSelect('join-player-pos', d.pos);
+    setInput('join-player-num', (d.num || '').replace(/[^\d]/g, '')); // roster stores "#22" → number field wants "22"
+    setSelect('join-player-year', d.year);
+    setInput('join-player-height', d.height);
+    setInput('join-player-weight', d.weight);
   }
 
   // ===== JOIN: email-confirmation resume =====
