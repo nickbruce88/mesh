@@ -152,6 +152,7 @@
   .announcement-card-header { display:flex;align-items:flex-start;gap:10px;margin-bottom:6px; }
   .announcement-avatar { width:32px;height:32px;border-radius:50%;background:var(--team-primary);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
   .announcement-meta { font-size:11px;color:var(--fg-3);margin-top:2px; }
+  .announcement-title { font-size:15px;font-weight:700;color:var(--fg);line-height:1.35;margin-bottom:3px; }
   .announcement-body { font-size:14px;color:var(--fg);line-height:1.5; }
   .announcement-del { font-size:14px;color:var(--fg-3);cursor:pointer;padding:2px 4px;flex-shrink:0; }
   .announcement-del:active { color:var(--red); }
@@ -2838,7 +2839,12 @@
         <div class="ap-close" onclick="closeAnnouncementCompose()">✕</div>
       </div>
       <div class="ap-field">
-        <textarea class="ap-input" id="announcement-text-input" placeholder="Write your announcement…" style="min-height:100px;resize:none"></textarea>
+        <div class="ap-field-label">Title</div>
+        <input class="ap-input" id="announcement-title-input" placeholder="e.g. Physicals due Friday" maxlength="90" style="margin-top:6px">
+      </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Message</div>
+        <textarea class="ap-input" id="announcement-text-input" placeholder="Write your announcement…" style="min-height:100px;resize:none;margin-top:6px"></textarea>
       </div>
       <div class="ap-field">
         <div class="ap-field-label">Send to</div>
@@ -5514,7 +5520,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.45</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.46</div>
   </div>
 </div>
 
@@ -5528,7 +5534,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.45';
+  const APP_VERSION = 'v40.46';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -17897,7 +17903,11 @@ ${printBtnHtml}
     const isCoach = role === 'coach';
     const roleToGroup = { coach: 'coaches', player: 'players', parent: 'parents' };
     const group = roleToGroup[role];
-    const visible = ANNOUNCEMENTS.filter(a => (a.audience || ['coaches']).includes(group));
+    // Coaches (head + assistants) see EVERY announcement regardless of audience — they author
+    // and coordinate them all. Players/parents only see posts addressed to their group.
+    const visible = isCoach
+      ? ANNOUNCEMENTS.slice()
+      : ANNOUNCEMENTS.filter(a => (a.audience || ['coaches']).includes(group));
 
     if (visible.length === 0) {
       list.innerHTML = '';
@@ -17984,6 +17994,7 @@ ${printBtnHtml}
           </div>
           ${isCoach ? `<div class="announcement-del" onclick="deleteAnnouncement('${a.id}')">✕</div>` : ''}
         </div>
+        ${a.title ? `<div class="announcement-title">${escHtml(a.title)}</div>` : ''}
         <div class="announcement-body">${escHtml(a.text)}</div>
         ${actionBtn ? `<div class="ann-card-actions">${actionBtn}</div>` : ''}
       </div>`;
@@ -18057,13 +18068,14 @@ ${printBtnHtml}
   }
 
   function openAnnouncementCompose() {
+    document.getElementById('announcement-title-input').value = '';
     document.getElementById('announcement-text-input').value = '';
     // Reset chips — default: coaches only, normal urgency, 1 week on home
     document.querySelectorAll('#ann-audience-chips .ann-chip').forEach(c => c.classList.toggle('active', c.dataset.group === 'coaches'));
     document.querySelectorAll('#ann-urgency-chips .ann-urgency-chip').forEach(c => c.classList.toggle('active', c.dataset.level === 'normal'));
     document.querySelectorAll('#ann-duration-chips .ann-chip').forEach(c => c.classList.toggle('active', c.dataset.days === '7'));
     document.getElementById('announcement-overlay').classList.add('open');
-    setTimeout(() => document.getElementById('announcement-text-input').focus(), 100);
+    setTimeout(() => document.getElementById('announcement-title-input').focus(), 100);
   }
 
   function closeAnnouncementCompose() {
@@ -18072,6 +18084,7 @@ ${printBtnHtml}
 
   async function postAnnouncement() {
     if(!requireEdit('announcements'))return;
+    const title = document.getElementById('announcement-title-input').value.trim();
     const text = document.getElementById('announcement-text-input').value.trim();
     if (!text) { showToast('Write something first'); return; }
 
@@ -18086,6 +18099,7 @@ ${printBtnHtml}
     _belledAnnIds.add(newAnnId);
     ANNOUNCEMENTS.unshift({
       id: newAnnId,
+      title,
       text,
       audience,
       urgency,
@@ -18109,13 +18123,17 @@ ${printBtnHtml}
     // Push notification to audience
     const programId = await getValidProgramId();
     if (programId) {
+      // audience holds plural group keys ('coaches'/'players'/'parents'); push targets singular
+      // role names — map them, or no notification is ever delivered.
+      const groupToRole = { coaches:'coach', players:'player', parents:'parent' };
       const pushRoles = audience.includes('all')
         ? ['coach', 'player', 'parent']
-        : audience.filter(a => ['coach','player','parent'].includes(a));
+        : audience.map(g => groupToRole[g] || g).filter(r => ['coach','player','parent'].includes(r));
       const authorName = user.name || 'Coach';
+      const pushBody = title ? (title + (text ? ' — ' + text : '')) : text;
       sendPushNotification(programId, 'announcement',
         `📣 ${authorName}`,
-        text.length > 80 ? text.slice(0, 80) + '…' : text,
+        pushBody.length > 80 ? pushBody.slice(0, 80) + '…' : pushBody,
         pushRoles
       );
     }
