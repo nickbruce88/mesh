@@ -5519,7 +5519,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.66</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.67</div>
   </div>
 </div>
 
@@ -5533,7 +5533,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.66';
+  const APP_VERSION = 'v40.67';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -6608,12 +6608,6 @@
     renderSessionsIndicator();
   }
 
-  function setAttSession(type, el) {
-    attSessionType = type;
-    loadAttendanceForSession();
-    renderSessionsIndicator();
-  }
-
   function buildAttPositionFilter() {
     const OFF_ORDER = ['QB','RB','FB','WR','TE','H','X','Y','Z','OL','LT','LG','C','RG','RT','ATH'];
     const DEF_ORDER = ['DE','DT','NT','DL','OLB','ILB','MLB','LB','CB','S','FS','SS'];
@@ -7157,16 +7151,20 @@
     try {
       const programId = await getValidProgramId();
       if (programId) {
-        const rows = Object.entries(attState).map(([playerId, status]) => ({
-          program_id: programId,
-          player_id: playerId,
-          date: attDate,
-          session_label: attSessionType,
-          status
-        }));
-        // Filter out local_ IDs — only sync players with real DB UUIDs
-        const syncRows = rows.filter(r => r.player_id && r.player_id.includes('-') && !r.player_id.startsWith('local_'));
-        console.log('Attendance sync — total:', rows.length, 'valid:', syncRows.length, 'sample:', syncRows[0]);
+        // Ensure any not-yet-synced players get a real DB id first, so their marks sync too.
+        const syncRows = [];
+        for (const [playerId, status] of Object.entries(attState)) {
+          let realId = playerId;
+          if (!(realId && realId.includes('-') && !realId.startsWith('local_'))) {
+            const p = (window.PLAYERS || []).find(pl => pl.id === playerId || pl.db_id === playerId);
+            if (p && typeof _ensurePlayerDbId === 'function') {
+              try { const dbId = await _ensurePlayerDbId(p); if (dbId) realId = dbId; } catch(e) {}
+            }
+          }
+          if (realId && realId.includes('-') && !realId.startsWith('local_')) {
+            syncRows.push({ program_id: programId, player_id: realId, date: attDate, session_label: attSessionType, status });
+          }
+        }
         if (syncRows.length) {
           const { error } = await db.from('attendance').upsert(syncRows, { onConflict: 'program_id,player_id,date,session_label' });
           if (error) console.error('Attendance upsert error:', error);
@@ -7454,7 +7452,7 @@
             </span>
           </div>`;
         }).join('');
-        const dateFmt = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : 'No date';
+        const dateFmt = s.date ? new Date(s.date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'No date';
         return `<div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px">
           <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
             <span style="font-weight:700;font-size:14px">${dateFmt}</span>
@@ -7902,7 +7900,7 @@
     if (overlay) overlay.remove();
     overlay = document.createElement('div');
     overlay.id = 'import-help-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:flex-end;justify-content:center';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:center;justify-content:center';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
 
     const colsBlock = c.cols ? `
@@ -9462,20 +9460,6 @@
     if (nativeItem) nativeItem.style.display = navigator.share ? '' : 'none';
     const homeCode = document.getElementById('home-join-code');
     if (homeCode) homeCode.textContent = activeCode;
-  }
-
-  function copyCode(elementId) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    const code = el.textContent.trim();
-    if (!code || code === '—') return;
-    navigator.clipboard.writeText(code).then(() => showToast('Code copied ✓')).catch(() => {
-      // Fallback
-      const ta = document.createElement('textarea');
-      ta.value = code; document.body.appendChild(ta);
-      ta.select(); document.execCommand('copy');
-      ta.remove(); showToast('Code copied ✓');
-    });
   }
 
   function launchProtocol(url){
@@ -11533,7 +11517,7 @@
     if (overlay) overlay.remove();
     overlay = document.createElement('div');
     overlay.id = 'guides-hub-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;display:flex;align-items:flex-end;justify-content:center';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:400;display:flex;align-items:center;justify-content:center';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     overlay.innerHTML = `
       <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:460px;padding:14px 20px 32px;border-top:1px solid var(--border);max-height:82vh;overflow-y:auto" onclick="event.stopPropagation()">
@@ -11590,30 +11574,9 @@
   }
 
   let scriptShared = true;
-  function toggleScriptVisibility() {
-    scriptShared = !scriptShared;
-    const icon = document.getElementById('script-vis-icon');
-    const label = document.getElementById('script-vis-label');
-    const footer = document.getElementById('script-footer');
-    if (scriptShared) {
-      icon.textContent = '👥';
-      label.textContent = 'Shared with staff';
-      footer.textContent = 'Visible to all staff in this practice plan';
-    } else {
-      icon.textContent = '🔒';
-      label.textContent = 'Private to you';
-      footer.textContent = 'Only visible to you — staff cannot see this script';
-    }
-  }
-
   function openActionSheet() {
     updatePasteButtons();
     document.getElementById('action-sheet-overlay').style.display = 'flex';
-  }
-
-  function closeActionSheet(e) {
-    if (e) e.stopPropagation();
-    document.getElementById('action-sheet-overlay').style.display = 'none';
   }
 
   // Per-day grid state storage: key = "weekOffset_dayKey" -> gridHTML string
@@ -11753,6 +11716,13 @@
 
       model.periods.push(p);
     });
+    // Standalone scripts (not linked to a period row) — capture so they persist too.
+    const _rowIds = new Set(model.periods.map(pp => pp.id));
+    const _standalone = {};
+    Object.keys(PERIOD_SCRIPTS).forEach(sid => {
+      if (!_rowIds.has(sid) && SCRIPTED_PERIODS.has(sid)) _standalone[sid] = PERIOD_SCRIPTS[sid];
+    });
+    if (Object.keys(_standalone).length) model.standaloneScripts = _standalone;
     return model;
   }
 
@@ -11849,6 +11819,14 @@
       if (p.script) PERIOD_SCRIPTS[p.id] = p.script;
       if (p.scripted) SCRIPTED_PERIODS.add(p.id);
     });
+
+    // Restore standalone scripts (not tied to a grid row).
+    if (model.standaloneScripts) {
+      Object.keys(model.standaloneScripts).forEach(sid => {
+        PERIOD_SCRIPTS[sid] = model.standaloneScripts[sid];
+        SCRIPTED_PERIODS.add(sid);
+      });
+    }
 
     renderGridHeader();
     recomputeGridTimes();   // fills gt-time + re-wires openPeriodNote onclick per row
@@ -14209,13 +14187,12 @@
     user.name=name;
     localStorage.setItem('mesh_user',JSON.stringify(user));
     let _profErr = null;
-    const pid=localStorage.getItem('mesh_program_id');
-    // Only the head coach owns the program row — a player/parent writing coach_name is an
-    // RLS violation that never persists (and would flash a misleading "sync failed" toast).
-    // Coaches sync to the program; player/parent display-name stays local for now.
-    if(currentRole === 'coach' && pid && window.db){
-      const { error } = await db.from('programs').update({coach_name:name}).eq('id',pid);
-      if (error) { console.error('coach name sync error', error); _profErr = error; }
+    // update_my_name (SECURITY DEFINER) updates the caller's own name wherever it lives:
+    // players.name (player), profiles.name (parent), or programs.coach_name (coach). This
+    // makes name edits persist + sync across devices for every role.
+    if(window.db){
+      const { error } = await db.rpc('update_my_name', { p_name: name });
+      if (error) { console.error('name sync error', error); _profErr = error; }
     }
     const sn=document.getElementById('sidebar-user-name'); if(sn) sn.textContent=name;
     refreshAllUserAvatars();
@@ -19875,7 +19852,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     const modal = document.createElement('div');
     modal.id = 'disc-note-modal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end;justify-content:center';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:center;justify-content:center';
     modal.innerHTML = `
       <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;max-width:520px;padding:20px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
         <div style="font-size:16px;font-weight:700;color:var(--fg);margin-bottom:4px">Change status to "${statusLabel}"</div>
@@ -24441,7 +24418,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     const joinPid = localStorage.getItem('mesh_joining_program_id');
     if (joinPid && !joinPid.includes('-')) localStorage.removeItem('mesh_joining_program_id');
   } catch(e) {}
-  const GROUP_COLORS = ['#ff4444','#4d9fff','#e0e0e0','#ffb800','#39ff14','#ff66cc','#a064ff','#ff8c00'];
+  const GROUP_COLORS = ['#ff4444','#4d9fff','#64748b','#ffb800','#22c55e','#ff66cc','#a064ff','#ff8c00'];
 
   function openGroupManager() {
     renderGroupManagerList();
