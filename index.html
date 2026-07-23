@@ -5519,7 +5519,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.64</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.65</div>
   </div>
 </div>
 
@@ -5533,7 +5533,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.64';
+  const APP_VERSION = 'v40.65';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -18996,15 +18996,8 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
   // ===== SIMPLE MODE =====
   function launchSimpleMode(blocks) {
-    simpleBlocks = blocks.length ? blocks : [
-      { name: 'Stretch & Warmup', duration: 15, tag: 'team', start: '3:30' },
-      { name: 'O Indy', duration: 25, tag: 'offense', start: '3:45' },
-      { name: 'D Indy', duration: 20, tag: 'defense', start: '4:10' },
-      { name: 'Water Break', duration: 5, tag: 'break', start: '4:30' },
-      { name: 'Crossover', duration: 20, tag: 'team', start: '4:35' },
-      { name: 'Team', duration: 30, tag: 'team', start: '4:55' },
-      { name: 'Conditioning', duration: 15, tag: 'special', start: '5:25' },
-    ];
+    // Empty array = a genuinely blank plan (Blank plan option). Only null/undefined falls back.
+    simpleBlocks = Array.isArray(blocks) ? blocks : [];
     simpleStartMins = (currentDayKey && DAY_SIMPLE_START[currentDayKey] != null)
       ? DAY_SIMPLE_START[currentDayKey]
       : _deriveSimpleStart(simpleBlocks);
