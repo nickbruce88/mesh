@@ -507,7 +507,7 @@
   .nav-item.active .nav-ic { color: var(--team-primary); transform: scale(1.08); }
 
   /* ===== NOTIFICATION PANEL ===== */
-  #notif-panel { position:absolute;top:0;right:0;width:100%;max-width:420px;background:var(--bg-2);border-bottom:1px solid var(--border);z-index:80;transform:translateY(-100%);transition:transform 0.25s ease;box-shadow:0 4px 20px rgba(0,0,0,0.5); }
+  #notif-panel { position:fixed;top:0;right:0;left:0;width:100%;max-width:420px;margin:0 auto;background:var(--bg-2);border-bottom:1px solid var(--border);z-index:1400;transform:translateY(-100%);transition:transform 0.25s ease;box-shadow:0 4px 20px rgba(0,0,0,0.5); }
   #notif-panel.open { transform:translateY(0); }
   .notif-panel-head { display:flex;align-items:center;justify-content:space-between;padding:16px 20px 10px; }
   .notif-panel-title { font-size:16px;font-weight:700;color:var(--fg); }
@@ -5540,7 +5540,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.60</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.61</div>
   </div>
 </div>
 
@@ -5554,7 +5554,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.60';
+  const APP_VERSION = 'v40.61';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
