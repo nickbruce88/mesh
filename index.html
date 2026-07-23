@@ -734,6 +734,9 @@
   #practice-simple { display:none;padding:0 20px 80px; }
   .simple-block { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;transition:border-color 0.15s; }
   .simple-block:active { border-color:var(--team-primary); }
+  .simple-block.dragging { opacity:0.5; }
+  .simple-block.drag-over { border-color:var(--team-primary); border-style:dashed; }
+  .simple-grip { cursor:grab; color:var(--fg-3); font-size:15px; line-height:1; user-select:none; }
   /* Simple block editor modal */
   #simple-block-editor { position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:96;display:none;align-items:center;justify-content:center;padding:24px; }
   #simple-block-editor.open { display:flex; }
@@ -2909,18 +2912,12 @@
         <div class="ap-field-label">Period name</div>
         <input class="ap-input" id="sbe-name" placeholder="e.g. Team Period, O Indy, Water Break">
       </div>
-      <div style="display:flex;gap:10px">
-        <div class="ap-field" style="flex:1">
-          <div class="ap-field-label">Start time</div>
-          <input class="ap-input" id="sbe-start" placeholder="e.g. 3:30">
-        </div>
-        <div class="ap-field" style="flex:1">
-          <div class="ap-field-label">Duration (min)</div>
-          <input class="ap-input" id="sbe-duration" type="number" min="1" max="120" placeholder="15">
-        </div>
+      <div class="ap-field">
+        <div class="ap-field-label">Duration (min)</div>
+        <input class="ap-input" id="sbe-duration" type="number" min="1" max="120" placeholder="15">
       </div>
       <div class="ap-field">
-        <div class="ap-field-label">Focus</div>
+        <div class="ap-field-label">Type</div>
         <select class="ap-input" id="sbe-tag">
           <option value="team">Team</option>
           <option value="offense">Offense</option>
@@ -3006,6 +3003,11 @@
           <div style="font-size:12px;color:var(--gray-2);margin-top:2px" id="simple-day-meta">Week 7 · Full Pads</div>
         </div>
         <button class="btn-sm" onclick="openActionSheet()">Edit</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 2px">
+        <span style="font-size:12px;font-weight:600;color:var(--fg-2)"><svg class="tic"><use href="#i-clock"/></svg> Practice start</span>
+        <input type="time" id="simple-start-input" onchange="setSimpleStart(this.value)" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--fg);font-size:13px;padding:5px 8px;font-family:var(--font)">
+        <span style="font-size:11px;color:var(--fg-3)">times update automatically</span>
       </div>
       <div id="simple-blocks-list"></div>
       <div class="simple-add-block-btn" onclick="addSimpleBlock()">+ Add period</div>
@@ -5517,7 +5519,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.63</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.64</div>
   </div>
 </div>
 
@@ -5531,7 +5533,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.63';
+  const APP_VERSION = 'v40.64';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11615,8 +11617,11 @@
   // Per-day grid state storage: key = "weekOffset_dayKey" -> gridHTML string
   const DAY_GRIDS = {};
   const DAY_SIMPLE = {}; // stores simpleBlocks arrays per day key
+  const DAY_SIMPLE_START = {}; // per-day base practice-start (minutes) for simple mode
   let currentDayKey = null; // e.g. "0_Tue"
   let simpleBlocks = []; // current day's simple plan blocks
+  let simpleStartMins = 15 * 60 + 30; // current day's simple practice start (default 3:30 PM)
+  let simpleDragIdx = null;
 
   const DAY_ORDER = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
@@ -11624,13 +11629,26 @@
     return `${weekOffset}_${dayLabel}`;
   }
 
+  // 24h "HH:MM" <-> minutes helpers for the persisted simple practice start
+  function _simpleFmt24(mins) { mins = ((mins % 1440) + 1440) % 1440; return `${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`; }
+  function _simpleParse24(hhmm) { if (!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return null; const [h,m] = hhmm.split(':').map(Number); return h*60+m; }
+  // Legacy plans store only 12h display starts. Recover a base: hours 1–7 are afternoon practice.
+  function _deriveSimpleStart(blocks) {
+    const s = blocks && blocks[0] && blocks[0].start;
+    if (!s || !/^\d{1,2}:\d{2}$/.test(s)) return 15 * 60 + 30;
+    let [h, m] = s.split(':').map(Number);
+    if (h >= 1 && h <= 7) h += 12; // afternoon
+    return h * 60 + m;
+  }
+
   // Persist the current simple plan (a day is EITHER simple or detailed — clear the other).
   function saveSimplePlan() {
     if (!currentDayKey) return;
     const blocks = JSON.parse(JSON.stringify(simpleBlocks));
     DAY_SIMPLE[currentDayKey] = blocks;
+    DAY_SIMPLE_START[currentDayKey] = simpleStartMins;
     delete DAY_GRIDS[currentDayKey];
-    _pushPracticeDay(currentDayKey, { version: PRACTICE_MODEL_VERSION, mode: 'simple', blocks });
+    _pushPracticeDay(currentDayKey, { version: PRACTICE_MODEL_VERSION, mode: 'simple', start: _simpleFmt24(simpleStartMins), blocks });
   }
 
   function saveDayGrid() {
@@ -11894,6 +11912,7 @@
         const key = `${offset}_${dObj.label}`;
         if (plan && plan.mode === 'simple' && Array.isArray(plan.blocks) && plan.blocks.length) {
           DAY_SIMPLE[key] = plan.blocks;
+          DAY_SIMPLE_START[key] = _simpleParse24(plan.start);
           delete DAY_GRIDS[key];
         } else if (plan && Array.isArray(plan.periods) && plan.periods.length) {
           DAY_GRIDS[key] = plan;
@@ -18986,22 +19005,73 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       { name: 'Team', duration: 30, tag: 'team', start: '4:55' },
       { name: 'Conditioning', duration: 15, tag: 'special', start: '5:25' },
     ];
+    simpleStartMins = (currentDayKey && DAY_SIMPLE_START[currentDayKey] != null)
+      ? DAY_SIMPLE_START[currentDayKey]
+      : _deriveSimpleStart(simpleBlocks);
+    recomputeSimpleTimes();
     document.getElementById('practice-day-filled').style.display = 'none'; (document.getElementById('practice-grid-wrap')||{style:{}}).style.display = 'none';
     document.getElementById('practice-day-blank').style.display = 'none';
     document.getElementById('practice-simple').style.display = 'block';
     const _psr2 = document.getElementById('practice-scripts-reminders'); if(_psr2) _psr2.style.display='block';
     if (canEdit('practice')) document.getElementById('practice-edit-btn').style.display = 'inline-block';
     renderSimpleBlocks();
+    syncSimpleStartInput();
   }
+
+  // ===== SIMPLE MODE TIMING (uniform with detailed: one start, times auto-flow) =====
+  function getSimpleStartMins() { return simpleStartMins; }
+  function recomputeSimpleTimes() {
+    let mins = simpleStartMins;
+    simpleBlocks.forEach(b => { b.start = fmtPracticeTime(mins); mins += (parseInt(b.duration) || 10); });
+  }
+  function syncSimpleStartInput() {
+    const input = document.getElementById('simple-start-input');
+    if (input) input.value = _simpleFmt24(simpleStartMins);
+  }
+  function setSimpleStart(hhmm) {
+    if (!/^\d{1,2}:\d{2}$/.test(hhmm || '')) return;
+    const [h, m] = hhmm.split(':').map(Number);
+    simpleStartMins = h * 60 + m;
+    recomputeSimpleTimes();
+    renderSimpleBlocks();
+    saveSimplePlan();
+  }
+
+  // ===== SIMPLE MODE DRAG TO REORDER =====
+  function simpleDragStart(e, idx) { simpleDragIdx = idx; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+  function simpleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); return false; }
+  function simpleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+  function simpleDrop(e, idx) {
+    e.preventDefault(); if (e.stopPropagation) e.stopPropagation();
+    e.currentTarget.classList.remove('drag-over');
+    if (simpleDragIdx === null || simpleDragIdx === idx) { simpleDragIdx = null; return false; }
+    const [moved] = simpleBlocks.splice(simpleDragIdx, 1);
+    simpleBlocks.splice(idx, 0, moved);
+    simpleDragIdx = null;
+    recomputeSimpleTimes();
+    renderSimpleBlocks();
+    saveSimplePlan();
+    return false;
+  }
+  function simpleDragEnd() { document.querySelectorAll('.simple-block').forEach(b => b.classList.remove('dragging', 'drag-over')); simpleDragIdx = null; }
 
   function renderSimpleBlocks() {
     const container = document.getElementById('simple-blocks-list');
     container.innerHTML = '';
+    const editable = canEdit('practice');
     simpleBlocks.forEach((block, i) => {
       const div = document.createElement('div');
       div.className = 'simple-block';
       div.style.cursor = 'pointer';
       div.onclick = () => openSimpleBlockEditor(i);
+      if (editable) {
+        div.draggable = true;
+        div.addEventListener('dragstart', (e) => simpleDragStart(e, i));
+        div.addEventListener('dragover', simpleDragOver);
+        div.addEventListener('dragleave', simpleDragLeave);
+        div.addEventListener('drop', (e) => simpleDrop(e, i));
+        div.addEventListener('dragend', simpleDragEnd);
+      }
       div.innerHTML = `
         <div class="simple-time-col">
           <div class="simple-start">${block.start || '—'}</div>
@@ -19013,6 +19083,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <span class="simple-tag ${block.tag}">${block.tag}</span>
         </div>
         <div class="simple-block-actions">
+          ${editable ? '<span class="simple-grip" title="Drag to reorder">⠿</span>' : ''}
           <span style="font-size:18px;color:var(--fg-3)">›</span>
         </div>`;
       container.appendChild(div);
@@ -19025,7 +19096,6 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     editingSimpleBlockIdx = idx;
     const block = simpleBlocks[idx];
     document.getElementById('sbe-name').value = block.name || '';
-    document.getElementById('sbe-start').value = block.start || '';
     document.getElementById('sbe-duration').value = block.duration || 15;
     document.getElementById('sbe-tag').value = block.tag || 'team';
     document.getElementById('sbe-focus').value = block.focus || '';
@@ -19042,11 +19112,11 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (editingSimpleBlockIdx === null) return;
     const block = simpleBlocks[editingSimpleBlockIdx];
     block.name = document.getElementById('sbe-name').value.trim() || 'Untitled';
-    block.start = document.getElementById('sbe-start').value.trim();
     block.duration = parseInt(document.getElementById('sbe-duration').value) || 15;
     block.tag = document.getElementById('sbe-tag').value;
     block.focus = document.getElementById('sbe-focus').value.trim();
     closeSimpleBlockEditor();
+    recomputeSimpleTimes();
     renderSimpleBlocks();
     saveSimplePlan();
   }
@@ -19055,30 +19125,21 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     if (editingSimpleBlockIdx === null) return;
     simpleBlocks.splice(editingSimpleBlockIdx, 1);
     closeSimpleBlockEditor();
+    recomputeSimpleTimes();
     renderSimpleBlocks();
     saveSimplePlan();
   }
 
   function addSimpleBlock() {
-    const last = simpleBlocks[simpleBlocks.length - 1];
-    // Estimate next start time
-    let nextStart = '—';
-    if (last && last.start && last.duration) {
-      const parts = last.start.split(':');
-      let h = parseInt(parts[0]), m = parseInt(parts[1]) + last.duration;
-      h += Math.floor(m / 60); m = m % 60;
-      nextStart = h + ':' + (m < 10 ? '0' + m : m);
-    }
-    simpleBlocks.push({ name: 'New period', duration: 10, tag: 'team', start: nextStart });
+    simpleBlocks.push({ name: 'New period', duration: 10, tag: 'team' });
+    recomputeSimpleTimes();
     renderSimpleBlocks();
     saveSimplePlan();
-    // Focus the new block's name input
-    const inputs = document.querySelectorAll('.simple-name-input');
-    if (inputs.length) { inputs[inputs.length-1].focus(); inputs[inputs.length-1].select(); }
   }
 
   function removeSimpleBlock(idx) {
     simpleBlocks.splice(idx, 1);
+    recomputeSimpleTimes();
     renderSimpleBlocks();
     saveSimplePlan();
   }
