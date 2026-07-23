@@ -317,7 +317,7 @@
 
   .pgrid { width: 100%; display: flex; flex-direction: column; }
   .pgrid.is-filtered { min-width: 0; }
-  .pgrid-row { display: flex; width: 100%; border-bottom: 1px solid var(--border); position: relative; transition: opacity 0.15s, transform 0.15s; }
+  .pgrid-row { display: flex; width: 100%; border-bottom: 1px solid var(--border-2); position: relative; transition: opacity 0.15s, transform 0.15s; }
   .pgrid-row:not(.pgrid-header) { cursor: grab; }
   .pgrid-row:not(.pgrid-header):active { cursor: grabbing; }
   .pgrid-row.dragging { opacity: 0.4; }
@@ -349,7 +349,7 @@
   .pgrid-cols { display: flex; flex: 1 1 0; min-width: 0; overflow: hidden; }
   .grid-col-head, .grid-cell {
     flex: 1 1 0; min-width: 80px; width: 0;
-    border-right: 1px solid var(--border);
+    border-right: 1px solid var(--border-2);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 8px 8px; text-align: center; box-sizing: border-box;
   }
@@ -566,6 +566,8 @@
   /* ===== DEPTH CHART EDIT ===== */
   .dc-player-row { display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border); }
   .dc-player-row:last-child { border-bottom:none; }
+  .dc-show-more { width:100%;background:none;border:none;color:var(--team-primary);font-size:11.5px;font-weight:700;cursor:pointer;padding:7px 0 2px;text-align:left;font-family:var(--font); }
+  .dc-show-more:hover { text-decoration:underline; }
   .dc-drag-handle { color:var(--fg-3);font-size:16px;cursor:grab;padding:0 4px; }
   .dc-player-name-edit { flex:1;font-size:13px;font-weight:600;color:var(--fg);background:transparent;border:none;outline:none;font-family:var(--font); }
   .dc-player-name-edit:focus { background:var(--bg-3);border-radius:4px;padding:2px 6px; }
@@ -5536,7 +5538,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.54</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.55</div>
   </div>
 </div>
 
@@ -5550,7 +5552,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.54';
+  const APP_VERSION = 'v40.55';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -13296,8 +13298,12 @@
       const r = parseInt(hex.substring(0,2),16);
       const gg = parseInt(hex.substring(2,4),16);
       const b = parseInt(hex.substring(4,6),16);
-      return '.grid-col-head[data-col="' + g.label + '"],.grid-cell[data-col="' + g.label + '"]{background-image:linear-gradient(rgba(' + r + ',' + gg + ',' + b + ',0.16),rgba(' + r + ',' + gg + ',' + b + ',0.16));}' +
-        '.grid-cell.active-cell[data-col="' + g.label + '"]{background-color:rgba(' + r + ',' + gg + ',' + b + ',0.28);}';
+      const wash  = 'rgba(' + r + ',' + gg + ',' + b + ',0.16)';
+      const solid = 'rgba(' + r + ',' + gg + ',' + b + ',0.34)';
+      // Header (coach/position) cell now uses the SAME solid tint as the active practice cells
+      // below it (was a lighter wash-only), and both are a bit darker (0.28 → 0.34).
+      return '.grid-col-head[data-col="' + g.label + '"],.grid-cell[data-col="' + g.label + '"]{background-image:linear-gradient(' + wash + ',' + wash + ');}' +
+        '.grid-col-head[data-col="' + g.label + '"],.grid-cell.active-cell[data-col="' + g.label + '"]{background-color:' + solid + ';}';
     }).join('\n');
   }
 
@@ -15942,9 +15948,28 @@
           }
           return true; // no team filter set — show on all levels
         });
+        // View mode: show the top 3 with a "Show more" toggle for the rest, to keep each
+        // position tidy. Edit mode shows everyone (needed to drag/reorder).
+        const DC_TOP = 3;
+        const collapsible = !dcEditMode && levelPlayers.length > DC_TOP;
         levelPlayers.forEach((p, idx) => {
-          playersList.appendChild(buildDCPlayerRow(p, idx, posGroup.pos, unit.key, levelPlayers.length));
+          const row = buildDCPlayerRow(p, idx, posGroup.pos, unit.key, levelPlayers.length);
+          if (collapsible && idx >= DC_TOP) { row.classList.add('dc-extra'); row.style.display = 'none'; }
+          playersList.appendChild(row);
         });
+        if (collapsible) {
+          const hidden = levelPlayers.length - DC_TOP;
+          const moreBtn = document.createElement('button');
+          moreBtn.className = 'dc-show-more';
+          moreBtn.textContent = 'Show ' + hidden + ' more';
+          moreBtn.onclick = function () {
+            const extras = playersList.querySelectorAll('.dc-extra');
+            const isHidden = extras[0] && extras[0].style.display === 'none';
+            extras.forEach(r => { r.style.display = isHidden ? '' : 'none'; });
+            this.textContent = isHidden ? 'Show less' : 'Show ' + hidden + ' more';
+          };
+          playersList.appendChild(moreBtn);
+        }
 
         posRow.appendChild(playersList);
         block.appendChild(posRow);
