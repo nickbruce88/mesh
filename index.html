@@ -5540,7 +5540,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.59</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.60</div>
   </div>
 </div>
 
@@ -5554,7 +5554,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.59';
+  const APP_VERSION = 'v40.60';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -7267,7 +7267,7 @@
 
   function getPlayerMeta(playerId) {
     const p = (window.ROSTER_DATA||[]).find(r => r.id === playerId);
-    return p ? `${p.pos||'—'} · #${p.num||'—'}` : '';
+    return p ? `${p.pos||'—'} · #${(p.num||'—').replace(/^#/,'')}` : '';
   }
 
   function renderPerfStatCards() {
@@ -7411,7 +7411,7 @@
           </div>
           <div>
             <div style="font-size:14px;font-weight:600">${_esc(p.name)}</div>
-            <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'}</div>
+            <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${(p.num||'—').replace(/^#/,'')}</div>
           </div>
           <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
             ${hasData?'<span style="font-size:11px;color:var(--fg-3)">'+records.length+' records ›</span>':''}
@@ -7502,7 +7502,7 @@
           </div>
           <div style="flex:1">
             <div style="font-size:17px;font-weight:700">${_esc(p.name)}</div>
-            <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'} · session history</div>
+            <div style="font-size:12px;color:var(--fg-3)">${p.pos||'—'} · #${(p.num||'—').replace(/^#/,'')} · session history</div>
           </div>
           <div onclick="document.getElementById('perf-history-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
         </div>
@@ -7627,7 +7627,7 @@
     );
     if (!players.length){ results.innerHTML='<div style="padding:8px 10px;font-size:13px;color:var(--fg-3)">No players found</div>'; results.style.display='block'; return; }
     results.innerHTML = players.slice(0,50).map(p =>
-      `<div onclick="selectLogPlayer('${p.id}','${_escAttr(p.name)}','${_escAttr(p.pos||'—')}','${_escAttr(p.num||'—')}')" style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${_esc(p.name)} <span style="color:var(--fg-3)">— ${_esc(p.pos||'—')} #${_esc(p.num||'—')}</span></div>`
+      `<div onclick="selectLogPlayer('${p.id}','${_escAttr(p.name)}','${_escAttr(p.pos||'—')}','${_escAttr(p.num||'—')}')" style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${_esc(p.name)} <span style="color:var(--fg-3)">— ${_esc(p.pos||'—')} #${_esc((p.num||'—').replace(/^#/,''))}</span></div>`
     ).join('');
     results.style.display='block';
   }
@@ -7675,7 +7675,7 @@
             <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border)">
               <div style="flex:1;min-width:0">
                 <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_esc(p.name)}</div>
-                <div style="font-size:11px;color:var(--fg-3)">${p.pos||'—'} · #${p.num||'—'}</div>
+                <div style="font-size:11px;color:var(--fg-3)">${p.pos||'—'} · #${(p.num||'—').replace(/^#/,'')}</div>
               </div>
               <input type="number" data-bulk-player="${p.id}" class="input-field bulk-val" placeholder="—" style="width:88px" step="0.01">
               <span class="bulk-unit" style="font-size:12px;color:var(--fg-3);width:38px">lbs</span>
@@ -22499,7 +22499,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     }
     results.innerHTML = players.slice(0, 60).map(p => {
       const id = p.id || p.db_id;
-      return `<div onclick="selectLogStatsPlayer('${id}')" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${_esc(p.name)} <span style="color:var(--fg-3)">— ${_esc(p.pos || '—')} #${_esc(p.num || '—')}</span></div>`;
+      return `<div onclick="selectLogStatsPlayer('${id}')" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)">${_esc(p.name)} <span style="color:var(--fg-3)">— ${_esc(p.pos || '—')} #${_esc((p.num || '—').replace(/^#/,''))}</span></div>`;
     }).join('');
     results.style.display = 'block';
   }
@@ -22510,7 +22510,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     const results = document.getElementById('log-stats-player-results');
     const player = PLAYERS.find(p => (p.id || p.db_id) === pid);
     if (hid) hid.value = pid;
-    if (search) search.value = player ? `${player.name} — ${player.pos || '—'} #${player.num || '—'}` : '';
+    if (search) search.value = player ? `${player.name} — ${player.pos || '—'} #${(player.num || '—').replace(/^#/,'')}` : '';
     if (results) { results.style.display = 'none'; results.innerHTML = ''; }
     renderLogStatsCats(pid);
   }
