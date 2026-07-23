@@ -5536,7 +5536,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.50</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.51</div>
   </div>
 </div>
 
@@ -5550,7 +5550,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.50';
+  const APP_VERSION = 'v40.51';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9359,6 +9359,38 @@
     } catch(e) {
       console.warn('Could not sync new player to Supabase:', e);
     }
+  }
+
+  // Ensure a player exists in Supabase and return its db_id. Manually-added players normally get
+  // their db_id from the background insert in saveAddPlayerManual — but if that insert failed
+  // (offline / RLS), the player is local-only, so later writes (notes, group, edits) silently
+  // no-op'd AND the player itself would vanish on refresh. This re-inserts on demand so the
+  // player + the pending change both persist. Returns null only if it truly can't insert.
+  const _playerEnsureInFlight = new WeakMap(); // dedupe concurrent inserts for the same player
+  async function _ensurePlayerDbId(player) {
+    if (!player) return null;
+    if (player.db_id && String(player.db_id).includes('-')) return player.db_id;
+    if (_playerEnsureInFlight.has(player)) return _playerEnsureInFlight.get(player);
+    const promise = (async () => {
+      try {
+        const programId = await getValidProgramId();
+        if (!programId) return null;
+        const { data, error } = await db.from('players').insert([{
+          program_id: programId,
+          name: player.name, num: player.num || '—', pos: player.pos || '', year: player.year || '',
+          position_off: player.posOff || '', position_def: player.posDef || '', position_st: player.posST || '',
+          height: player.height || '', weight: player.weight || '',
+          parent_name: player.parent || '', parent_phone: player.parentPhone || '', parent_email: player.parentEmail || '',
+          role: 'player', status: player.status || 'Active',
+        }]).select().single();
+        if (error) { console.error('[Roster] ensure-player insert failed:', error); return null; }
+        if (data?.id) { player.id = data.id; player.db_id = data.id; return data.id; }
+        return null;
+      } catch (e) { console.error('[Roster] ensure-player error:', e); return null; }
+    })();
+    _playerEnsureInFlight.set(player, promise);
+    try { return await promise; }
+    finally { _playerEnsureInFlight.delete(player); }
   }
 
   // ===== NAVIGATION HELPER =====
@@ -15559,12 +15591,15 @@
     const p = PLAYERS.find(pl => pl.id === playerId || pl.db_id === playerId);
     if (p) {
       p.group = groupName === 'Unassigned' ? '' : groupName;
-      if (p.db_id) {
-        getValidProgramId().then(id => {
-          if (id) db.from('players').update({ group_name: p.group }).eq('id', p.db_id)
+      // Ensure the player row exists before writing the group (local-only players would drop it).
+      _ensurePlayerDbId(p).then(dbId => {
+        if (dbId) {
+          db.from('players').update({ group_name: p.group }).eq('id', dbId)
             .then(({ error }) => { if (error) { console.error('Group save error:', error); showToast('⚠️ Group change may not have saved — check your connection'); } });
-        });
-      }
+        } else {
+          showToast('⚠️ Group change saved on this device — sync failed');
+        }
+      });
       syncGroupViews();
     }
   }
@@ -19289,12 +19324,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     // Prefer db_id — `playerId` is the local id, which for a not-yet-synced
     // player ('local_…'/'p…') would match zero rows. Same real-vs-local id test
     // the attendance sync uses.
-    const dbId = player.db_id || playerId;
+    let dbId = player.db_id || playerId;
     const isRealId = dbId && String(dbId).includes('-') && !String(dbId).startsWith('local_');
     if (!isRealId) {
-      // Local-only player that never reached Supabase — don't pretend it saved.
-      showToast('Saved on this device — not yet synced');
-      return;
+      // Local-only player that never reached Supabase — insert it now (with the edited values)
+      // so the profile + this edit both persist, instead of silently living only on this device.
+      dbId = await _ensurePlayerDbId(player);
+      if (!dbId) { showToast('Saved on this device — sync failed, may be lost on reload'); return; }
     }
     const { error } = await db.from('players').update({
       name: player.name,
@@ -19644,17 +19680,19 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       player.notes.push(note);
     }
 
-    // Save to Supabase — notes arrays + disciplinary status
+    // Save to Supabase — notes arrays + disciplinary status. Ensure the player row exists first
+    // (a local-only player would otherwise silently drop the note).
     let _noteSaveErr = null;
-    if (player.db_id) {
+    const _noteDbId = await _ensurePlayerDbId(player);
+    if (_noteDbId) {
       const { error } = await db.from('players').update({
         disciplinary_status: player.disciplinaryStatus || 'green',
         notes_data: JSON.stringify(player.notes || []),
         discipline_data: JSON.stringify(player.discipline || []),
         academic_data: JSON.stringify(player.academic || [])
-      }).eq('id', player.db_id);
+      }).eq('id', _noteDbId);
       if (error) { console.error('Note save error:', error); _noteSaveErr = error; }
-    }
+    } else { _noteSaveErr = { message: 'player not synced' }; }
 
 
     closeAddNote();
@@ -19763,13 +19801,14 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     renderCoachRoster();
 
     let _discSaveErr = null;
-    if (player.db_id) {
+    const _discDbId = await _ensurePlayerDbId(player);
+    if (_discDbId) {
       const { error } = await db.from('players').update({
         disciplinary_status: newKey,
         discipline_data: JSON.stringify(player.discipline || [])
-      }).eq('id', player.db_id);
+      }).eq('id', _discDbId);
       if (error) { console.error('Disc status save error:', error); _discSaveErr = error; }
-    }
+    } else { _discSaveErr = { message: 'player not synced' }; }
 
     showToast(_discSaveErr ? '⚠️ Saved on this device — sync failed; may be lost on reload' : 'Status updated — note logged ✓');
     window._pendingDiscChange = null;
