@@ -447,9 +447,10 @@
   .unit-chip.active { background: var(--team-primary); color: var(--bg); border-color: var(--team-primary); font-weight: 700; }
   .unit-block { margin-bottom: 22px; }
   .unit-label { font-size: 13px; font-weight: 700; color: var(--fg); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid var(--border); }
-  .pos-row { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
-  .pos-row:last-child { border-bottom: none; }
-  .pos-tag { min-width: 38px; font-size: 12px; font-weight: 700; color: var(--team-primary); padding-top: 4px; }
+  /* Each position group is its own card — a clear break between QB / RB / WR / … */
+  .pos-row { display: flex; align-items: flex-start; gap: 12px; padding: 6px 14px 8px; margin-bottom: 10px; background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 12px; }
+  .pos-row:last-child { margin-bottom: 0; }
+  .pos-tag { min-width: 38px; font-size: 12px; font-weight: 700; color: var(--team-primary); padding-top: 11px; }
   .pos-players { flex: 1; display: flex; flex-direction: column; gap: 0; }
   .dc-player { display: flex; align-items: center; gap: 8px; font-size: 13px; }
   .dc-string { width: 18px; height: 18px; border-radius: 50%; background: var(--border); color: var(--fg-2); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -5538,7 +5539,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.56</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.57</div>
   </div>
 </div>
 
@@ -5552,7 +5553,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.56';
+  const APP_VERSION = 'v40.57';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
