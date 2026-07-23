@@ -57,9 +57,14 @@ end; $$;
 grant execute on function list_my_threads(uuid) to authenticated;
 
 -- ---- delete_thread: hard-delete a conversation (creator or program owner only) ----
+-- Witnessed conversations are NOT deletable — they exist to keep coach↔player messages
+-- documented. Archive them instead.
 create or replace function delete_thread(p_thread uuid) returns void
 language plpgsql security definer set search_path=public as $$
 begin
+  if exists (select 1 from message_threads t where t.id = p_thread and t.kind = 'witnessed_dm') then
+    raise exception 'witnessed conversations cannot be deleted';
+  end if;
   if not exists (
     select 1 from message_threads t
     where t.id = p_thread
@@ -79,7 +84,6 @@ begin
 end; $$;
 grant execute on function delete_thread(uuid) to authenticated;
 
--- SAFETY NOTE: delete_thread hard-deletes everything, including witnessed conversations — which
--- exist precisely to keep a coach↔player conversation documented. Only the program owner (head
--- coach) or the thread creator can call it. If you want to protect witnessed threads from
--- deletion in production, add:  and t.kind <> 'witnessed_dm'  to the permission check above.
+-- SAFETY: delete_thread refuses to delete witnessed conversations (kind = 'witnessed_dm') —
+-- those exist to keep a coach↔player conversation documented; archive them instead. Regular DMs,
+-- groups and broadcasts can be deleted by the thread creator or the program owner (head coach).

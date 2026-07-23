@@ -4229,7 +4229,7 @@
       <div class="thread-actions" style="display:flex;gap:16px;align-items:center;padding-left:6px">
         <div class="thread-mute-btn" onclick="toggleThreadMute()" title="Mute notifications" style="cursor:pointer;font-size:18px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-bell"/></svg></div>
         <div onclick="hideCurrentThread()" title="Archive conversation" style="cursor:pointer;font-size:16px;line-height:1"><svg class="ic" style="width:1em;height:1em"><use href="#i-archive"/></svg></div>
-        <div onclick="deleteCurrentThread()" title="Delete conversation" style="cursor:pointer;font-size:16px;line-height:1;color:var(--red)"><svg class="ic" style="width:1em;height:1em"><use href="#i-trash"/></svg></div>
+        <div id="thread-delete-btn" onclick="deleteCurrentThread()" title="Delete conversation" style="cursor:pointer;font-size:16px;line-height:1;color:var(--red)"><svg class="ic" style="width:1em;height:1em"><use href="#i-trash"/></svg></div>
       </div>
     </div>
     <div class="safety-banner" id="thread-safety-banner">
@@ -5540,7 +5540,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.58</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.59</div>
   </div>
 </div>
 
@@ -5554,7 +5554,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.58';
+  const APP_VERSION = 'v40.59';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -14875,6 +14875,9 @@
   // Archive just declutters; delete removes it for everyone, so confirm first.
   async function deleteCurrentThread(){
     if (!currentThread) return;
+    if ((_threads[currentThread]?.kind || currentThreadKind) === 'witnessed_dm') {
+      showToast('Witnessed conversations can’t be deleted — archive it instead'); return;
+    }
     if (!confirm('Delete this conversation for everyone? This removes all its messages and cannot be undone.')) return;
     const role = currentRole || 'coach';
     try {
@@ -14936,6 +14939,11 @@
     // Safety banner — witnessed threads say so explicitly (shield); other DMs get the generic
     // "visible to staff" note. Applies to whichever role's thread overlay is open.
     _updateSafetyBanner(role, t.kind);
+
+    // Witnessed conversations can't be deleted (they must stay documented) — hide the trash
+    // button for them; archive is still available.
+    const delBtn = document.getElementById('thread-delete-btn');
+    if (delBtn) delBtn.style.display = (t.kind === 'witnessed_dm') ? 'none' : '';
 
     const dot = document.getElementById('mgu-' + threadId); if (dot) dot.style.opacity = '0';
     // Reading the thread clears any bell notification(s) for it, even if opened from the list.
