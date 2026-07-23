@@ -84,9 +84,9 @@
     /* Sidebar becomes team-colored in light mode */
     --sidebar-bg:        var(--team-primary);
     --sidebar-fg:        var(--team-primary-text);
-    --sidebar-fg-muted:  rgba(255,255,255,0.55);
-    --sidebar-active-bg: rgba(255,255,255,0.18);
-    --sidebar-active-fg: #ffffff;
+    --sidebar-fg-muted:  color-mix(in srgb, var(--team-primary-text) 60%, transparent);
+    --sidebar-active-bg: color-mix(in srgb, var(--team-primary-text) 18%, transparent);
+    --sidebar-active-fg: var(--team-primary-text);
     --sidebar-border:    rgba(0,0,0,0.12);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -113,7 +113,7 @@
   .role-btn.selected .role-label { color: var(--team-primary); }
   .input-field { background: var(--bg-3); border: 1.5px solid var(--border-2); border-radius: var(--radius-sm); padding: 14px 16px; font-size: 15px; color: var(--fg); width: 100%; font-family: var(--font); outline: none; margin-bottom: 10px; }
   .input-field::placeholder { color: var(--fg-3); }
-  .btn-primary { background: var(--team-primary); color: var(--bg); border: none; border-radius: var(--radius-sm); padding: 16px; font-size: 16px; font-weight: 700; width: 100%; cursor: pointer; font-family: var(--font); }
+  .btn-primary { background: var(--team-primary); color: var(--team-primary-text); border: none; border-radius: var(--radius-sm); padding: 16px; font-size: 16px; font-weight: 700; width: 100%; cursor: pointer; font-family: var(--font); }
   .login-footer { font-size: 12px; color: var(--fg-3); text-align: center; margin-top: 20px; }
 
   /* APP SHELL */
@@ -121,7 +121,7 @@
   .role-switcher { display: flex; gap: 6px; padding: 8px 16px; background: var(--bg-2); border-bottom: 1px solid var(--border); overflow-x: auto; }
   .role-switcher::-webkit-scrollbar { display: none; }
   .role-tab { flex-shrink: 0; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; background: var(--border); color: var(--fg-2); border: 1px solid var(--border-2); transition: all 0.15s; }
-  .role-tab.active { background: var(--team-primary); color: var(--bg); border-color: var(--team-primary); }
+  .role-tab.active { background: var(--team-primary); color: var(--team-primary-text); border-color: var(--team-primary); }
   .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); position: relative; }
   .top-bar-logo { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
   .top-bar-logo span { color: var(--team-primary); }
@@ -150,7 +150,7 @@
   .announcement-card.urgency-important { border-left-color:var(--amber); }
   .announcement-card.urgency-urgent    { border-left-color:var(--red); }
   .announcement-card-header { display:flex;align-items:flex-start;gap:10px;margin-bottom:6px; }
-  .announcement-avatar { width:32px;height:32px;border-radius:50%;background:var(--team-primary);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .announcement-avatar { width:32px;height:32px;border-radius:50%;background:var(--team-primary);color:var(--team-primary-text);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
   .announcement-meta { font-size:11px;color:var(--fg-3);margin-top:2px; }
   .announcement-title { font-size:15px;font-weight:700;color:var(--fg);line-height:1.35;margin-bottom:3px; }
   .announcement-body { font-size:14px;color:var(--fg);line-height:1.5; }
@@ -202,7 +202,7 @@
   .stat-number.green { color: var(--team-primary); }
   .stat-lbl { font-size: 12px; color: var(--fg-2); margin-top: 2px; }
   .next-game { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
-  .game-date-block { background: var(--team-primary); border-radius: var(--radius-sm); width: 48px; min-width: 48px; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--bg); }
+  .game-date-block { background: var(--team-primary); border-radius: var(--radius-sm); width: 48px; min-width: 48px; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--team-primary-text); }
   .game-month { font-size: 10px; font-weight: 700; text-transform: uppercase; }
   .game-day { font-size: 24px; font-weight: 800; line-height: 1; }
   .game-info { flex: 1; }
@@ -219,7 +219,7 @@
   .season-filter { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
   .season-filter::-webkit-scrollbar { display: none; }
   .filter-chip { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--border); transition: all 0.15s; }
-  .filter-chip.active { background: var(--team-primary); color: var(--bg); border-color: var(--team-primary); font-weight: 700; }
+  .filter-chip.active { background: var(--team-primary); color: var(--team-primary-text); border-color: var(--team-primary); font-weight: 700; }
   .sched-week-label { font-size: 11px; font-weight: 600; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.07em; margin: 16px 0 8px; }
   .sched-item { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
   .sched-item.game-win { border-left: 3px solid var(--team-primary); }
@@ -265,7 +265,7 @@
 
   /* MY PLAYER / MY STATS */
   .player-hero { background: var(--team-primary-glow-sm); border: 1px solid var(--team-primary-glow); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; }
-  .player-jersey { width: 56px; height: 56px; background: var(--team-primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--bg); flex-shrink: 0; }
+  .player-jersey { width: 56px; height: 56px; background: var(--team-primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--team-primary-text); flex-shrink: 0; }
   .player-name { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
   .player-pos { font-size: 13px; color: var(--fg-2); }
   .player-pos span { color: var(--team-primary); font-weight: 600; }
@@ -444,7 +444,7 @@
   .unit-filter { display: flex; gap: 6px; margin-bottom: 18px; overflow-x: auto; padding-bottom: 4px; }
   .unit-filter::-webkit-scrollbar { display: none; }
   .unit-chip { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 500; cursor: pointer; background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--border); }
-  .unit-chip.active { background: var(--team-primary); color: var(--bg); border-color: var(--team-primary); font-weight: 700; }
+  .unit-chip.active { background: var(--team-primary); color: var(--team-primary-text); border-color: var(--team-primary); font-weight: 700; }
   .unit-block { margin-bottom: 22px; }
   .unit-label { font-size: 13px; font-weight: 700; color: var(--fg); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid var(--border); }
   /* Each position group is its own card — a clear break between QB / RB / WR / … */
@@ -454,7 +454,7 @@
   .pos-players { flex: 1; display: flex; flex-direction: column; gap: 0; }
   .dc-player { display: flex; align-items: center; gap: 8px; font-size: 13px; }
   .dc-string { width: 18px; height: 18px; border-radius: 50%; background: var(--border); color: var(--fg-2); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .dc-player.starter .dc-string { background: var(--team-primary); color: var(--bg); }
+  .dc-player.starter .dc-string { background: var(--team-primary); color: var(--team-primary-text); }
   .dc-name { color: var(--fg-2); }
   .dc-player.starter .dc-name { color: var(--fg); font-weight: 600; }
   .dc-num { font-size: 11px; color: var(--fg-3); }
@@ -487,8 +487,8 @@
   /* BOTTOM NAV */
   .bottom-nav { display: flex; border-top: 1px solid var(--border); background: var(--bg); padding: 8px 0 20px; position: sticky; bottom: 0; }
   .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px 0; position: relative; }
-  .nav-unread-badge { position: absolute; top: 2px; left: calc(50% + 6px); background: var(--team-primary); color: #fff; font-size: 9px; font-weight: 800; min-width: 16px; height: 16px; border-radius: 8px; display: none; align-items: center; justify-content: center; padding: 0 4px; box-sizing: border-box; border: 1.5px solid var(--bg); line-height: 1; }
-  .sidebar-unread-badge { margin-left: auto; background: var(--team-primary); color: #fff; font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: none; align-items: center; justify-content: center; padding: 0 5px; box-sizing: border-box; line-height: 1; }
+  .nav-unread-badge { position: absolute; top: 2px; left: calc(50% + 6px); background: var(--team-primary); color: var(--team-primary-text); font-size: 9px; font-weight: 800; min-width: 16px; height: 16px; border-radius: 8px; display: none; align-items: center; justify-content: center; padding: 0 4px; box-sizing: border-box; border: 1.5px solid var(--bg); line-height: 1; }
+  .sidebar-unread-badge { margin-left: auto; background: var(--team-primary); color: var(--team-primary-text); font-size: 10px; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: none; align-items: center; justify-content: center; padding: 0 5px; box-sizing: border-box; line-height: 1; }
   .nav-icon { font-size: 20px; }
   .nav-icon-img { width: 24px; height: 24px; object-fit: contain; opacity: 0.6; transition: opacity 0.15s, transform 0.15s; }
   .nav-item.active .nav-icon-img { opacity: 1; transform: scale(1.08); }
@@ -519,7 +519,7 @@
   .notif-text { font-size:13px;color:var(--fg);line-height:1.4; }
   .notif-text span { color:var(--team-primary);font-weight:600; }
   .notif-time { font-size:11px;color:var(--fg-3);margin-top:3px; }
-  .notif-badge { position:absolute;top:2px;right:2px;background:var(--team-primary);color:var(--bg);font-size:9px;font-weight:800;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg); }
+  .notif-badge { position:absolute;top:2px;right:2px;background:var(--team-primary);color:var(--team-primary-text);font-size:9px;font-weight:800;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--bg); }
   .notif-btn-wrap { position:relative; }
   .notif-overlay { position:fixed;inset:0;z-index:75;display:none;background:transparent; }
   .notif-overlay.open { display:block; }
@@ -1466,7 +1466,7 @@
 
   /* ===== ATTENDANCE ===== */
   .att-session-tab { padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg-3);color:var(--fg-2);border:1px solid var(--border);transition:all 0.15s;-webkit-tap-highlight-color:transparent }
-  .att-session-tab.active { background:var(--team-primary);color:var(--bg);border-color:var(--team-primary) }
+  .att-session-tab.active { background:var(--team-primary);color:var(--team-primary-text);border-color:var(--team-primary) }
   .att-counters { display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px }
   .att-counter-card { background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;text-align:center }
   .att-counter-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;color:var(--fg-3) }
@@ -1528,7 +1528,7 @@
   .inv-item-sub { font-size:12px;color:var(--fg-2);margin-top:2px; }
   .inv-item-badges { display:flex;gap:5px;margin-top:6px;flex-wrap:wrap; }
   .inv-cond-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px; }
-  .inv-cond-badge.Excellent { background:rgba(57,255,20,0.12);color:#39ff14; }
+  .inv-cond-badge.Excellent { background:rgba(57,255,20,0.12);color:#16a34a; }
   .inv-cond-badge.Good { background:rgba(77,159,255,0.12);color:var(--blue); }
   .inv-cond-badge.Fair { background:rgba(255,184,0,0.12);color:var(--amber); }
   .inv-cond-badge.Poor { background:rgba(255,68,68,0.12);color:var(--red); }
@@ -1545,11 +1545,11 @@
   .disc-status-row { display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px; }
   .disc-status-pill { padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid transparent;transition:all 0.15s;-webkit-tap-highlight-color:transparent; }
   .disc-status-pill.selected { border-color:var(--fg); }
-  .disc-status-pill.green  { background:rgba(57,255,20,0.12);color:#39ff14; }
+  .disc-status-pill.green  { background:rgba(57,255,20,0.12);color:#16a34a; }
   .disc-status-pill.yellow { background:rgba(255,184,0,0.12);color:var(--amber); }
   .disc-status-pill.red    { background:rgba(255,68,68,0.12);color:var(--red); }
   .disc-status-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px; }
-  .disc-status-badge.green  { background:rgba(57,255,20,0.12);color:#39ff14; }
+  .disc-status-badge.green  { background:rgba(57,255,20,0.12);color:#16a34a; }
   .disc-status-badge.yellow { background:rgba(255,184,0,0.12);color:var(--amber); }
   .disc-status-badge.red    { background:rgba(255,68,68,0.12);color:var(--red); }
 
@@ -1667,7 +1667,7 @@
   .member-role-tag.player { background:rgba(77,159,255,0.12);color:var(--blue); }
   .member-role-tag.parent { background:rgba(160,100,255,0.12);color:#a064ff; }
   .member-check { width:22px;height:22px;border-radius:50%;border:2px solid var(--border-2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.15s; }
-  .member-check.checked { background:var(--team-primary);border-color:var(--team-primary);color:var(--bg);font-size:12px;font-weight:700; }
+  .member-check.checked { background:var(--team-primary);border-color:var(--team-primary);color:var(--team-primary-text);font-size:12px;font-weight:700; }
   .ng-validation { font-size:12px;padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:12px;display:none; }
   .ng-validation.fail { background:rgba(255,68,68,0.1);color:var(--red);border:1px solid rgba(255,68,68,0.2);display:block; }
   .ng-validation.pass { background:var(--team-primary-glow-sm);color:var(--team-primary);border:1px solid var(--team-primary-glow);display:block; }
@@ -1860,7 +1860,7 @@
   .cal-day.today { background:var(--bg-2); }
   .cal-day.other-month { background:var(--bg); opacity:0.4; }
   .cal-day-num { font-size:12px;font-weight:600;margin-bottom:3px;color:var(--fg-2);line-height:1;padding:2px 3px; }
-  .cal-day.today .cal-day-num { background:var(--team-primary);color:var(--bg);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-weight:800; }
+  .cal-day.today .cal-day-num { background:var(--team-primary);color:var(--team-primary-text);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-weight:800; }
   .cal-event-bar { font-size:10px;font-weight:600;border-radius:3px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:1.4 }
   .cal-event-bar.tag-game { background:#dc2626;color:#fff; }
   .cal-event-bar.tag-practice { background:#ea580c;color:#fff; }
@@ -2037,7 +2037,7 @@
   .check-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; }
   .check-item.done { border-color: var(--team-primary-glow); }
   .check-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-  .check-item.done .check-icon { background: var(--team-primary); color: var(--bg); }
+  .check-item.done .check-icon { background: var(--team-primary); color: var(--team-primary-text); }
   .check-item.pending .check-icon { background: var(--border); color: var(--fg-3); border: 1.5px solid var(--border-2); }
   .check-title { font-size: 14px; font-weight: 600; color: var(--fg); }
   .check-sub { font-size: 11.5px; color: var(--fg-3); margin-top: 2px; }
@@ -2072,7 +2072,7 @@
   .setup-preview { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
   .setup-preview-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
   .setup-preview-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--team-primary); transition: background 0.15s; }
-  .setup-preview-btn { background: var(--team-primary); color: var(--bg); text-align: center; font-size: 13px; font-weight: 700; padding: 11px; border-radius: var(--radius-sm); margin-bottom: 12px; transition: background 0.15s; }
+  .setup-preview-btn { background: var(--team-primary); color: var(--team-primary-text); text-align: center; font-size: 13px; font-weight: 700; padding: 11px; border-radius: var(--radius-sm); margin-bottom: 12px; transition: background 0.15s; }
   .setup-preview-pills { display: flex; gap: 6px; }
   .setup-preview-pill { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--bg-3); color: var(--fg-2); border: 1px solid var(--border); }
   .setup-preview-pill.active { background: var(--team-secondary); color: var(--team-secondary-text); border-color: var(--team-secondary); transition: background 0.15s, border-color 0.15s; }
@@ -4379,7 +4379,7 @@
       <div style="font-size:16px;font-weight:700" id="player-home-status">Loading…</div>
       <div style="font-size:13px;color:var(--gray-2);margin-top:3px" id="player-home-detail"></div>
       <div style="display:flex;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--team-primary-glow)">
-        <span style="font-size:12px;font-weight:600;color:#39ff14" id="player-home-disc">● Good Standing</span>
+        <span style="font-size:12px;font-weight:600;color:#16a34a" id="player-home-disc">● Good Standing</span>
         <span style="font-size:12px;font-weight:600;color:var(--team-primary)" id="player-home-elig">✅ Eligible</span>
       </div>
     </div>
@@ -4641,7 +4641,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:13px;color:var(--fg-3)">Items assigned to this player</div>
           <div style="display:flex;gap:6px">
-            <button class="btn-sm" onclick="openQRScannerForPlayer()" style="background:var(--team-primary);color:white;border-color:var(--team-primary)"><svg class="tic"><use href="#i-camera"/></svg> Scan</button>
+            <button class="btn-sm" onclick="openQRScannerForPlayer()" style="background:var(--team-primary);color:var(--team-primary-text);border-color:var(--team-primary)"><svg class="tic"><use href="#i-camera"/></svg> Scan</button>
             <button class="btn-sm" onclick="openAssignToPlayer()">+ Assign</button>
           </div>
         </div>
@@ -5519,7 +5519,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.65</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.66</div>
   </div>
 </div>
 
@@ -5533,7 +5533,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.65';
+  const APP_VERSION = 'v40.66';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -8220,6 +8220,7 @@
         const events = parseICS(text);
         if (!events.length) {
           if (statusEl) statusEl.textContent = '⚠️ No events found in this calendar file.';
+          showToast('⚠️ No events found in that calendar file');
           return;
         }
         // Convert to SCHEDULE game objects and merge
@@ -8253,6 +8254,7 @@
       } catch(err) {
         console.error('ICS parse error:', err);
         if (statusEl) statusEl.textContent = '⚠️ Error reading file. Make sure it\'s a valid .ics file.';
+        showToast('⚠️ Couldn\'t read that file — is it a valid .ics?');
       }
       // Reset input so same file can be re-imported
       event.target.value = '';
@@ -9152,7 +9154,7 @@
 
     preview.innerHTML = `
       <div style="background:rgba(57,255,20,0.08);border:1px solid rgba(57,255,20,0.3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:700;color:#39ff14;margin-bottom:2px">✓ ${parsed.length} players ready to import</div>
+        <div style="font-size:13px;font-weight:700;color:#16a34a;margin-bottom:2px">✓ ${parsed.length} players ready to import</div>
         <div style="font-size:11px;color:var(--fg-3)">${withPos} with positions · ${withYear} with year · ${withParent} with parent info</div>
       </div>
       ${rosterMappingUI()}
@@ -14208,7 +14210,10 @@
     localStorage.setItem('mesh_user',JSON.stringify(user));
     let _profErr = null;
     const pid=localStorage.getItem('mesh_program_id');
-    if(pid && window.db){
+    // Only the head coach owns the program row — a player/parent writing coach_name is an
+    // RLS violation that never persists (and would flash a misleading "sync failed" toast).
+    // Coaches sync to the program; player/parent display-name stays local for now.
+    if(currentRole === 'coach' && pid && window.db){
       const { error } = await db.from('programs').update({coach_name:name}).eq('id',pid);
       if (error) { console.error('coach name sync error', error); _profErr = error; }
     }
@@ -15863,7 +15868,7 @@
           <div style="font-size:40px;margin-bottom:12px"><svg class="ic" style="width:40px;height:40px"><use href="#i-clipboard-list"/></svg></div>
           <div style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:6px">Depth chart is empty</div>
           <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Import your roster first, then use Edit mode to build your depth chart.</div>
-          <button onclick="navigateTo('roster')" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">Go to Roster →</button>
+          <button onclick="navigateTo('roster')" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;font-weight:600;color:var(--team-primary-text);cursor:pointer;font-family:var(--font)">Go to Roster →</button>
         </div>`;
       return;
     }
@@ -16128,7 +16133,7 @@
       // Update sub-greeting with team name
       const sub = document.getElementById('player-home-sub');
       const teamName = obProgram.teamName || localStorage.getItem('mesh_team_name') || 'Your Team';
-      if (sub) sub.textContent = teamName + (player ? ` · ${player.num} · ${player.pos}` : '');
+      if (sub) sub.textContent = teamName + (player ? ` · ${formatNum(player.num)} · ${player.pos}` : '');
 
       // Update status box
       const statusEl = document.getElementById('player-home-status');
@@ -16137,8 +16142,8 @@
 
       if (player) {
         if (statusEl) statusEl.textContent = player.pos;
-        if (detailEl) detailEl.textContent = `${player.num} · ${player.group || 'Unassigned'} group`;
-        const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
+        if (detailEl) detailEl.textContent = `${formatNum(player.num)} · ${player.group || 'Unassigned'} group`;
+        const discColors = { green: '#16a34a', yellow: '#ffb800', red: '#ff4444' };
         const discLabels = { green: 'Good Standing', yellow: 'On Watch', red: 'Disciplinary Contract' };
         const ds = player.disciplinaryStatus || 'green';
         if (discEl) {
@@ -16954,7 +16959,7 @@
       const row = document.createElement('div');
       row.className = 'assign-roster-row';
       row.innerHTML = `
-        <div class="roster-num" style="width:36px;height:36px;font-size:12px">${p.num}</div>
+        <div class="roster-num" style="width:36px;height:36px;font-size:12px">${formatNum(p.num)}</div>
         <div style="flex:1">
           <div style="font-size:14px;font-weight:600">${_esc(p.name)}</div>
           <div style="font-size:12px;color:var(--gray-2)">${p.pos} · ${p.year}</div>
@@ -17115,6 +17120,7 @@
     activeScriptPeriod = scriptId;
     closeAddScriptModal();
     renderScriptSection();
+    if (typeof saveDayGrid === 'function') saveDayGrid();
     showToast(`"${name}" script created ✓`);
     // Open editor immediately
     setTimeout(() => openScriptEdit(scriptId), 200);
@@ -17142,12 +17148,14 @@
       showToast('Script removed from ' + (currentNoteModalPeriodName || id));
       updatePeriodScriptBtn();
       renderScriptSection();
+      if (typeof saveDayGrid === 'function') saveDayGrid();
     } else {
       // Add script and open editor immediately
       SCRIPTED_PERIODS.add(id);
       PERIOD_SCRIPTS[id] = { name: currentNoteModalPeriodName || id, plays: [] };
       updatePeriodScriptBtn();
       renderScriptSection();
+      if (typeof saveDayGrid === 'function') saveDayGrid();
       closeNoteModal();
       // Open the script editor for this period
       setTimeout(() => openScriptEdit(id), 150);
@@ -17251,6 +17259,7 @@
     }
     closeScriptEdit();
     renderScriptSection();
+    if (typeof saveDayGrid === 'function') saveDayGrid();
     showToast('Script deleted');
   }
 
@@ -17292,6 +17301,7 @@
     ).map(i => i.value.trim()).filter(Boolean);
     closeScriptEdit();
     renderScriptSection();
+    if (typeof saveDayGrid === 'function') saveDayGrid();
     showToast('Script saved ✓');
   }
 
@@ -17299,6 +17309,7 @@
     if (!PERIOD_SCRIPTS[periodId]) return;
     PERIOD_SCRIPTS[periodId].shared = PERIOD_SCRIPTS[periodId].shared === false ? true : false;
     renderScriptSection();
+    if (typeof saveDayGrid === 'function') saveDayGrid();
     const isShared = PERIOD_SCRIPTS[periodId].shared !== false;
     showToast(isShared ? `${periodId} script shared with staff ✓` : `${periodId} script set to private`);
   }
@@ -19324,7 +19335,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           <div style="font-size:13px;color:var(--fg-3);margin-bottom:20px">Import your roster from a spreadsheet or add players one at a time.</div>
           <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
             <button data-edit="roster" onclick="openRosterImport()" style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)"><svg class="tic"><use href="#i-download"/></svg> Import roster</button>
-            <button data-edit="roster" onclick="openAddPlayerManual()" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">+ Add player</button>
+            <button data-edit="roster" onclick="openAddPlayerManual()" style="background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:13px;font-weight:600;color:var(--team-primary-text);cursor:pointer;font-family:var(--font)">+ Add player</button>
           </div>
         </div>`;
       return;
@@ -19350,7 +19361,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const group = TEAM_GROUPS.find(g => g.name === p.group) || null;
       const noteCount = p.notes.length + p.discipline.length + p.academic.length;
       const discStatus = p.disciplinaryStatus || 'green';
-      const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
+      const discColors = { green: '#16a34a', yellow: '#ffb800', red: '#ff4444' };
       const div = document.createElement('div');
       div.className = 'roster-item';
       div.onclick = () => openPlayerProfile(p.name);
@@ -19551,7 +19562,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     // Info rows
     document.getElementById('pp-info-rows').innerHTML = `
-      <div class="pp-info-row"><span class="pp-info-label">Jersey</span><span class="pp-info-value">${player.num}</span></div>
+      <div class="pp-info-row"><span class="pp-info-label">Jersey</span><span class="pp-info-value">${formatNum(player.num)}</span></div>
       ${player.posOff ? `<div class="pp-info-row"><span class="pp-info-label">Off. Position</span><span class="pp-info-value">${player.posOff}</span></div>` : ''}
       ${player.posDef ? `<div class="pp-info-row"><span class="pp-info-label">Def. Position</span><span class="pp-info-value">${player.posDef}</span></div>` : ''}
       ${player.posST ? `<div class="pp-info-row"><span class="pp-info-label">Special Teams</span><span class="pp-info-value">${player.posST}</span></div>` : ''}
@@ -19737,7 +19748,17 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
   }
 
   function assignGroup(player, groupName) {
-    player.group = groupName;
+    if (!requireEdit('roster')) return;
+    player.group = groupName === 'Unassigned' ? '' : groupName;
+    // Persist to Supabase so it survives refresh and syncs across devices (mirrors reassignPlayerGroup).
+    _ensurePlayerDbId(player).then(dbId => {
+      if (dbId) {
+        db.from('players').update({ group_name: player.group }).eq('id', dbId)
+          .then(({ error }) => { if (error) { console.error('Group save error:', error); showToast('⚠️ Group change may not have saved — check your connection'); } });
+      } else {
+        showToast('⚠️ Group change saved on this device — sync failed');
+      }
+    });
     syncGroupViews();
     showToast(`${player.name} moved to ${groupName} group`);
   }
@@ -19862,7 +19883,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         <textarea id="disc-note-input" placeholder="Explain the reason for this status change…" style="width:100%;min-height:90px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--fg);font-size:13px;font-family:var(--font);resize:vertical;box-sizing:border-box"></textarea>
         <div style="display:flex;gap:10px;margin-top:12px">
           <button onclick="document.getElementById('disc-note-modal').remove()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Cancel</button>
-          <button onclick="confirmDiscStatusChange()" style="flex:2;background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">Save & update status</button>
+          <button onclick="confirmDiscStatusChange()" style="flex:2;background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--team-primary-text);cursor:pointer;font-family:var(--font)">Save & update status</button>
         </div>
       </div>`;
 
@@ -20173,14 +20194,13 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
         item.condition = document.getElementById('item-cond-input').value;
         item.qty = parseInt(document.getElementById('item-qty-input').value) || 1;
 
-        // Update in Supabase if we have a DB id
-        if (item.db_id && validProgramId) {
-          const { error } = await db.from('inventory').update({
-            name: item.name, category: item.category, brand: item.brand,
-            size: item.size, condition: item.condition, qty: item.qty
-          }).eq('id', item.db_id);
-          if (error) { console.error('Inventory update error:', error); _invSaveErr = error; }
-        }
+        // Persist via _persistInventory so an item whose original insert lacked a db_id
+        // still saves (it falls back to matching item_id + program_id).
+        const { error } = await _persistInventory(item, {
+          name: item.name, category: item.category, brand: item.brand,
+          size: item.size, condition: item.condition, qty: item.qty
+        });
+        if (error) { console.error('Inventory update error:', error); _invSaveErr = error; }
       }
     } else {
       const itemId = generateItemId(cat);
@@ -20417,7 +20437,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       const row = document.createElement('div');
       row.className = 'assign-roster-row';
       row.innerHTML = `
-        <div class="roster-num" style="width:36px;height:36px;font-size:12px">${p.num}</div>
+        <div class="roster-num" style="width:36px;height:36px;font-size:12px">${formatNum(p.num)}</div>
         <div style="flex:1"><div style="font-size:14px;font-weight:600">${_esc(p.name)}</div><div style="font-size:12px;color:var(--gray-2)">${p.pos} · ${p.year}</div></div>
         <div class="btn-sm">Assign</div>`;
       row.onclick = () => confirmAssign(p.name);
@@ -20685,16 +20705,16 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
 
     // Show confirmation bottom sheet
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:flex-end';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px';
     modal.innerHTML = `
-      <div style="background:var(--bg-2);border-radius:18px 18px 0 0;width:100%;padding:20px 20px 36px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
+      <div style="background:var(--bg-2);border-radius:18px;width:100%;max-width:400px;padding:24px 20px;border:1px solid var(--border)" onclick="event.stopPropagation()">
         <div style="text-align:center;font-size:32px;margin-bottom:8px"><svg class="ic" style="width:32px;height:32px"><use href="#i-check-circle"/></svg></div>
         <div style="font-size:16px;font-weight:700;color:var(--fg);text-align:center;margin-bottom:4px">${_esc(item.name)}</div>
         <div style="font-size:13px;color:var(--fg-3);text-align:center;margin-bottom:4px">Checked out to <strong style="color:var(--fg)">${_esc(player.name)}</strong></div>
         ${prev ? `<div style="font-size:12px;color:var(--amber);text-align:center;margin-bottom:16px">Previously assigned to ${prev}</div>` : '<div style="margin-bottom:16px"></div>'}
         <div style="display:flex;gap:8px">
           <button onclick="this.closest('[style*=inset]').remove();openQRScannerForPlayer()" style="flex:1;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Scan next</button>
-          <button onclick="this.closest('[style*=inset]').remove()" style="flex:1;background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:white;cursor:pointer;font-family:var(--font)">Done</button>
+          <button onclick="this.closest('[style*=inset]').remove()" style="flex:1;background:var(--team-primary);border:none;border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--team-primary-text);cursor:pointer;font-family:var(--font)">Done</button>
         </div>
       </div>`;
     (document.querySelector('.phone') || document.body).appendChild(modal);
@@ -21537,7 +21557,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
     console.log('[MyInfo] name:', name);
     const player = name ? PLAYERS.find(p => p.name === name) : null;
     const ds = player?.disciplinaryStatus || 'green';
-    const discColors = { green: '#39ff14', yellow: '#ffb800', red: '#ff4444' };
+    const discColors = { green: '#16a34a', yellow: '#ffb800', red: '#ff4444' };
     const discBg = { green: 'rgba(57,255,20,0.08)', yellow: 'rgba(255,184,0,0.08)', red: 'rgba(255,68,68,0.08)' };
     const discLabels = { green: 'Good Standing', yellow: 'On Watch', red: 'Disciplinary Contract' };
     const discIcons = { green: '✅', yellow: '⚠️', red: '🚨' };
@@ -21559,7 +21579,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
           </div>
           <div>
             <div style="font-size:18px;font-weight:700;color:var(--fg)">${name}</div>
-            <div style="font-size:13px;color:var(--gray-2)">${player ? `${player.pos} · ${player.num}` : 'Player'}</div>
+            <div style="font-size:13px;color:var(--gray-2)">${player ? `${player.pos} · ${formatNum(player.num)}` : 'Player'}</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
