@@ -5536,7 +5536,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.49</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.50</div>
   </div>
 </div>
 
@@ -5550,7 +5550,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.49';
+  const APP_VERSION = 'v40.50';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -8659,22 +8659,24 @@
   function handleAppearanceLogoUpload(input) {
     const file = input.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      schoolLogoDataUrl = e.target.result; // temp preview while uploading
+    _downscaleImage(file, 256, dataUrl => {
+      schoolLogoDataUrl = dataUrl;
       applySchoolLogo();
+      saveAppearanceToSupabase(); // persist so it survives a refresh
       // Refresh modal
       document.getElementById('theme-colors-overlay').remove();
       openThemeColors();
       showToast('Logo updated ✓');
-    };
-    reader.readAsDataURL(file);
+    });
   }
 
   function removeSchoolLogo() {
     schoolLogoDataUrl = '';
-    // logo removed from Supabase Storage
     applySchoolLogo();
+    // Also clear the logo off the top bar / avatar / nav immediately.
+    const slot = document.getElementById('school-logo-slot');
+    if (slot) slot.innerHTML = '<span id="school-logo-icon">🐾</span>';
+    saveAppearanceToSupabase(); // persist the removal
     document.getElementById('theme-colors-overlay').remove();
     openThemeColors();
     showToast('Logo removed');
@@ -10181,6 +10183,9 @@
           coach_role:      obProgram.role,
           primary_color:   document.getElementById('input-primary')?.value || '#a11e1e',
           secondary_color: document.getElementById('input-secondary')?.value || '#ef4444',
+          team_primary:    document.getElementById('input-primary')?.value || '#a11e1e',
+          team_secondary:  document.getElementById('input-secondary')?.value || '#ef4444',
+          team_logo:       schoolLogoDataUrl || null,
         })
         .select()
         .single();
@@ -10805,7 +10810,8 @@
           theme_mode: themeMode,
           team_primary: teamColors.primary,
           team_secondary: teamColors.secondary,
-          sidebar_font: teamColors.sidebarFont || null
+          sidebar_font: teamColors.sidebarFont || null,
+          team_logo: schoolLogoDataUrl || null
         }).eq('id', pid);
       } catch(e) { console.warn('Appearance save error:', e); }
     }, 800);
@@ -10872,20 +10878,43 @@
 
   let schoolLogoDataUrl = null;
 
+  // Downscale an uploaded image to <= maxPx on its long edge and return a PNG data URL. Keeps the
+  // logo small enough to store on the program row (it's persisted to the DB, not just memory).
+  function _downscaleImage(file, maxPx, cb) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        const scale = Math.min(1, maxPx / Math.max(w, h));
+        w = Math.max(1, Math.round(w * scale)); h = Math.max(1, Math.round(h * scale));
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          cb(canvas.toDataURL('image/png'));
+        } catch (err) { cb(e.target.result); } // fallback: original data URL
+      };
+      img.onerror = () => cb(e.target.result);
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   function handleLogoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      schoolLogoDataUrl = e.target.result;
+    _downscaleImage(file, 256, dataUrl => {
+      schoolLogoDataUrl = dataUrl;
       // Update the setup screen upload field preview
       document.getElementById('logo-upload-preview').innerHTML = `<img src="${schoolLogoDataUrl}" alt="School logo">`;
       document.getElementById('logo-upload-label').textContent = 'Logo added';
       document.getElementById('logo-upload-btn').textContent = 'Change';
       document.getElementById('logo-upload-field').classList.add('has-logo');
       applySchoolLogo();
-    };
-    reader.readAsDataURL(file);
+      // If the program already exists (logo changed post-onboarding), persist right away.
+      saveAppearanceToSupabase();
+    });
   }
 
   function applySchoolLogo() {
@@ -12696,7 +12725,9 @@
       }
       // 3. Note text (if any)
       _commitNote(document.getElementById('note-modal-textarea')?.value);
-      savePracticePlanToSupabase();
+      // Persist to the DAY model (which embeds notes) — not the template array. This runs AFTER
+      // _commitNote so the just-typed note is included (the template save didn't store notes).
+      if (typeof saveDayGrid === 'function') saveDayGrid();
     } catch (e) {
       console.error('[Practice] saveCellModal error:', e);
     } finally {
@@ -12776,7 +12807,7 @@
     }
 
     renderNoteCards();
-    savePracticePlanToSupabase();
+    if (typeof saveDayGrid === 'function') saveDayGrid(); // persist note into the day model
     showToast('Note saved ✓');
   }
 
@@ -12810,7 +12841,7 @@
     }
 
     renderNoteCards();
-    savePracticePlanToSupabase();
+    if (typeof saveDayGrid === 'function') saveDayGrid(); // persist deletion into the day model
     showToast('Note deleted');
   }
 
@@ -13228,6 +13259,7 @@
     });
 
     applyColumnColors();
+    savePositionGroupsToSupabase();
     showToast('Position groups saved ✓');
   }
   let pendingPeriodType = null;
@@ -16900,6 +16932,7 @@
   function deleteReminder(idx) {
     PRACTICE_REMINDERS.splice(idx, 1);
     renderReminders();
+    saveRemindersToSupabase();
   }
 
   function openAddReminderModal() {
@@ -16916,6 +16949,7 @@
     PRACTICE_REMINDERS.push(text);
     closeAddReminderModal();
     renderReminders();
+    saveRemindersToSupabase();
     showToast('Reminder added ✓');
   }
 
@@ -22934,6 +22968,63 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     if (error) { console.error('Drill save error:', error); showToast('⚠️ Change may not have saved — check your connection'); }
   }
 
+  // ===== PERSIST PRACTICE/GROUP CONFIG (was in-memory only → lost on refresh) =====
+  // Practice group definitions (names + colors), the practice-grid position columns + their
+  // coaches, and practice reminders were all held in JS arrays with no DB write. Persist each to
+  // its own programs JSON column, mirroring drills_data / announcements_data.
+  function _programId() { return localStorage.getItem('mesh_program_id'); }
+
+  async function saveGroupsToSupabase() {
+    const pid = _programId(); if (!pid) return;
+    const { error } = await db.from('programs').update({ groups_data: JSON.stringify(TEAM_GROUPS) }).eq('id', pid);
+    if (error) console.error('Groups save error:', error);
+  }
+  async function loadGroupsFromSupabase() {
+    const pid = _programId(); if (!pid) return;
+    try {
+      const { data } = await db.from('programs').select('groups_data').eq('id', pid).single();
+      if (data?.groups_data) {
+        const parsed = JSON.parse(data.groups_data);
+        if (Array.isArray(parsed)) { TEAM_GROUPS.length = 0; parsed.forEach(g => TEAM_GROUPS.push(g)); syncGroupViews?.(); }
+      }
+    } catch(e) { console.warn('Groups load error:', e); }
+  }
+
+  async function savePositionGroupsToSupabase() {
+    const pid = _programId(); if (!pid) return;
+    const payload = JSON.stringify({ groups: PRACTICE_POSITION_GROUPS, coaches: PRACTICE_COACHES });
+    const { error } = await db.from('programs').update({ position_groups_data: payload }).eq('id', pid);
+    if (error) console.error('Position groups save error:', error);
+  }
+  async function loadPositionGroupsFromSupabase() {
+    const pid = _programId(); if (!pid) return;
+    try {
+      const { data } = await db.from('programs').select('position_groups_data').eq('id', pid).single();
+      if (data?.position_groups_data) {
+        const parsed = JSON.parse(data.position_groups_data);
+        if (parsed && Array.isArray(parsed.groups) && parsed.groups.length) PRACTICE_POSITION_GROUPS = parsed.groups;
+        if (parsed && Array.isArray(parsed.coaches)) PRACTICE_COACHES = parsed.coaches;
+        if (typeof renderGridHeader === 'function') renderGridHeader();
+      }
+    } catch(e) { console.warn('Position groups load error:', e); }
+  }
+
+  async function saveRemindersToSupabase() {
+    const pid = _programId(); if (!pid) return;
+    const { error } = await db.from('programs').update({ reminders_data: JSON.stringify(PRACTICE_REMINDERS) }).eq('id', pid);
+    if (error) console.error('Reminders save error:', error);
+  }
+  async function loadRemindersFromSupabase() {
+    const pid = _programId(); if (!pid) return;
+    try {
+      const { data } = await db.from('programs').select('reminders_data').eq('id', pid).single();
+      if (data?.reminders_data) {
+        const parsed = JSON.parse(data.reminders_data);
+        if (Array.isArray(parsed)) { PRACTICE_REMINDERS.length = 0; parsed.forEach(r => PRACTICE_REMINDERS.push(r)); renderReminders?.(); }
+      }
+    } catch(e) { console.warn('Reminders load error:', e); }
+  }
+
   // DRILLS loaded from Supabase on session restore
   let DRILLS = [];
   window.DRILLS = DRILLS;
@@ -24026,12 +24117,13 @@ Jersey|RushingNum|RushingYards|RushingTDNum
 
     // Load appearance first so colors are right before UI renders
     try {
-      const { data: ap } = await db.from('programs').select('theme_mode,team_primary,team_secondary,sidebar_font,owner_id').eq('id', programId).single();
+      const { data: ap } = await db.from('programs').select('theme_mode,team_primary,team_secondary,sidebar_font,team_logo,owner_id').eq('id', programId).single();
       if (ap) {
         if (ap.theme_mode) { themeMode = ap.theme_mode; try { localStorage.setItem('mesh_theme', themeMode); } catch(e) {} }
         if (ap.team_primary) teamColors.primary = ap.team_primary;
         if (ap.team_secondary) teamColors.secondary = ap.team_secondary;
         teamColors.sidebarFont = ap.sidebar_font || null;
+        if (ap.team_logo) { schoolLogoDataUrl = ap.team_logo; applySchoolLogo(); }
         // Head coach = program owner; anyone else in the coach UI is an assistant.
         if (appRole === 'coach') {
           let myUid = localStorage.getItem('mesh_auth_uid');
@@ -24106,6 +24198,9 @@ Jersey|RushingNum|RushingYards|RushingTDNum
       loadScheduleFromSupabase(programId),
       loadGameStats(programId),
       loadStatCategories(programId),
+      loadGroupsFromSupabase(),
+      loadPositionGroupsFromSupabase(),
+      loadRemindersFromSupabase(),
     ]);
     // Depth chart builds from the roster (buildDCFromPlayers), so it must run AFTER the
     // roster has populated PLAYERS — keep it sequential, after the parallel batch.
@@ -24223,6 +24318,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     TEAM_GROUPS[idx].name = newName.trim();
     PLAYERS.forEach(p => { if (p.group === oldName) p.group = newName.trim(); });
     syncRosterData?.();
+    saveGroupsToSupabase();
   }
 
   function cycleGroupColor(idx) {
@@ -24232,10 +24328,12 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     TEAM_GROUPS[idx].bg = GROUP_COLORS[next] + '26';
     renderGroupManagerList();
     syncGroupViews();
+    saveGroupsToSupabase();
   }
 
   function addNewGroup() {
     TEAM_GROUPS.push({ name: 'New Group', color: GROUP_COLORS[TEAM_GROUPS.length % GROUP_COLORS.length], bg: GROUP_COLORS[TEAM_GROUPS.length % GROUP_COLORS.length] + '26' });
+    saveGroupsToSupabase();
     renderGroupManagerList();
     const inputs = document.querySelectorAll('#group-manager-list input');
     if (inputs.length) { inputs[inputs.length-1].focus(); inputs[inputs.length-1].select(); }
@@ -24248,6 +24346,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     PLAYERS.forEach(p => { if (p.group === deleted) p.group = TEAM_GROUPS[0].name; });
     renderGroupManagerList();
     syncGroupViews();
+    saveGroupsToSupabase();
   }
 
   function saveGroups() {
@@ -24257,6 +24356,7 @@ Jersey|RushingNum|RushingYards|RushingTDNum
     });
     closeGroupManager();
     syncGroupViews();
+    saveGroupsToSupabase();
     showToast('Groups saved ✓');
   }
 
