@@ -2004,6 +2004,8 @@
   .ct-item-icon { font-size: 20px; width: 34px; text-align: center; flex-shrink: 0; }
   .ct-item-name { font-size: 14px; font-weight: 600; color: var(--fg); }
   .ct-item-sub { font-size: 11.5px; color: var(--fg-3); margin-top: 1px; }
+  .ct-item-del { flex-shrink: 0; width: 28px; height: 28px; border: none; border-radius: 50%; background: transparent; color: var(--fg-3); font-size: 14px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; }
+  .ct-item-del:hover { background: rgba(229,72,77,0.14); color: #e5484d; }
   .ct-use-btn { width: 100%; background: var(--border); color: var(--fg-3); border: none; border-radius: var(--radius-sm); padding: 13px; font-size: 14px; font-weight: 700; cursor: not-allowed; font-family: var(--font); transition: background 0.15s, color 0.15s; }
   .ct-use-btn.ready { background: var(--team-primary); color: var(--team-primary-text); cursor: pointer; }
 
@@ -3052,8 +3054,8 @@
     <div class="action-sheet" onclick="event.stopPropagation()">
       <div class="action-sheet-handle"></div>
       <div class="action-sheet-title">Tuesday Practice</div>
-      <div class="action-sheet-item" onclick="closeActionSheet();openCloneTemplate('load')"><svg class="tic"><use href="#i-clipboard-list"/></svg> Load template</div>
-      <div class="action-sheet-item" onclick="closeActionSheet();openSaveTemplate()"><svg class="tic"><use href="#i-save"/></svg> Save as template</div>
+      <div class="action-sheet-item" onclick="closeActionSheet();openSavedPlans()"><svg class="tic"><use href="#i-clipboard-list"/></svg> Load saved plan</div>
+      <div class="action-sheet-item" onclick="closeActionSheet();openSaveTemplate()"><svg class="tic"><use href="#i-save"/></svg> Save this plan</div>
       <div class="action-sheet-item" onclick="closeActionSheet();copyPracticeDay()"><svg class="tic"><use href="#i-copy"/></svg> Copy day</div>
       <div class="action-sheet-item" id="as-paste-item" onclick="pasteFromActionSheet()"><svg class="tic"><use href="#i-download"/></svg> Paste day</div>
       <div class="action-sheet-item" onclick="closeActionSheet();openEditPositionGroups()"><svg class="tic"><use href="#i-settings"/></svg> Edit position groups</div>
@@ -3268,41 +3270,12 @@
   <div id="clone-template-overlay" style="display:none" onclick="closeCloneTemplate(event)">
     <div class="ap-modal" onclick="event.stopPropagation()">
       <div class="ap-head">
-        <div class="ap-title" id="ct-title">Load a template</div>
+        <div class="ap-title" id="ct-title">Load a saved plan</div>
         <div class="ap-close" onclick="closeCloneTemplate(event)">✕</div>
       </div>
-      <div class="ap-sub" id="ct-sub">Pick a saved template to start this day</div>
-      <div class="ct-list" id="ct-list">
-        <div class="ct-item" onclick="selectTemplate('Standard Tuesday', this)">
-          <div class="ct-item-icon">📋</div>
-          <div class="ct-item-content">
-            <div class="ct-item-name">Standard Tuesday</div>
-            <div class="ct-item-sub">7 periods · Indy → Crossover → Team</div>
-          </div>
-        </div>
-        <div class="ct-item" onclick="selectTemplate('Game Week Thursday', this)">
-          <div class="ct-item-icon">🏈</div>
-          <div class="ct-item-content">
-            <div class="ct-item-name">Game Week Thursday</div>
-            <div class="ct-item-sub">5 periods · Walkthrough, light pads</div>
-          </div>
-        </div>
-        <div class="ct-item" onclick="selectTemplate('Bye Week Wednesday', this)">
-          <div class="ct-item-icon">🔧</div>
-          <div class="ct-item-content">
-            <div class="ct-item-name">Bye Week Wednesday</div>
-            <div class="ct-item-sub">6 periods · Fundamentals focus</div>
-          </div>
-        </div>
-        <div class="ct-item" onclick="selectTemplate('Two-a-Day (Camp)', this)">
-          <div class="ct-item-icon">☀️</div>
-          <div class="ct-item-content">
-            <div class="ct-item-name">Two-a-Day (Camp)</div>
-            <div class="ct-item-sub">9 periods · AM install / PM walkthrough</div>
-          </div>
-        </div>
-      </div>
-      <button class="ct-use-btn" id="ct-use-btn" disabled onclick="applyTemplate()">Select a template above</button>
+      <div class="ap-sub" id="ct-sub">Pick one of your saved plans to start this day</div>
+      <div class="ct-list" id="ct-list"></div>
+      <button class="ct-use-btn" id="ct-use-btn" disabled onclick="applyTemplate()">Select a plan above</button>
     </div>
   </div>
 
@@ -4836,8 +4809,12 @@
           <div><div class="start-option-label">Blank plan</div><div class="start-option-sub">Start from scratch</div></div>
         </div>
         <div class="start-option" onclick="openNDTemplate()">
+          <div class="start-option-icon">💾</div>
+          <div><div class="start-option-label">Load saved plan</div><div class="start-option-sub">Copy one of your saved plans</div></div>
+        </div>
+        <div class="start-option" onclick="useMeshOutline()">
           <div class="start-option-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-clipboard-list"/></svg></div>
-          <div><div class="start-option-label">Load template</div><div class="start-option-sub">Pick from your saved templates</div></div>
+          <div><div class="start-option-label">Use Mesh outline</div><div class="start-option-sub">Start from a ready-made practice skeleton</div></div>
         </div>
         <div class="start-option ai-option" style="opacity:0.45;pointer-events:none;position:relative">
           <div class="start-option-icon"><svg class="ic" style="width:1em;height:1em"><use href="#i-sparkles"/></svg></div>
@@ -5388,19 +5365,19 @@
   <div id="save-template-overlay">
     <div class="ap-modal" onclick="event.stopPropagation()">
       <div class="ap-head">
-        <div class="ap-title">Save as Template</div>
+        <div class="ap-title">Save this plan</div>
         <div class="ap-close" onclick="closeSaveTemplate()">✕</div>
       </div>
-      <div class="ap-sub">Give this practice plan a name to save it as a reusable template.</div>
+      <div class="ap-sub">Give this plan a name so you can reuse it on another day.</div>
       <div class="ap-field">
-        <div class="ap-field-label">Template name</div>
-        <input class="ap-input" id="save-template-name" placeholder="e.g. Standard Tuesday, Game Week Thursday…">
+        <div class="ap-field-label">Plan name</div>
+        <input class="ap-input" id="save-template-name" placeholder="e.g. Tuesday install, Game week Thursday…">
       </div>
       <div class="ap-field">
         <div class="ap-field-label">Notes (optional)</div>
         <input class="ap-input" id="save-template-notes" placeholder="e.g. 7 periods, Indy → Crossover → Team">
       </div>
-      <button class="note-modal-save" onclick="confirmSaveTemplate()">Save template</button>
+      <button class="note-modal-save" onclick="confirmSaveTemplate()">Save plan</button>
     </div>
   </div>
 
@@ -5540,7 +5517,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.61</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.62</div>
   </div>
 </div>
 
@@ -5554,7 +5531,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.61';
+  const APP_VERSION = 'v40.62';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -13739,164 +13716,66 @@
     renumberPeriods();
   }
 
-  // ===== CLONE / LOAD TEMPLATE =====
-  let cloneTemplateMode = 'load';
-  let selectedTemplateName = null;
-
+  // ===== SAVED PLANS / MESH OUTLINE =====
   let loadedTemplates = [];
 
   const PREMADE_TEMPLATES = [
     {
-      name: 'Example Detailed Plan',
+      name: 'Mesh Outline',
       savedAt: null, premade: true, type: 'detailed',
-      description: '7 periods · Full detailed view with coaches',
-      gridHTML: `<!-- P1 — Team Warm Up — 10 min --> <div class="pgrid-row row-allteam" style="--dur:10" draggable="true" data-period-id="P1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P1', '9:30 – 9:40 AM', 'Team Warm Up')"> <div class="gt-time">9:30</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Team Warm Up — all groups together</div><div class="cell-sub">South side of field</div></div> </div> <!-- T1 — Transition — 2 min --> <div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('T1', '9:40 – 9:42 AM', 'Transition')"> <div class="gt-time">9:40</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div> </div> <!-- P2 — Defensive Indy — 10 min --> <div class="pgrid-row row-defense" style="--dur:10" draggable="true" data-period-id="P2" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P2', '9:42 – 9:52 AM', 'Defensive Indy')"> <div class="gt-time">9:42</div><div class="gt-dur">10 min</div><div class="gt-num">P2</div> </div> <div class="pgrid-cols"> <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="RB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="WR"><div class="cell-activity">1 on 1's</div></div> <div class="grid-cell active-cell" data-col="OL"><div class="cell-activity">Wash/Wall</div></div> <div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','DL Coach','Bag Drills')"><div class="cell-activity">Bag Drills</div><div class="cell-sub">First steps</div></div> <div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','LB Coach','Stance, Get Offs')"><div class="cell-activity">Stance, Get Offs</div></div> <div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','DB Coach','Drops, Breaks')"><div class="cell-activity">Drops, Breaks</div></div> </div> </div> <!-- P3 — Offensive Indy — 10 min --> <div class="pgrid-row row-offense" style="--dur:10" draggable="true" data-period-id="P3" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P3', '9:52 – 10:02 AM', 'Offensive Indy')"> <div class="gt-time">9:52</div><div class="gt-dur">10 min</div><div class="gt-num">P3</div> </div> <div class="pgrid-cols"> <div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P3','QB','QB Coach','QB Throwing')"><div class="cell-activity">QB Throwing</div></div> <div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P3','RB','RB Coach','Run Reads')"><div class="cell-activity">Run Reads</div></div> <div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P3','WR','WR Coach','Release vs Press')"><div class="cell-activity">Release vs Press</div></div> <div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P3','OL','OL Coach','Wash/Wall')"><div class="cell-activity">Wash/Wall</div><div class="cell-sub">H Car/H Cold</div></div> <div class="grid-cell active-cell" data-col="DL"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="LB"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="DB"><div class="cell-activity">Stretch & rest</div></div> </div> </div> <!-- W1 — Water Break — 5 min --> <div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('W1', '10:02 – 10:07 AM', 'Water Break')"> <div class="gt-time">10:02</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break — all groups</div></div> </div> <!-- P4 — Tackle Circuit — 10 min --> <div class="pgrid-row row-special" style="--dur:10" draggable="true" data-period-id="P4" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P4', '10:07 – 10:17 AM', 'Tackle Circuit')"> <div class="gt-time">10:07</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Tackle Circuit — full team rotation</div><div class="cell-sub">All position groups rotate through stations</div></div> </div> <!-- P5 — Install — 10 min --> <div class="pgrid-row row-install" style="--dur:10" draggable="true" data-period-id="P5" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P5', '10:17 – 10:27 AM', 'Install')"> <div class="gt-time">10:17</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div> </div> <div class="pgrid-cols"> <div class="grid-cell active-cell" data-col="QB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="RB"><div class="cell-activity">Mesh</div></div> <div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P5','WR','WR Coach','ROA-Dog, Cali')"><div class="cell-activity">ROA-Dog, Cali</div></div> <div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P5','OL','OL Coach','Dart/Bolt Install')"><div class="cell-activity">Dart/Bolt Install</div></div> <div class="grid-cell active-cell" data-col="DL"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="LB"><div class="cell-activity">Stretch & rest</div></div> <div class="grid-cell active-cell" data-col="DB"><div class="cell-activity">Stretch & rest</div></div> </div> </div> <!-- T2 — Transition — 2 min --> <div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('T2', '10:27 – 10:29 AM', 'Transition')"> <div class="gt-time">10:27</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Crossover</div></div> </div> <!-- P6 — Unit Crossover — 10 min --> <div class="pgrid-row row-cross" style="--dur:10" draggable="true" data-period-id="P6" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P6', '10:29 – 10:39 AM', 'Unit Crossover')"> <div class="gt-time">10:29</div><div class="gt-dur">10 min</div><div class="gt-num">P6</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Unit Crossover — Skelly</div><div class="cell-sub">Offense vs Defense, live look</div></div> </div> <!-- P7 — Full Team — 15 min --> <div class="pgrid-row row-team" style="--dur:15" draggable="true" data-period-id="P7" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"> <div class="grid-time-cell note-target" onclick="openPeriodNote('P7', '10:39 – 10:54 AM', 'Full Team')"> <div class="gt-time">10:39</div><div class="gt-dur">15 min</div><div class="gt-num">P7</div> </div> <div class="grid-cell cell-span left-align"><div class="cell-activity">Full Team — 5 O / 5 D</div><div class="cell-sub">Red zone install reps — run script below</div></div> </div>`
+      description: 'Ready-made skeleton — warm up, indy, team, conditioning',
+      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','3:30 PM','Warm Up')"><div class="gt-time">3:30 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Warm Up</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','3:40 PM','Transition')"><div class="gt-time">3:40 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div></div><div class="pgrid-row row-special" style="--dur:15" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','3:42 PM','Individual')"><div class="gt-time">3:42 PM</div><div class="gt-dur">15 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB"><div class="cell-activity"></div></div><div class="grid-cell active-cell" data-col="RB"><div class="cell-activity"></div></div><div class="grid-cell active-cell" data-col="WR"><div class="cell-activity"></div></div><div class="grid-cell active-cell" data-col="OL"><div class="cell-activity"></div></div><div class="grid-cell active-cell" data-col="DL"><div class="cell-activity"></div></div><div class="grid-cell active-cell" data-col="LB"><div class="cell-activity"></div></div><div class="grid-cell active-cell" data-col="DB"><div class="cell-activity"></div></div></div></div><div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','3:57 PM','Water Break')"><div class="gt-time">3:57 PM</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">💧 Water break</div></div></div><div class="pgrid-row row-team" style="--dur:20" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','4:02 PM','Team')"><div class="gt-time">4:02 PM</div><div class="gt-dur">20 min</div><div class="gt-num">P3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team Period</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','4:22 PM','Conditioning')"><div class="gt-time">4:22 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Conditioning</div></div></div>`
     },
     {
-      name: 'Walkthrough',
-      savedAt: null, premade: true, type: 'detailed',
-      description: '4 periods · Install review, light pads',
-      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','3:30 PM','Dynamic Warm Up')"><div class="gt-time">3:30 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Dynamic Warm Up</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','3:40 PM','Transition to Indy')"><div class="gt-time">3:40 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div></div><div class="pgrid-row row-special" style="--dur:15" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','3:42 PM','Walkthrough Indy')"><div class="gt-time">3:42 PM</div><div class="gt-dur">15 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','QB mechanics')"><div class="cell-activity">QB mechanics</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Ball security')"><div class="cell-activity">Ball security</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Route concepts')"><div class="cell-activity">Route concepts</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Assignment review')"><div class="cell-activity">Assignment review</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Gap responsibility')"><div class="cell-activity">Gap responsibility</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Coverage keys')"><div class="cell-activity">Coverage keys</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Leverage technique')"><div class="cell-activity">Leverage technique</div></div></div></div><div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','3:57 PM','Water break')"><div class="gt-time">3:57 PM</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">ð§ Water break</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T2','4:02 PM','Transition to Team')"><div class="gt-time">4:02 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Team</div></div></div><div class="pgrid-row row-team" style="--dur:20" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','4:04 PM','Team Walkthrough — script vs scout look')"><div class="gt-time">4:04 PM</div><div class="gt-dur">20 min</div><div class="gt-num">P3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team Walkthrough — script vs scout look</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T3" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T3','4:24 PM','Transition')"><div class="gt-time">4:24 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','4:26 PM','2-minute drill walkthrough')"><div class="gt-time">4:26 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">2-minute drill walkthrough</div></div></div>`
-    },
-    {
-      name: 'Conditioning Day',
-      savedAt: null, premade: true, type: 'detailed',
-      description: '5 periods · Circuits, gassers, competitive drills',
-      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','3:30 PM','Dynamic Warm Up + stretch')"><div class="gt-time">3:30 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Dynamic Warm Up + stretch</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','3:40 PM','Transition')"><div class="gt-time">3:40 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-special" style="--dur:10" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','3:42 PM','Position drills')"><div class="gt-time">3:42 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Position drills')"><div class="cell-activity">Position drills</div></div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','3:52 PM','Water break')"><div class="gt-time">3:52 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">ð§ Water break</div></div></div><div class="pgrid-row row-team" style="--dur:15" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','3:55 PM','Circuit stations — full team rotation')"><div class="gt-time">3:55 PM</div><div class="gt-dur">15 min</div><div class="gt-num">P3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Circuit stations — full team rotation</div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W2" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W2','4:10 PM','Water break')"><div class="gt-time">4:10 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">ð§ Water break</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','4:13 PM','Competitive team drills')"><div class="gt-time">4:13 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Competitive team drills</div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W3" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W3','4:23 PM','Water break')"><div class="gt-time">4:23 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">ð§ Water break</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P5" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P5','4:26 PM','Gassers / conditioning runs')"><div class="gt-time">4:26 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Gassers / conditioning runs</div></div></div>`
-    },
-    {
-      name: 'Game Week Practice',
-      savedAt: null, premade: true, type: 'detailed',
-      description: '5 periods · Install, team walkthrough, special teams',
-      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','3:30 PM','Warm Up — helmets only')"><div class="gt-time">3:30 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Warm Up — helmets only</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','3:40 PM','Transition to Indy')"><div class="gt-time">3:40 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Indy</div></div></div><div class="pgrid-row row-special" style="--dur:12" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','3:42 PM','Game plan install — key concepts')"><div class="gt-time">3:42 PM</div><div class="gt-dur">12 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','Protection calls + checks')"><div class="cell-activity">Protection calls + checks</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Blitz pickup + routes')"><div class="cell-activity">Blitz pickup + routes</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Leverage + go-routes')"><div class="cell-activity">Leverage + go-routes</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Pass pro vs their fronts')"><div class="cell-activity">Pass pro vs their fronts</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Stunt package')"><div class="cell-activity">Stunt package</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Coverage responsibilities')"><div class="cell-activity">Coverage responsibilities</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Press technique + bail')"><div class="cell-activity">Press technique + bail</div></div></div></div><div class="pgrid-row row-water" style="--dur:3" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','3:54 PM','Water break')"><div class="gt-time">3:54 PM</div><div class="gt-dur">3 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">ð§ Water break</div></div></div><div class="pgrid-row row-team" style="--dur:20" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','3:57 PM','Team walkthrough — scripted vs look')"><div class="gt-time">3:57 PM</div><div class="gt-dur">20 min</div><div class="gt-num">P3</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team walkthrough — scripted vs look</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T2','4:17 PM','Transition')"><div class="gt-time">4:17 PM</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','4:19 PM','Special teams walkthrough')"><div class="gt-time">4:19 PM</div><div class="gt-dur">10 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Special teams walkthrough</div></div></div><div class="pgrid-row row-team" style="--dur:5" draggable="true" data-period-id="P5" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P5','4:29 PM','Team breakdown + reminders')"><div class="gt-time">4:29 PM</div><div class="gt-dur">5 min</div><div class="gt-num">P5</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team breakdown + reminders</div></div></div>`
-    },
-    {
-      name: 'Summer Practice',
-      savedAt: null, premade: true, type: 'detailed',
-      description: '5 periods · Morning session, fundamentals + team',
-      gridHTML: `<div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P1" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P1','8:00 AM','Morning Warm Up')"><div class="gt-time">8:00 AM</div><div class="gt-dur">10 min</div><div class="gt-num">P1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Morning Warm Up</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T1" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T1','8:10 AM','Transition')"><div class="gt-time">8:10 AM</div><div class="gt-dur">2 min</div><div class="gt-num">T1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition</div></div></div><div class="pgrid-row row-special" style="--dur:20" draggable="true" data-period-id="P2" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P2','8:12 AM','Individual fundamentals')"><div class="gt-time">8:12 AM</div><div class="gt-dur">20 min</div><div class="gt-num">P2</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P2','QB','Coach','Footwork + throwing mechanics')"><div class="cell-activity">Footwork + throwing mechanics</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P2','RB','Coach','Cuts + receiving')"><div class="cell-activity">Cuts + receiving</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P2','WR','Coach','Release + route running')"><div class="cell-activity">Release + route running</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P2','OL','Coach','Hand placement + footwork')"><div class="cell-activity">Hand placement + footwork</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P2','DL','Coach','Get-offs + hand usage')"><div class="cell-activity">Get-offs + hand usage</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P2','LB','Coach','Drops + blitz timing')"><div class="cell-activity">Drops + blitz timing</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P2','DB','Coach','Backpedal + breaks')"><div class="cell-activity">Backpedal + breaks</div></div></div></div><div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W1" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W1','8:32 AM','Water break')"><div class="gt-time">8:32 AM</div><div class="gt-dur">5 min</div><div class="gt-num">W1</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">ð§ Water break</div></div></div><div class="pgrid-row row-special" style="--dur:15" draggable="true" data-period-id="P3" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P3','8:37 AM','Group competition')"><div class="gt-time">8:37 AM</div><div class="gt-dur">15 min</div><div class="gt-num">P3</div></div><div class="pgrid-cols"><div class="grid-cell active-cell" data-col="QB" onclick="openCellNote('P3','QB','Coach','Air it out — routes on air')"><div class="cell-activity">Air it out — routes on air</div></div><div class="grid-cell active-cell" data-col="RB" onclick="openCellNote('P3','RB','Coach','1 on 1 vs LB')"><div class="cell-activity">1 on 1 vs LB</div></div><div class="grid-cell active-cell" data-col="WR" onclick="openCellNote('P3','WR','Coach','1 on 1 vs DB')"><div class="cell-activity">1 on 1 vs DB</div></div><div class="grid-cell active-cell" data-col="OL" onclick="openCellNote('P3','OL','Coach','Pass pro sets')"><div class="cell-activity">Pass pro sets</div></div><div class="grid-cell active-cell" data-col="DL" onclick="openCellNote('P3','DL','Coach','1 on 1 pass rush')"><div class="cell-activity">1 on 1 pass rush</div></div><div class="grid-cell active-cell" data-col="LB" onclick="openCellNote('P3','LB','Coach','Zone drops')"><div class="cell-activity">Zone drops</div></div><div class="grid-cell active-cell" data-col="DB" onclick="openCellNote('P3','DB','Coach','1 on 1 coverage')"><div class="cell-activity">1 on 1 coverage</div></div></div></div><div class="pgrid-row row-water" style="--dur:5" draggable="true" data-period-id="W2" data-period-type="W" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('W2','8:52 AM','Water break')"><div class="gt-time">8:52 AM</div><div class="gt-dur">5 min</div><div class="gt-num">W2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">ð§ Water break</div></div></div><div class="pgrid-row row-transition" style="--dur:2" draggable="true" data-period-id="T2" data-period-type="T" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('T2','8:57 AM','Transition to Team')"><div class="gt-time">8:57 AM</div><div class="gt-dur">2 min</div><div class="gt-num">T2</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity transition-label">Transition to Team</div></div></div><div class="pgrid-row row-team" style="--dur:20" draggable="true" data-period-id="P4" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P4','8:59 AM','Team — 7 on 7 + team run')"><div class="gt-time">8:59 AM</div><div class="gt-dur">20 min</div><div class="gt-num">P4</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Team — 7 on 7 + team run</div></div></div><div class="pgrid-row row-team" style="--dur:10" draggable="true" data-period-id="P5" data-period-type="P" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragend="dragEnd(event)"><div class="grid-time-cell note-target" onclick="openPeriodNote('P5','9:19 AM','Conditioning')"><div class="gt-time">9:19 AM</div><div class="gt-dur">10 min</div><div class="gt-num">P5</div></div><div class="grid-cell cell-span left-align"><div class="cell-activity">Conditioning</div></div></div>`
-    },
-    {
-      name: 'Standard Practice',
+      name: 'Mesh Outline',
       savedAt: null, premade: true, type: 'simple',
-      description: '7 blocks · Full practice, offense + defense',
+      description: 'Ready-made skeleton — warm up, indy, team, conditioning',
       blocks: [
-        { name: 'Dynamic Warm Up', duration: 10, tag: 'team', start: '3:30' },
-        { name: 'O Indy', duration: 15, tag: 'offense', start: '3:40' },
-        { name: 'D Indy', duration: 15, tag: 'defense', start: '3:55' },
+        { name: 'Warm Up', duration: 10, tag: 'team', start: '3:30' },
+        { name: 'Offense Indy', duration: 15, tag: 'offense', start: '3:40' },
+        { name: 'Defense Indy', duration: 15, tag: 'defense', start: '3:55' },
         { name: 'Water Break', duration: 5, tag: 'break', start: '4:10' },
-        { name: 'Unit Crossover', duration: 15, tag: 'team', start: '4:15' },
-        { name: 'Team', duration: 20, tag: 'team', start: '4:30' },
-        { name: 'Conditioning', duration: 10, tag: 'special', start: '4:50' },
-      ]
-    },
-    {
-      name: 'Walkthrough',
-      savedAt: null, premade: true, type: 'simple',
-      description: '4 blocks · Helmets only, game plan review',
-      blocks: [
-        { name: 'Warm Up', duration: 10, tag: 'team', start: '3:30' },
-        { name: 'O Walkthrough', duration: 20, tag: 'offense', start: '3:40' },
-        { name: 'D Walkthrough', duration: 20, tag: 'defense', start: '4:00' },
-        { name: 'Team Walkthrough', duration: 20, tag: 'team', start: '4:20' },
-      ]
-    },
-    {
-      name: 'Conditioning Day',
-      savedAt: null, premade: true, type: 'simple',
-      description: '5 blocks · No pads, circuits + gassers',
-      blocks: [
-        { name: 'Dynamic Warm Up', duration: 10, tag: 'team', start: '3:30' },
-        { name: 'Position Drills', duration: 15, tag: 'special', start: '3:40' },
-        { name: 'Water Break', duration: 5, tag: 'break', start: '3:55' },
-        { name: 'Circuit Stations', duration: 20, tag: 'team', start: '4:00' },
-        { name: 'Gassers / Sprints', duration: 15, tag: 'special', start: '4:20' },
-      ]
-    },
-    {
-      name: 'Game Week Practice',
-      savedAt: null, premade: true, type: 'simple',
-      description: '5 blocks · Short, sharp, game-week focus',
-      blocks: [
-        { name: 'Warm Up', duration: 10, tag: 'team', start: '3:30' },
-        { name: 'Game Plan Install', duration: 20, tag: 'special', start: '3:40' },
-        { name: 'Water Break', duration: 5, tag: 'break', start: '4:00' },
-        { name: 'Team Walkthrough', duration: 20, tag: 'team', start: '4:05' },
-        { name: 'Special Teams', duration: 10, tag: 'special', start: '4:25' },
-      ]
-    },
-    {
-      name: 'Summer Practice',
-      savedAt: null, premade: true, type: 'simple',
-      description: '6 blocks · Morning session, fundamentals + 7-on-7',
-      blocks: [
-        { name: 'Warm Up', duration: 10, tag: 'team', start: '8:00' },
-        { name: 'O Indy', duration: 20, tag: 'offense', start: '8:10' },
-        { name: 'D Indy', duration: 20, tag: 'defense', start: '8:30' },
-        { name: 'Water Break', duration: 5, tag: 'break', start: '8:50' },
-        { name: '7 on 7', duration: 20, tag: 'team', start: '8:55' },
-        { name: 'Conditioning', duration: 15, tag: 'special', start: '9:15' },
+        { name: 'Team Period', duration: 20, tag: 'team', start: '4:15' },
+        { name: 'Conditioning', duration: 10, tag: 'special', start: '4:35' },
       ]
     },
   ];
 
-  async function openCloneTemplate(mode) {
-    cloneTemplateMode = mode;
-    selectedTemplateName = null;
-    const currentType = planMode || 'detailed'; // 'simple' or 'detailed'
-    document.getElementById('ct-title').textContent = mode === 'clone' ? 'Clone from a template' : 'Load a template';
-    document.getElementById('ct-sub').textContent = mode === 'clone'
-      ? "Pick a saved template to copy into today's plan — you can edit anything after."
-      : 'Pick a saved template to start this day';
+  // ===== LOAD SAVED PLAN / MESH OUTLINE =====
+  let selectedSavedPlan = null;
+
+  async function openSavedPlans() {
+    selectedSavedPlan = null;
+    const type = planMode || 'detailed';
+    document.getElementById('ct-title').textContent = 'Load a saved plan';
+    document.getElementById('ct-sub').textContent = 'Pick one of your saved plans to start this day';
     const btn = document.getElementById('ct-use-btn');
-    btn.disabled = true;
-    btn.classList.remove('ready');
-    btn.textContent = 'Select a template above';
+    btn.disabled = true; btn.classList.remove('ready'); btn.textContent = 'Select a plan above';
     document.getElementById('clone-template-overlay').style.display = 'flex';
 
     const ctList = document.getElementById('ct-list');
-    ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:16px">Loading templates…</div>';
+    ctList.innerHTML = '<div style="text-align:center;color:var(--gray-3);font-size:13px;padding:16px">Loading…</div>';
 
     loadedTemplates = await loadPracticePlansFromSupabase();
+    const saved = loadedTemplates.filter(t => !t.type || t.type === type);
 
-    // Filter to only show templates matching the current view type
-    const filteredPremade = PREMADE_TEMPLATES.filter(t => !t.type || t.type === currentType);
-    const filteredSaved = loadedTemplates.filter(t => !t.type || t.type === currentType);
-    const allTemplates = [...filteredPremade, ...filteredSaved];
-
-    if (allTemplates.length === 0) {
-      ctList.innerHTML = '<div style="text-align:center;color:var(--fg-3);font-size:13px;padding:20px 0">No ' + currentType + ' templates saved yet.</div>';
+    if (saved.length === 0) {
+      ctList.innerHTML = '<div style="text-align:center;color:var(--fg-3);font-size:13px;padding:26px 12px;line-height:1.6">No saved ' + type + ' plans yet.<br><span style="font-size:12px">Build a plan, then tap <b>Save this plan</b> in the Actions menu to reuse it here.</span></div>';
       return;
     }
 
     ctList.innerHTML = '';
-
-    if (filteredPremade.length > 0) {
-      const header = document.createElement('div');
-      header.style.cssText = 'font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 8px';
-      header.textContent = 'Premade templates';
-      ctList.appendChild(header);
-    }
-
-    allTemplates.forEach((plan, i) => {
-      const isPremade = plan.premade;
-      if (!isPremade && i === filteredPremade.length) {
-        const div = document.createElement('div');
-        div.style.cssText = 'font-size:10px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;padding:12px 0 8px;border-top:1px solid var(--border);margin-top:8px';
-        div.textContent = 'Your saved templates';
-        ctList.appendChild(div);
-      }
-
+    saved.forEach(plan => {
       const date = plan.savedAt ? new Date(plan.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-      const sub = plan.description || (plan.periods?.length || 0) + ' periods' + (date ? ' · Saved ' + date : '');
-      const icon = isPremade ? '📋' : '💾';
-
+      const cnt = plan.periods?.length || plan.blocks?.length || 0;
+      const sub = plan.description || (cnt + ' ' + (plan.type === 'simple' ? 'blocks' : 'periods') + (date ? ' · Saved ' + date : ''));
       const item = document.createElement('div');
       item.className = 'ct-item';
-      item.innerHTML = '<div class="ct-item-icon">' + icon + '</div><div class="ct-item-content"><div class="ct-item-name">' + plan.name + '</div><div class="ct-item-sub">' + sub + '</div></div>';
-      // Find original index for applyTemplate
-      const origIdx = [...PREMADE_TEMPLATES, ...loadedTemplates].indexOf(plan);
-      item.onclick = () => selectTemplate(plan.name, item, origIdx);
+      item.innerHTML = '<div class="ct-item-icon">💾</div>' +
+        '<div class="ct-item-content" style="flex:1"><div class="ct-item-name">' + _esc(plan.name) + '</div><div class="ct-item-sub">' + _esc(sub) + '</div></div>' +
+        '<button class="ct-item-del" title="Delete this plan" aria-label="Delete plan">✕</button>';
+      item.onclick = () => selectSavedPlan(plan, item);
+      item.querySelector('.ct-item-del').onclick = (e) => { e.stopPropagation(); deleteSavedPlan(plan); };
       ctList.appendChild(item);
     });
   }
@@ -13906,46 +13785,67 @@
     document.getElementById('clone-template-overlay').style.display = 'none';
   }
 
-  let selectedTemplateIdx = null;
-
-  function selectTemplate(name, el, idx) {
-    selectedTemplateName = name;
-    selectedTemplateIdx = idx ?? null;
+  function selectSavedPlan(plan, el) {
+    selectedSavedPlan = plan;
     document.querySelectorAll('.ct-item').forEach(i => i.classList.remove('selected'));
     el.classList.add('selected');
     const btn = document.getElementById('ct-use-btn');
-    btn.disabled = false;
-    btn.classList.add('ready');
-    btn.textContent = (cloneTemplateMode === 'clone' ? 'Clone "' : 'Load "') + name + '"';
+    btn.disabled = false; btn.classList.add('ready');
+    btn.textContent = 'Load "' + plan.name + '"';
   }
 
   function applyTemplate() {
-    if (!selectedTemplateName) return;
+    if (!selectedSavedPlan) return;
     closeCloneTemplate();
+    applyPlanObject(selectedSavedPlan, selectedSavedPlan.name);
+  }
 
-    const allTemplates = [...PREMADE_TEMPLATES, ...loadedTemplates];
-    const plan = selectedTemplateIdx !== null ? allTemplates[selectedTemplateIdx] : null;
+  // Apply the single ready-made Mesh outline that matches the current view mode
+  function useMeshOutline() {
+    closeNewDay();
+    const type = planMode || 'detailed';
+    const outline = PREMADE_TEMPLATES.find(t => t.type === type) || PREMADE_TEMPLATES[0];
+    lastPlanMode = planMode;
+    applyPlanObject(outline, 'Mesh outline');
+  }
+
+  async function deleteSavedPlan(plan) {
+    if (!confirm('Delete saved plan "' + plan.name + '"? This cannot be undone.')) return;
+    const programId = await getValidProgramId();
+    if (!programId) { showToast('Could not delete — no program'); return; }
+    try {
+      const { data } = await db.from('programs').select('practice_plans').eq('id', programId).single();
+      const remaining = (data?.practice_plans || []).filter(p => !(p.name === plan.name && p.savedAt === plan.savedAt));
+      await db.from('programs').update({ practice_plans: remaining }).eq('id', programId);
+      loadedTemplates = remaining;
+      showToast('Deleted "' + plan.name + '"');
+      openSavedPlans();
+    } catch (e) {
+      console.error('Delete saved plan error:', e);
+      showToast('Delete failed — try again');
+    }
+  }
+
+  function applyPlanObject(plan, label) {
     if (!plan) return;
+    label = label || plan.name || 'plan';
 
-    // Simple template
+    // Simple plan
     if (plan.type === 'simple' || plan.blocks) {
       launchSimpleMode(plan.blocks || []);
-      document.getElementById('practice-day-sub').textContent = 'Loaded from "' + selectedTemplateName + '"';
-      showToast('Loaded "' + selectedTemplateName + '" ✓');
+      document.getElementById('practice-day-sub').textContent = 'Loaded from "' + label + '"';
+      showToast('Loaded "' + label + '" ✓');
       return;
     }
 
-    // Detailed template
+    // Detailed plan
     const pgrid = document.getElementById('practice-grid-table');
     if (!pgrid) return;
 
     if (plan.gridHTML) {
       pgrid.innerHTML = plan.gridHTML;
       pgrid.querySelectorAll('.pgrid-row:not(.pgrid-header)').forEach(row => {
-        // Strip baked-in demo sub-labels ("South side of field", etc.) — not editable, read as demo cruft.
         if (plan.premade) row.querySelectorAll('.cell-sub').forEach(s => s.remove());
-        // Hand-written templates omit .gt-name on group (Indy) periods, so renaming them silently
-        // no-ops. Add the leading-column name slot where missing so the period-name feature works.
         if (row.querySelector('.pgrid-cols') && !row.querySelector('.gt-name')) {
           const tc = row.querySelector('.grid-time-cell');
           const dur = tc?.querySelector('.gt-dur');
@@ -13969,7 +13869,7 @@
     renderGridHeader();
     if (currentDayKey) DAY_GRIDS[currentDayKey] = serializePracticeDay();
 
-    document.getElementById('practice-day-sub').textContent = 'Loaded from "' + selectedTemplateName + '"';
+    document.getElementById('practice-day-sub').textContent = 'Loaded from "' + label + '"';
     document.getElementById('practice-day-blank').style.display = 'none';
     document.getElementById('practice-day-filled').style.display = 'block';
     (document.getElementById('practice-below-grid')||{style:{}}).style.display='block';
@@ -13977,7 +13877,7 @@
     document.getElementById('practice-grid-wrap').style.display = 'block';
     if (canEdit('practice')) document.getElementById('practice-edit-btn').style.display = 'inline-block';
 
-    showToast('Loaded "' + selectedTemplateName + '" ✓');
+    showToast('Loaded "' + label + '" ✓');
   }
 
   function showSubScreen(name) {
@@ -17448,10 +17348,10 @@
         .eq('id', programId);
 
       console.log('Practice plan saved to Supabase:', planName);
-      showToast('Template "' + planName + '" saved ✓');
+      showToast('Plan "' + planName + '" saved ✓');
     } catch(e) {
       console.error('Practice plan save error:', e);
-      showToast('Template "' + planName + '" saved locally ✓');
+      showToast('Plan "' + planName + '" saved locally ✓');
     }
   }
 
@@ -17472,7 +17372,7 @@
 
   function confirmSaveTemplate() {
     const name = document.getElementById('save-template-name').value.trim();
-    if (!name) { showToast('Please enter a template name'); return; }
+    if (!name) { showToast('Please enter a name'); return; }
     closeSaveTemplate();
     document.getElementById('save-template-name').value = '';
     document.getElementById('save-template-notes').value = '';
@@ -18955,8 +18855,7 @@ ${printBtnHtml}
 
   function openNDTemplate() {
     closeNewDay();
-    // reuse existing template modal
-    openCloneTemplate('load');
+    openSavedPlans();
   }
 
   // ===== AI CHIP SELECTION =====
@@ -19026,8 +18925,8 @@ ${printBtnHtml}
     } catch(err) {
       clearInterval(msgTimer);
       closeNewDay();
-      showToast('AI Coach hit a snag — loading a template instead');
-      openCloneTemplate('load');
+      showToast('AI Coach hit a snag — loading a saved plan instead');
+      openSavedPlans();
     }
   }
 
