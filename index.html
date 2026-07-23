@@ -5536,7 +5536,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.52</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.53</div>
   </div>
 </div>
 
@@ -5550,7 +5550,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.52';
+  const APP_VERSION = 'v40.53';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9903,8 +9903,14 @@
       console.log('Auth UID:', uid);
       // Let resolveUserSession handle everything from here
       const resolved = await resolveUserSession(uid);
-      if (!resolved && !routeUnresolvedUser()) {
-        errEl.textContent = 'Account not found. Please check your credentials or join a program using a code.';
+      if (!resolved) {
+        // Verified but never finished the join (e.g. the confirmation email opened on another
+        // device, so the local resume data was lost). Resume from the join context stored on
+        // their account and drop them on the finish step — no re-entering codes, no dead end.
+        const resumed = await resumePendingJoin(_pendingJoinFromMeta(data.user));
+        if (!resumed && !routeUnresolvedUser()) {
+          errEl.textContent = 'Account not found. Please check your credentials or join a program using a code.';
+        }
       }
     } catch(e) {
       console.error('Sign in error:', e);
@@ -10014,7 +10020,7 @@
       // confirmed their email (beta code → wizard) OR a player/parent/assistant who confirmed and
       // still needs to finish their profile (pending join → resume). Try the join resume first.
       if (!resolved) {
-        const resumed = await resumePendingJoin();
+        const resumed = await resumePendingJoin(_pendingJoinFromMeta(data.session.user));
         if (!resumed) routeUnresolvedUser();
       }
       return resolved;
@@ -10355,9 +10361,21 @@
     document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
     document.getElementById(step)?.classList.add('active');
   }
-  async function resumePendingJoin() {
-    let pj = null;
-    try { pj = JSON.parse(localStorage.getItem('mesh_pending_join') || 'null'); } catch(e) {}
+  // Read the durable join context off the Supabase auth user (survives any browser/device).
+  function _pendingJoinFromMeta(user) {
+    const m = (user && user.user_metadata) || {};
+    if (!m.mesh_pending_role) return null;
+    return {
+      role: m.mesh_pending_role,
+      programId: m.mesh_pending_program_id || '',
+      code: m.mesh_pending_code || '',
+      programName: m.mesh_pending_program_name || ''
+    };
+  }
+  async function resumePendingJoin(ctx) {
+    let pj = ctx || null;
+    // Fall back to same-browser localStorage if no server-side context was passed.
+    if (!pj) { try { pj = JSON.parse(localStorage.getItem('mesh_pending_join') || 'null'); } catch(e) {} }
     if (!pj || !pj.role) return false;
     console.log('[Session] Resuming pending join as', pj.role);
     joinSelectedRole = pj.role;
@@ -10509,7 +10527,17 @@
     btn.disabled = true;
 
     try {
-      const { data: signUpData, error: signUpError } = await db.auth.signUp({ email, password });
+      // Stash the join context ON the auth user (user_metadata) so it survives the email
+      // round-trip even if the confirmation link opens in a different browser/device. The
+      // returning user then just signs in and we resume from here — no code re-entry, no
+      // "account not found" dead end.
+      const joinMeta = {
+        mesh_pending_role: joinSelectedRole || '',
+        mesh_pending_program_id: localStorage.getItem('mesh_joining_program_id') || '',
+        mesh_pending_code: localStorage.getItem('mesh_joining_code') || '',
+        mesh_pending_program_name: document.getElementById('join-program-name')?.textContent || ''
+      };
+      const { data: signUpData, error: signUpError } = await db.auth.signUp({ email, password, options: { data: joinMeta } });
 
       // Existing account → try to sign in (only succeeds if it's already confirmed).
       if (signUpError && /already/i.test(signUpError.message || '')) {
@@ -10745,6 +10773,9 @@
     const nm = (document.getElementById('join-program-name')?.textContent || '').trim();
     if (nm) obProgram.teamName = obProgram.teamName || nm;
     clearPendingJoin(); // completed the join — no pending resume needed
+    // Also clear the durable server-side marker so a later transient resolve failure can't
+    // bounce a fully-set-up user back onto a join step.
+    try { db.auth.updateUser({ data: { mesh_pending_role: null, mesh_pending_program_id: null, mesh_pending_code: null, mesh_pending_program_name: null } }); } catch(e) {}
     launchApp(role, { name: u.name, role: u.role || role }, pid);
     // First-run guided tour for the just-joined player/parent/assistant.
     setTimeout(() => startTour(role), 1200);
