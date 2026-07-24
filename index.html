@@ -2671,15 +2671,15 @@
       <button class="btn-primary" onclick="submitParentProfile()">Join program →</button>
     </div>
 
-    <!-- Step 3c: Assistant coach profile -->
+    <!-- Step 3c: Assistant coach profile (also reused for ownership-claim, see goToJoinProfileStep) -->
     <div class="ob-step" id="join-step-3-coach">
-      <div style="font-size:18px;font-weight:700;margin-bottom:4px">Your coach profile</div>
-      <div style="font-size:13px;color:var(--gray-2);margin-bottom:20px">You'll join the staff with view access to the game plan. The head coach can grant you edit access.</div>
+      <div id="join-coach-heading" style="font-size:18px;font-weight:700;margin-bottom:4px">Your coach profile</div>
+      <div id="join-coach-sub" style="font-size:13px;color:var(--gray-2);margin-bottom:20px">You'll join the staff with view access to the game plan. The head coach can grant you edit access.</div>
       <div class="ob-field-label">Your full name *</div>
       <input class="input-field" id="join-coach-name" placeholder="Coach Reed" style="margin-bottom:12px">
-      <div class="ob-field-label">Title (optional)</div>
+      <div class="ob-field-label" id="join-coach-title-label">Title (optional)</div>
       <input class="input-field" id="join-coach-title" placeholder="e.g. Offensive Coordinator" style="margin-bottom:24px">
-      <button class="btn-primary" onclick="submitCoachProfile()">Join staff →</button>
+      <button class="btn-primary" id="join-coach-submit-btn" onclick="submitCoachProfile()">Join staff →</button>
     </div>
 
     <!-- Step 4: Welcome -->
@@ -5519,7 +5519,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.67</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.68</div>
   </div>
 </div>
 
@@ -5533,7 +5533,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.67';
+  const APP_VERSION = 'v40.68';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10344,6 +10344,29 @@
     showScreen('screen-join');
     document.querySelectorAll('#screen-join .ob-step').forEach(s => s.classList.remove('active'));
     document.getElementById(step)?.classList.add('active');
+    // Ownership-transfer codes (OWN-…) reuse the coach step but claim ownership — reword it.
+    if (joinSelectedRole === 'coach') {
+      const isOwnerClaim = (localStorage.getItem('mesh_joining_code') || '').toUpperCase().startsWith('OWN-');
+      const h = document.getElementById('join-coach-heading');
+      const sub = document.getElementById('join-coach-sub');
+      const tl = document.getElementById('join-coach-title-label');
+      const ti = document.getElementById('join-coach-title');
+      const btn = document.getElementById('join-coach-submit-btn');
+      const prog = document.getElementById('join-program-name')?.textContent || 'this program';
+      if (isOwnerClaim) {
+        if (h) h.textContent = 'Claim your program';
+        if (sub) sub.textContent = `You'll become the head coach and owner of ${prog} with full access.`;
+        if (tl) tl.style.display = 'none';
+        if (ti) ti.style.display = 'none';
+        if (btn) btn.textContent = 'Claim ownership →';
+      } else {
+        if (h) h.textContent = 'Your coach profile';
+        if (sub) sub.textContent = "You'll join the staff with view access to the game plan. The head coach can grant you edit access.";
+        if (tl) tl.style.display = '';
+        if (ti) ti.style.display = '';
+        if (btn) btn.textContent = 'Join staff →';
+      }
+    }
   }
   // Read the durable join context off the Supabase auth user (survives any browser/device).
   function _pendingJoinFromMeta(user) {
@@ -10403,6 +10426,13 @@
       if (!data) {
         ({ data, error } = await db.from('programs').select('id,player_code,coach_code,parent_code').eq('join_code', code).maybeSingle());
         console.log('[Join] join_code search:', JSON.stringify({ data, error }));
+        if (data) { _detectedRole = 'coach'; }
+      }
+      if (!data) {
+        // Ownership transfer code (OWN-…) — redeemed through the coach flow, upgraded to owner
+        // at the profile step (submitCoachProfile detects the OWN- prefix).
+        ({ data, error } = await db.from('programs').select('id,player_code,coach_code,parent_code').eq('owner_claim_code', code).maybeSingle());
+        console.log('[Join] owner_claim_code search:', JSON.stringify({ data, error }));
         if (data) { _detectedRole = 'coach'; }
       }
       if (error) {
@@ -10709,6 +10739,27 @@
     const name = document.getElementById('join-coach-name').value.trim();
     const title = document.getElementById('join-coach-title').value.trim();
     if (!name) { showToast('Please enter your name'); return; }
+
+    // Ownership transfer (OWN-… code): claim ownership instead of joining as an assistant.
+    const joinCode = (localStorage.getItem('mesh_joining_code') || '').toUpperCase();
+    if (joinCode.startsWith('OWN-')) {
+      try {
+        const { error: claimErr } = await db.rpc('claim_program_ownership', { p_code: joinCode });
+        if (claimErr) { console.error('[Join] claim ownership error:', claimErr); showToast(claimErr.message || 'That transfer code is invalid or already used'); return; }
+        const { error: nameErr } = await db.rpc('update_my_name', { p_name: name });
+        if (nameErr) console.warn('[Join] name set after claim:', nameErr);
+      } catch(e) { console.error('[Join] claim ownership exception:', e); showToast('Could not claim ownership — try again'); return; }
+      isHeadCoach = true;
+      try {
+        localStorage.setItem('mesh_role', 'coach');
+        localStorage.setItem('mesh_user', JSON.stringify({ name, role: 'Head Coach' }));
+      } catch(e) {}
+      const progNm = document.getElementById('join-program-name').textContent;
+      document.getElementById('join-done-title').textContent = 'Welcome, ' + name.split(' ')[0] + '!';
+      document.getElementById('join-done-sub').textContent = "You're now the head coach and owner of " + progNm + " with full access.";
+      joinGoToStep(4);
+      return;
+    }
 
     // Persist server-side as an assistant coach: profiles row (role='coach').
     // Reuses the create_profile SECURITY DEFINER RPC — the same one the head coach uses (role='head_coach').
@@ -14297,6 +14348,41 @@
           ${groups.length?groups.map(g=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600"><span style="width:9px;height:9px;border-radius:50%;background:${g.color||'var(--team-primary)'}"></span>${g.label}</span>`).join(''):'<span style="font-size:12px;color:var(--fg-3)">None yet</span>'}
         </div>
         <button onclick="document.getElementById('manage-staff-overlay').remove();if(window.openEditPositionGroups)openEditPositionGroups()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font);margin-top:12px">Assign coaches to position groups</button>
+        ${isHeadCoach ? `<div style="font-size:11px;font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.06em;margin:20px 0 8px">Ownership</div>
+        <button onclick="document.getElementById('manage-staff-overlay').remove();openTransferOwnership()" style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;font-family:var(--font)">Transfer / hand off ownership</button>` : ''}
+      </div>`;
+    document.body.appendChild(ov);
+  }
+
+  // ===== TRANSFER / HAND OFF OWNERSHIP =====
+  async function openTransferOwnership() {
+    if (!isHeadCoach) { showToast('Only the current owner can transfer the program'); return; }
+    const programId = await getValidProgramId();
+    if (!programId) { showToast('No program found'); return; }
+    if (!confirm('Create a one-time ownership transfer code?\n\nWhoever enters it (after signing up) becomes the head coach and owner of this program. Share it only with the person taking over.')) return;
+    let code = null;
+    try {
+      const { data, error } = await db.rpc('generate_owner_claim_code', { p_program_id: programId });
+      if (error) { console.error('[Transfer] generate error:', error); showToast(error.message || 'Could not create transfer code'); return; }
+      code = data;
+    } catch(e) { console.error('[Transfer] exception:', e); showToast('Could not create transfer code'); return; }
+    if (!code) { showToast('Could not create transfer code'); return; }
+    let ov = document.getElementById('transfer-owner-overlay'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id = 'transfer-owner-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:220;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    ov.innerHTML = `
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:420px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:18px;font-weight:700">Ownership transfer code</div>
+          <div onclick="document.getElementById('transfer-owner-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <div style="font-size:13px;color:var(--fg-3);line-height:1.5;margin-bottom:16px">The person taking over signs up (or signs in), taps <b>Join with a code</b>, and enters this code — they become the head coach and owner. It works once, then expires.</div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px">
+          <div style="font-size:22px;font-weight:800;letter-spacing:0.08em;color:var(--fg);text-align:center">${_esc(code)}</div>
+        </div>
+        <button onclick="navigator.clipboard&&navigator.clipboard.writeText('${code}').then(()=>showToast('Copied ✓'))" style="width:100%;background:var(--team-primary);color:var(--team-primary-text);border:none;border-radius:var(--radius-sm);padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">Copy code</button>
+        <div style="font-size:11px;color:var(--fg-3);line-height:1.5;margin-top:12px">⚠️ Treat this like a password — anyone with it can take over the program. You stay owner until it's claimed.</div>
       </div>`;
     document.body.appendChild(ov);
   }
