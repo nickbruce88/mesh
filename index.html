@@ -5527,7 +5527,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.76</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.77</div>
   </div>
 </div>
 
@@ -5541,7 +5541,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.76';
+  const APP_VERSION = 'v40.77';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -11662,10 +11662,10 @@
   let currentDCLevel = 'Varsity';
 
   function selectLevel(level) {
-    currentDCLevel = level;
-    document.getElementById('level-current').textContent = level;
+    _dcSetLevel(level); // point DC_DATA at this level's independent chart
+    document.getElementById('level-current').textContent = currentDCLevel;
     document.querySelectorAll('.level-menu-item').forEach(item => {
-      item.classList.toggle('active', item.textContent.trim() === level);
+      item.classList.toggle('active', item.textContent.trim() === currentDCLevel);
     });
     document.getElementById('level-menu').style.display = 'none';
     renderDepthChart();
@@ -15886,12 +15886,96 @@
     }
   }
 
-  // ===== DEPTH CHART LEGACY =====
-  const DC_DATA = {
-    offense: [],
-    defense: [],
-    special: []
-  };
+  // ===== DEPTH CHART (per-level) =====
+  // DC_BYLEVEL[level] = { offense:[{pos,players:[{name,num}]}], defense:[], special:[] } — each level
+  // is its own independent, ordered chart. DC_DATA points at the CURRENT level so existing render /
+  // reorder code (which reads DC_DATA[unit]) operates on that level. DC_OVR[level] tracks per-level
+  // manual removals/adds so roster reconciliation (add-only, order-preserving) behaves correctly.
+  let DC_BYLEVEL = {};
+  let DC_OVR = {};
+  let DC_DATA = { offense: [], defense: [], special: [] };
+
+  function _dcEnsureLevel(level) {
+    if (!DC_BYLEVEL[level]) DC_BYLEVEL[level] = { offense: [], defense: [], special: [] };
+    if (!DC_OVR[level]) DC_OVR[level] = { removed: { offense:{}, defense:{}, special:{} }, added: { offense:{}, defense:{}, special:{} } };
+    return DC_BYLEVEL[level];
+  }
+  function _dcSetLevel(level) {
+    if (!TEAM_LEVELS.includes(level)) level = TEAM_LEVELS[0] || 'Varsity';
+    currentDCLevel = level;
+    DC_DATA = _dcEnsureLevel(level);
+  }
+  function _dcEligible(p, level) {
+    if (p.teams && p.teams.length) return p.teams.includes(level);
+    return true; // no team filter set — eligible for all levels
+  }
+  // A player's auto-positions per unit, from their roster fields (ST-filtered, placeholders dropped).
+  function _dcPlayerPositions(p) {
+    const isPH = pos => DC_PLACEHOLDER_POS.has(pos) || pos.replace(/[-—–#\s]/g,'') === '';
+    const split = s => (s||'').split('/').map(x=>x.trim().toUpperCase()).filter(x=>x && !isPH(x));
+    const off = split(p.posOff).filter(x=>!ST_ONLY_POSITIONS.has(x));
+    const def = split(p.posDef).filter(x=>!ST_ONLY_POSITIONS.has(x));
+    const st  = [...new Set([...split(p.posST), ...split(p.posOff).filter(x=>ST_ONLY_POSITIONS.has(x)), ...split(p.posDef).filter(x=>ST_ONLY_POSITIONS.has(x))])];
+    const res = { offense: off, defense: def, special: st };
+    if (!off.length && !def.length && !st.length && !p.posOff && !p.posDef && !p.posST) {
+      const raw = (p.pos||'').trim().toUpperCase();
+      if (raw && !isPH(raw)) {
+        const unit = ST_ONLY_POSITIONS.has(raw) ? 'special'
+          : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(raw) ? 'defense'
+          : ['K','P','LS','KR','PR'].includes(raw) ? 'special' : 'offense';
+        res[unit] = [raw];
+      }
+    }
+    return res;
+  }
+  // Reconcile one level's chart with the roster: prune players who left the roster or are no longer
+  // eligible/auto-positioned (keeping manual adds), then append newly-eligible players at the BOTTOM
+  // (unless manually removed). Existing order is never disturbed.
+  function _dcReconcileLevel(level) {
+    const chart = _dcEnsureLevel(level);
+    const ovr = DC_OVR[level];
+    const rosterNames = new Set(PLAYERS.map(p => p.name));
+    const numByName = {}; PLAYERS.forEach(p => { numByName[p.name] = p.num; });
+    const desired = { offense:{}, defense:{}, special:{} }; // pos -> Set(names)
+    PLAYERS.forEach(p => {
+      if (!_dcEligible(p, level)) return;
+      const pp = _dcPlayerPositions(p);
+      ['offense','defense','special'].forEach(u => pp[u].forEach(pos => { (desired[u][pos] = desired[u][pos] || new Set()).add(p.name); }));
+    });
+    ['offense','defense','special'].forEach(u => {
+      const addedU = ovr.added[u] || {};
+      const removedU = ovr.removed[u] || {};
+      chart[u].forEach(g => {
+        const addedNames = addedU[g.pos] || [];
+        g.players = g.players.filter(pl => {
+          if (!rosterNames.has(pl.name)) return false;
+          if (addedNames.includes(pl.name)) return true;
+          return !!(desired[u][g.pos] && desired[u][g.pos].has(pl.name));
+        });
+        g.players.forEach(pl => { if (numByName[pl.name] !== undefined) pl.num = numByName[pl.name]; });
+      });
+      Object.keys(desired[u]).forEach(pos => {
+        const removed = removedU[pos] || [];
+        let g = chart[u].find(x => x.pos === pos);
+        if (!g) { g = { pos, players: [] }; chart[u].push(g); }
+        desired[u][pos].forEach(name => {
+          if (removed.includes(name)) return;
+          if (!g.players.find(pl => pl.name === name)) g.players.push({ name, num: numByName[name] });
+        });
+      });
+      Object.keys(addedU).forEach(pos => {
+        (addedU[pos] || []).forEach(name => {
+          if (!rosterNames.has(name)) return;
+          let g = chart[u].find(x => x.pos === pos);
+          if (!g) { g = { pos, players: [] }; chart[u].push(g); }
+          if (!g.players.find(pl => pl.name === name)) g.players.push({ name, num: numByName[name] });
+        });
+      });
+      chart[u] = chart[u].filter(g => g.players.length > 0);
+      const order = DC_POS_ORDER[u];
+      chart[u].sort((a,b) => (order.indexOf(a.pos)===-1?99:order.indexOf(a.pos)) - (order.indexOf(b.pos)===-1?99:order.indexOf(b.pos)));
+    });
+  }
 
   // Position order for display
   const DC_POS_ORDER = {
@@ -15939,12 +16023,14 @@
   function primaryPosition(player) {
     let best = null; // { pos, unitRank, idx }
     const units = { offense: 0, defense: 1, special: 2 };
-    ['offense','defense','special'].forEach(unit => {
-      (DC_DATA[unit]||[]).forEach(g => {
-        const idx = g.players.findIndex(pl => pl.name === player.name);
-        if (idx === -1) return;
-        const cand = { pos: g.pos, unitRank: units[unit], idx };
-        if (!best || cand.idx < best.idx || (cand.idx === best.idx && cand.unitRank < best.unitRank)) best = cand;
+    Object.values(DC_BYLEVEL).forEach(chart => {
+      ['offense','defense','special'].forEach(unit => {
+        (chart[unit]||[]).forEach(g => {
+          const idx = g.players.findIndex(pl => pl.name === player.name);
+          if (idx === -1) return;
+          const cand = { pos: g.pos, unitRank: units[unit], idx };
+          if (!best || cand.idx < best.idx || (cand.idx === best.idx && cand.unitRank < best.unitRank)) best = cand;
+        });
       });
     });
     if (best) return best.pos;
@@ -15954,67 +16040,10 @@
   }
 
   function buildDCFromPlayers() {
-    // Helper: add a player to a unit's position group, splitting on slashes
-    function addToUnit(unit, posStr, player) {
-      if (!posStr) return;
-      // Split on slash — "RB/Z" → ['RB', 'Z'], add to both
-      posStr.split('/').map(s => s.trim().toUpperCase()).filter(Boolean).forEach(pos => {
-        if (DC_PLACEHOLDER_POS.has(pos) || DC_PLACEHOLDER_POS.has(pos.toLowerCase()) || pos === '-' || pos === '—' || pos.replace(/[-—–#\s]/g,'') === '') return; // skip placeholders
-        let grp = DC_DATA[unit].find(g => g.pos === pos);
-        if (!grp) {
-          grp = { pos, players: [] };
-          DC_DATA[unit].push(grp);
-        }
-        if (!grp.players.find(pl => pl.name === player.name)) {
-          grp.players.push({ name: player.name, num: player.num });
-        }
-      });
-    }
-
-    PLAYERS.forEach(p => {
-      // Filter ST-only positions out of offense/defense, force them to special
-      const filterST = posStr => (posStr || '').split('/').filter(s => !ST_ONLY_POSITIONS.has(s.trim().toUpperCase())).join('/');
-      const stFromOff = (p.posOff || '').split('/').filter(s => ST_ONLY_POSITIONS.has(s.trim().toUpperCase())).join('/');
-      const stFromDef = (p.posDef || '').split('/').filter(s => ST_ONLY_POSITIONS.has(s.trim().toUpperCase())).join('/');
-
-      addToUnit('offense', filterST(p.posOff), p);
-      addToUnit('defense', filterST(p.posDef), p);
-      addToUnit('special', [p.posST, stFromOff, stFromDef].filter(Boolean).join('/'), p);
-
-      // Fallback: if only pos is set (skip placeholders)
-      const rawPos = (p.pos || '').trim();
-      const cleanPos = rawPos.toUpperCase();
-      if (!p.posOff && !p.posDef && !p.posST && rawPos && !DC_PLACEHOLDER_POS.has(rawPos) && rawPos.replace(/[-—–#\s]/g,'') !== '') {
-        const unit = ST_ONLY_POSITIONS.has(cleanPos) ? 'special'
-          : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(cleanPos) ? 'defense'
-          : ['K','P','LS','KR','PR'].includes(cleanPos) ? 'special'
-          : 'offense';
-        addToUnit(unit, rawPos, p);
-      }
-    });
-
-    // Remove ST-only positions from offense/defense (cleanup for existing data)
-    ['offense','defense'].forEach(unit => {
-      DC_DATA[unit] = DC_DATA[unit].filter(g => !ST_ONLY_POSITIONS.has(g.pos.toUpperCase()));
-    });
-    // Remove placeholder position groups
-    ['offense','defense','special'].forEach(unit => {
-      DC_DATA[unit] = DC_DATA[unit].filter(g => {
-        const p = (g.pos||'').trim();
-        return p && !DC_PLACEHOLDER_POS.has(p) && p.replace(/[-—–#\s]/g,'') !== '';
-      });
-    });
-
-    // Sort positions within each unit by standard order
-    ['offense','defense','special'].forEach(unit => {
-      const order = DC_POS_ORDER[unit];
-      DC_DATA[unit].sort((a, b) => {
-        const ai = order.indexOf(a.pos);
-        const bi = order.indexOf(b.pos);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-      });
-    });
-
+    // Reconcile every level's chart against the roster (add-only, order-preserving; new players
+    // append at the bottom, roster-gone players drop off, per-level removals/adds respected).
+    (TEAM_LEVELS.length ? TEAM_LEVELS : ['Varsity']).forEach(l => _dcReconcileLevel(l));
+    _dcSetLevel(currentDCLevel);
     renderDepthChart();
   }
 
@@ -16023,49 +16052,13 @@
   // stale entries and re-places them by field — instead of the add-only build leaving a duplicate.
   // Only this player's entries are touched, so other players' manual swap placements are preserved.
   function reconcilePlayerInDC(player, oldName) {
-    const findName = oldName || player.name;
-    const isPH = pos => DC_PLACEHOLDER_POS.has(pos) || pos.replace(/[-—–#\s]/g,'') === '';
-    // 1. Compute the positions this player SHOULD occupy per unit, from their current fields.
-    const desired = { offense: new Set(), defense: new Set(), special: new Set() };
-    const want = (unit, posStr) => (posStr||'').split('/').map(s=>s.trim().toUpperCase()).filter(Boolean)
-      .forEach(pos => { if (!isPH(pos)) desired[unit].add(pos); });
-    const filterST = s => (s||'').split('/').filter(x => !ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
-    const stFromOff = (player.posOff||'').split('/').filter(x => ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
-    const stFromDef = (player.posDef||'').split('/').filter(x => ST_ONLY_POSITIONS.has(x.trim().toUpperCase())).join('/');
-    want('offense', filterST(player.posOff));
-    want('defense', filterST(player.posDef));
-    want('special', [player.posST, stFromOff, stFromDef].filter(Boolean).join('/'));
-    const rawPos = (player.pos || '').trim();
-    if (!player.posOff && !player.posDef && !player.posST && rawPos && !isPH(rawPos.toUpperCase())) {
-      const cp = rawPos.toUpperCase();
-      const unit = ST_ONLY_POSITIONS.has(cp) ? 'special'
-        : ['DL','LB','DB','DE','DT','NT','SS','FS','CB','S'].includes(cp) ? 'defense'
-        : ['K','P','LS','KR','PR'].includes(cp) ? 'special' : 'offense';
-      want(unit, rawPos);
+    // On rename, carry the player's existing placements + overrides to the new name across all levels.
+    if (oldName && oldName !== player.name) {
+      Object.values(DC_BYLEVEL).forEach(chart => ['offense','defense','special'].forEach(u => (chart[u]||[]).forEach(g => g.players.forEach(pl => { if (pl.name === oldName) pl.name = player.name; }))));
+      Object.values(DC_OVR).forEach(ovr => ['removed','added'].forEach(k => ['offense','defense','special'].forEach(u => Object.keys((ovr[k] && ovr[k][u]) || {}).forEach(pos => { ovr[k][u][pos] = (ovr[k][u][pos]||[]).map(n => n === oldName ? player.name : n); }))));
     }
-    // 2. Reconcile each unit IN PLACE so depth ORDER is preserved: keep the player at their existing
-    //    slot (refreshing name/#) where still desired, remove where no longer desired, then append to
-    //    any newly-desired position. Only this player is touched — other players' order is untouched.
-    ['offense','defense','special'].forEach(unit => {
-      DC_DATA[unit].forEach(g => {
-        const pos = (g.pos||'').toUpperCase();
-        const idx = g.players.findIndex(pl => pl.name === findName);
-        if (idx === -1) return;
-        if (desired[unit].has(pos)) { g.players[idx] = { name: player.name, num: player.num }; desired[unit].delete(pos); }
-        else { g.players.splice(idx, 1); }
-      });
-      desired[unit].forEach(pos => {
-        let g = DC_DATA[unit].find(x => (x.pos||'').toUpperCase() === pos);
-        if (!g) { g = { pos, players: [] }; DC_DATA[unit].push(g); }
-        if (!g.players.find(pl => pl.name === player.name)) g.players.push({ name: player.name, num: player.num });
-      });
-      DC_DATA[unit] = DC_DATA[unit].filter(g => g.players.length > 0);
-    });
-    // 3. Keep positions in standard order (mirror buildDCFromPlayers' tail).
-    ['offense','defense','special'].forEach(unit => {
-      const order = DC_POS_ORDER[unit];
-      DC_DATA[unit].sort((a, b) => (order.indexOf(a.pos) === -1 ? 99 : order.indexOf(a.pos)) - (order.indexOf(b.pos) === -1 ? 99 : order.indexOf(b.pos)));
-    });
+    (TEAM_LEVELS.length ? TEAM_LEVELS : ['Varsity']).forEach(l => _dcReconcileLevel(l));
+    _dcSetLevel(currentDCLevel);
     // A player's stored `pos` follows their highest depth-chart spot (drives roster/card display).
     player.pos = primaryPosition(player) || player.pos;
     renderDepthChart();
@@ -16160,14 +16153,8 @@
         playersList.className = 'pos-players';
         playersList.id = 'dc-' + posGroup.pos;
 
-        // Filter to only players on the current level first, then number them correctly
-        const levelPlayers = posGroup.players.filter(p => {
-          const playerData = PLAYERS.find(pl => pl.name === p.name);
-          if (playerData && playerData.teams && playerData.teams.length > 0) {
-            return playerData.teams.includes(currentDCLevel);
-          }
-          return true; // no team filter set — show on all levels
-        });
+        // DC_DATA is already the current level's reconciled chart, so no render-time filter needed.
+        const levelPlayers = posGroup.players;
         // View mode: show the top 3 with a "Show more" toggle for the rest, to keep each
         // position tidy. Edit mode shows everyone (needed to drag/reorder).
         const DC_TOP = 3;
@@ -16189,6 +16176,16 @@
             this.textContent = isHidden ? 'Show less' : 'Show ' + hidden + ' more';
           };
           playersList.appendChild(moreBtn);
+        }
+
+        // Edit mode: add any roster player to this position (this level), at the bottom.
+        if (dcEditMode) {
+          const addBtn = document.createElement('button');
+          addBtn.className = 'dc-add-player-btn';
+          addBtn.textContent = '+ Add player';
+          addBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--fg-3);font-size:12px;font-weight:600;padding:6px 10px;margin-top:6px;cursor:pointer;font-family:var(--font);width:100%';
+          addBtn.onclick = () => dcOpenAddPicker(unit.key, posGroup.pos);
+          playersList.appendChild(addBtn);
         }
 
         posRow.appendChild(playersList);
@@ -16232,6 +16229,17 @@
     const jn = (player.num === null || player.num === undefined || player.num === '') ? '' : String(player.num).replace(/^#/, '');
     num.textContent = jn ? '#' + jn : '';
     wrap.appendChild(num);
+
+    // Edit mode: ✕ remove from THIS level's THIS position only (profile + other lists untouched).
+    if (dcEditMode) {
+      const rm = document.createElement('button');
+      rm.className = 'dc-remove-btn';
+      rm.textContent = '✕';
+      rm.title = 'Remove from this list';
+      rm.style.cssText = 'background:transparent;border:none;color:#e5484d;font-size:14px;cursor:pointer;padding:2px 6px;flex-shrink:0;margin-left:4px';
+      rm.onclick = (e) => { e.stopPropagation(); dcRemoveFromList(unit, pos, player.name); };
+      wrap.appendChild(rm);
+    }
 
     // Flag
     if (player.flag) {
@@ -16338,6 +16346,71 @@
     posGroup.players.splice(newIdx, 0, moved);
     renderDepthChart();
     saveDCToSupabase();
+  }
+
+  // ===== DEPTH CHART: per-level remove / add =====
+  function dcRemoveFromList(unit, pos, name) {
+    if (!requireEdit('depth')) return;
+    _dcEnsureLevel(currentDCLevel);
+    const ovr = DC_OVR[currentDCLevel];
+    const g = DC_DATA[unit].find(x => x.pos === pos);
+    if (g) g.players = g.players.filter(pl => pl.name !== name);
+    ovr.added[unit] = ovr.added[unit] || {};
+    if (ovr.added[unit][pos] && ovr.added[unit][pos].includes(name)) {
+      ovr.added[unit][pos] = ovr.added[unit][pos].filter(n => n !== name); // was a manual add — just drop it
+    } else {
+      ovr.removed[unit] = ovr.removed[unit] || {};
+      ovr.removed[unit][pos] = ovr.removed[unit][pos] || [];
+      if (!ovr.removed[unit][pos].includes(name)) ovr.removed[unit][pos].push(name); // remember so import won't re-add
+    }
+    DC_DATA[unit] = DC_DATA[unit].filter(x => x.players.length > 0);
+    renderDepthChart();
+    saveDCToSupabase();
+    showToast(name + ' removed from ' + currentDCLevel + ' ' + pos);
+  }
+
+  function dcAddPlayerToGroup(unit, pos, name) {
+    if (!requireEdit('depth')) return;
+    const p = PLAYERS.find(pl => pl.name === name); if (!p) return;
+    _dcEnsureLevel(currentDCLevel);
+    const ovr = DC_OVR[currentDCLevel];
+    let g = DC_DATA[unit].find(x => x.pos === pos);
+    if (!g) { g = { pos, players: [] }; DC_DATA[unit].push(g); }
+    if (!g.players.find(pl => pl.name === name)) g.players.push({ name, num: p.num });
+    ovr.added[unit] = ovr.added[unit] || {};
+    ovr.added[unit][pos] = ovr.added[unit][pos] || [];
+    if (!ovr.added[unit][pos].includes(name)) ovr.added[unit][pos].push(name);
+    if (ovr.removed[unit] && ovr.removed[unit][pos]) ovr.removed[unit][pos] = ovr.removed[unit][pos].filter(n => n !== name);
+    renderDepthChart();
+    saveDCToSupabase();
+    showToast(name + ' added to ' + pos);
+  }
+
+  function dcOpenAddPicker(unit, pos) {
+    if (!requireEdit('depth')) return;
+    const g = DC_DATA[unit].find(x => x.pos === pos);
+    const already = new Set((g ? g.players : []).map(p => p.name));
+    const candidates = PLAYERS.filter(p => !already.has(p.name)).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    let ov = document.getElementById('dc-add-overlay'); if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id = 'dc-add-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:220;display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    const rows = candidates.map(p => `<div class="dc-add-row" data-name="${_escAttr(p.name)}" style="display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--border);cursor:pointer"><div style="font-size:13px;font-weight:600;color:var(--fg);flex:1">${_esc(p.name)}</div><div style="font-size:12px;color:var(--fg-3)">${_esc(formatNum(p.num))} · ${_esc(p.pos || '—')}</div></div>`).join('');
+    ov.innerHTML = `
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:16px;font-weight:700">Add to ${_esc(currentDCLevel)} · ${_esc(pos)}</div>
+          <div onclick="document.getElementById('dc-add-overlay').remove()" style="cursor:pointer;font-size:22px;color:var(--fg-3)">✕</div>
+        </div>
+        <input id="dc-add-search" placeholder="Search players…" style="background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--fg);font-family:var(--font);margin-bottom:10px;outline:none" oninput="dcAddFilter(this.value)">
+        <div id="dc-add-list" style="overflow-y:auto;flex:1">${rows || '<div style="color:var(--fg-3);font-size:13px;padding:16px;text-align:center">No other players to add</div>'}</div>
+      </div>`;
+    document.body.appendChild(ov);
+    ov.querySelectorAll('.dc-add-row').forEach(r => { r.onclick = () => { document.getElementById('dc-add-overlay').remove(); dcAddPlayerToGroup(unit, pos, r.dataset.name); }; });
+  }
+  function dcAddFilter(q) {
+    q = (q || '').toLowerCase();
+    document.querySelectorAll('#dc-add-list .dc-add-row').forEach(r => { r.style.display = (r.dataset.name || '').toLowerCase().includes(q) ? '' : 'none'; });
   }
 
   // ===== POPULATE PLAYER HOME FROM SESSION =====
@@ -16806,7 +16879,7 @@
     if (!programId) return;
     try {
       await db.from('programs')
-        .update({ depth_chart: { offense: DC_DATA.offense, defense: DC_DATA.defense, special: DC_DATA.special, positions: DC_POSITIONS } })
+        .update({ depth_chart: { v: 2, byLevel: DC_BYLEVEL, ovr: DC_OVR, positions: DC_POSITIONS } })
         .eq('id', programId);
       console.log('Depth chart saved to Supabase');
     } catch(e) { console.error('DC save error:', e); }
@@ -16815,29 +16888,30 @@
   async function loadDCFromSupabase(programId) {
     if (!programId || !programId.includes('-')) return;
     try {
-      const { data, error } = await db.from('programs')
-        .select('depth_chart')
-        .eq('id', programId)
-        .single();
-      if (error || !data?.depth_chart) {
-        // No saved depth chart — build from current roster, seed the position vocabulary, and save.
+      const { data, error } = await db.from('programs').select('depth_chart').eq('id', programId).single();
+      const dc = (!error && data) ? data.depth_chart : null;
+      const levels = TEAM_LEVELS.length ? TEAM_LEVELS : ['Varsity'];
+      if (!dc) {
+        // No saved chart — build per-level from the roster, seed vocabulary, save.
+        DC_BYLEVEL = {}; DC_OVR = {};
         buildDCFromPlayers();
         seedDCPositions();
-        renderDepthChart();
         saveDCToSupabase();
-        console.log('No saved depth chart — built from roster and saved');
         return;
       }
-      // Merge saved units into DC_DATA (the `positions` key is not a unit, so it's skipped here).
-      Object.keys(data.depth_chart).forEach(unit => {
-        if (DC_DATA[unit]) DC_DATA[unit] = data.depth_chart[unit];
-      });
-      // Also fill in any players not yet in the saved chart
-      buildDCFromPlayers();
-      // Position vocabulary: use the saved custom list, or seed it (older charts predate this).
-      if (data.depth_chart.positions) DC_POSITIONS = data.depth_chart.positions;
-      else seedDCPositions();
-      renderDepthChart();
+      if (dc.v === 2 && dc.byLevel) {
+        DC_BYLEVEL = dc.byLevel || {};
+        DC_OVR = dc.ovr || {};
+      } else {
+        // Migrate the old GLOBAL chart into each level (reconcile then prunes by eligibility/order).
+        const old = { offense: dc.offense || [], defense: dc.defense || [], special: dc.special || [] };
+        DC_BYLEVEL = {}; DC_OVR = {};
+        levels.forEach(l => { DC_BYLEVEL[l] = JSON.parse(JSON.stringify(old)); });
+      }
+      levels.forEach(l => _dcEnsureLevel(l));
+      if (dc.positions) DC_POSITIONS = dc.positions; else seedDCPositions();
+      buildDCFromPlayers(); // reconcile all levels with the current roster + render
+      if (dc.v !== 2) saveDCToSupabase(); // persist the migrated v2 shape once
       console.log('Depth chart loaded from Supabase');
     } catch(e) { console.error('DC load error:', e); }
   }
@@ -19958,6 +20032,10 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       player.teams.push(level);
     }
     renderLevelRow(player);
+    // Persist the level change so it survives refresh.
+    _ensurePlayerDbId(player).then(dbId => { if (dbId) db.from('players').update({ team_levels: JSON.stringify(player.teams) }).eq('id', dbId).then(({ error }) => { if (error) console.warn('[Levels] player save:', error); }); }).catch(() => {});
+    // Re-reconcile so the player immediately appears/disappears on the right level charts.
+    buildDCFromPlayers();
     showToast(`${player.name} — levels updated`);
   }
 
