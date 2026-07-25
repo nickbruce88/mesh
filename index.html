@@ -5520,7 +5520,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.72</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.73</div>
   </div>
 </div>
 
@@ -5534,7 +5534,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.72';
+  const APP_VERSION = 'v40.73';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9222,6 +9222,7 @@
             // The importer maps off_position/def_position/st_position headers and
             // the depth chart reads them — they just were never persisted.
             position_off: p.posOff || '', position_def: p.posDef || '', position_st: p.posST || '',
+            team_levels: JSON.stringify(p.teams || []),
             height: p.height, weight: p.weight, gpa: p.gpa,
             parent_name: p.parent, parent_phone: p.parentPhone, parent_email: p.parentEmail,
             role: 'player', status: 'Active',
@@ -9239,6 +9240,7 @@
               .update({
                 num: row.num, pos: row.pos, year: row.year,
                 position_off: row.position_off, position_def: row.position_def, position_st: row.position_st,
+                team_levels: JSON.stringify(row.teams || []),
                 height: row.height, weight: row.weight, gpa: row.gpa,
                 parent_name: row.parent_name, parent_phone: row.parent_phone, parent_email: row.parent_email,
               })
@@ -9338,6 +9340,7 @@
           program_id: programId,
           name: row.name, num: row.num, pos: row.pos, year: row.year,
           position_off: row.posOff, position_def: row.posDef, position_st: row.posST,
+          team_levels: JSON.stringify(row.teams || []),
           height: row.height, weight: row.weight,
           parent_name: row.parent, parent_phone: row.parentPhone, parent_email: row.parentEmail,
           role: 'player', status: 'Active',
@@ -9371,6 +9374,7 @@
           program_id: programId,
           name: player.name, num: player.num || '—', pos: player.pos || '', year: player.year || '',
           position_off: player.posOff || '', position_def: player.posDef || '', position_st: player.posST || '',
+          team_levels: JSON.stringify(player.teams || []),
           height: player.height || '', weight: player.weight || '',
           parent_name: player.parent || '', parent_phone: player.parentPhone || '', parent_email: player.parentEmail || '',
           role: 'player', status: player.status || 'Active',
@@ -11060,6 +11064,8 @@
       if (error || !data) return;
       // Clear existing players to prevent duplicates on re-load
       PLAYERS.length = 0;
+      // Stored team levels (JSON array); null when nothing saved so callers fall back to year.
+      const _storedTeams = (p) => { try { const t = p.team_levels ? JSON.parse(p.team_levels) : null; return (Array.isArray(t) && t.length) ? t : null; } catch(e) { return null; } };
       data.forEach(p => {
         const existing = PLAYERS.find(ep => ep.db_id === p.id);
         if (existing) {
@@ -11073,6 +11079,7 @@
           existing.posOff = p.position_off || existing.posOff || '';
           existing.posDef = p.position_def || existing.posDef || '';
           existing.posST  = p.position_st  || existing.posST  || '';
+          existing.teams = _storedTeams(p) || (existing.teams && existing.teams.length ? existing.teams : defaultTeamsForYear(p.year));
           // Merge notes from Supabase if available
           try {
             if (p.notes_data) existing.notes = JSON.parse(p.notes_data) || existing.notes;
@@ -11085,6 +11092,7 @@
             name: p.name, nickname: p.nickname || '', num: p.num, pos: p.pos,
             posOff: p.position_off || '', posDef: p.position_def || '', posST: p.position_st || '',
             year: p.year || '', height: p.height || '', weight: p.weight || '',
+            teams: _storedTeams(p) || defaultTeamsForYear(p.year),
             gpa: p.gpa || '—', status: p.status || 'Active',
             group: (p.group_name && p.group_name !== 'null') ? p.group_name : '',
             disciplinaryStatus: p.disciplinary_status || 'green',
@@ -19543,6 +19551,7 @@ Start time 3:30 PM. Include 7-10 periods. Include transitions and water break.`;
       position_off: player.posOff,
       position_def: player.posDef,
       position_st: player.posST,
+      team_levels: JSON.stringify(player.teams || []),
       year: player.year,
       height: player.height,
       weight: player.weight,
