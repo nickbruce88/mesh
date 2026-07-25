@@ -5520,7 +5520,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.71</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.72</div>
   </div>
 </div>
 
@@ -5534,7 +5534,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.71';
+  const APP_VERSION = 'v40.72';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9011,6 +9011,14 @@
       const i = colMap[key];
       return (i === undefined || i < 0) ? '' : String(cols[i] == null ? '' : cols[i]).trim();
     };
+    // Treat "-", "—", "N/A", "None" etc. as "no position on that side" so a placeholder
+    // doesn't become a literal position (which would hijack the primary-position pick and
+    // leak a bogus "-" into position filters / depth chart).
+    const normPos = s => {
+      const v = (s || '').trim().toUpperCase();
+      if (v.replace(/[-—–\s]/g, '') === '' || v === 'N/A' || v === 'NA' || v === 'NONE') return '';
+      return v;
+    };
     return body.map(cols => {
       let name = get(cols, 'name');
       if (name) name = fixLastFirst(name);
@@ -9018,13 +9026,13 @@
         const f = get(cols, 'first'), l = get(cols, 'last');
         name = [f, l].filter(Boolean).join(' ').trim();
       }
-      const posOff = get(cols, 'posOff').toUpperCase();
-      const posDef = get(cols, 'posDef').toUpperCase();
-      const posST  = get(cols, 'posST').toUpperCase();
+      const posOff = normPos(get(cols, 'posOff'));
+      const posDef = normPos(get(cols, 'posDef'));
+      const posST  = normPos(get(cols, 'posST'));
       return {
         name,
         num: get(cols, 'num').replace(/^#+/, ''), // formatNum re-adds the #
-        pos: (posOff || posDef || get(cols, 'pos')).split('/')[0].trim().toUpperCase(),
+        pos: (posOff || posDef || normPos(get(cols, 'pos'))).split('/')[0].trim().toUpperCase(),
         posOff, posDef, posST,
         year: normalizeYear(get(cols, 'year')),
         height: get(cols, 'height'),
