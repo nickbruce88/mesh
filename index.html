@@ -2534,6 +2534,12 @@
         <div class="logo-upload-btn" id="logo-upload-btn">Upload</div>
         <input type="file" id="input-logo" accept="image/*" onchange="handleLogoUpload(event)" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer">
       </div>
+      <div style="margin-top:22px">
+        <div class="color-field-label" style="margin-bottom:2px">Team levels</div>
+        <div class="color-field-sub" style="margin-bottom:10px">Most programs use Varsity / JV / Freshman — leave as-is to keep them. Editing is optional (8U/10U, 7th/8th, Frosh, Varsity-only…) and you can change these anytime in settings.</div>
+        <div id="ob-levels-list"></div>
+        <button type="button" onclick="obAddLevel()" style="width:100%;background:var(--black-3);border:1px dashed var(--black-4);border-radius:var(--radius-sm);padding:9px;font-size:12px;font-weight:600;color:var(--gray-2);cursor:pointer;font-family:var(--font)">+ Add level</button>
+      </div>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn-primary" onclick="obBack(2)" style="flex:1;background:var(--black-3);border:1px solid var(--black-4);color:var(--white)">← Back</button>
         <button class="btn-primary" onclick="obNext(3)" style="flex:1">Next →</button>
@@ -5521,7 +5527,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.74</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.75</div>
   </div>
 </div>
 
@@ -5535,7 +5541,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.74';
+  const APP_VERSION = 'v40.75';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -10098,6 +10104,24 @@
     document.querySelectorAll('.ob-step-dot').forEach((d, i) => d.classList.toggle('active', i < n));
   }
 
+  // Onboarding team-levels (pre-filled, editable, skippable — persisted with the new program).
+  let _obLevels = ['Varsity', 'JV', 'Freshman'];
+  function obRenderLevels() {
+    const list = document.getElementById('ob-levels-list'); if (!list) return;
+    list.innerHTML = '';
+    _obLevels.forEach((l, i) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px';
+      row.innerHTML = `
+        <input class="input-field" style="flex:1;margin-bottom:0" value="${_escAttr(l)}" oninput="obSetLevel(${i}, this.value)" placeholder="Level name">
+        <button type="button" onclick="obRemoveLevel(${i})" style="background:transparent;border:none;color:#e5484d;font-size:15px;cursor:pointer;padding:6px;flex-shrink:0">✕</button>`;
+      list.appendChild(row);
+    });
+  }
+  function obSetLevel(i, v) { _obLevels[i] = v; }
+  function obAddLevel() { _obLevels.push(''); obRenderLevels(); }
+  function obRemoveLevel(i) { if (_obLevels.length <= 1) { showToast('Keep at least one level'); return; } _obLevels.splice(i, 1); obRenderLevels(); }
+
   function obNext(currentStep) {
     if (currentStep === 1) {
       const name = document.getElementById('ob-coach-name').value.trim();
@@ -10118,7 +10142,9 @@
       const teamEl = document.getElementById('ob-preview-team');
       if (teamEl) teamEl.textContent = obProgram.teamName;
       obGoToStep(3);
+      obRenderLevels();
     } else if (currentStep === 3) {
+      obProgram.teamLevels = (_obLevels || []).map(s => (s || '').trim()).filter(Boolean);
       obGoToStep(4);
       // Generate codes if not already done
       if (!obProgram.coachCode) {
@@ -10233,6 +10259,8 @@
 
       // Store locally
       localStorage.setItem('mesh_program_id',      data.id);
+      // Team levels chosen in onboarding — apply + persist resiliently (never blocks create).
+      if (obProgram.teamLevels && obProgram.teamLevels.length) { TEAM_LEVELS = obProgram.teamLevels; try { renderLevelMenu(); } catch(e) {} saveTeamLevels(); }
       localStorage.setItem('mesh_current_program', obProgram.coachCode);
       localStorage.setItem('mesh_role',            'coach');
       localStorage.setItem('mesh_team_name',       obProgram.teamName || obProgram.schoolName);
