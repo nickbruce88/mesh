@@ -5527,7 +5527,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.75</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.76</div>
   </div>
 </div>
 
@@ -5541,7 +5541,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.75';
+  const APP_VERSION = 'v40.76';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -15925,7 +15925,8 @@
     PLAYERS.forEach(p => { addUsed('offense', p.posOff); addUsed('defense', p.posDef); addUsed('special', p.posST); });
     ['offense','defense','special'].forEach(u => (DC_DATA[u]||[]).forEach(g => g.pos && used[u].add(g.pos.toUpperCase())));
     ['offense','defense','special'].forEach(unit => {
-      const set = new Set([...DEFAULT_DC_POSITIONS[unit], ...used[unit]]);
+      // Positions come ONLY from what the coach actually uploaded/uses — no preset seeding.
+      const set = new Set([...used[unit]]);
       const order = DC_POS_ORDER[unit];
       DC_POSITIONS[unit] = [...set].sort((a,b) =>
         (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b)) || a.localeCompare(b));
