@@ -5541,7 +5541,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.81</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.82</div>
   </div>
 </div>
 
@@ -5555,7 +5555,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.81';
+  const APP_VERSION = 'v40.82';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -9848,6 +9848,17 @@
       const { data, error } = await db.auth.signUp({ email, password });
       if (error) throw error;
 
+      // Supabase hides "email already registered" (to prevent address enumeration): an existing,
+      // already-CONFIRMED account comes back with NO error and an empty identities array — and no
+      // email is sent. Detect that and tell the user to sign in, instead of showing a
+      // "check your email" screen for a confirmation that never arrives.
+      if (_signupSaysExisting(data, error)) {
+        errEl.innerHTML = `This email already has a Mesh account. <span onclick="goToSignInFromSignup()" style="color:var(--team-primary);cursor:pointer;font-weight:700">Sign in instead →</span> or <span onclick="goToSignInFromSignup(); setTimeout(sendPasswordReset, 60)" style="color:var(--team-primary);cursor:pointer;font-weight:700">reset your password</span>.`;
+        btn.textContent = 'Create account →';
+        btn.disabled = false;
+        return;
+      }
+
       localStorage.setItem('mesh_auth_email', email);
       localStorage.setItem('mesh_auth_uid', data.user?.id || '');
 
@@ -9874,6 +9885,24 @@
       btn.textContent = 'Create account →';
       btn.disabled = false;
     }
+  }
+
+  // True when a signUp() result means the email is already registered & confirmed. Supabase
+  // returns no error for this (anti-enumeration) — the tell is an empty identities array. Also
+  // catches the rare explicit "already registered" error string.
+  function _signupSaysExisting(data, error) {
+    if (error && /already|registered|exists/i.test(error.message || '')) return true;
+    return !!(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0);
+  }
+
+  // From the signup screen's "already has an account" message → jump to sign in with the email
+  // carried over (so the reset-password path also has it).
+  function goToSignInFromSignup() {
+    const em = (document.getElementById('signup-email')?.value || '').trim();
+    const si = document.getElementById('signin-email');
+    if (si && em) si.value = em;
+    const err = document.getElementById('signup-error'); if (err) err.textContent = '';
+    showScreen('screen-signin');
   }
 
   async function resendConfirmation() {
@@ -10611,11 +10640,12 @@
       };
       const { data: signUpData, error: signUpError } = await db.auth.signUp({ email, password, options: { data: joinMeta } });
 
-      // Existing account → try to sign in (only succeeds if it's already confirmed).
-      if (signUpError && /already/i.test(signUpError.message || '')) {
+      // Existing account → try to sign in (only succeeds if it's already confirmed). Supabase
+      // usually returns this silently (no error, empty identities) rather than an "already" error.
+      if (_signupSaysExisting(signUpData, signUpError)) {
         const { data: signInData, error: signInError } = await db.auth.signInWithPassword({ email, password });
         if (signInError) {
-          errEl.textContent = 'That email already has an account. Confirm it from the email we sent, or check your password.';
+          errEl.textContent = 'That email already has a Mesh account. Sign in with your existing password (or reset it) to continue joining.';
           return;
         }
         localStorage.setItem('mesh_auth_email', email);
