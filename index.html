@@ -1457,6 +1457,14 @@
   .dc-drag-handle { font-size:19px;color:var(--fg-3);cursor:grab;padding:0 2px;flex-shrink:0;display:none;user-select:none;-webkit-user-select:none;line-height:1; }
   .dc-drag-handle:active { cursor:grabbing; }
   .dc-edit-mode .dc-drag-handle { display:block; }
+  /* Position-tile reordering (drag the whole position box to organize the chart) */
+  .dc-pos-head { display:flex;align-items:flex-start;gap:4px; }
+  .dc-pos-handle { font-size:16px;color:var(--fg-3);cursor:grab;padding:0 2px;flex-shrink:0;user-select:none;-webkit-user-select:none;line-height:1;padding-top:9px; }
+  .dc-pos-handle:active { cursor:grabbing; }
+  .pos-row.dc-pos-dragging { opacity:0.4; }
+  .pos-row.dc-pos-drag-over { outline:2px dashed var(--team-primary);outline-offset:-1px; }
+  .dc-pos-arrows { display:flex;flex-direction:column;gap:2px;flex-shrink:0;padding-top:6px; }
+  .dc-pos-arrows button { background:var(--black-4);border:none;border-radius:4px;color:var(--white);font-size:12px;width:22px;height:18px;cursor:pointer;padding:0;line-height:1;font-family:var(--font); }
   .dc-string-badge { width:27px;height:27px;border-radius:50%;background:var(--bg-3);border:1.5px solid rgba(130,130,130,0.32);color:var(--fg-2);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
   .dc-string-badge.starter { background:var(--team-primary);border-color:var(--team-primary);color:var(--team-primary-text); }
   .dc-player-name-btn { flex:1;font-size:15px;font-weight:700;color:var(--fg);background:none;border:none;text-align:left;font-family:var(--font);padding:0;cursor:default;letter-spacing:-0.01em; }
@@ -5527,7 +5535,7 @@
     <div class="profile-menu-item" onclick="openSubscription()"><span class="pmi"><svg class="ic"><use href="#i-credit-card"/></svg></span> Subscription</div>
     <div class="profile-menu-item" onclick="openGuidesHub()"><span class="pmi"><svg class="ic"><use href="#i-compass"/></svg></span> Guides &amp; walkthroughs</div>
     <div class="profile-menu-item danger" onclick="logOut()"><span class="pmi"><svg class="ic"><use href="#i-log-out"/></svg></span> Log out</div>
-    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.78</div>
+    <div style="text-align:center;font-size:11px;color:var(--fg-3);padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">Mesh v40.79</div>
   </div>
 </div>
 
@@ -5541,7 +5549,7 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ===== SUPABASE CLIENT =====
-  const APP_VERSION = 'v40.78';
+  const APP_VERSION = 'v40.79';
 
   // ===== PUSH NOTIFICATIONS =====
   const PUSH_VAPID_PUBLIC_KEY = 'BDY_NFZqCYMcObVxvkoU4Z3UDOk_5sAwhmi_CVwNer5pA3UZ-qt23QH1G_BvH9-Fm-JjIcCPC81IUYPqi2H4BQ0';
@@ -15899,7 +15907,8 @@
 
   function _dcEnsureLevel(level) {
     if (!DC_BYLEVEL[level]) DC_BYLEVEL[level] = { offense: [], defense: [], special: [] };
-    if (!DC_OVR[level]) DC_OVR[level] = { removed: { offense:{}, defense:{}, special:{} }, added: { offense:{}, defense:{}, special:{} } };
+    if (!DC_OVR[level]) DC_OVR[level] = { removed: { offense:{}, defense:{}, special:{} }, added: { offense:{}, defense:{}, special:{} }, order: { offense:[], defense:[], special:[] } };
+    if (!DC_OVR[level].order) DC_OVR[level].order = { offense:[], defense:[], special:[] }; // back-fill for charts saved before tile reordering
     return DC_BYLEVEL[level];
   }
   function _dcSetLevel(level) {
@@ -15974,8 +15983,18 @@
         });
       });
       chart[u] = chart[u].filter(g => g.players.length > 0);
-      const order = DC_POS_ORDER[u];
-      chart[u].sort((a,b) => (order.indexOf(a.pos)===-1?99:order.indexOf(a.pos)) - (order.indexOf(b.pos)===-1?99:order.indexOf(b.pos)));
+      // Coach's custom tile order wins when set; positions not in it (e.g. brand-new) fall to the
+      // bottom in their current relative order. No custom order → default DC_POS_ORDER sort.
+      const custom = (ovr.order && ovr.order[u]) || [];
+      if (custom.length) {
+        chart[u].sort((a,b) => {
+          const ia = custom.indexOf(a.pos), ib = custom.indexOf(b.pos);
+          return (ia===-1?999:ia) - (ib===-1?999:ib);
+        });
+      } else {
+        const order = DC_POS_ORDER[u];
+        chart[u].sort((a,b) => (order.indexOf(a.pos)===-1?99:order.indexOf(a.pos)) - (order.indexOf(b.pos)===-1?99:order.indexOf(b.pos)));
+      }
     });
   }
 
@@ -16114,10 +16133,46 @@
       block.dataset.unit = unit.key;
       block.innerHTML = `<div class="unit-label">${unit.label}</div>`;
 
-      DC_DATA[unit.key].forEach(posGroup => {
+      const dcMobile = window.innerWidth < 768;
+      DC_DATA[unit.key].forEach((posGroup, posIdx) => {
         const posRow = document.createElement('div');
         posRow.className = 'pos-row';
         posRow.dataset.pos = posGroup.pos;
+
+        // Header = (edit) drag handle / ↑↓ arrows + the position tag.
+        const head = document.createElement('div');
+        head.className = 'dc-pos-head';
+
+        if (dcEditMode && !dcMobile) {
+          const grip = document.createElement('span');
+          grip.className = 'dc-pos-handle';
+          grip.textContent = '⠿';
+          grip.title = 'Drag to reorder positions';
+          grip.setAttribute('draggable', 'true');
+          grip.addEventListener('dragstart', e => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('application/x-dc-pos', JSON.stringify({ unit: unit.key, pos: posGroup.pos }));
+            posRow.classList.add('dc-pos-dragging');
+          });
+          grip.addEventListener('dragend', () => {
+            posRow.classList.remove('dc-pos-dragging');
+            document.querySelectorAll('.pos-row.dc-pos-drag-over').forEach(el => el.classList.remove('dc-pos-drag-over'));
+          });
+          head.appendChild(grip);
+        } else if (dcEditMode && dcMobile) {
+          const arrows = document.createElement('div');
+          arrows.className = 'dc-pos-arrows';
+          const up = document.createElement('button');
+          up.textContent = '↑'; up.title = 'Move position up';
+          if (posIdx === 0) up.style.opacity = '0.3';
+          up.onclick = (e) => { e.stopPropagation(); dcMovePositionByArrow(unit.key, posGroup.pos, -1); };
+          const down = document.createElement('button');
+          down.textContent = '↓'; down.title = 'Move position down';
+          if (posIdx === DC_DATA[unit.key].length - 1) down.style.opacity = '0.3';
+          down.onclick = (e) => { e.stopPropagation(); dcMovePositionByArrow(unit.key, posGroup.pos, 1); };
+          arrows.appendChild(up); arrows.appendChild(down);
+          head.appendChild(arrows);
+        }
 
         const posTag = document.createElement('div');
         posTag.className = 'pos-tag';
@@ -16134,6 +16189,9 @@
             if (unitKey) {
               const grp = DC_DATA[unitKey].find(g => g.pos === oldPos);
               if (grp) grp.pos = newPos;
+              // Carry a renamed position across any saved custom tile order for this level.
+              const ord = DC_OVR[currentDCLevel]?.order?.[unitKey];
+              if (ord) { const i = ord.indexOf(oldPos); if (i !== -1) ord[i] = newPos; }
             }
             posGroup.pos = newPos;
             posTag.dataset.pos = newPos;
@@ -16152,7 +16210,30 @@
         } else {
           posTag.textContent = posGroup.pos;
         }
-        posRow.appendChild(posTag);
+        head.appendChild(posTag);
+        posRow.appendChild(head);
+
+        // Desktop: the whole position row is a drop target for tile reordering.
+        if (dcEditMode && !dcMobile) {
+          posRow.addEventListener('dragover', e => {
+            if (!e.dataTransfer.types.includes('application/x-dc-pos')) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            document.querySelectorAll('.pos-row.dc-pos-drag-over').forEach(el => el.classList.remove('dc-pos-drag-over'));
+            posRow.classList.add('dc-pos-drag-over');
+          });
+          posRow.addEventListener('dragleave', () => posRow.classList.remove('dc-pos-drag-over'));
+          posRow.addEventListener('drop', e => {
+            if (!e.dataTransfer.types.includes('application/x-dc-pos')) return;
+            e.preventDefault();
+            posRow.classList.remove('dc-pos-drag-over');
+            try {
+              const from = JSON.parse(e.dataTransfer.getData('application/x-dc-pos'));
+              if (from.unit !== unit.key || from.pos === posGroup.pos) return;
+              dcMovePositionTo(unit.key, from.pos, posGroup.pos);
+            } catch(err) {}
+          });
+        }
 
         const playersList = document.createElement('div');
         playersList.className = 'pos-players';
@@ -16349,6 +16430,40 @@
     if (newIdx < 0 || newIdx >= posGroup.players.length) return;
     const moved = posGroup.players.splice(idx, 1)[0];
     posGroup.players.splice(newIdx, 0, moved);
+    renderDepthChart();
+    saveDCToSupabase();
+  }
+
+  // ===== DEPTH CHART: reorder position TILES within a unit (coach organizes the chart) =====
+  // Snapshot the current tile order for this level+unit so _dcReconcileLevel preserves it.
+  function _dcCommitPosOrder(unit) {
+    _dcEnsureLevel(currentDCLevel);
+    DC_OVR[currentDCLevel].order[unit] = (DC_DATA[unit] || []).map(g => g.pos);
+  }
+  // Move a position tile so it lands where `toPos` currently sits (drag & drop).
+  function dcMovePositionTo(unit, fromPos, toPos) {
+    if(!requireEdit('depth'))return;
+    const arr = DC_DATA[unit]; if (!arr) return;
+    const fromIdx = arr.findIndex(g => g.pos === fromPos);
+    const toIdx = arr.findIndex(g => g.pos === toPos);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    const moved = arr.splice(fromIdx, 1)[0];
+    arr.splice(toIdx, 0, moved);
+    _dcCommitPosOrder(unit);
+    renderDepthChart();
+    saveDCToSupabase();
+    showToast('Positions reordered ✓');
+  }
+  // Nudge a position tile up (-1) or down (+1) — mobile arrows.
+  function dcMovePositionByArrow(unit, pos, direction) {
+    if(!requireEdit('depth'))return;
+    const arr = DC_DATA[unit]; if (!arr) return;
+    const idx = arr.findIndex(g => g.pos === pos);
+    const newIdx = idx + direction;
+    if (idx === -1 || newIdx < 0 || newIdx >= arr.length) return;
+    const moved = arr.splice(idx, 1)[0];
+    arr.splice(newIdx, 0, moved);
+    _dcCommitPosOrder(unit);
     renderDepthChart();
     saveDCToSupabase();
   }
