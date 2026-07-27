@@ -92,9 +92,17 @@ Do these regardless of D1 — they pay off immediately and are prerequisites for
 - [ ] Scaffold the **Turborepo skeleton** (`apps/`, `packages/`) with the shared Supabase client.
 - [ ] Register **Apple + Google developer accounts** (lead time on approval, so start early).
 
+## Decisions made
+- **D1 (native strategy):** Path C — phased Expo/Next.js rewrite, PWA stays live until parity. ✅
+- **Role scope:** **All three roles together** (decided 2026-07-26). Rationale: shared code + typed
+  schema surface integration breaks immediately, so building coach/player/parent in tandem catches
+  cross-role problems early instead of perfecting one role and breaking it later. Sequence: build
+  the shared skeleton (auth + role routing + per-role home shells) first, then features in slices
+  that span every role they touch.
+
 ## Open questions for the founder
-- How urgent is store presence vs. code quality? (Drives whether we do an interim wrapper.)
-- Target launch window / how many beta programs before we commit to the rewrite?
-- Native scope on day one — all three roles, or coach-first with player/parent following?
+- **Platform first:** one codebase for phone + web (Expo) vs. web-first (Next.js) then phone. ← next
+- How urgent is store presence vs. code quality?
+- Target launch window / how many beta programs before we commit fully?
 - Are we enabling under-13 (middle-school/youth) at launch? If yes → COPPA flow is now on the
   critical path, not parked.
