@@ -2,6 +2,11 @@
 _Forward-looking items pulled out of the old session logs so they don't get lost.
 Historical session-by-session notes were retired; git history is the record of what shipped._
 
+> **See also:** [BETA_STATUS.md](BETA_STATUS.md) (current state + what's shipped) and
+> [ROADMAP_TO_PRODUCTION.md](ROADMAP_TO_PRODUCTION.md) (the App Store + single-file→monorepo
+> migration plan). The single-file architecture and native-app work are tracked in the roadmap,
+> not here.
+
 ---
 
 ## ⛔ Compliance gate — BUILD BEFORE ONBOARDING ANY UNDER-13 PLAYER (post-beta)

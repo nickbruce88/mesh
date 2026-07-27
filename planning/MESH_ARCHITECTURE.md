@@ -1,6 +1,10 @@
 # Mesh Sports — Architecture Document
 _Last updated: Planning session July 2026_
 
+> **This is the TARGET architecture** (Expo mobile + Next.js web monorepo). The beta today is a
+> single-file PWA — see [BETA_STATUS.md](BETA_STATUS.md) for what's actually built, and
+> [ROADMAP_TO_PRODUCTION.md](ROADMAP_TO_PRODUCTION.md) for the phased plan to get from here to there.
+
 ---
 
 ## Guiding Principle

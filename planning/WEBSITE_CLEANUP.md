@@ -1,6 +1,16 @@
 # Mesh — Marketing Website Improvement Plan (meshsports.co)
 _Review captured 2026-07-21. The app is at app.meshsports.co; this doc is about the public
-marketing site at meshsports.co. Parked for a dedicated pass later._
+marketing site at meshsports.co._
+
+> **Status (2026-07-26).** Several of the top items shipped since this review:
+> - ✅ **Real product screenshots** — hero showcase + zig-zag gallery + phone band + lightbox.
+> - ✅ **Playbook** marked **"Coming soon"** in the features grid.
+> - ✅ **Emoji → SVG** icon set (Lucide sprite).
+> - ✅ **Mobile / add-to-home-screen** — dedicated "Get the app" install section + FAQ entry.
+>
+> **Still open:** verify the beta modal captures an email (#3); add the safety/witness-messaging
+> differentiator + trust/privacy angle (#4); a real testimonial or founder line (#5); pure
+> visual/aesthetic pass. Treat the ranked list below as the remaining work.
 
 ## Overall read
 The bones are solid — a conventional, well-ordered SaaS landing page:
