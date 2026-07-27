@@ -13,8 +13,11 @@ apps on a maintainable codebase. Companion to [MESH_ARCHITECTURE.md](MESH_ARCHIT
 
 ## Phase 0 — Decisions to lock first (these gate everything)
 
-**D1. Native strategy — how do we get into the App Store / Play Store?**
-Three viable paths:
+**D1. Native strategy — ✅ DECIDED 2026-07-26: Path C (phased).** Build the Expo/Next.js monorepo
+and port feature-by-feature, keeping the live single-file PWA running for beta coaches until native
+reaches parity, then switch them over. No throwaway wrapper, no big-bang cutover, no beta downtime.
+
+_Original options considered:_
 
 | Path | What it is | Pros | Cons |
 |------|-----------|------|------|
